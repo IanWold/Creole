@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Foundations](../../README.md#fnd--foundations) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Done |
 
 ## Summary
 
@@ -20,8 +20,8 @@ Create the solution layout. Creole targets .NET 11 and C# 15 only; there is no `
 
 ## Acceptance criteria
 
-- [ ] `dotnet build` and `dotnet test` succeed on the empty solution.
-- [ ] Every runtime library project targets only `net11.0`.
+- [x] `dotnet build` and `dotnet test` succeed on the empty solution.
+- [x] Every runtime library project targets only `net11.0`.
 
 ## Blocked by
 
@@ -42,3 +42,30 @@ Nothing. This item can start immediately.
 ## Whitepaper references
 
 - [§ Design goals and non-goals](../../../whitepaper.md#design-goals-and-non-goals)
+
+## Progress notes
+
+- 2026-10-17 (Building): Started. Plan approved: `Creole.slnx` with src/, tests/, benchmarks/, samples/; .NET 11 SDK 11.0.100-rc.2 installed to ~/.dotnet; MIT license.
+- 2026-10-17 (Building): Solution, projects, build props, central packages, global.json, LICENSE (MIT), .editorconfig, CONTRIBUTING § Code, CLAUDE.md commands and `.claude/rules/dotnet.md` in place. `dotnet build` is clean (0 warnings) and `dotnet test` passes 3 of 3. Tests run on Microsoft.Testing.Platform because xUnit v3 4.x does not support VSTest under the .NET 10+ SDK. `scripts/format-hook.py` is written and tested, but the maintainer must register it in `.claude/settings.json` (Claude was not permitted to edit that file). Next: register the hook, then `/complete`.
+- 2026-10-17 (Building): Maintainer registered the format hook in `.claude/settings.json`. Criteria verified; card closed.
+
+## Outcome
+
+Delivered the empty solution `Creole.slnx`:
+
+| Path | Target |
+| --- | --- |
+| `src/Creole` (packs `Creole.Generators.dll` under `analyzers/dotnet/cs`) | net11.0 |
+| `src/Creole.Generators` | netstandard2.0 |
+| `src/Creole.Testing` | net11.0 |
+| `tests/Creole.Tests`, `tests/Creole.Generators.Tests` (xUnit v3) | net11.0 |
+| `benchmarks/Creole.Benchmarks` (placeholder console app) | net11.0 |
+| `samples/` (README only) | — |
+
+Shared settings are in `Directory.Build.props`: nullable, warnings as errors, code style enforced at build, XML docs, deterministic builds, SourceLink. `Creole` and `Creole.Testing` set `IsAotCompatible` and `IsTrimmable`. Package versions are central in `Directory.Packages.props`. `global.json` pins SDK `11.0.100-rc.2.26504.105` (rolls forward to later feature bands, prerelease allowed). Also added: `LICENSE` (MIT), `.editorconfig`, `.gitignore`, [CONTRIBUTING.md § Code](../../../CONTRIBUTING.md#code), the Build and test section of CLAUDE.md, `.claude/rules/dotnet.md`, and the `scripts/format-hook.py` PostToolUse hook (whitespace-only `dotnet format` on the edited file, so it skips a slow solution load).
+
+Evidence, 2026-10-17, SDK 11.0.100-rc.2:
+- `dotnet build`: 0 warnings, 0 errors. `dotnet test`: 3 of 3 passed. `dotnet format --verify-no-changes`: exit 0.
+- The `RuntimeLibrariesTargetNet11` test asserts `.NETCoreApp,Version=v11.0` for `Creole` and `Creole.Testing`. No project file uses `TargetFrameworks`.
+
+Deviations: none from the whitepaper. Implementation note: tests run on Microsoft.Testing.Platform, which `global.json` selects, because xUnit v3 4.x does not support VSTest under the .NET 10+ SDK. FND-04 builds on this. No follow-up cards.

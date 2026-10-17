@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+    <IsPackable>true</IsPackable>
+    <PackageId>Creole</PackageId>
+    <Description>A layered, analyzable parser-combinator library for .NET.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Creole.Tests" />
+  </ItemGroup>
+
+  <!-- Run the analyzers and generator on this project's consumers, and ship them inside the Creole package. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Creole.Generators\Creole.Generators.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
+    <None Include="..\Creole.Generators\bin\$(Configuration)\netstandard2.0\Creole.Generators.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
+</Project>
