@@ -1,0 +1,18 @@
+# Build output
+bin/
+obj/
+artifacts/
+
+# Test and benchmark results
+TestResults/
+BenchmarkDotNet.Artifacts/
+*.received.*
+
+# IDE
+.vs/
+.idea/
+*.user
+*.suo
+
+# Claude Code local settings
+.claude/settings.local.json

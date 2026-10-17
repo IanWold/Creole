@@ -1,0 +1,20 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Creole/Creole.csproj" />
+    <Project Path="src/Creole.Generators/Creole.Generators.csproj" />
+    <Project Path="src/Creole.Testing/Creole.Testing.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Creole.Tests/Creole.Tests.csproj" />
+    <Project Path="tests/Creole.Generators.Tests/Creole.Generators.Tests.csproj" />
+  </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Creole.Benchmarks/Creole.Benchmarks.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path=".editorconfig" />
+  </Folder>
+</Solution>

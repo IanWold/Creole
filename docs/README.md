@@ -2,7 +2,7 @@
 
 User-facing documentation for Creole, written alongside the code (see [CONTRIBUTING.md § Documentation](../CONTRIBUTING.md#documentation)). Everything here must be true of the current code. Design rationale lives in the [whitepaper](../whitepaper.md) and decision records, not here.
 
-Nothing is documented yet: code starts with [FND-02](../work/active/01-foundations/FND-02-repository-and-solution-scaffolding.md).
+Nothing is documented yet: the solution is scaffolded, and library code starts with [CORE-01](../work/active/02-core-combinators/CORE-01-grammar-node-model.md).
 
 ## Planned layout
 

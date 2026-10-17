@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Creole\Creole.csproj" />
+    <ProjectReference Include="..\..\src\Creole.Testing\Creole.Testing.csproj" />
+  </ItemGroup>
+
+</Project>

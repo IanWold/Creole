@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Creole is a proposed parser-combinator library for .NET 11 and C# 15: layered streaming pipelines with feedback, grammars as inspectable data with build-time analysis, and staged compilation through a Roslyn source generator. The whitepaper and the work breakdown exist; code starts with FND-02.
+Creole is a proposed parser-combinator library for .NET 11 and C# 15: layered streaming pipelines with feedback, grammars as inspectable data with build-time analysis, and staged compilation through a Roslyn source generator. The whitepaper, the work breakdown and the empty solution exist; library code starts with CORE-01.
 
 ## How you work here
 
@@ -73,4 +73,15 @@ Match the whitepaper: plain English, short declarative sentences, concrete claim
 
 ## Build and test
 
-No code exists yet. When [FND-02](work/active/01-foundations/FND-02-repository-and-solution-scaffolding.md) is completed, replace this section with the real commands (build, test, a single test, benchmarks). Put C# coding conventions in `.claude/rules/dotnet.md` scoped to `**/*.cs`, not here.
+The SDK is pinned in `global.json` (.NET 11 RC 2). On this machine the system `dotnet` is .NET 10, so use `~/.dotnet/dotnet` or put `~/.dotnet` first on `PATH`.
+
+| Task | Command |
+| --- | --- |
+| Build | `dotnet build` |
+| All tests | `dotnet test` |
+| One project | `dotnet test --project tests/Creole.Tests` |
+| One test | `dotnet test --project tests/Creole.Tests --filter-method "*TestName"` |
+| Benchmarks | `dotnet run -c Release --project benchmarks/Creole.Benchmarks` (harness arrives with FND-05) |
+| Pack | `dotnet pack src/Creole -c Release` |
+
+Tests run on Microsoft.Testing.Platform (set in `global.json`), so `dotnet test` takes MTP options such as `--filter-method`, not VSTest's `--filter`. C# conventions are in `.claude/rules/dotnet.md`.

@@ -40,6 +40,14 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/format-hook.py\"", "timeout": 60 }
+        ]
+      }
     ]
   }
 }

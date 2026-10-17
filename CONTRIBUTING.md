@@ -13,6 +13,7 @@ This document describes how work moves through the Creole project: where things 
 - [Research notes](#research-notes)
 - [Decision records](#decision-records)
 - [Ideas](#ideas)
+- [Code](#code)
 - [Documentation](#documentation)
 - [Changing the whitepaper](#changing-the-whitepaper)
 - [Discrete changes and commits](#discrete-changes-and-commits)
@@ -43,8 +44,7 @@ Each card moves through some or all of **Research → Design → Build**, and ev
 | [`work/docs/archive/`](work/docs/archive/README.md) | Superseded process artifacts kept for history. |
 | [`scripts/work.py`](scripts/work.py) | Tracker checks and mechanical edits (see [Keeping the tracker consistent](#keeping-the-tracker-consistent)). |
 | `.claude/` | Claude Code configuration: skills, subagents, path-scoped rules and hooks (see [Working with Claude](#working-with-claude)). |
-
-Source code, tests, benchmarks and samples will be laid out by [FND-02](work/active/01-foundations/FND-02-repository-and-solution-scaffolding.md).
+| `src/`, `tests/`, `benchmarks/`, [`samples/`](samples/README.md) | The code (see [Code](#code)). |
 
 `docs/` and `work/docs/` are deliberately separate. `docs/` is the product: it describes Creole for its users and must be true of the current code. `work/docs/` is the process: it records how the project got here and is never shipped.
 
@@ -184,6 +184,53 @@ An idea is a thought not yet ready to be a card: a possible feature, a paper to 
 
 An idea is promoted by creating the card or research note it leads to and deleting the idea file (the new artifact records where it came from), or dropped by deleting it with a one-line reason in the index.
 
+## Code
+
+### Prerequisites
+
+The .NET 11 SDK, pinned in [`global.json`](global.json). .NET 11 is in preview until GA (expected November 2026), so the pin is a release candidate and rolls forward to later feature bands. Install it with [`dotnet-install`](https://learn.microsoft.com/dotnet/core/tools/dotnet-install-script) if your package manager does not carry it.
+
+### Layout
+
+| Project | Target | Purpose |
+| --- | --- | --- |
+| `src/Creole` | `net11.0` | The library. The `Creole` package also carries the analyzers and generator. |
+| `src/Creole.Generators` | `netstandard2.0` | Roslyn analyzers and the source generator. Packed into `Creole` under `analyzers/dotnet/cs`, not shipped on its own. |
+| `src/Creole.Testing` | `net11.0` | Test helpers for grammar authors. Its own package. |
+| `tests/Creole.Tests` | `net11.0` | Tests for `Creole` and `Creole.Testing`. |
+| `tests/Creole.Generators.Tests` | `net11.0` | Tests for the analyzers and generator. |
+| `benchmarks/Creole.Benchmarks` | `net11.0` | Benchmarks and competitor baselines ([FND-05](work/active/01-foundations/FND-05-benchmark-harness.md)). |
+| `samples/` | `net11.0` | Runnable sample grammars. |
+
+Runtime libraries target `net11.0` only. There is no `net10.0` or `netstandard` target (§ [Design goals](whitepaper.md#design-goals-and-non-goals), G8).
+
+### Commands
+
+| Task | Command |
+| --- | --- |
+| Build | `dotnet build` |
+| All tests | `dotnet test` |
+| One test project | `dotnet test --project tests/Creole.Tests` |
+| One test | `dotnet test --project tests/Creole.Tests --filter-method "*TestName"` |
+| Pack | `dotnet pack src/Creole -c Release` |
+| Format | `dotnet format` |
+
+Tests use xUnit v3 on Microsoft.Testing.Platform, which `global.json` selects for `dotnet test`.
+
+### Build settings
+
+[`Directory.Build.props`](Directory.Build.props) applies to every project: nullable reference types, warnings as errors, code style enforced at build time from [`.editorconfig`](.editorconfig), XML documentation, deterministic builds, and SourceLink (built into the SDK; `ContinuousIntegrationBuild` turns on in CI). Runtime libraries also set `IsAotCompatible` and `IsTrimmable`, so trimming and AOT warnings fail the build.
+
+Package versions are managed centrally in [`Directory.Packages.props`](Directory.Packages.props). Add a version there, then a versionless `PackageReference` in the project. Keep `Microsoft.CodeAnalysis.*` at or below the Roslyn version in the pinned SDK, or consumers cannot load the generator.
+
+### Conventions
+
+- `.editorconfig` is the style guide. Do not argue with it in review; change it.
+- Every public type and member has XML docs ([Documentation](#documentation)).
+- Do not suppress a warning without a comment saying why.
+- The runtime libraries stay Native AOT and trim safe: no runtime IL emission, and no reflection on the hot path (G8).
+- Tests pin semantics the whitepaper states, not implementation details.
+
 ## Documentation
 
 `docs/` is written alongside the code, in the same change, never afterwards. [REL-02](work/active/14-release/REL-02-documentation.md) polishes and fills gaps for 1.0; it is not where documentation starts.
@@ -274,6 +321,7 @@ Claude Code is set up to work inside this process. [CLAUDE.md](CLAUDE.md) holds 
 | Subagents | `.claude/agents/` | `researcher` answers one research question from primary sources; `critic` reviews or verifies work with a fresh context. |
 | Rules | `.claude/rules/` | Short rules that load only when Claude touches matching files: cards, research notes, decision records, docs, the whitepaper. |
 | Hooks | `.claude/settings.json` | At session start, a tracker brief (`work.py brief`). At the end of each turn, `work.py check`, with problems fed back to Claude. |
+| Formatting | `scripts/format-hook.py` | After each edit to a `.cs` file, `dotnet format whitespace` on that file. |
 | Permissions | `.claude/settings.json` | Pre-approves the tracker script, read-only git, `dotnet build/test` and web research; blocks `git commit` and `git push`. |
 
 | Skill | Use it to |
