@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [Build-time analyzers and code fixes](../../README.md#rsln--build-time-analyzers-and-code-fixes) |
 | Phase | Phase 2 — Analysis |
-| Size | S |
 | Status | Not started |
 
 ## Summary

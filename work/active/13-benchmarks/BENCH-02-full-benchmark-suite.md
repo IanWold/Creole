@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [Benchmarks](../../README.md#bench--benchmarks) |
 | Phase | Phase 3 — Staging |
-| Size | L |
 | Status | Not started |
 
 ## Summary

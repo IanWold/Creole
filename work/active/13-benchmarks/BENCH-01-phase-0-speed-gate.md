@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [Benchmarks](../../README.md#bench--benchmarks) |
 | Phase | Phase 0 — Core |
-| Size | S |
 | Status | Not started |
 | Gate | Phase 0 gate |
 

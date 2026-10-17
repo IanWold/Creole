@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Size | S |
 | Status | Not started |
 
 ## Summary

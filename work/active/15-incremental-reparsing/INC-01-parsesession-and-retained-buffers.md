@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [Incremental re-parsing (1.x)](../../README.md#inc--incremental-re-parsing-1x) |
 | Phase | Phase 4 — 1.x releases |
-| Size | M |
 | Status | Not started |
 
 ## Summary

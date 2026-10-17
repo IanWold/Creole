@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [Layer fusion (1.x)](../../README.md#fus--layer-fusion-1x) |
 | Phase | Phase 4 — 1.x releases |
-| Size | XL |
 | Status | Not started |
 
 ## Summary

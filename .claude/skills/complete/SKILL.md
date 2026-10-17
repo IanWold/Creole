@@ -14,7 +14,7 @@ Rules: CONTRIBUTING.md § Completing a card and § Completing an epic.
 
 ## Workflow
 
-1. **Verify each acceptance criterion** with evidence: run the tests, run the measurement, or inspect the artifact. For each, report `met (evidence)`, `not met (why)`, or `cannot verify (what is missing)`. Do not tick anything on intent or memory. For gate cards and L or XL cards, also ask the `critic` subagent to verify the criteria independently. Give it the card path and where the evidence is, but not your own verdicts. Reconcile any disagreement before going on.
+1. **Verify each acceptance criterion** with evidence: run the tests, run the measurement, or inspect the artifact. For each, report `met (evidence)`, `not met (why)`, or `cannot verify (what is missing)`. Do not tick anything on intent or memory. For gate cards, and cards whose work spanned several sessions, also ask the `critic` subagent to verify the criteria independently. Give it the card path and where the evidence is, but not your own verdicts. Reconcile any disagreement before going on.
 2. **Check the definition of done**: tests exist and pass; `docs/` and XML docs are updated; every deviation from the card or whitepaper has an Accepted decision record and the whitepaper reflects it; no unresolved conflict between the card, whitepaper and code.
 3. **If anything is missing, stop.** List what is missing and leave the card as it is. If a criterion is wrong or unreachable, propose changing the card or a decision. Never tick it to close the card.
 4. **Gate cards** (a `Gate` row): confirm the gate's criterion from the whitepaper Roadmap and FND-06 thresholds, with numbers. Put the evidence in the Outcome.

@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [Streaming and async input](../../README.md#strm--streaming-and-async-input) |
 | Phase | Phase 1 — Layers |
-| Size | M |
 | Status | Not started |
 
 ## Summary

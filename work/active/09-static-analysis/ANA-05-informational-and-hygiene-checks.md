@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [Static analysis](../../README.md#ana--static-analysis) |
 | Phase | Phase 2 — Analysis |
-| Size | M |
 | Status | Not started |
 
 ## Summary

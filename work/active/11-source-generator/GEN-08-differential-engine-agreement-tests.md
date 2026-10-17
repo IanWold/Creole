@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [Source-generated engine](../../README.md#gen--source-generated-engine) |
 | Phase | Phase 3 — Staging |
-| Size | L |
 | Status | Not started |
 | Gate | Phase 3 gate |
 

@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [Errors, diagnostics and recovery](../../README.md#err--errors-diagnostics-and-recovery) |
 | Phase | Phase 0 — Core |
-| Size | L |
 | Status | Not started |
 
 ## Summary

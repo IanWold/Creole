@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [Layers, buffers and pipelines](../../README.md#lay--layers-buffers-and-pipelines) |
 | Phase | Phase 1 — Layers |
-| Size | S |
 | Status | Not started |
 
 ## Summary

@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [Source spans and provenance](../../README.md#span--source-spans-and-provenance) |
 | Phase | Phase 1 — Layers |
-| Size | S |
 | Status | Not started |
 
 ## Summary

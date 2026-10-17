@@ -19,10 +19,10 @@ Rules and format: CONTRIBUTING.md § Cards and § Epics, phases, waves and gates
    - Epic: the best existing one, or a new epic (a new prefix, a new `NN-slug` folder after the highest number, and a section under `## Epics` in work/README.md).
    - ID: next unused number for the prefix. IDs are never reused, including from complete/ and backburner/.
    - Title, Summary, Scope, and acceptance criteria that can be verified by test, measurement or inspection.
-   - Size (S, M, L or XL, as defined in work/README.md), Phase, and `Gate` only if it is a gate.
+   - Phase, and `Gate` only if it is a gate.
    - Blockers and dependents. Check whether existing cards should now be blocked by it.
    - Whitepaper references. If the work is not in the whitepaper at all, flag it: either the whitepaper needs a decision to include it, or the card is out of scope.
-   - If a card is bigger than XL or has more than about six criteria, propose splitting it.
+   - If a card has more than about six criteria, or bundles deliverables that could ship separately, propose splitting it.
 3. **Write the card** in the exact format of existing cards (see any file in `work/active/`). Use relative links like existing cards do.
 4. **Wire dependencies both ways**: add it to each blocker's `## Unblocks` and each dependent's `## Blocked by`, replacing "Nothing directly." or "Nothing. This item can start immediately." where needed.
 5. **Update work/README.md**: the epic table, the phase table in the right wave (one more than its deepest blocker's wave in that phase), `**Totals:**`, "Can start now" if it is ready, and the critical path if this changes it.

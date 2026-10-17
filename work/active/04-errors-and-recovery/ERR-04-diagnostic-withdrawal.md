@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [Errors, diagnostics and recovery](../../README.md#err--errors-diagnostics-and-recovery) |
 | Phase | Phase 1 — Layers |
-| Size | M |
 | Status | Not started |
 
 ## Summary

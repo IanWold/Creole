@@ -22,7 +22,7 @@ Give the maintainer a short, accurate picture of the project and a recommendatio
 1. Start from the tracker state above. If it reports errors, run `python3 scripts/work.py check` and lead the report with them.
 2. For each in-progress card, read its latest progress note and its `## Artifacts`.
 3. List `work/ideas/` entries if the folder exists.
-4. From the ready list, pick up to three recommended next cards. Prefer, in order: cards on the critical path to 1.0 (work/README.md § Critical path), cards that unblock the most others (`python3 scripts/work.py card <ID>`), and small cards that close out a wave.
+4. From the ready list, pick up to three recommended next cards. Prefer, in order: cards on the critical path to 1.0 (work/README.md § Critical path), cards that unblock the most others (`python3 scripts/work.py card <ID>`), and cards that close out a wave.
 5. Report:
 
 ```text

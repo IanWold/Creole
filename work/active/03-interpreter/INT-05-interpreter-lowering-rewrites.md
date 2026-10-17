@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [Interpreted engine](../../README.md#int--interpreted-engine) |
 | Phase | Phase 0 — Core |
-| Size | M |
 | Status | Not started |
 
 ## Summary

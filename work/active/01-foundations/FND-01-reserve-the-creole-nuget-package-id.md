@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [Foundations](../../README.md#fnd--foundations) |
 | Phase | Phase 0 — Core |
-| Size | S |
 | Status | Not started |
 
 ## Summary

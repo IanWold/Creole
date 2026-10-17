@@ -90,7 +90,6 @@ A card is one Markdown file, `work/<location>/<NN-epic>/<PREFIX>-<n>-<slug>.md`.
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Size | M |
 | Status | Not started |
 | Gate | Phase 0 gate |            ← only on gate cards
 

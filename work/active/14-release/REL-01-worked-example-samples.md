@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [Samples, docs and 1.0 release](../../README.md#rel--samples-docs-and-10-release) |
 | Phase | Phase 2 — Analysis |
-| Size | M |
 | Status | Not started |
 
 ## Summary

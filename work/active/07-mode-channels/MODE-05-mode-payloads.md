@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [Mode channels](../../README.md#mode--mode-channels) |
 | Phase | Phase 1 — Layers |
-| Size | S |
 | Status | Not started |
 
 ## Summary

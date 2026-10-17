@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [Resumable async (1.x candidate)](../../README.md#res--resumable-async-1x-candidate) |
 | Phase | Phase 4 — 1.x releases |
-| Size | S |
 | Status | Not started |
 
 ## Summary

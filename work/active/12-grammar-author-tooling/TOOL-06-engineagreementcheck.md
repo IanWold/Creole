@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [Grammar-author tooling](../../README.md#tool--grammar-author-tooling) |
 | Phase | Phase 3 — Staging |
-| Size | S |
 | Status | Not started |
 
 ## Summary

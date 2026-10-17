@@ -4,7 +4,6 @@
 | --- | --- |
 | Epic | [General parsing spike (post-1.0)](../../README.md#gll--general-parsing-spike-post-10) |
 | Phase | Research spike — General parsing (post-1.0) |
-| Size | XL |
 | Status | Not started |
 
 ## Summary

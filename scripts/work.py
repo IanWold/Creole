@@ -336,7 +336,7 @@ def cmd_ready(cards: dict[str, Card] | None = None) -> int:
     cards = cards or load_cards()
     print("\nReady to start (all blockers Done):")
     for c in ready(cards):
-        print(f"  {c.id} [{c.fields.get('Size', '?')}] {c.title}  ({rel(c.path)})")
+        print(f"  {c.id} {c.title}  ({rel(c.path)})")
     return 0
 
 
@@ -347,7 +347,7 @@ def cmd_card(card_id: str) -> int:
         print(f"No card {card_id}")
         return 1
     print(f"{c.id}: {c.title}\n  path: {rel(c.path)}\n  status: {c.status}")
-    for k in ("Phase", "Size", "Gate"):
+    for k in ("Phase", "Gate"):
         if k in c.fields:
             print(f"  {k.lower()}: {c.fields[k]}")
     print(f"  criteria: {sum(c.criteria)}/{len(c.criteria)} checked")
