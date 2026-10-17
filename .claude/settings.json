@@ -1,0 +1,45 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 scripts/work.py check)",
+      "Bash(python3 scripts/work.py status)",
+      "Bash(python3 scripts/work.py ready)",
+      "Bash(python3 scripts/work.py brief)",
+      "Bash(python3 scripts/work.py card *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(dotnet build *)",
+      "Bash(dotnet test *)",
+      "WebSearch",
+      "WebFetch"
+    ],
+    "deny": [
+      "Bash(git commit *)",
+      "Bash(git push *)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/work.py\" brief"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/work.py\" stop-hook"
+          }
+        ]
+      }
+    ]
+  }
+}

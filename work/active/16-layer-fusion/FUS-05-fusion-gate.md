@@ -1,0 +1,36 @@
+# FUS-05: Fusion gate
+
+| | |
+| --- | --- |
+| Epic | [Layer fusion (1.x)](../../README.md#fus--layer-fusion-1x) |
+| Phase | Phase 4 — 1.x releases |
+| Size | S |
+| Status | Not started |
+| Gate | Fusion gate |
+
+## Summary
+
+Fused engines join the differential tests and the benchmark gate.
+
+## Scope
+
+- Add fused engines to GEN-08's differential tests.
+- Re-run benchmarks against the threshold.
+
+## Acceptance criteria
+
+- [ ] Agreement holds and the measured win meets the threshold.
+
+## Blocked by
+
+- [GEN-08 Differential engine-agreement tests](../11-source-generator/GEN-08-differential-engine-agreement-tests.md)
+- [FUS-03 Fusion with modes and custom scanners](../16-layer-fusion/FUS-03-fusion-with-modes-and-custom-scanners.md)
+- [FUS-04 Fuse through stateless item layers](../16-layer-fusion/FUS-04-fuse-through-stateless-item-layers.md)
+
+## Unblocks
+
+Nothing directly.
+
+## Whitepaper references
+
+- [§ Layer fusion](../../../whitepaper.md#layer-fusion)
