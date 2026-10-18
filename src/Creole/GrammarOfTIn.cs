@@ -18,7 +18,7 @@ namespace Creole;
 /// </para>
 /// </remarks>
 [SuppressMessage("Design", "CA1000:Do not declare static members on generic types", Justification = "Static members on the generic base are the point: a derived grammar class calls them unqualified, with TIn fixed by the base.")]
-public abstract class Grammar<TIn>
+public abstract partial class Grammar<TIn>
 {
     /// <summary>
     /// Creates a grammar. Grammar classes hold static rules and are not usually instantiated.

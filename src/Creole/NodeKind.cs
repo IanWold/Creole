@@ -12,4 +12,5 @@ internal enum NodeKind
     SkipRepeat,
     Separated,
     Until,
+    Expression,
 }
