@@ -22,6 +22,7 @@ The interpreter runs every analyzable node family with Parsec-style commit seman
 
 - [ ] A semantic test suite covering the four-outcome table, including property tests, passes.
 - [ ] The grammar classes in Worked Example A compile against the API, apart from `Layer.Tokens` (LAY-03). Moved here from CORE-02.
+- [ ] The interpreter passes every row of the CORE-07 repetition table, and handles the rows where Pidgin throws on a repeated parser that consumes nothing. Moved here from [CORE-07](../02-core-combinators/CORE-07-repetition-nodes.md).
 
 ## Blocked by
 

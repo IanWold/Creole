@@ -3,6 +3,8 @@
   <ItemGroup>
     <!-- Compiles small snippets against Creole to check that misuse fails the build. -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <!-- Checks the shared repetition table against Pidgin's behaviour (CORE-07). -->
+    <PackageReference Include="Pidgin" />
   </ItemGroup>
 
   <ItemGroup>

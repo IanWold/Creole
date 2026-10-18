@@ -38,13 +38,14 @@ public class NodeCompletenessTests
     [Fact]
     public void ASwitchOverEveryNodeKindCompiles()
     {
-        var errors = Compile(Friend, """
+        var arms = string.Concat(Enum.GetNames<NodeKind>().Select(name => $"Creole.NodeKind.{name} => 0,\n"));
+
+        var errors = Compile(Friend, $$"""
             static class Consumer
             {
                 static int Arity(Creole.NodeKind kind) => kind switch
                 {
-                    Creole.NodeKind.Return => 0,
-                    Creole.NodeKind.Fail => 0,
+                    {{arms}}
                 };
             }
             """

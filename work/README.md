@@ -42,7 +42,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 2 | ✅ [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) SourceSpan, SourceId and LineMap | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | 3 | [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) Fix numeric gate thresholds | [FND-05](active/01-foundations/FND-05-benchmark-harness.md) |
 | 3 | ✅ [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) Grammar base classes and authoring surface | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
-| 3 | [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md) Repetition nodes | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
+| 3 | ✅ [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md) Repetition nodes | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
 | 3 | [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md) Expression.Build | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
 | 3 | [INT-02](active/03-interpreter/INT-02-plan-lowering-and-cache.md) Plan lowering and cache | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md), [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) |
 | 3 | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) Error and result types | [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) |
@@ -209,7 +209,6 @@ These items have all their blockers done:
 - [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) Sequencing and mapping nodes
 - [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md) Choice nodes
 - [CORE-06](active/02-core-combinators/CORE-06-longest.md) Longest
-- [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md) Repetition nodes
 - [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md) Control nodes
 - [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) Recursion with Rec
 - [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md) Expression.Build
@@ -247,7 +246,7 @@ The immutable grammar-tree model and the full combinator vocabulary. Folder: [`a
 | [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) Sequencing and mapping nodes | 0 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
 | [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md) Choice nodes | 0 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
 | [CORE-06](active/02-core-combinators/CORE-06-longest.md) Longest | 0 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
-| [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md) Repetition nodes | 0 | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
+| ✅ [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md) Repetition nodes | 0 | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
 | [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md) Control nodes | 0 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
 | [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) Recursion with Rec | 0 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
 | [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md) Bind and LINQ query syntax | 0 | [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) |
