@@ -22,9 +22,10 @@ Code and documentation are one stage. A Build increment is not done until its te
    - Update `docs/` and XML docs in the same increment. A new `CRLnnnn` diagnostic gets its `docs/reference/diagnostics/CRLnnnn.md` page now.
    - Run the build and the relevant tests. Report failures honestly, with output.
    - Append a progress note to the card and offer a commit message (`<ID>: <imperative summary>`).
+   - **Stop.** Do not start the next increment until the maintainer says they have committed this one. They review and edit before committing, so resume from what they committed: read `git show HEAD` (and `git status` for anything left uncommitted) before planning the next increment, and build on their version, not yours.
 5. **If the design turns out wrong**, stop. Do not change the whitepaper's design or quietly deviate. Set the card to `Designing`, write a progress note explaining what was found, and propose `/decide`.
 6. **If scope grows**, finish what the card covers and propose a new card for the rest.
-7. **When every criterion appears met**, hand off to `/complete`, which verifies them.
+7. **When every criterion appears met**, say so and stop. The maintainer opens the PR and runs `/complete` when they choose.
 
 Mechanical sub-steps (renames, moving types, call-site updates) go through `/refactor` as their own increment, never mixed with behaviour changes. Never run `git commit` or `git push`.
 
