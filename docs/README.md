@@ -19,3 +19,4 @@ The layout follows the scope of [REL-02](../work/active/14-release/REL-02-docume
 | Page | Contents |
 | --- | --- |
 | [Grammars as data](concepts/grammars-as-data.md) | The `Parser<TIn, TOut>` type, immutability and identity, `IKinded<TKind>` and `GrammarException`. |
+| [The cursor](engines/cursor.md) | `Cursor<T>`: absolute positions, reading without allocation, bulk scans over segmented input. |
