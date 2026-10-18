@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Interpreted engine](../../README.md#int--interpreted-engine) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -13,9 +13,10 @@ On first use a grammar is lowered to an immutable execution plan and cached.
 ## Scope
 
 - Plan node base: `abstract bool TryParse(ref Cursor<TIn> c, ref TOut result)`.
-- Lowering from grammar tree to plan, including `Rec` cycles, through an `internal abstract` lowering member that every node overrides ([ADR-0001](../../docs/decisions/0001-grammar-node-encoding-and-engine-dispatch.md)).
+- Lowering from grammar tree to plan through an `internal abstract` lowering member that every node overrides ([ADR-0001](../../docs/decisions/0001-grammar-node-encoding-and-engine-dispatch.md)).
 - `ConditionalWeakTable` cache keyed by node; plans immutable and thread-safe; parse state lives in the call.
 - A lookup hook so staged code registered by the generator (GEN-01) replaces plan nodes.
+- Out: lowering `Rec` cycles. CORE-09 adds it with the `Rec` node.
 
 ## Acceptance criteria
 
@@ -30,6 +31,7 @@ On first use a grammar is lowered to an immutable execution plan and cached.
 
 - [INT-03 Execute the core combinators](../03-interpreter/INT-03-execute-the-core-combinators.md)
 - [GEN-01 Generator skeleton and registration](../11-source-generator/GEN-01-generator-skeleton-and-registration.md)
+- [CORE-09 Recursion with Rec](../02-core-combinators/CORE-09-recursion-with-rec.md)
 
 ## Whitepaper references
 
@@ -39,3 +41,8 @@ On first use a grammar is lowered to an immutable execution plan and cached.
 
 - [Research: grammar node encoding and dispatch](../../docs/research/2026-10-18-grammar-node-encoding-and-dispatch.md)
 - [ADR-0001: Grammar node encoding and engine dispatch](../../docs/decisions/0001-grammar-node-encoding-and-engine-dispatch.md)
+
+## Progress notes
+
+- 2026-10-18 (Build): Started. Add an `internal abstract` lowering member on `Parser<TIn, TOut>` (overridden by `ReturnNode` and `FailNode`), sealed plan nodes with `TryParse(ref Cursor<TIn>, ref TOut)`, a lowering context that memoizes by node so cycles resolve, a `ConditionalWeakTable` plan cache, and an internal staging lookup for GEN-01. The `Rec` node is CORE-09, so cycle handling is tested with a test-only recursive node.
+- 2026-10-18 (Build): Moved lowering of `Rec` cycles to CORE-09 with the maintainer, since the `Rec` node does not exist yet; CORE-09 is now blocked by INT-02. Next: `/build` plan.
