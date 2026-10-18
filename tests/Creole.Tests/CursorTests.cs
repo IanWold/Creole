@@ -1,9 +1,13 @@
+using System.Buffers;
 using CsCheck;
 
 namespace Creole.Tests;
 
 public class CursorTests
 {
+    // _identifierChars and ScanIdentifier are the code sample in docs/engines/cursor.md. Keep the two in step.
+    private static readonly SearchValues<char> _identifierChars = SearchValues.Create("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_");
+
     [Fact]
     public void ReadsAStringInOrder()
     {
@@ -212,4 +216,47 @@ public class CursorTests
 
             return true;
         });
+
+    [Fact]
+    public void ScanIdentifierReadsAcrossSegments()
+    {
+        var cursor = new Cursor<char>(new SegmentedSource<char>("abcdefgh;".ToCharArray(), 3));
+
+        Assert.True(ScanIdentifier(ref cursor));
+        Assert.Equal(8, cursor.Position);
+    }
+
+    [Fact]
+    public void ScanIdentifierFailsWithoutMoving()
+    {
+        var cursor = new Cursor<char>("1abc");
+
+        Assert.False(ScanIdentifier(ref cursor));
+        Assert.Equal(0, cursor.Position);
+    }
+
+    private static bool ScanIdentifier(ref Cursor<char> c)
+    {
+        if (!c.TryPeek(out var first) || !(char.IsAsciiLetter(first) || first == '_'))
+        {
+            return false;
+        }
+
+        c.Advance(1);
+
+        while (c.Available is { IsEmpty: false } available)
+        {
+            var length = available.IndexOfAnyExcept(_identifierChars);
+
+            if (length >= 0)
+            {
+                c.Advance(length);
+                return true;
+            }
+
+            c.Advance(available.Length);
+        }
+
+        return true;
+    }
 }
