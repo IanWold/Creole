@@ -16,6 +16,7 @@ C# cannot infer `TIn` from a call like `Char('a')`, so grammars inherit a base c
 - `TokenGrammar<TToken, TKind>`: `Kind(k)`, overridable `Describe(TKind)`, and `Case<T>()` for union tokens.
 - `CharGrammar`: character classes, `String`, `CIString`, `Text()` and `Slice()`.
 - The static `Grammar` class entry points (for example `Grammar.Deterministic`, stubbed until ANA-06).
+- Document in `docs/concepts/grammars-as-data.md` that combinators reject null arguments with a `GrammarException` naming the expression. CORE-01 built the check, but nothing public used it yet.
 
 ## Acceptance criteria
 

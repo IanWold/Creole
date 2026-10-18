@@ -6,14 +6,14 @@ namespace Creole.Benchmarks.Json;
 
 public static class PidginJson
 {
-    public static readonly Parser<char, JsonValue> Parser = Build();
+    public static readonly Pidgin.Parser<char, JsonValue> Parser = Build();
 
     public static JsonValue Parse(string text) => Parser.ParseOrThrow(text);
 
-    private static Parser<char, JsonValue> Build()
+    private static Pidgin.Parser<char, JsonValue> Build()
     {
-        static Parser<char, T> Tok<T>(Parser<char, T> parser) => parser.Before(SkipWhitespaces);
-        static Parser<char, char> Sym(char c) => Tok(Char(c));
+        static Pidgin.Parser<char, T> Tok<T>(Pidgin.Parser<char, T> parser) => parser.Before(SkipWhitespaces);
+        static Pidgin.Parser<char, char> Sym(char c) => Tok(Char(c));
 
         var escape = Char('\\').Then(OneOf(
             Char('"'),
@@ -24,7 +24,7 @@ public static class PidginJson
             Char('n').ThenReturn('\n'),
             Char('r').ThenReturn('\r'),
             Char('t').ThenReturn('\t'),
-            Char('u').Then(Parser<char>.Token(char.IsAsciiHexDigit).Repeat(4).Select(static hex => (char)int.Parse(new string([.. hex]), NumberStyles.HexNumber, CultureInfo.InvariantCulture)))
+            Char('u').Then(Pidgin.Parser<char>.Token(char.IsAsciiHexDigit).Repeat(4).Select(static hex => (char)int.Parse(new string([.. hex]), NumberStyles.HexNumber, CultureInfo.InvariantCulture)))
         ));
 
         var text = Tok(AnyCharExcept('"', '\\').AtLeastOnceString().Or(escape.Select(static c => c.ToString()))
@@ -42,7 +42,7 @@ public static class PidginJson
             .Slice(static (span, _) => double.Parse(span, CultureInfo.InvariantCulture))
         );
 
-        Parser<char, JsonValue> json = null!;
+        Pidgin.Parser<char, JsonValue> json = null!;
         var value = Rec(() => json);
 
         var array = value.Separated(Sym(','))
@@ -64,6 +64,6 @@ public static class PidginJson
             Tok(String("null")).ThenReturn<JsonValue>(JsonNull.Instance)
         );
 
-        return SkipWhitespaces.Then(json).Before(Parser<char>.End);
+        return SkipWhitespaces.Then(json).Before(Pidgin.Parser<char>.End);
     }
 }

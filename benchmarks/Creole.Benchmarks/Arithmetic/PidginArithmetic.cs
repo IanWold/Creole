@@ -6,23 +6,23 @@ namespace Creole.Benchmarks.Arithmetic;
 
 public static class PidginArithmetic
 {
-    public static readonly Parser<char, double> OperatorTable = BuildOperatorTable();
+    public static readonly Pidgin.Parser<char, double> OperatorTable = BuildOperatorTable();
 
-    public static readonly Parser<char, double> Folds = BuildFolds();
+    public static readonly Pidgin.Parser<char, double> Folds = BuildFolds();
 
-    public static double Evaluate(Parser<char, double> parser, string text) =>
+    public static double Evaluate(Pidgin.Parser<char, double> parser, string text) =>
         parser.ParseOrThrow(text);
 
-    private static Parser<char, T> Tok<T>(Parser<char, T> parser) =>
+    private static Pidgin.Parser<char, T> Tok<T>(Pidgin.Parser<char, T> parser) =>
         parser.Before(SkipWhitespaces);
 
-    private static Parser<char, double> BuildOperatorTable()
+    private static Pidgin.Parser<char, double> BuildOperatorTable()
     {
-        static Parser<char, Func<double, double, double>> Binary(char op, Func<double, double, double> f) =>
+        static Pidgin.Parser<char, Func<double, double, double>> Binary(char op, Func<double, double, double> f) =>
             Tok(Char(op)).ThenReturn(f);
 
         var number = Tok(UnsignedLong(10)).Select(static n => (double)n);
-        Parser<char, double> expression = null!;
+        Pidgin.Parser<char, double> expression = null!;
         var group = Rec(() => expression).Between(Tok(Char('(')), Tok(Char(')')));
 
         expression = ExpressionParser.Build(
@@ -33,14 +33,14 @@ public static class PidginArithmetic
                 Operator.InfixL(Binary('+', static (a, b) => a + b)).And(Operator.InfixL(Binary('-', static (a, b) => a - b))),
             ]);
 
-        return SkipWhitespaces.Then(expression).Before(Parser<char>.End);
+        return SkipWhitespaces.Then(expression).Before(Pidgin.Parser<char>.End);
     }
 
-    private static Parser<char, double> BuildFolds()
+    private static Pidgin.Parser<char, double> BuildFolds()
     {
         var number = Tok(UnsignedLong(10)).Select(static n => (double)n);
-        Parser<char, double> expression = null!;
-        Parser<char, double> factor = null!;
+        Pidgin.Parser<char, double> expression = null!;
+        Pidgin.Parser<char, double> factor = null!;
         var group = Rec(() => expression).Between(Tok(Char('(')), Tok(Char(')')));
         factor = Tok(Char('-')).Then(Rec(() => factor)).Select(static x => -x).Or(number).Or(group);
 
@@ -56,6 +56,6 @@ public static class PidginArithmetic
             Map(static (op, value) => (Op: op, Value: value), Tok(OneOf('+', '-')), term).Many()
         );
 
-        return SkipWhitespaces.Then(expression).Before(Parser<char>.End);
+        return SkipWhitespaces.Then(expression).Before(Pidgin.Parser<char>.End);
     }
 }
