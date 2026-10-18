@@ -15,11 +15,11 @@ The Phase 3 release gate: both engines agree on value, consumed position, every 
 
 - Random grammar generator plus input generator (valid inputs and near misses, reusing TOOL-04).
 - Generated-engine compilation of random grammars inside tests.
-- Run in CI as a release gate, not a nice-to-have.
+- Run in CI as a release gate, not a nice-to-have: 10,000 fixed-seed grammar and input pairs on every run, plus a nightly fresh-seed run that files issues without blocking.
 
 ## Acceptance criteria
 
-- [ ] Agreement holds over a large randomized run in CI with zero mismatches.
+- [ ] Zero mismatches over 10,000 fixed-seed random grammar and input pairs on every CI run ([ADR-0003](../../docs/decisions/0003-numeric-gate-thresholds.md)).
 
 ## Blocked by
 

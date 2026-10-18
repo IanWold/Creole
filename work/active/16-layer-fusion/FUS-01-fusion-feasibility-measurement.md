@@ -13,7 +13,7 @@ Fusion ships only if it measurably beats unfused generated code on .NET.
 ## Scope
 
 - Hand-write a fused JSON parser and compare it to the generated unfused one.
-- Go or no-go decision against the FND-06 threshold.
+- Go or no-go against the fusion threshold in [ADR-0003](../../docs/decisions/0003-numeric-gate-thresholds.md): at least 1.2× faster than unfused generated code.
 
 ## Acceptance criteria
 

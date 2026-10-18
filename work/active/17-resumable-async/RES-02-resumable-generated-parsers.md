@@ -19,7 +19,7 @@ Emit each rule as a state machine that suspends at the exact read that ran dry (
 
 ## Acceptance criteria
 
-- [ ] `ParseManyAsync` never restarts an item, and the measured win meets the threshold.
+- [ ] `ParseManyAsync` never restarts an item; throughput on JSON lines is at least 1.2× the restart driver's when the median record fills a pipe segment, and at least 0.95× on smaller records ([ADR-0003](../../docs/decisions/0003-numeric-gate-thresholds.md)).
 
 ## Blocked by
 

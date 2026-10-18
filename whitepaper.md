@@ -21,7 +21,7 @@ The .NET ecosystem has four mature combinator libraries, each a step past the la
 | [Sprache](https://github.com/sprache/Sprache) | Parsers are delegates over character input. `Or` backtracks; `XOr` commits. | Idiomatic combinators and LINQ query syntax in C#. |
 | [Superpower](https://github.com/datalust/superpower) | Two fixed stages: a `Tokenizer<TKind>` produces a token list, then `TokenListParser<TKind, T>` parses it. | Separate lexing, friendlier errors, much less backtracking. |
 | [Pidgin](https://github.com/benjamin-hodgson/Pidgin) | `Parser<TToken, T>` over any token type. `Or` commits after consumption; `Try` backtracks. | Generic input, high throughput, low allocation. |
-| [Parlot](https://github.com/sebastienros/parlot) | Parser classes over text, with whitespace and comments handled by `Terms`. Its generator runs `[GenerateParser]` methods at build time and intercepts calls to them. | The fastest .NET combinators by its own benchmarks, build-time generation, and recursion limits for untrusted input. |
+| [Parlot](https://github.com/sebastienros/parlot) | Parser classes over text, with whitespace and comments handled by `Terms`. Its generator, so far only in preview packages, runs `[GenerateParser]` methods at build time and emits the body of a `partial` parse method the user declares. | The fastest .NET combinators by its own benchmarks, build-time generation, and recursion limits for untrusted input. |
 
 Other .NET tools sit beside these rather than competing directly. ANTLR's C# target is a parser generator; Irony builds LALR parsers from grammars written in C#; FParsec brings Parsec to F#; [Yoakke](https://github.com/LanguageDev/Yoakke) generates lexers and parsers from attributes but is still early, with nightly packages only. Parlot matters most: it already shows that build-time generation works for .NET combinators, so Creole's case cannot rest on speed alone.
 
@@ -699,7 +699,7 @@ partial class JsonGrammar
 }
 ```
 
-**Discovery.** The generator finds grammars by base type: any `partial` class deriving from `Grammar<TIn>` is staged, so no attribute is needed. An optional `[GrammarOptions]` attribute tunes staging per class. A grammar class that is not `partial` still runs on the interpreter and gets CRL0401. If the class already declares a static constructor, the generator registers from a module initializer instead. Parlot redirects calls with C# interceptors; registration achieves the same effect without the project-level interceptor opt-in.
+**Discovery.** The generator finds grammars by base type: any `partial` class deriving from `Grammar<TIn>` is staged, so no attribute is needed. An optional `[GrammarOptions]` attribute tunes staging per class. A grammar class that is not `partial` still runs on the interpreter and gets CRL0401. If the class already declares a static constructor, the generator registers from a module initializer instead. Parlot instead has users declare a `partial` parse method for its generator to implement; registration lets a grammar's own fields stay the entry point.
 
 The generator walks each field initializer with the semantic model, recognizing Creole API calls, and emits one method per rule:
 
@@ -744,7 +744,7 @@ The fused DFA always recognizes the full token set with the same longest-match a
 | Parser passes `Grammar.Deterministic` | One token of lookahead, no bookmarks across the boundary |
 | No intermediate layer, or only `Where` / `Select` item functions | Stateless item functions inline; stateful layers break fusion |
 
-When any condition fails, the generator falls back to unfused per-layer code with a buffer between, and an info diagnostic (CRL0302, alongside CRL0301) names the failing condition. Fusion is a Phase 4 goal and is gated on a measured benefit on .NET (§ Roadmap).
+When any condition fails, the generator falls back to unfused per-layer code with a buffer between, and an info diagnostic (CRL0302, alongside CRL0301) names the failing condition. Fusion is a Phase 4 goal and is gated on a measured benefit of at least 1.2× on .NET (§ Roadmap).
 
 ## General parsing backend (exploration)
 
@@ -809,7 +809,7 @@ Starved is not a failure. `Or`, `Atomic`, `Not`, `Lookahead` and `Recover` all t
 An `async` state machine per combinator call costs far more than a parse step, and most items fit in one buffer. Two cheaper routes cover the rest:
 
 - **Huge single documents (1.0).** Run the synchronous parser on a dedicated thread over a blocking `TextReader` that wraps the pipe. This costs one thread per parse and needs no design change.
-- **Resumable generated parsers (1.x candidate).** The generator could emit each rule as a state machine that suspends at the exact read that ran dry. That removes restarts and the extra thread, but it forces parse state onto the heap, adds suspension checks to the common path and enlarges generated code. It would be offered for the generated engine only, and only if measurements justify it.
+- **Resumable generated parsers (1.x candidate).** The generator could emit each rule as a state machine that suspends at the exact read that ran dry. That removes restarts and the extra thread, but it forces parse state onto the heap, adds suspension checks to the common path and enlarges generated code. It would be offered for the generated engine only, and only if it passes its gate (§ Roadmap).
 
 ## Incremental re-parsing
 
@@ -842,7 +842,7 @@ Reused results are the same objects as before, so absolute positions stored insi
 
 ## Performance design and benchmark plan
 
-The interpreted engine should be competitive with Parlot and Pidgin, and the generated engine should approach hand-written recursive descent. These are targets to measure, not claims; each phase's gate (§ Roadmap) depends on them.
+The interpreted engine must be at least as fast as Pidgin and within 1.5× of Parlot, and the generated engine must match Parlot and should approach hand-written recursive descent. These are gates to measure, not claims (§ Roadmap).
 
 ### Design choices
 
@@ -857,7 +857,7 @@ The interpreted engine should be competitive with Parlot and Pidgin, and the gen
 
 ### Benchmark plan
 
-All benchmarks use BenchmarkDotNet with the memory diagnoser, and run each Creole engine (interpreted, generated, fused where eligible).
+All benchmarks use BenchmarkDotNet with the memory diagnoser, and run each Creole engine (interpreted, generated, fused where eligible). Gate runs use one machine with pinned settings and run the suite three times; the gate thresholds are in § Roadmap. The memory diagnoser reports bytes allocated, not retained, so the Phase 1 memory gate samples retained heap in its own test.
 
 | Benchmark | Layers | Compared against | Primary measure |
 | --- | --- | --- | --- |
@@ -1037,26 +1037,41 @@ Creole's differences are concentrated in three rows: stage count, feedback and a
 | Parser-to-lexer feedback | None | None | None | None | Layer state and mode channels with rollback |
 | Source positions | Opt-in (`Positioned`) | Spans on tokens | Positions in errors | Offsets in `Then` callbacks; positions in errors | Spans on every item at every layer, bytes and characters |
 | Static grammar analysis | None | None | None | Lookup tables for `OneOf` from `ISeekable` | Build-time and construction-time checks |
-| Build-time code generation | None | None | None | Executes grammar methods, intercepts calls | Reads grammar syntax; fusion later |
+| Build-time code generation | None | None | None | Executes grammar methods, implements declared `partial` methods (preview packages only) | Reads grammar syntax; fusion later |
 | Incremental re-parsing | None | None | None | None | Planned for 1.x |
 
 Migration from Pidgin should be mostly mechanical: `Try` becomes `Atomic`, `Map((a, b) => ..., p, q)` becomes `Seq(p, q).Select(...)`, and `using static Pidgin.Parser` becomes a grammar base class. Migration from Sprache is larger, mainly because `Or` changes from backtracking to committing; analyzer CRL0102 flags most places where that matters.
 
 ## Roadmap
 
-Creole 1.0 ships after Phase 3, once both engines agree; incremental re-parsing, fusion and resumable async follow in 1.x releases, each behind its own gate. Fusion ships only if it measurably beats unfused generated code on .NET.
+Creole 1.0 ships after Phase 3, once both engines agree; incremental re-parsing, fusion and resumable async follow in 1.x releases, each behind its own gate. Fusion ships only if it beats unfused generated code on .NET by at least 1.2×.
 
 | Phase | Scope | Gate to pass |
 | --- | --- | --- |
-| 0. Core | Combinator set, interpreter, error model | Core tests green; speed near Pidgin |
-| 1. Layers | Pipelines, buffers and spans, mode channels | Three-layer demo runs; memory stays bounded |
-| 2. Analysis | Analyzers, deterministic mode, recovery | Classic grammar bugs caught at build time |
-| 3. Staging | Source generator, helper inlining, engine agreement | Engines agree; **1.0 ships** |
-| 4. 1.x releases | Incremental re-parsing, layer fusion, resumable async | Each ships behind its own gate |
+| 0. Core | Combinator set, interpreter, error model | Core tests green; interpreter at least as fast as Pidgin and within 1.5× of Parlot |
+| 1. Layers | Pipelines, buffers and spans, mode channels | Three-layer demo runs; peak retained memory grows at most 1.5× from 10 MB to 1 GB of input |
+| 2. Analysis | Analyzers, deterministic mode, recovery | Every CRL error and warning caught at build time, with no false positives on near misses |
+| 3. Staging | Source generator, helper inlining, engine agreement | Engines agree on 10,000 random cases; generated engine as fast as Parlot; **1.0 ships** |
+| 4. 1.x releases | Incremental re-parsing, layer fusion, resumable async | Each ships behind its own gate (below) |
 
 Alongside the phases, a research spike explores a general (GLL) parsing backend over a declarative subset (§ General parsing backend).
 
-Each phase is usable on its own: Phase 0 alone is a modern single-layer library, and every later phase adds capability without changing grammars written earlier. Gate thresholds ("near Pidgin speed", "measured win") will be fixed as numbers once the Phase 0 benchmark harness exists.
+Each phase is usable on its own: Phase 0 alone is a modern single-layer library, and every later phase adds capability without changing grammars written earlier.
+
+Every gate is a number ([ADR-0003](work/docs/decisions/0003-numeric-gate-thresholds.md)). Speed is measured as a ratio to the baseline in the same BenchmarkDotNet run, taking the median of three runs on one fixed machine, and summarized as a geometric mean over the gate's benchmarks. The full thresholds:
+
+| Gate | Threshold |
+| --- | --- |
+| Phase 0 speed | Interpreter on character-level JSON and arithmetic: geometric mean ≤ 1.0× Pidgin, no benchmark above 1.25× Pidgin, geometric mean ≤ 1.5× Parlot; allocations ≤ Pidgin's on every benchmark |
+| Phase 1 memory | Example B and a JSON-lines stream at 10 MB, 100 MB and 1 GB: peak retained heap at 1 GB ≤ 1.5× the peak at 10 MB |
+| Phase 2 analysis | A corpus grammar that triggers each CRL error and warning, and a near miss that does not: 100% caught, 0 false positives |
+| Phase 3 agreement | 0 mismatches over 10,000 fixed-seed random grammar and input pairs on every CI run |
+| Phase 3 speed | Generated engine on the Phase 0 benchmarks: geometric mean ≤ 1.0× Parlot |
+| Incremental re-parsing | 500 or more single-character edits on a file of about 300 KB and on a 10× copy: median ≤ 2% of a full parse, p99 ≤ 100 ms, median on the 10× file ≤ 2× the base file |
+| Layer fusion | Geometric mean ≥ 1.2× faster than the best unfused generated code, and no benchmark slower |
+| Resumable async | ≥ 1.2× the restart driver's throughput when the median record fills a pipe segment, and ≥ 0.95× on smaller records |
+
+Parlot means stable Parlot's interpreted parsers until `Parlot.SourceGenerator` ships a stable release; the Phase 3 speed gate then compares against Parlot's generated parsers.
 
 ## Risks and open questions
 
@@ -1069,8 +1084,8 @@ The largest risks are the cost of maintaining two engines and the subtlety of mo
 | Two engines drift apart | Wrong results in production only | Differential property tests are a release gate, not a nice-to-have |
 | Mode rollback has corner cases, especially across several layers | Silent mis-lexing after backtracking | Model-based tests against a reference re-lexer, including multi-layer cascades |
 | Generator authoring rules feel restrictive | Users avoid staging | Interpreter fallback with CRL0301 and helper inlining; measure the fallback rate on real grammars |
-| Fusion gains less on .NET than in OCaml | 1.x effort wasted | The gate requires a measured win. Parlot reports its generated parsers about 20% faster than its runtime ones, a modest prior |
-| Parlot already offers fast, build-time-generated combinators | Speed alone does not differentiate Creole | Lead with layers, analysis, diagnostics and incremental parsing; aim to match Parlot on speed |
+| Fusion gains less on .NET than in OCaml | 1.x effort wasted | The gate requires at least 1.2× over unfused generated code. Parlot reports its 2.0 generated parsers 8–23% faster than its runtime ones, and `Compile()` 1–13% faster, a modest prior |
+| Parlot already offers fast, build-time-generated combinators | Speed alone does not differentiate Creole | Lead with layers, analysis, diagnostics and incremental parsing; gate speed on Parlot as well as Pidgin (§ Roadmap) |
 | C# 15 union details change around GA | Churn in results and errors | Unions confined to a few public shapes; hot paths use hand-written structs |
 | Commit-by-default surprises Sprache users | Migration friction | CRL0102 warnings and a migration guide |
 | The working name was taken: the `Strata` NuGet ID belongs to an Orleans event-sourcing library, and a `Strata.*` package family exists | No usable package ID; search confusion | Resolved: renamed to Creole, which is free on NuGet. Reserve the package ID before Phase 0. |

@@ -13,7 +13,7 @@ Decide whether restart overhead and the dedicated-thread option justify resumabl
 ## Scope
 
 - Measure restart cost on realistic record streams and thread cost for huge documents.
-- Go or no-go against the FND-06 threshold.
+- Go or no-go against the resumable async threshold in [ADR-0003](../../docs/decisions/0003-numeric-gate-thresholds.md).
 
 ## Acceptance criteria
 

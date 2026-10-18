@@ -13,12 +13,12 @@ Ship only if re-parse cost tracks the size of the edit (G12).
 
 ## Scope
 
-- Benchmark edit-size against re-parse cost on large files.
+- Replay at least 500 single-character edits on JSON and Example B files of about 300 KB and on 10× copies.
 - Editor-style scenario test.
 
 ## Acceptance criteria
 
-- [ ] Meets the incremental threshold from FND-06.
+- [ ] Median re-parse ≤ 2% of a full parse, p99 ≤ 100 ms, and median on the 10× file ≤ 2× the base file ([ADR-0003](../../docs/decisions/0003-numeric-gate-thresholds.md)).
 
 ## Blocked by
 
