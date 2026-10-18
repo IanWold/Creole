@@ -14,7 +14,7 @@ A fixpoint over the grammar graph computes the properties every check builds on.
 
 - Nullable, FIRST (token kinds, character ranges or ⊤) and Regular per node, through `Rec` cycles.
 - `Custom` uses its declared `ScannerInfo`; union token case types count as kinds.
-- `Expression.Build`, `Switch`, `Match` and layers handled precisely.
+- `Expression.Build`, `Switch`, `Match` and layers handled precisely. `Expression.Build` is read through its table view; operators that succeed without consuming input are reported ([ADR-0004](../../docs/decisions/0004-expression-build-operator-table-and-semantics.md)).
 - Write the analysis so it can be shared with the Roslyn component (RSLN-02).
 
 ## Acceptance criteria

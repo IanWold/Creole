@@ -13,12 +13,14 @@ Interpreter support for the dependent, operator-precedence and user-scanner node
 ## Scope
 
 - `Bind` with the once-compiled continuation.
-- Precedence climbing for `Expression.Build`.
+- Precedence climbing for `Expression.Build`, with the semantics of [ADR-0004](../../docs/decisions/0004-expression-build-operator-table-and-semantics.md) points 3 to 5.
+- docs/concepts/expressions.md gains the parsing rules and the behavioural differences from Pidgin (repeated prefix and postfix, `2 ^ -x`, non-associative chains), which CORE-11 left out because nothing ran them.
 - `Custom` scanners invoked through `IScanner`.
 
 ## Acceptance criteria
 
 - [ ] Example grammars using all three run and pass their tests.
+- [ ] Arithmetic grammar tests cover left and right associativity, `-` as both prefix and infix (`a - -b`), `2 ^ -x` with `-` looser than `^`, repeated prefix and postfix operators, the non-associative chain error, and a committed failure after an operator. Moved here from [CORE-11](../02-core-combinators/CORE-11-expressionbuild.md).
 
 ## Blocked by
 
