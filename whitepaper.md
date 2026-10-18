@@ -80,7 +80,8 @@ Representing grammars as data buys four things:
 
 ```csharp
 // A grammar node. Immutable; compared by identity. Engines interpret or compile it.
-public abstract class Parser<TIn, TOut>
+// `closed` (C# 15) is implicitly abstract and makes dispatch over node types checkable.
+public closed class Parser<TIn, TOut>
 {
     internal abstract NodeKind Kind { get; }
 }

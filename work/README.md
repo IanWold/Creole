@@ -197,7 +197,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- None yet.
+- [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) Grammar node model — Build
 
 ### Can start now
 
@@ -205,7 +205,6 @@ These items have all their blockers done:
 
 - [FND-01](active/01-foundations/FND-01-reserve-the-creole-nuget-package-id.md) Reserve the Creole NuGet package ID
 - [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) Fix numeric gate thresholds
-- [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) Grammar node model
 - [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) Cursor and in-memory input
 - [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) SourceSpan, SourceId and LineMap
 

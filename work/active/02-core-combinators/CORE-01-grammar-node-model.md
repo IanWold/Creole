@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -46,3 +46,7 @@ Every combinator call builds an immutable node in a grammar tree. This item esta
 - [§ Types](../../../whitepaper.md#types)
 - [§ Where unions are not used](../../../whitepaper.md#where-unions-are-not-used)
 - [§ Diagnostics](../../../whitepaper.md#diagnostics)
+
+## Progress notes
+
+- 2026-10-18 (Build): Started. Probed `closed` on the pinned RC 2 SDK (11.0.100-rc.2.26504.105): a `closed` generic base compiles, and a switch missing a case gives CS8509 (an error here, since warnings are errors). `closed` is implicitly abstract, so `abstract closed` is CS9384. Not yet confirmed on the GA compiler; FND-07 does that. Derivation from another assembly is not yet tested (criterion 1). Next: `/build` to plan against the acceptance criteria.
