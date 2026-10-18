@@ -197,7 +197,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- None yet.
+- [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md) Repetition nodes — Building
 
 ### Can start now
 
@@ -209,7 +209,6 @@ These items have all their blockers done:
 - [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) Sequencing and mapping nodes
 - [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md) Choice nodes
 - [CORE-06](active/02-core-combinators/CORE-06-longest.md) Longest
-- [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md) Repetition nodes
 - [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md) Control nodes
 - [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) Recursion with Rec
 - [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md) Expression.Build

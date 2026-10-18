@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -19,7 +19,8 @@ Repetition combinators with Pidgin-compatible behavior.
 
 ## Acceptance criteria
 
-- [ ] Behavior matches Pidgin's equivalents on a shared test table.
+- [ ] Each combinator builds one node, and its child parsers are reachable through the structural view.
+- [ ] A shared table of repetition cases exists, and a test checks each row's expected outcome against Pidgin 3.5.1. Running Creole against the table moved to [INT-03](../03-interpreter/INT-03-execute-the-core-combinators.md), the first card that executes repetition (agreed with the maintainer on 2026-10-18).
 
 ## Blocked by
 
@@ -34,3 +35,8 @@ Repetition combinators with Pidgin-compatible behavior.
 ## Whitepaper references
 
 - [§ Repetition and structure](../../../whitepaper.md#repetition-and-structure)
+
+## Progress notes
+
+- 2026-10-18 (Build): Started. Add the repetition node kinds per ADR-0001 and check them against Pidgin on a shared test table.
+- 2026-10-18 (Build): Plan agreed: four node kinds (`Repeat`, `SkipRepeat`, `Separated`, `Until`); results are `IReadOnlyList<T>`; `Repeat(n)` is `Repeat(n, n)` and `Repeat(min, max)` is greedy; bad counts throw `GrammarException`. The Pidgin criterion is split with INT-03, because nothing executes nodes yet. Increment 1 done: nodes, API, structural tests, `docs/concepts/repetition.md`. The combinators are C# 14 extension members in `Repetition`, not instance methods: instance methods failed the AOT smoke publish with IL3054 (generic recursion), and a scratch app that did not root Creole crashed with `TypeLoadException` at nesting depth 6. Next: increment 2, the shared table and its Pidgin check.
