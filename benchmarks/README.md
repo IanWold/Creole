@@ -16,6 +16,17 @@ Without `--filter` the program runs every benchmark. Other arguments go to Bench
 
 Each run writes to a new folder under the current directory, `BenchmarkDotNet.Artifacts/runs/<UTC yyyyMMdd-HHmmss>/`, with full JSON, GitHub Markdown, CSV and HTML reports per class. The folder is git-ignored. `bench-compare.py` matches benchmarks by full name and prints mean time and allocation with new/old ratios. It warns when the two runs used different hardware or runtimes.
 
+## Gate runs
+
+Phase gates compare Creole with its baselines as ratios ([ADR-0003](../work/docs/decisions/0003-numeric-gate-thresholds.md); thresholds in § [Roadmap](../whitepaper.md#roadmap)). A gate run:
+
+- runs on the maintainer's laptop, on AC power, with no other heavy load;
+- uses the default job, with Creole and its baselines in the same invocation;
+- repeats the full run three times and takes each benchmark's median ratio, then the geometric mean over the gate's benchmarks;
+- records the Parlot version.
+
+Single runs on this machine vary by up to 1.3× per benchmark, so one run decides nothing. Allocations do not vary and can be compared directly. Hosted CI runners only catch regressions of 10% or more and do not decide gates.
+
 ## What is measured
 
 | Class | Plan row | Baselines | Inputs | Reported |
@@ -37,8 +48,8 @@ Known differences:
 | --- | --- |
 | System.Text.Json | Reads UTF-8 bytes; the combinator baselines read a `string`. |
 | Parlot | Its string literal rejects the JSON `\/` escape, so the inputs leave that escape out. `Separated` fails on an empty list, so the grammar wraps it in `ZeroOrOne`. |
-| Pidgin | Arithmetic has two Pidgin baselines. `Pidgin` uses `ExpressionParser`, the idiomatic choice; `PidginFolds` folds `Many` by hand and is faster. Set "near Pidgin speed" against the faster one. |
-| Parlot | Parlot's build-time generator ships only as preview packages (`Parlot.SourceGenerator` 1.6.0 and 2.0.0 previews), so only stable Parlot 1.5.12, interpreted and with `Compile()`, is measured. FND-06 decides whether gate thresholds need the generated variant. |
+| Pidgin | Arithmetic has two Pidgin baselines. `Pidgin` uses `ExpressionParser`, the idiomatic choice; `PidginFolds` folds `Many` by hand and is faster. The Phase 0 gate uses the faster one. |
+| Parlot | Parlot's build-time generator ships only as preview packages (`Parlot.SourceGenerator` 1.6.0 and 2.0.0 previews), so only stable Parlot 1.5.12, interpreted and with `Compile()`, is measured. Gates use the interpreted parsers until the generator is stable ([ADR-0003](../work/docs/decisions/0003-numeric-gate-thresholds.md)); Parlot 2.0 removes `Compile()`. |
 
 ## Adding a benchmark
 

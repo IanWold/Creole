@@ -31,6 +31,7 @@ Package and release Creole 1.0.
 - [GEN-10 Measure the interpreter fallback rate](../11-source-generator/GEN-10-measure-the-interpreter-fallback-rate.md)
 - [TOOL-06 EngineAgreement.Check](../12-grammar-author-tooling/TOOL-06-engineagreementcheck.md)
 - [BENCH-02 Full benchmark suite](../13-benchmarks/BENCH-02-full-benchmark-suite.md)
+- [BENCH-03 Phase 3 speed gate](../13-benchmarks/BENCH-03-phase-3-speed-gate.md)
 - [REL-02 Documentation](../14-release/REL-02-documentation.md)
 - [REL-03 Migration guides](../14-release/REL-03-migration-guides.md)
 - [REL-04 Public API review and freeze](../14-release/REL-04-public-api-review-and-freeze.md)

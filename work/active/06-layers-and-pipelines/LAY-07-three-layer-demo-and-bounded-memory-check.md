@@ -14,12 +14,12 @@ The Phase 1 gate: the indentation-sensitive language from Example B runs, and me
 ## Scope
 
 - Implement Example B (lexer, layout layer, parser) as a test and sample.
-- Memory test for G2 on a large generated input.
+- Memory test for G2 on Example B and a JSON-lines stream generated at 10 MB, 100 MB and 1 GB: retained heap sampled after forced full blocking GCs at fixed item intervals, minus a warm-up baseline, one process per size.
 - Check DEDENT span placement in error messages.
 
 ## Acceptance criteria
 
-- [ ] Phase 1 gate threshold from FND-06 is met.
+- [ ] Peak retained heap at 1 GB is at most 1.5× the peak at 10 MB for both inputs ([ADR-0003](../../docs/decisions/0003-numeric-gate-thresholds.md)).
 
 ## Blocked by
 

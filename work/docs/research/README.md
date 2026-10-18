@@ -8,6 +8,7 @@ Newest first. One line each: date, link, the question it answers, and the cards 
 
 | Date | Note | Question | Cards |
 | --- | --- | --- | --- |
+| 2026-10-18 | [Numeric gate thresholds](2026-10-18-numeric-gate-thresholds.md) | What numbers should the roadmap gates use, given measured noise and prior art? | [FND-06](../../active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) |
 | 2026-10-18 | [Grammar node encoding and dispatch](2026-10-18-grammar-node-encoding-and-dispatch.md) | How should grammar nodes encode hidden types, and how can engine dispatch over them be checked for completeness? | [CORE-01](../../active/02-core-combinators/CORE-01-grammar-node-model.md), [FND-07](../../active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [INT-02](../../active/03-interpreter/INT-02-plan-lowering-and-cache.md), [RSLN-02](../../active/10-roslyn-analyzers/RSLN-02-share-the-analysis-engine-with-the-roslyn-component.md) |
 
 ## Template
