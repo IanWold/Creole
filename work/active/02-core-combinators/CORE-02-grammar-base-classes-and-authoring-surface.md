@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Status | Building |
+| Status | Done |
 
 ## Summary
 
@@ -34,7 +34,7 @@ The Worked Example A criterion moved to INT-03, the first card that has every co
 
 ## Acceptance criteria
 
-- [ ] A class deriving from each of `Grammar<TIn>`, `TokenGrammar<TToken, TKind>` and `CharGrammar` calls `Return` and `Fail` unqualified, with `TIn` fixed by the base class.
+- [x] A class deriving from each of `Grammar<TIn>`, `TokenGrammar<TToken, TKind>` and `CharGrammar` calls `Return` and `Fail` unqualified, with `TIn` fixed by the base class.
 
 ## Blocked by
 
@@ -61,3 +61,11 @@ The Worked Example A criterion moved to INT-03, the first card that has every co
 - 2026-10-18 (Build): Moved `Describe(TKind)` to ERR-02: grammar classes are never instantiated and a class cannot have static virtuals, so how the renderer reaches an override needs a decision there. Added `Grammar<TIn>` (with `Return`, `Fail`; CA1000 suppressed on purpose), `TokenGrammar<TToken, TKind>`, `CharGrammar`, the static `Grammar` with `Deterministic` returning its argument unchecked, `GrammarBaseTests`, and the docs section. Found that `Guard.NotNull` named the combinator's parameter, not the caller's expression, so public combinators take their own `[CallerArgumentExpression]` parameter and forward it. Build, all 114 tests and the AOT publish pass. Next: maintainer review, then `/complete`.
 - 2026-10-18 (Build): Recorded the `[CallerArgumentExpression]` convention in the scope of CORE-04 to CORE-08, CORE-10 and CORE-11, with fixed-arity overloads instead of `params` for `Seq`, `OneOf`, `Match` and `Longest` (agreed with the maintainer).
 - 2026-10-18 (Build): Extended the convention to `Custom(scanner)` in CORE-12; other non-parser arguments keep plain parameter-name checks (agreed with the maintainer).
+
+## Outcome
+
+- `Grammar<TIn>` with `Return` and `Fail` ([src/Creole/GrammarOfTIn.cs](../../../src/Creole/GrammarOfTIn.cs)), `TokenGrammar<TToken, TKind>` ([src/Creole/TokenGrammar.cs](../../../src/Creole/TokenGrammar.cs)), `CharGrammar` ([src/Creole/CharGrammar.cs](../../../src/Creole/CharGrammar.cs)) and the static `Grammar` with `Deterministic` stubbed until ANA-06 ([src/Creole/Grammar.cs](../../../src/Creole/Grammar.cs)).
+- Tests: [tests/Creole.Tests/GrammarBaseTests.cs](../../../tests/Creole.Tests/GrammarBaseTests.cs). Docs: "Writing a grammar" and the null-argument rule in [docs/concepts/grammars-as-data.md](../../../docs/concepts/grammars-as-data.md).
+- Scope change: `Describe(TKind)` moved to [ERR-02](../04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), which must `/decide` how the renderer reaches it. The whitepaper is unchanged.
+- Convention set: public combinators capture each parser argument's expression with `[CallerArgumentExpression]` and forward it to `Guard`, with fixed-arity overloads instead of `params`. Recorded in CORE-04 to CORE-08, CORE-10, CORE-11 and CORE-12.
+- CA1000 is suppressed on `Grammar<TIn>` with a justification, because the design needs static members on the generic base.
