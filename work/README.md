@@ -197,7 +197,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- None yet.
+- [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) Cursor and in-memory input — Build
 
 ### Can start now
 
@@ -214,7 +214,6 @@ These items have all their blockers done:
 - [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) Recursion with Rec
 - [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md) Expression.Build
 - [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md) Custom primitives
-- [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) Cursor and in-memory input
 - [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) SourceSpan, SourceId and LineMap
 
 ## Epics

@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Interpreted engine](../../README.md#int--interpreted-engine) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -34,3 +34,8 @@ The allocation-free cursor every engine reads through.
 
 - [§ Interpreted engine](../../../whitepaper.md#interpreted-engine)
 - [§ Results](../../../whitepaper.md#results)
+
+## Progress notes
+
+- 2026-10-18 (Build): Started. Plan a `Cursor<TIn>` ref struct over a current segment (span plus base offset) with a refill hook left for LAY-01, plus in-memory sources over `string`, `ReadOnlyMemory<char>` and `T[]`; prove zero allocation per read with BenchmarkDotNet's MemoryDiagnoser.
+- 2026-10-18 (Build): Increment 1 of 3 done. Added public `Cursor<T>` ref struct (`Position`, `IsAtEnd`, `TryPeek`, `TryRead`, `Advance(int)`, `Available`; internal `Reset`) and internal `ICursorSource<T>` for LAY-01. In-memory input goes through the internal `Cursor<T>(ReadOnlySpan<T>)` constructor, which takes `string`, `T[]` and `ReadOnlyMemory<T>.Span` directly; a separate factory class was redundant. The cursor holds a span, not a `ReadOnlyMemory<T>`; `Slice` adds an internal memory field when it is built, with no public change. 19 cursor tests, one a CsCheck property over random segmentations pass. Next: allocation proof (test and `CursorBenchmarks`).
