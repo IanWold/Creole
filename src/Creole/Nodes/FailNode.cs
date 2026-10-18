@@ -1,3 +1,5 @@
+using Creole.Plans;
+
 namespace Creole.Nodes;
 
 /// <summary>
@@ -10,4 +12,6 @@ internal sealed class FailNode<TIn, TOut>(string message) : Parser<TIn, TOut>
     internal override NodeKind Kind => NodeKind.Fail;
 
     internal override IReadOnlyList<INode> Children => [];
+
+    internal override Plan<TIn, TOut> Lower(PlanBuilder builder) => PlanBuilder.Fail<TIn, TOut>();
 }

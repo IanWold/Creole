@@ -17,6 +17,7 @@ The interpreter runs every analyzable node family with Parsec-style commit seman
 - `Longest` by running each alternative atomically (the DFA path is INT-06).
 - Repetition, sequencing, `Switch` and `Match`.
 - Run-time guard against nullable repetition until analysis exists.
+- Replace every `PlanBuilder.NotYetExecutable` stub with a real plan. INT-02 added them so nodes merged before INT-03 compile against the abstract `Lower` member.
 
 ## Acceptance criteria
 

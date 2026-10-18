@@ -1,3 +1,5 @@
+using Creole.Plans;
+
 namespace Creole.Nodes;
 
 /// <summary>
@@ -18,4 +20,7 @@ internal sealed class SkipRepeatNode<TIn, T>(Parser<TIn, T> item, int min, int? 
     internal override NodeKind Kind => NodeKind.SkipRepeat;
 
     internal override IReadOnlyList<INode> Children => [Item];
+
+    internal override Plan<TIn, Unit> Lower(PlanBuilder builder) =>
+        PlanBuilder.NotYetExecutable<TIn, Unit>(Kind);
 }

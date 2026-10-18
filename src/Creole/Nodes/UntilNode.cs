@@ -1,3 +1,5 @@
+using Creole.Plans;
+
 namespace Creole.Nodes;
 
 /// <summary>
@@ -13,4 +15,7 @@ internal sealed class UntilNode<TIn, T, TTerm>(Parser<TIn, T> item, Parser<TIn, 
     internal override NodeKind Kind => NodeKind.Until;
 
     internal override IReadOnlyList<INode> Children => [Item, Terminator];
+
+    internal override Plan<TIn, IReadOnlyList<T>> Lower(PlanBuilder builder) =>
+        PlanBuilder.NotYetExecutable<TIn, IReadOnlyList<T>>(Kind);
 }

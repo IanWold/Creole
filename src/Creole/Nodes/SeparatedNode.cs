@@ -1,3 +1,5 @@
+using Creole.Plans;
+
 namespace Creole.Nodes;
 
 /// <summary>
@@ -23,4 +25,7 @@ internal sealed class SeparatedNode<TIn, T, TSep>(Parser<TIn, T> item, Parser<TI
     internal override NodeKind Kind => NodeKind.Separated;
 
     internal override IReadOnlyList<INode> Children => [Item, Separator];
+
+    internal override Plan<TIn, IReadOnlyList<T>> Lower(PlanBuilder builder) =>
+        PlanBuilder.NotYetExecutable<TIn, IReadOnlyList<T>>(Kind);
 }

@@ -1,3 +1,5 @@
+using Creole.Plans;
+
 namespace Creole;
 
 /// <summary>
@@ -29,6 +31,12 @@ public abstract class Parser<TIn, TOut> : INode
     /// The direct child nodes, in grammar order. Empty for leaves.
     /// </summary>
     internal abstract IReadOnlyList<INode> Children { get; }
+
+    /// <summary>
+    /// Lowers this node to an interpreter plan. Call <see cref="PlanBuilder.Lower{TIn, TOut}"/> instead,
+    /// which shares plans for nodes reached more than once.
+    /// </summary>
+    internal abstract Plan<TIn, TOut> Lower(PlanBuilder builder);
 
     NodeKind INode.Kind => Kind;
 
