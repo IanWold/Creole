@@ -6,6 +6,7 @@ artifacts/
 # Test and benchmark results
 TestResults/
 BenchmarkDotNet.Artifacts/
+.bdn/
 *.received.*
 
 # IDE

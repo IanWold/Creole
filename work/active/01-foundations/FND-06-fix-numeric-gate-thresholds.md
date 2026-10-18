@@ -13,6 +13,7 @@ The roadmap's gates ("near Pidgin speed", "measured win") become numbers once th
 ## Scope
 
 - Measure Pidgin and Parlot baselines on the FND-05 corpora.
+- Decide whether "near Parlot" thresholds need Parlot's source-generated parsers, which ship only as preview `Parlot.SourceGenerator` packages and are not yet in the harness ([FND-05](FND-05-benchmark-harness.md) Outcome).
 - Propose a threshold for each gate: Phase 0 speed, Phase 1 bounded memory, fusion win, resumable-async win, incremental re-parse cost.
 - Update the Roadmap table in the whitepaper.
 

@@ -199,8 +199,9 @@ The .NET 11 SDK, pinned in [`global.json`](global.json). .NET 11 is in preview u
 | `src/Creole.Testing` | `net11.0` | Test helpers for grammar authors. Its own package. |
 | `tests/Creole.Tests` | `net11.0` | Tests for `Creole` and `Creole.Testing`. |
 | `tests/Creole.Generators.Tests` | `net11.0` | Tests for the analyzers and generator. |
+| `tests/Creole.Benchmarks.Tests` | `net11.0` | Checks that every benchmark baseline produces the same result on the same input. |
 | `tests/Creole.AotSmoke` | `net11.0` | Native AOT smoke app; publishing it fails on any trim or AOT warning in the runtime libraries. |
-| `benchmarks/Creole.Benchmarks` | `net11.0` | Benchmarks and competitor baselines ([FND-05](work/active/01-foundations/FND-05-benchmark-harness.md)). |
+| `benchmarks/Creole.Benchmarks` | `net11.0` | Benchmarks, inputs and competitor baselines ([benchmarks/README.md](benchmarks/README.md)). |
 | `samples/` | `net11.0` | Runnable sample grammars. |
 
 Runtime libraries target `net11.0` only. There is no `net10.0` or `netstandard` target (§ [Design goals](whitepaper.md#design-goals-and-non-goals), G8).
@@ -215,9 +216,11 @@ Runtime libraries target `net11.0` only. There is no `net10.0` or `netstandard` 
 | One test | `dotnet test --project tests/Creole.Tests --filter-method "*TestName"` |
 | Pack | `dotnet pack src/Creole -c Release` |
 | AOT smoke | `dotnet publish tests/Creole.AotSmoke -c Release` |
+| Benchmarks | `dotnet run -c Release --project benchmarks/Creole.Benchmarks` |
+| Compare benchmark runs | `python3 scripts/bench-compare.py <old-run> <new-run>` |
 | Format | `dotnet format` |
 
-Tests use xUnit v3 on Microsoft.Testing.Platform, which `global.json` selects for `dotnet test`.
+Tests use xUnit v3 on Microsoft.Testing.Platform, which `global.json` selects for `dotnet test`. Property-based and model-based tests use [CsCheck](https://github.com/AnthonyLloyd/CsCheck); `tests/Creole.Tests/Samples/PropertyTestSamples.cs` shows both shapes. A failing property prints a seed: pass it as `seed:` to the `Sample` call, or set the `CsCheck_Seed` environment variable, to replay the case.
 
 ### Build settings
 

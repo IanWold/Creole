@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\benchmarks\Creole.Benchmarks\Creole.Benchmarks.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- BenchmarkDotNet and competitor baselines arrive with FND-05. -->
   <PropertyGroup>
     <TargetFramework>net11.0</TargetFramework>
     <OutputType>Exe</OutputType>
@@ -9,6 +8,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Creole\Creole.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+    <PackageReference Include="Parlot" />
+    <PackageReference Include="Pidgin" />
+    <PackageReference Include="Sprache" />
+    <PackageReference Include="Superpower" />
   </ItemGroup>
 
 </Project>
