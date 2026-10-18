@@ -14,7 +14,7 @@ Layers turn a stream of one type into a stream of another using ordinary combina
 
 - `Layer<TIn, TOut>`; `Layer.Identity<T>()`; associative composition.
 - `Layer.Tokens(item, skip)` loop; reject nullable items at run time until ANA-03 adds CRL0003.
-- `Layer.Transduce(initialState, step, atEnd)` with `Emit<T>` as a hand-written `[Union]` struct; record `groupIndex` for multi-output steps.
+- `Layer.Transduce(initialState, step, atEnd)` with `Emit<T>` as a hand-written `[Union]` struct; record `groupIndex` for multi-output steps. If "no output" is a null `Value`, switches without a `null` arm compile and then throw on it; consider a case type for it ([ADR-0002](../../docs/decisions/0002-parseresult-as-a-plain-union.md) § Consequences).
 - `Layer.Where` and `Layer.Select` item functions.
 - Guarantee 4: a layer's own backtracking is invisible downstream.
 
@@ -45,3 +45,7 @@ Layers turn a stream of one type into a stream of another using ordinary combina
 - [§ Layers, streams and pipelines](../../../whitepaper.md#layers-streams-and-pipelines)
 - [§ Defining layers](../../../whitepaper.md#defining-layers)
 - [§ Guarantees](../../../whitepaper.md#guarantees)
+
+## Artifacts
+
+- [ADR-0002: `ParseResult<T>` is a plain C# 15 union](../../docs/decisions/0002-parseresult-as-a-plain-union.md)

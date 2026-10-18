@@ -14,7 +14,7 @@ The public shapes for results and errors, using C# 15 unions as decided in FND-0
 
 - `ParseError` with span, layer, unexpected, expected and context.
 - `Unexpected` and `Expectation` unions with their case records.
-- `ParseResult<T>` as `Parsed`, `Recovered` and `Failed`, in the representation chosen by FND-07.
+- `ParseResult<T>` as the declared union `ParseResult<T>(Parsed<T>, Recovered<T>, Failed)` ([ADR-0002](../../docs/decisions/0002-parseresult-as-a-plain-union.md)). No public API returns or exposes `default(ParseResult<T>)`.
 - `Diagnostics` / `DiagnosticBag` ordered by span, with `Count`, `Empty` and `Render()`.
 
 ## Acceptance criteria
@@ -39,3 +39,7 @@ The public shapes for results and errors, using C# 15 unions as decided in FND-0
 - [§ The error model](../../../whitepaper.md#the-error-model)
 - [§ Results](../../../whitepaper.md#results-1)
 - [§ Using C# 15 unions](../../../whitepaper.md#using-c-15-unions)
+
+## Artifacts
+
+- [ADR-0002: `ParseResult<T>` is a plain C# 15 union](../../docs/decisions/0002-parseresult-as-a-plain-union.md)

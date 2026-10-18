@@ -36,8 +36,8 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 2 | ✅ [FND-03](active/01-foundations/FND-03-continuous-integration.md) Continuous integration | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | 2 | ✅ [FND-04](active/01-foundations/FND-04-test-infrastructure.md) Test infrastructure | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | 2 | ✅ [FND-05](active/01-foundations/FND-05-benchmark-harness.md) Benchmark harness | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
-| 2 | [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md) Validate C# 15 features and decide `ParseResult<T>` | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md); .NET 11 / C# 15 GA (expected November 2026) |
-| 2 | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) Grammar node model | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
+| 2 | ✅ [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md) Validate C# 15 features and decide `ParseResult<T>` | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md); .NET 11 / C# 15 GA (expected November 2026) |
+| 2 | ✅ [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) Grammar node model | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | 2 | [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) Cursor and in-memory input | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | 2 | [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) SourceSpan, SourceId and LineMap | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | 3 | [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) Fix numeric gate thresholds | [FND-05](active/01-foundations/FND-05-benchmark-harness.md) |
@@ -205,7 +205,15 @@ These items have all their blockers done:
 
 - [FND-01](active/01-foundations/FND-01-reserve-the-creole-nuget-package-id.md) Reserve the Creole NuGet package ID
 - [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) Fix numeric gate thresholds
-- [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) Grammar node model
+- [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) Grammar base classes and authoring surface
+- [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) Sequencing and mapping nodes
+- [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md) Choice nodes
+- [CORE-06](active/02-core-combinators/CORE-06-longest.md) Longest
+- [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md) Repetition nodes
+- [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md) Control nodes
+- [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) Recursion with Rec
+- [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md) Expression.Build
+- [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md) Custom primitives
 - [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) Cursor and in-memory input
 - [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) SourceSpan, SourceId and LineMap
 
@@ -223,7 +231,7 @@ Repository, CI, test and benchmark infrastructure, and the decisions code will d
 | ✅ [FND-04](active/01-foundations/FND-04-test-infrastructure.md) Test infrastructure | 0 | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | ✅ [FND-05](active/01-foundations/FND-05-benchmark-harness.md) Benchmark harness | 0 | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) Fix numeric gate thresholds | 0 | [FND-05](active/01-foundations/FND-05-benchmark-harness.md) |
-| [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md) Validate C# 15 features and decide `ParseResult<T>` | 0 | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md); .NET 11 / C# 15 GA (expected November 2026) |
+| ✅ [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md) Validate C# 15 features and decide `ParseResult<T>` | 0 | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md); .NET 11 / C# 15 GA (expected November 2026) |
 | ✅ [FND-08](active/01-foundations/FND-08-whitepaper-editorial-cleanup.md) Whitepaper editorial cleanup | 0 | — |
 
 ### CORE — Core combinators
@@ -232,7 +240,7 @@ The immutable grammar-tree model and the full combinator vocabulary. Folder: [`a
 
 | Work item | Phase | Blocked by |
 | --- | --- | --- |
-| [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) Grammar node model | 0 | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
+| ✅ [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) Grammar node model | 0 | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) Grammar base classes and authoring surface | 0 | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
 | [CORE-03](active/02-core-combinators/CORE-03-primitive-nodes.md) Primitive nodes | 0 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
 | [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) Sequencing and mapping nodes | 0 | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |

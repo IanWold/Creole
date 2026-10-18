@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Done |
 
 ## Summary
 
@@ -12,16 +12,19 @@ Every combinator call builds an immutable node in a grammar tree. This item esta
 
 ## Scope
 
-- `Parser<TIn, TOut>` abstract base as a `closed` hierarchy with an internal `NodeKind`.
+- `Parser<TIn, TOut>` abstract base with `internal` constructors and `internal sealed` node classes, not `closed` ([ADR-0001](../../docs/decisions/0001-grammar-node-encoding-and-engine-dispatch.md)).
+- The structural view: an internal `NodeKind` and the node's children in an untyped form, for consumers that need only structure.
+- The convention for typed engine operations: an `internal abstract` member on `Parser<TIn, TOut>` that every node overrides, forwarding its typed fields to the engine. INT-02 adds the first one, lowering.
 - Immutability and identity semantics for nodes.
 - `Unit` and `IKinded<TKind>`.
-- Null-argument checks on every combinator, throwing a `GrammarException` that names the argument expression via `[CallerArgumentExpression]` (the run-time half of CRL0004).
-- Test helpers for building small throwaway grammars in `tests/Creole.Tests` (moved from [FND-04](../01-foundations/FND-04-test-infrastructure.md)).
+- `Return` and `Fail` nodes (moved from CORE-03), the reference implementation of the conventions. Their public entry points stay in CORE-02.
+- `GrammarException` and the null-argument check every combinator uses, which names the argument expression via `[CallerArgumentExpression]` (the run-time half of CRL0004).
+- Out: helpers for building small throwaway grammars, moved here from [FND-04](../01-foundations/FND-04-test-infrastructure.md). Dropped by the maintainer on 2026-10-18 until a test needs one.
 
 ## Acceptance criteria
 
-- [ ] Node types cannot be subclassed outside the assembly.
-- [ ] Adding a node kind without handling it in an engine's dispatch switch produces a build warning.
+- [x] Node types cannot be subclassed outside the assembly.
+- [x] A node type that does not implement every abstract node member fails to compile, and a switch expression over `NodeKind` that misses a kind fails the build.
 
 ## Blocked by
 
@@ -46,3 +49,36 @@ Every combinator call builds an immutable node in a grammar tree. This item esta
 - [§ Types](../../../whitepaper.md#types)
 - [§ Where unions are not used](../../../whitepaper.md#where-unions-are-not-used)
 - [§ Diagnostics](../../../whitepaper.md#diagnostics)
+
+## Artifacts
+
+- [Research: grammar node encoding and dispatch](../../docs/research/2026-10-18-grammar-node-encoding-and-dispatch.md)
+- [ADR-0001: Grammar node encoding and engine dispatch](../../docs/decisions/0001-grammar-node-encoding-and-engine-dispatch.md)
+
+## Progress notes
+
+- 2026-10-18 (Build): Started. Probed `closed` on the pinned RC 2 SDK (11.0.100-rc.2.26504.105): a `closed` generic base compiles, and a switch missing a case gives CS8509 (an error here, since warnings are errors). `closed` is implicitly abstract, so `abstract closed` is CS9384. Not yet confirmed on the GA compiler; FND-07 does that. Derivation from another assembly is not yet tested (criterion 1). Next: `/build` to plan against the acceptance criteria.
+- 2026-10-18 (Designing): Moved back from Build before any code. On RC 2 a `closed` `Parser<TIn, TOut>` cannot hold nodes with a type parameter missing from the base: `Map<TIn, TA, TOut> : Parser<TIn, TOut>` is error CS9383. Nodes that fix `TOut` (`Tok<TIn> : Parser<TIn, TIn>`) compile, but a generic engine switch over `Parser<TIn, TOut>` cannot name them and gets CS8509. Only nodes shaped exactly `X<TIn, TOut>`, with other types hidden in an internal object reached through a visitor, give a checkable switch. § Where unions are not used assumes this works directly. Next: `/decide` on how nodes encode intermediate types and how engine dispatch is made complete (closed plus inner visitors, a plain visitor interface, or an internal `NodeKind` enum switch).
+- 2026-10-18 (Designing): Research note written. `closed` cannot hold nodes with hidden or fixed type arguments; the spec makes this final. The note supports an abstract `internal` method per typed operation (missing override is CS0534), a `NodeKind` enum for consumers that need only structure, and an `internal` constructor instead of `closed` (other assemblies get CS1729). Next: `/decide` on node encoding and engine dispatch.
+- 2026-10-18 (Building): ADR-0001 accepted by the maintainer: option D, an internal constructor plus one abstract member per engine operation, with a `NodeKind` structural view; no `closed`. Whitepaper, scope and criterion 2 updated to match. Back to Build. Next: `/build CORE-01` to plan against the revised criteria.
+- 2026-10-18 (Building): Built the node model. Code: `Parser<TIn, TOut>` (internal constructor, internal abstract `Kind` and `Children`, explicit `INode`), `NodeKind` (`Return`, `Fail`), internal sealed `ReturnNode` and `FailNode`, `Unit`, `IKinded<TKind>`, `GrammarException`, and `Guard.NotNull`. The parser overload suggests `Rec`; the general overload names the expression only. Config: CS8524 is off in `.editorconfig`. Tests: reflection tests for the conventions (`tests/Creole.Tests/NodeModelTests.cs`), and Roslyn compile tests for both criteria (`tests/Creole.Tests/NodeCompletenessTests.cs`). Another assembly gets CS1729; a node missing `Children` gets CS0534; a `NodeKind` switch missing `Fail` gets CS8509. Benchmarks: Pidgin's `Parser<…>` and `Unit` and Superpower's `Unit` are now qualified, because the new `Creole.Parser<,>` and `Creole.Unit` shadow them inside the `Creole.Benchmarks` namespace. Docs: `docs/concepts/grammars-as-data.md`. The null-argument docs wait for the first public combinator (added to CORE-02's scope). Scope changes agreed with the maintainer: `Return` and `Fail` moved here from CORE-03; the throwaway-grammar helpers were dropped until a test needs one. Verified: `dotnet build` clean; `dotnet test` 41 passed, 0 failed; AOT smoke publish clean. Next: `/complete CORE-01`.
+
+## Outcome
+
+- **Node model in `src/Creole/`:**
+  - `Parser<TIn, TOut>`, with an internal constructor and internal abstract `Kind` and `Children`.
+  - The internal `INode` structural view and `NodeKind`.
+  - `ReturnNode` and `FailNode` in `Nodes/`, the reference implementations of the conventions.
+  - `Unit`, `IKinded<TKind>`, `GrammarException`, and the `Guard.NotNull` argument check.
+- **Config:** CS8524 is off in `.editorconfig`.
+- **Design:** [ADR-0001](../../docs/decisions/0001-grammar-node-encoding-and-engine-dispatch.md) replaced the planned `closed` hierarchy, after the [research note](../../docs/research/2026-10-18-grammar-node-encoding-and-dispatch.md) showed C# 15 cannot express these nodes. The whitepaper was updated in the same change.
+- **Tests:**
+  - `tests/Creole.Tests/NodeModelTests.cs`: the conventions, identity, and the null-argument messages.
+  - `tests/Creole.Tests/NodeCompletenessTests.cs`: Roslyn compile tests. A non-friend subclass gets CS1729, a node missing a member gets CS0534, and a `NodeKind` switch missing a kind gets CS8509.
+- **Evidence, 2026-10-18, commit ed70efe:** `dotnet build` with 0 warnings; `dotnet test` with 41 passed and 0 failed; the AOT smoke publish with 0 warnings.
+- **Docs:** [docs/concepts/grammars-as-data.md](../../../docs/concepts/grammars-as-data.md).
+- **Scope changes agreed with the maintainer:**
+  - `Return` and `Fail` moved here from CORE-03.
+  - The throwaway-grammar helpers were dropped until a test needs one.
+  - Documenting the null-argument check moved to CORE-02, the first public combinator.
+- **Side effect:** the benchmarks qualify Pidgin's and Superpower's `Parser` and `Unit`, which `Creole.Parser<,>` and `Creole.Unit` shadow inside `Creole.*` namespaces.

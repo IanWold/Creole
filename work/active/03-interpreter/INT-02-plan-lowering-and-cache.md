@@ -13,7 +13,7 @@ On first use a grammar is lowered to an immutable execution plan and cached.
 ## Scope
 
 - Plan node base: `abstract bool TryParse(ref Cursor<TIn> c, ref TOut result)`.
-- Lowering from grammar tree to plan, including `Rec` cycles.
+- Lowering from grammar tree to plan, including `Rec` cycles, through an `internal abstract` lowering member that every node overrides ([ADR-0001](../../docs/decisions/0001-grammar-node-encoding-and-engine-dispatch.md)).
 - `ConditionalWeakTable` cache keyed by node; plans immutable and thread-safe; parse state lives in the call.
 - A lookup hook so staged code registered by the generator (GEN-01) replaces plan nodes.
 
@@ -34,3 +34,8 @@ On first use a grammar is lowered to an immutable execution plan and cached.
 ## Whitepaper references
 
 - [§ Interpreted engine](../../../whitepaper.md#interpreted-engine)
+
+## Artifacts
+
+- [Research: grammar node encoding and dispatch](../../docs/research/2026-10-18-grammar-node-encoding-and-dispatch.md)
+- [ADR-0001: Grammar node encoding and engine dispatch](../../docs/decisions/0001-grammar-node-encoding-and-engine-dispatch.md)

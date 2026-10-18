@@ -16,8 +16,6 @@ Without `--filter` the program runs every benchmark. Other arguments go to Bench
 
 Each run writes to a new folder under the current directory, `BenchmarkDotNet.Artifacts/runs/<UTC yyyyMMdd-HHmmss>/`, with full JSON, GitHub Markdown, CSV and HTML reports per class. The folder is git-ignored. `bench-compare.py` matches benchmarks by full name and prints mean time and allocation with new/old ratios. It warns when the two runs used different hardware or runtimes.
 
-The on-demand [Benchmarks workflow](../.github/workflows/benchmarks.yml) runs the harness on a GitHub runner and uploads the run folder. Shared runners are noisy, so use it to check that the harness runs and to spot large regressions, not to set thresholds.
-
 ## What is measured
 
 | Class | Plan row | Baselines | Inputs | Reported |

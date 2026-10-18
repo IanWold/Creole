@@ -80,8 +80,12 @@ Representing grammars as data buys four things:
 
 ```csharp
 // A grammar node. Immutable; compared by identity. Engines interpret or compile it.
+// Constructors are internal and node classes are internal sealed, so other assemblies
+// cannot add nodes.
 public abstract class Parser<TIn, TOut>
 {
+    internal Parser() { }
+
     internal abstract NodeKind Kind { get; }
 }
 
@@ -107,6 +111,8 @@ Nodes fall into seven families:
 | Dependent | `Bind`, `SelectMany` | No: the continuation is code, so analysis assumes the worst |
 
 Opaque nodes still run correctly in every engine. They only weaken what analysis can prove, and the analyzer says so (CRL0201).
+
+**How engines reach nodes.** Many nodes hide a type: `Select` is a `Map<TIn, TA, TOut>` seen as a `Parser<TIn, TOut>`, and C# has no pattern that recovers `TA`. So every engine operation that needs a node's types is an `internal abstract` method on `Parser<TIn, TOut>`. Each node overrides it and passes its typed fields to the engine, as in `Lower(ctx) => ctx.Map(source, selector)`. A node that does not implement every operation does not compile. Consumers that need only structure (analysis, EBNF export, Explain, fuzzing) read `Kind` and the node's children and switch on `NodeKind` with switch expressions, so a missing kind is a build error. The choice, and why a `closed` hierarchy cannot express these nodes, is in [ADR-0001](work/docs/decisions/0001-grammar-node-encoding-and-engine-dispatch.md).
 
 ### Authoring ergonomics
 
@@ -193,6 +199,8 @@ string summary = json.Parse(text) switch
 };
 ```
 
+The switch needs no null arm: the compiler treats a union's `Value` as non-null when no case type is nullable. Only `default(ParseResult<T>)` holds null, and it fails at run time with `SwitchExpressionException`. No Creole API returns one. Code that might hold a `default`, such as an uninitialized array element, can add a `null` arm without losing the missing-case warning ([ADR-0002](work/docs/decisions/0002-parseresult-as-a-plain-union.md)).
+
 A selective `Match` over a union keeps every branch visible to analysis:
 
 ```csharp
@@ -208,7 +216,7 @@ static readonly Parser<byte, Record> Record =
 ### Where unions are not used
 
 - **Hot-path values.** Steps return `bool` and read consumption from the cursor (§ Combinator semantics), so no union is involved. `Emit<T>` is a hand-written `[Union]` struct using C# 15's non-boxing access pattern (`HasValue` plus `TryGetValue`), so it keeps exhaustive matching without allocating.
-- **Grammar nodes.** Node classes form a `closed` hierarchy, the companion C# 15 feature, so every engine's dispatch over node types is checked for completeness. Adding a combinator without teaching every engine becomes a build warning, which protects G7. User-written scanners join through a single `Custom` case (§ Custom primitives), so the hierarchy stays closed.
+- **Grammar nodes.** Neither unions nor C# 15's `closed` classes can hold nodes such as `Map<TIn, TA, TOut>`, whose type `TA` does not appear in `Parser<TIn, TOut>`. Instead each engine operation is an abstract method every node must implement (§ Types, [ADR-0001](work/docs/decisions/0001-grammar-node-encoding-and-engine-dispatch.md)). Adding a combinator without teaching the interpreter is a build error, which protects G7. The source generator reads syntax rather than node types, so its share of G7 rests on the CRL0301 fallback and the differential tests (§ Equivalence). User-written scanners join through a single `Custom` node (§ Custom primitives), so the set of nodes stays fixed.
 - **Tokens, by default.** Tokens can be unions, matched with `Case<Ident>()` instead of `Kind(k)`, and analysis treats each case type as a kind. But a union token boxes struct cases, so a lexer would allocate per token. `IKinded<TKind>` struct tokens remain the fast path, and fused layers never materialize tokens either way.
 
 ### Small API consequences
@@ -288,7 +296,7 @@ sealed class RawString : IScanner<char, ReadOnlyMemory<char>>
 static readonly Parser<char, ReadOnlyMemory<char>> RawStringToken = Custom(new RawString());
 ```
 
-Analysis trusts the declaration. Debug builds and the tracing interpreter check it on every call and report CRL0206 when a scanner breaks it. Inside a `Longest`, engines run the scanner alongside the DFA whenever the next character is in its declared FIRST set, so a lexer with one custom token can still be fused. `Custom` is a single case of the closed node hierarchy, so engines still dispatch exhaustively.
+Analysis trusts the declaration. Debug builds and the tracing interpreter check it on every call and report CRL0206 when a scanner breaks it. Inside a `Longest`, engines run the scanner alongside the DFA whenever the next character is in its declared FIRST set, so a lexer with one custom token can still be fused. `Custom` is a single node kind like any other, so every engine still handles every node (§ Types).
 
 ## Layers, streams and pipelines
 
@@ -643,7 +651,7 @@ If the generator ever covered every grammar, the interpreter could shrink to a t
 
 ### Interpreted engine
 
-On first use, a grammar is lowered to an execution plan and cached in a `ConditionalWeakTable` keyed by node. Plans are immutable and thread-safe; parse state lives in the call. Lowering performs these rewrites:
+On first use, a grammar is lowered to an execution plan and cached in a `ConditionalWeakTable` keyed by node. Each node lowers itself through an internal abstract method (§ Types), so lowering sees every node's types without casts. Plans are immutable and thread-safe; parse state lives in the call. Lowering performs these rewrites:
 
 - Chains of `Select` collapse into one composed function.
 - An `Or` over primitives with disjoint FIRST sets becomes a `switch` on token kind or character.
@@ -1054,10 +1062,10 @@ The largest risks are the cost of maintaining two engines and the subtlety of mo
 - **Span units for byte sources.** Byte offsets are exact but awkward for users. Should `SourceSpan` also carry a character offset when a decoding layer exists? Decided: yes, spans carry both (§ Source spans).
 - **General parsing backend.** Is a GLL or derivatives engine for ambiguous grammars worth building on the same grammar tree, with parse forests as the result type? Decided: explore in a post-1.0 spike (§ General parsing backend).
 - **Sprache adapter.** Is a `Creole.SpracheCompat` package that maps Sprache's API onto Creole worth the maintenance? Decided: no.
+- **`ParseResult<T>` as a union or a closed hierarchy.** A union's `Value` is null in a `default` instance, so switches might need a null arm. Decided: a plain union. On the .NET 11 RC 2 compiler a switch on a returned union needs no null arm, and a hand-written `[Union]` struct or a closed hierarchy fixes nothing that matters ([ADR-0002](work/docs/decisions/0002-parseresult-as-a-plain-union.md)).
 
 ### Still open
 
-- **`ParseResult<T>` as a union or a closed hierarchy.** A union's `Value` can be null in a `default` instance, so some switches may need a null arm. A `closed` class hierarchy avoids that and lets cases share members. Test on the GA compiler: does a switch on a union returned from a method need a null arm, and does a hand-written \[Union\] struct with a non-nullable Value remove it? Keep the plain union if it is fine, use the hand-written union if only that works, and fall back to the closed hierarchy only if neither does.
 - **Closed enums for token kinds.** If closed enums ship, switches over `TKind` become exhaustive as well. Decided: wait for the language and adopt closed enums when they ship; no API change is needed.
 - **A build-time execution tier.** Should the generator execute grammar construction, as Parlot does, for subtrees it cannot read? Decided: no. The generator reads syntax only, and anything it cannot read runs on the interpreter.
 

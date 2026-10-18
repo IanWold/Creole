@@ -24,18 +24,18 @@ public static class SuperpowerJson
         Null,
     }
 
-    private static readonly TextParser<Unit> _digits = Character.Digit.IgnoreThen(Character.Digit.IgnoreMany());
+    private static readonly TextParser<Superpower.Model.Unit> _digits = Character.Digit.IgnoreThen(Character.Digit.IgnoreMany());
 
-    private static readonly TextParser<Unit> _numberToken =
+    private static readonly TextParser<Superpower.Model.Unit> _numberToken =
         Character.EqualTo('-').OptionalOrDefault()
         .IgnoreThen(_digits)
         .IgnoreThen(Character.EqualTo('.').IgnoreThen(_digits).OptionalOrDefault())
         .IgnoreThen(Character.In('e', 'E').IgnoreThen(Character.In('+', '-').OptionalOrDefault()).IgnoreThen(_digits).OptionalOrDefault());
 
-    private static readonly TextParser<Unit> _stringToken =
+    private static readonly TextParser<Superpower.Model.Unit> _stringToken =
         Character.EqualTo('"')
         .IgnoreThen(Character.EqualTo('\\').IgnoreThen(Character.AnyChar).Or(Character.ExceptIn('"', '\\')).IgnoreMany())
-        .IgnoreThen(Character.EqualTo('"').Value(Unit.Value));
+        .IgnoreThen(Character.EqualTo('"').Value(Superpower.Model.Unit.Value));
 
     private static readonly TextParser<char> _escape =
         Character.EqualTo('\\').IgnoreThen(

@@ -12,7 +12,7 @@ The leaf nodes of every grammar.
 
 ## Scope
 
-- `Token(x)`, `Kind(k)`, `Any`, `End`, `Satisfy(pred)`, `Return`, `Fail`.
+- `Token(x)`, `Kind(k)`, `Any`, `End`, `Satisfy(pred)`. The `Return` and `Fail` nodes are in CORE-01.
 - Character classes: `Char`, `Range`, `Digit`, `Letter`, `LetterOrDigit`, `Whitespace`, `NoneOf`.
 - `String` and `CIString`, atomic by construction (they fail without consuming).
 

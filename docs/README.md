@@ -2,8 +2,6 @@
 
 User-facing documentation for Creole, written alongside the code (see [CONTRIBUTING.md § Documentation](../CONTRIBUTING.md#documentation)). Everything here must be true of the current code. Design rationale lives in the [whitepaper](../whitepaper.md) and decision records, not here.
 
-Nothing is documented yet: the solution is scaffolded, and library code starts with [CORE-01](../work/active/02-core-combinators/CORE-01-grammar-node-model.md).
-
 ## Planned layout
 
 The layout follows the scope of [REL-02](../work/active/14-release/REL-02-documentation.md). Create folders as the first page in each is written, and add each page to this index.
@@ -18,4 +16,6 @@ The layout follows the scope of [REL-02](../work/active/14-release/REL-02-docume
 
 ## Pages
 
-None yet.
+| Page | Contents |
+| --- | --- |
+| [Grammars as data](concepts/grammars-as-data.md) | The `Parser<TIn, TOut>` type, immutability and identity, `IKinded<TKind>` and `GrammarException`. |

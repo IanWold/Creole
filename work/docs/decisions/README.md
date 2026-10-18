@@ -6,7 +6,8 @@ Each record captures one design choice: the options, the choice, and why. Rules 
 
 | # | Decision | Status | Cards | Whitepaper |
 | --- | --- | --- | --- | --- |
-| — | No decisions yet. | — | — | — |
+| [0001](0001-grammar-node-encoding-and-engine-dispatch.md) | Grammar nodes use an internal constructor and one abstract method per engine operation, not a `closed` hierarchy | Accepted | [CORE-01](../../active/02-core-combinators/CORE-01-grammar-node-model.md), [FND-07](../../active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [INT-02](../../active/03-interpreter/INT-02-plan-lowering-and-cache.md), [RSLN-02](../../active/10-roslyn-analyzers/RSLN-02-share-the-analysis-engine-with-the-roslyn-component.md) | [§ Types](../../../whitepaper.md#types), [§ Where unions are not used](../../../whitepaper.md#where-unions-are-not-used) |
+| [0002](0002-parseresult-as-a-plain-union.md) | `ParseResult<T>` is a plain C# 15 union | Accepted | [FND-07](../../active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [ERR-01](../../active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [LAY-03](../../active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) | [§ Using C# 15 unions](../../../whitepaper.md#using-c-15-unions), [§ Still open](../../../whitepaper.md#still-open) |
 
 ## Template
 
