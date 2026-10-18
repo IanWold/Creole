@@ -199,6 +199,7 @@ The .NET 11 SDK, pinned in [`global.json`](global.json). .NET 11 is in preview u
 | `src/Creole.Testing` | `net11.0` | Test helpers for grammar authors. Its own package. |
 | `tests/Creole.Tests` | `net11.0` | Tests for `Creole` and `Creole.Testing`. |
 | `tests/Creole.Generators.Tests` | `net11.0` | Tests for the analyzers and generator. |
+| `tests/Creole.AotSmoke` | `net11.0` | Native AOT smoke app; publishing it fails on any trim or AOT warning in the runtime libraries. |
 | `benchmarks/Creole.Benchmarks` | `net11.0` | Benchmarks and competitor baselines ([FND-05](work/active/01-foundations/FND-05-benchmark-harness.md)). |
 | `samples/` | `net11.0` | Runnable sample grammars. |
 
@@ -213,6 +214,7 @@ Runtime libraries target `net11.0` only. There is no `net10.0` or `netstandard` 
 | One test project | `dotnet test --project tests/Creole.Tests` |
 | One test | `dotnet test --project tests/Creole.Tests --filter-method "*TestName"` |
 | Pack | `dotnet pack src/Creole -c Release` |
+| AOT smoke | `dotnet publish tests/Creole.AotSmoke -c Release` |
 | Format | `dotnet format` |
 
 Tests use xUnit v3 on Microsoft.Testing.Platform, which `global.json` selects for `dotnet test`.

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <PublishAot>true</PublishAot>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Creole\Creole.csproj" />
+    <ProjectReference Include="..\..\src\Creole.Testing\Creole.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <TrimmerRootAssembly Include="Creole" />
+    <TrimmerRootAssembly Include="Creole.Testing" />
+  </ItemGroup>
+
+</Project>

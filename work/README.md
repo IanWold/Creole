@@ -197,14 +197,13 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- None yet.
+- [FND-03](active/01-foundations/FND-03-continuous-integration.md) Continuous integration
 
 ### Can start now
 
 These items have all their blockers done:
 
 - [FND-01](active/01-foundations/FND-01-reserve-the-creole-nuget-package-id.md) Reserve the Creole NuGet package ID
-- [FND-03](active/01-foundations/FND-03-continuous-integration.md) Continuous integration
 - [FND-04](active/01-foundations/FND-04-test-infrastructure.md) Test infrastructure
 - [FND-05](active/01-foundations/FND-05-benchmark-harness.md) Benchmark harness
 - [FND-08](active/01-foundations/FND-08-whitepaper-editorial-cleanup.md) Whitepaper editorial cleanup

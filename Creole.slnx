@@ -6,6 +6,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Creole.Tests/Creole.Tests.csproj" />
+    <Project Path="tests/Creole.AotSmoke/Creole.AotSmoke.csproj" />
     <Project Path="tests/Creole.Generators.Tests/Creole.Generators.Tests.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
