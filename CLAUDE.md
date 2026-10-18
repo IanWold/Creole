@@ -67,7 +67,7 @@ Match the whitepaper: plain English, short declarative sentences, concrete claim
 
 - Diagnostics use the prefix `CRL` (for example CRL0004, CRL0301). Each gets a page in `docs/reference/diagnostics/` when it is introduced. IDs are public contract.
 - Gate thresholds such as "near Pidgin speed" are not numbers yet; [FND-06](work/active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) fixes them.
-- [FND-07](work/active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md) waits on the C# 15 GA compiler; ERR-01 waits on it.
+- [FND-07](work/active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md) was done on the RC 2 compiler ([ADR-0002](work/docs/decisions/0002-parseresult-as-a-plain-union.md)). When `global.json` moves to the GA SDK, re-run its spike or the tests that rely on unions.
 - The project was once called Strata. That name is taken on NuGet; do not use it.
 - Python 3 and `gh` are available.
 

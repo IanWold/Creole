@@ -13,6 +13,7 @@ The leaf nodes of every grammar.
 ## Scope
 
 - `Token(x)`, `Kind(k)`, `Any`, `End`, `Satisfy(pred)`. The `Return` and `Fail` nodes are in CORE-01.
+- `Case<T>()` on `TokenGrammar` for union tokens; analysis treats each case type as a kind ([§ Where unions are not used](../../../whitepaper.md#where-unions-are-not-used)).
 - Character classes: `Char`, `Range`, `Digit`, `Letter`, `LetterOrDigit`, `Whitespace`, `NoneOf`.
 - `String` and `CIString`, atomic by construction (they fail without consuming).
 

@@ -21,7 +21,7 @@ flowchart LR
 
 Within each phase, work is grouped into **waves**. A wave's items depend only on items in earlier waves (of this or an earlier phase), so everything in one wave can run in parallel.
 
-Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md) waits on the .NET 11 / C# 15 GA compiler (expected November 2026), and the error and result types (ERR-01) wait on its decision. Work that does not touch the public result types can proceed before then.
+Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md) was done on the .NET 11 RC 2 compiler, before GA (expected November 2026), by the maintainer's choice. Its decision ([ADR-0002](docs/decisions/0002-parseresult-as-a-plain-union.md)) unblocks ERR-01. When `global.json` moves to the GA SDK, re-run the FND-07 spike or the tests that rely on unions.
 
 ### Phase 0 — Core
 
@@ -42,19 +42,19 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 2 | ✅ [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) SourceSpan, SourceId and LineMap | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | 3 | [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) Fix numeric gate thresholds | [FND-05](active/01-foundations/FND-05-benchmark-harness.md) |
 | 3 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) Grammar base classes and authoring surface | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
-| 3 | [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) Sequencing and mapping nodes | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
-| 3 | [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md) Choice nodes | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
-| 3 | [CORE-06](active/02-core-combinators/CORE-06-longest.md) Longest | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
 | 3 | [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md) Repetition nodes | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
-| 3 | [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md) Control nodes | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
-| 3 | [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) Recursion with Rec | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
 | 3 | [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md) Expression.Build | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
-| 3 | [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md) Custom primitives | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
 | 3 | [INT-02](active/03-interpreter/INT-02-plan-lowering-and-cache.md) Plan lowering and cache | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md), [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) |
 | 3 | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) Error and result types | [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) |
 | 4 | [CORE-03](active/02-core-combinators/CORE-03-primitive-nodes.md) Primitive nodes | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
-| 4 | [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md) Bind and LINQ query syntax | [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) |
+| 4 | [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) Sequencing and mapping nodes | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
+| 4 | [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md) Choice nodes | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
+| 4 | [CORE-06](active/02-core-combinators/CORE-06-longest.md) Longest | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
+| 4 | [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md) Control nodes | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
+| 4 | [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) Recursion with Rec | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
+| 4 | [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md) Custom primitives | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
 | 4 | [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) Diagnostic rendering | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) |
+| 5 | [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md) Bind and LINQ query syntax | [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) |
 | 5 | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md) Execute the core combinators | [CORE-03](active/02-core-combinators/CORE-03-primitive-nodes.md), [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md), [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md), [CORE-06](active/02-core-combinators/CORE-06-longest.md), [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md), [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md), [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md), [INT-02](active/03-interpreter/INT-02-plan-lowering-and-cache.md) |
 | 6 | [INT-04](active/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md) Execute Bind, Expression.Build and Custom | [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md), [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md), [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md), [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md) |
 | 6 | [INT-05](active/03-interpreter/INT-05-interpreter-lowering-rewrites.md) Interpreter lowering rewrites | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md) |
@@ -206,14 +206,8 @@ These items have all their blockers done:
 - [FND-01](active/01-foundations/FND-01-reserve-the-creole-nuget-package-id.md) Reserve the Creole NuGet package ID
 - [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) Fix numeric gate thresholds
 - [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) Grammar base classes and authoring surface
-- [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) Sequencing and mapping nodes
-- [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md) Choice nodes
-- [CORE-06](active/02-core-combinators/CORE-06-longest.md) Longest
 - [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md) Repetition nodes
-- [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md) Control nodes
-- [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) Recursion with Rec
 - [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md) Expression.Build
-- [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md) Custom primitives
 - [INT-02](active/03-interpreter/INT-02-plan-lowering-and-cache.md) Plan lowering and cache
 - [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) Error and result types
 - [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) StreamBuffer and pulling cursor
@@ -244,15 +238,15 @@ The immutable grammar-tree model and the full combinator vocabulary. Folder: [`a
 | ✅ [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) Grammar node model | 0 | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) Grammar base classes and authoring surface | 0 | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
 | [CORE-03](active/02-core-combinators/CORE-03-primitive-nodes.md) Primitive nodes | 0 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
-| [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) Sequencing and mapping nodes | 0 | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
-| [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md) Choice nodes | 0 | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
-| [CORE-06](active/02-core-combinators/CORE-06-longest.md) Longest | 0 | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
+| [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) Sequencing and mapping nodes | 0 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
+| [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md) Choice nodes | 0 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
+| [CORE-06](active/02-core-combinators/CORE-06-longest.md) Longest | 0 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
 | [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md) Repetition nodes | 0 | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
-| [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md) Control nodes | 0 | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
-| [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) Recursion with Rec | 0 | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
+| [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md) Control nodes | 0 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
+| [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) Recursion with Rec | 0 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
 | [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md) Bind and LINQ query syntax | 0 | [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) |
 | [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md) Expression.Build | 0 | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
-| [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md) Custom primitives | 0 | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
+| [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md) Custom primitives | 0 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
 
 ### INT — Interpreted engine
 

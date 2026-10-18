@@ -23,7 +23,7 @@ Sequencing and maps: the shapes that make up most grammar code.
 
 ## Blocked by
 
-- [CORE-01 Grammar node model](../02-core-combinators/CORE-01-grammar-node-model.md)
+- [CORE-02 Grammar base classes and authoring surface](../02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md)
 
 ## Unblocks
 

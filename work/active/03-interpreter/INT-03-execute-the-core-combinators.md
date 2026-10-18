@@ -21,6 +21,7 @@ The interpreter runs every analyzable node family with Parsec-style commit seman
 ## Acceptance criteria
 
 - [ ] A semantic test suite covering the four-outcome table, including property tests, passes.
+- [ ] The grammar classes in Worked Example A compile against the API, apart from `Layer.Tokens` (LAY-03). Moved here from CORE-02.
 
 ## Blocked by
 
