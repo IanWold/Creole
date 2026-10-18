@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Source spans and provenance](../../README.md#span--source-spans-and-provenance) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -34,3 +34,7 @@ The public span type and on-demand line and column lookup.
 
 - [§ Source spans and provenance](../../../whitepaper.md#source-spans-and-provenance)
 - [§ Span rules](../../../whitepaper.md#span-rules)
+
+## Progress notes
+
+- 2026-10-18 (Build): Started. Build directly from § Source spans and provenance; settle the SourceId registry shape, CharStart/CharEnd defaults and how LineMap counts scalar-value columns in the /build plan.

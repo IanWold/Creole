@@ -197,7 +197,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- None yet.
+- [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) SourceSpan, SourceId and LineMap — Build
 
 ### Can start now
 
@@ -215,7 +215,6 @@ These items have all their blockers done:
 - [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md) Expression.Build
 - [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md) Custom primitives
 - [INT-02](active/03-interpreter/INT-02-plan-lowering-and-cache.md) Plan lowering and cache
-- [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) SourceSpan, SourceId and LineMap
 - [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) StreamBuffer and pulling cursor
 
 ## Epics
