@@ -1,0 +1,35 @@
+name: Benchmarks
+
+# On demand only. Shared runners are noisy: use these results to spot large regressions and to
+# check the harness runs, not to set gate thresholds (FND-06 measures on a fixed machine).
+on:
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: "BenchmarkDotNet filter, for example *Json* or *Arithmetic*"
+        required: false
+        default: "*"
+      job:
+        description: "BenchmarkDotNet job: default, short, medium or long"
+        required: false
+        default: "short"
+
+jobs:
+  benchmarks:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v6
+      with:
+        global-json-file: global.json
+    - name: Run benchmarks
+      env:
+        FILTER: ${{ inputs.filter }}
+        JOB: ${{ inputs.job }}
+      run: dotnet run -c Release --project benchmarks/Creole.Benchmarks -- --filter "$FILTER" --job "$JOB"
+    - name: Upload results
+      uses: actions/upload-artifact@v7
+      with:
+        name: benchmarks-${{ github.run_number }}
+        path: BenchmarkDotNet.Artifacts/runs/

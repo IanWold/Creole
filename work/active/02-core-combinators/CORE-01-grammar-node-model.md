@@ -16,6 +16,7 @@ Every combinator call builds an immutable node in a grammar tree. This item esta
 - Immutability and identity semantics for nodes.
 - `Unit` and `IKinded<TKind>`.
 - Null-argument checks on every combinator, throwing a `GrammarException` that names the argument expression via `[CallerArgumentExpression]` (the run-time half of CRL0004).
+- Test helpers for building small throwaway grammars in `tests/Creole.Tests` (moved from [FND-04](../01-foundations/FND-04-test-infrastructure.md)).
 
 ## Acceptance criteria
 

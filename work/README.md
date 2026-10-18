@@ -197,16 +197,15 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- None yet.
+- [FND-04](active/01-foundations/FND-04-test-infrastructure.md) Test infrastructure — Building
+- [FND-05](active/01-foundations/FND-05-benchmark-harness.md) Benchmark harness — Building
+- [FND-08](active/01-foundations/FND-08-whitepaper-editorial-cleanup.md) Whitepaper editorial cleanup — Building
 
 ### Can start now
 
 These items have all their blockers done:
 
 - [FND-01](active/01-foundations/FND-01-reserve-the-creole-nuget-package-id.md) Reserve the Creole NuGet package ID
-- [FND-04](active/01-foundations/FND-04-test-infrastructure.md) Test infrastructure
-- [FND-05](active/01-foundations/FND-05-benchmark-harness.md) Benchmark harness
-- [FND-08](active/01-foundations/FND-08-whitepaper-editorial-cleanup.md) Whitepaper editorial cleanup
 - [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) Grammar node model
 - [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) Cursor and in-memory input
 - [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) SourceSpan, SourceId and LineMap

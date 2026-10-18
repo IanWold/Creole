@@ -25,7 +25,7 @@ The .NET ecosystem has four mature combinator libraries, each a step past the la
 
 Other .NET tools sit beside these rather than competing directly. ANTLR's C# target is a parser generator; Irony builds LALR parsers from grammars written in C#; FParsec brings Parsec to F#; [Yoakke](https://github.com/LanguageDev/Yoakke) generates lexers and parsers from attributes but is still early, with nightly packages only. Parlot matters most: it already shows that build-time generation works for .NET combinators, so Creole's case cannot rest on speed alone.
 
-Pidgin can already run in stages: a `Parser<char, Token>` produces a list, and a `Parser<Token, Ast>` consumes it. But the stages share nothing. Positions, error reporting, buffering and backtracking are each stage's own problem, and nothing lets a parser influence its lexer. All three libraries also represent parsers as opaque code, so they cannot find a grammar bug before it runs or compile a grammar ahead of time.
+Pidgin can already run in stages: a `Parser<char, Token>` produces a list, and a `Parser<Token, Ast>` consumes it. But the stages share nothing. Positions, error reporting, buffering and backtracking are each stage's own problem, and nothing lets a parser influence its lexer. Sprache, Superpower and Pidgin also represent parsers as opaque code, so they cannot find a grammar bug before it runs or compile a grammar ahead of time. Parlot compiles ahead of time by running grammar methods inside its generator, but none of the four analyzes a grammar for bugs before it runs (§ Comparison).
 
 Meanwhile, research since Spiewak's GLL combinators (2010) has moved in four directions:
 
@@ -42,7 +42,7 @@ Creole's thesis is that these results have landed in Haskell, OCaml, Scala and R
 
 ## Design goals and non-goals
 
-Creole commits to twelve goals, eleven of them for 1.0; general (ambiguous) parsing is explored separately rather than promised.
+Creole commits to twelve goals. G1 to G11 are for 1.0; G12, incremental re-parsing, follows in 1.x. General (ambiguous) parsing is not one of the goals: it is explored separately rather than promised.
 
 | ID | Goal | Measured by |
 | --- | --- | --- |
@@ -266,7 +266,7 @@ Every branch is visible to analysis, unlike `Bind`. `Bind` remains for grammars 
 
 ### Expressions
 
-`Expression.Build(atom, table)` takes an operator table (prefix, postfix, left-, right- and non-associative infix per precedence level) and compiles to precedence climbing. Grammars never need left recursion for operators, and analysis treats the result as one well-understood node.
+`Expression.Build(atom, table)` takes an operator table (prefix, postfix, left-, right- and non-associative infix per precedence level) and compiles to precedence climbing. Grammars never need left recursion for operators, and analysis treats the result as one well-understood node. This is the precedence-table pattern of Willis and Wu (Haskell Symposium 2021).
 
 ### Text capture
 
@@ -352,7 +352,7 @@ Each layer boundary is a memoizing stream buffer, so a downstream rewind is just
 
 ### The stream buffer
 
-Each boundary holds a `StreamBuffer<T>`, a segmented, `ArrayPool`-backed buffer indexed by absolute position. Each slot stores three things:
+Each boundary holds a `StreamBuffer<T>`, a segmented, `ArrayPool`-backed buffer indexed by absolute position. Each slot stores five fields:
 
 | Field | Purpose |
 | --- | --- |
@@ -818,7 +818,7 @@ The interpreted engine should be competitive with Parlot and Pidgin, and the gen
 ### Design choices
 
 - **Struct tokens with enum kinds**, so dispatch is a `switch` and tokens never box.
-- **Out-of-band spans**: two `int`s per buffered item, no wrapper objects.
+- **Out-of-band spans**: 32-bit offsets relative to the segment base, stored beside each buffered item (two per item, four when the root is bytes) and widened to the public `long` `SourceSpan` only when read; no wrapper objects (§ Source spans).
 - **Pooled, segmented buffers** released at the bookmark horizon.
 - **Lazy errors**: failures record a position and an interned expectation-set handle; a `ParseError` object exists only for the reported failure.
 - **Vectorized character classes** through `SearchValues<char>`.
@@ -1076,14 +1076,12 @@ The largest risks are the cost of maintaining two engines and the subtlety of mo
 9. Darragh, Adams. Parsing with Zippers (Functional Pearl). ICFP 2020. [ACM](https://dl.acm.org/doi/10.1145/3408990)
 10. Willis, Wu. Design Patterns for Parser Combinators (Functional Pearl). Haskell Symposium 2021. [PDF](https://www.cs.tufts.edu/~nr/cs257/archive/jamie-willis/parsing-patterns.pdf)
 11. Yallop, Xie, Krishnaswami. flap: A Deterministic Parser with Fused Lexing. PLDI 2023. [arXiv](https://arxiv.org/abs/2304.05276)
-
-12) Dubroy, Warth. Incremental Packrat Parsing. SLE 2017. [SLE page](https://conf.researchr.org/details/sle-2017/sle-2017-papers/16/Incremental-Packrat-Parsing)
+12. Dubroy, Warth. Incremental Packrat Parsing. SLE 2017. [SLE page](https://conf.researchr.org/details/sle-2017/sle-2017-papers/16/Incremental-Packrat-Parsing)
 
 **Libraries**
 
 - [Sprache](https://github.com/sprache/Sprache), [Superpower](https://github.com/datalust/superpower) and [Pidgin](https://github.com/benjamin-hodgson/Pidgin) (.NET)
 - [chumsky](https://docs.rs/chumsky) (Rust): error-recovery strategies
 - FastParse (Scala): cuts
-
-* [Parlot](https://github.com/sebastienros/parlot) (.NET): build-time generation, recursion limits; [combinator reference](https://github.com/sebastienros/parlot/blob/main/docs/parsers.md)
-* [Yoakke](https://github.com/LanguageDev/Yoakke) (.NET): attribute-driven lexer and parser generation
+- [Parlot](https://github.com/sebastienros/parlot) (.NET): build-time generation, recursion limits; [combinator reference](https://github.com/sebastienros/parlot/blob/main/docs/parsers.md)
+- [Yoakke](https://github.com/LanguageDev/Yoakke) (.NET): attribute-driven lexer and parser generation

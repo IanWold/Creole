@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Foundations](../../README.md#fnd--foundations) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -37,3 +37,7 @@ Nothing directly.
 - [§ The stream buffer](../../../whitepaper.md#the-stream-buffer)
 - [§ Design choices](../../../whitepaper.md#design-choices)
 - [§ References](../../../whitepaper.md#references)
+
+## Progress notes
+
+- 2026-10-17 (Building): Fixed every listed issue. The abstract no longer names the libraries (already fixed before this card), so only § Background needed the Parlot correction: it now says Sprache, Superpower and Pidgin cannot analyze or precompile grammars, and that Parlot precompiles but none of the four analyzes, matching § Comparison. § Design goals now names G12 as the 1.x goal and says general parsing is not a goal. § The stream buffer says five fields. § Design choices describes segment-relative 32-bit span offsets widened to the public `long` `SourceSpan`, as § Source spans does. References: 12 renumbered, Libraries bullets unified, and reference 10 (Willis and Wu 2021) now cited in § Expressions, checked against the paper's Pattern 1c (precedence tables). Next: `/complete FND-08`.

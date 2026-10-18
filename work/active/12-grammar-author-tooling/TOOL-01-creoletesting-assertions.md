@@ -13,7 +13,7 @@ Test helpers that make grammar and error quality checkable.
 ## Scope
 
 - `Parses`, `FailsAt(line, column, expected)`.
-- Snapshot tests of rendered diagnostics.
+- Snapshot tests of rendered diagnostics. Verify is not an option as a dependency: since version 33 its EULA charges a maintenance fee and its build fails until the consumer declares an exemption, which every grammar author would inherit ([FND-04](../01-foundations/FND-04-test-infrastructure.md) progress notes).
 
 ## Acceptance criteria
 
