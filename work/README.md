@@ -39,7 +39,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 2 | ✅ [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md) Validate C# 15 features and decide `ParseResult<T>` | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md); .NET 11 / C# 15 GA (expected November 2026) |
 | 2 | ✅ [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) Grammar node model | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | 2 | ✅ [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) Cursor and in-memory input | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
-| 2 | [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) SourceSpan, SourceId and LineMap | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
+| 2 | ✅ [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) SourceSpan, SourceId and LineMap | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | 3 | [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) Fix numeric gate thresholds | [FND-05](active/01-foundations/FND-05-benchmark-harness.md) |
 | 3 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) Grammar base classes and authoring surface | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
 | 3 | [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) Sequencing and mapping nodes | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
@@ -197,7 +197,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) SourceSpan, SourceId and LineMap — Build
+- None yet.
 
 ### Can start now
 
@@ -215,6 +215,7 @@ These items have all their blockers done:
 - [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md) Expression.Build
 - [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md) Custom primitives
 - [INT-02](active/03-interpreter/INT-02-plan-lowering-and-cache.md) Plan lowering and cache
+- [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) Error and result types
 - [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) StreamBuffer and pulling cursor
 
 ## Epics
@@ -288,7 +289,7 @@ Spans on every item at every layer, in bytes and characters, plus trivia and emb
 
 | Work item | Phase | Blocked by |
 | --- | --- | --- |
-| [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) SourceSpan, SourceId and LineMap | 0 | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
+| ✅ [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) SourceSpan, SourceId and LineMap | 0 | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | [SPAN-02](active/05-source-spans/SPAN-02-out-of-band-span-storage.md) Out-of-band span storage | 1 | [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md), [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) |
 | [SPAN-03](active/05-source-spans/SPAN-03-synthetic-items.md) Synthetic items | 1 | [SPAN-02](active/05-source-spans/SPAN-02-out-of-band-span-storage.md), [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) |
 | [SPAN-04](active/05-source-spans/SPAN-04-span-combinators.md) Span combinators | 1 | [SPAN-02](active/05-source-spans/SPAN-02-out-of-band-span-storage.md) |
