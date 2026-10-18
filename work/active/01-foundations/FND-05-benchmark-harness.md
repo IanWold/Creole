@@ -17,6 +17,7 @@ Every phase gate depends on measurements, so the harness and competitor baseline
 - Shared input corpora: small, medium and large JSON; arithmetic expression sets.
 - JSON and arithmetic grammars written in Pidgin and Parlot as baselines.
 - Results exported per run so later runs can be compared.
+- On-demand CI benchmark job that runs the harness (moved here from [FND-03](FND-03-continuous-integration.md)).
 
 ## Acceptance criteria
 

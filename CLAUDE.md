@@ -83,5 +83,6 @@ The SDK is pinned in `global.json` (.NET 11 RC 2). On this machine the system `d
 | One test | `dotnet test --project tests/Creole.Tests --filter-method "*TestName"` |
 | Benchmarks | `dotnet run -c Release --project benchmarks/Creole.Benchmarks` (harness arrives with FND-05) |
 | Pack | `dotnet pack src/Creole -c Release` |
+| AOT smoke | `dotnet publish tests/Creole.AotSmoke -c Release` |
 
 Tests run on Microsoft.Testing.Platform (set in `global.json`), so `dotnet test` takes MTP options such as `--filter-method`, not VSTest's `--filter`. C# conventions are in `.claude/rules/dotnet.md`.
