@@ -7,6 +7,7 @@ namespace Creole.Plans;
 /// Each node lowers itself through <see cref="Parser{TIn, TOut}.Lower"/>,
 /// which forwards the node's typed fields to a method here, so lowering logic stays in the engine (ADR-0001).
 /// A node reached more than once in the same grammar is lowered once and its plan shared.
+/// A node with compiled code registered in <see cref="Staging"/> uses that code instead, wherever it appears.
 /// </remarks>
 internal sealed class PlanBuilder
 {
@@ -14,6 +15,7 @@ internal sealed class PlanBuilder
 
     /// <summary>
     /// Returns the plan for <paramref name="parser"/>, lowering it if this builder has not seen it yet.
+    /// Compiled code registered for the node takes precedence over lowering it.
     /// </summary>
     public Plan<TIn, TOut> Lower<TIn, TOut>(Parser<TIn, TOut> parser)
     {
@@ -22,8 +24,12 @@ internal sealed class PlanBuilder
             return (Plan<TIn, TOut>)existing;
         }
 
-        var plan = parser.Lower(this);
+        var plan = Staging.TryGetPlan(parser, out var staged)
+            ? staged
+            : parser.Lower(this);
+
         _plans.Add(parser, plan);
+
         return plan;
     }
 
