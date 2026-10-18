@@ -12,10 +12,10 @@ This folder breaks the [Creole whitepaper](../whitepaper.md) into epics and work
 
 ```mermaid
 flowchart LR
-  P0["Phase 0<br/>Core"] -->|"Core tests green;<br/>speed near Pidgin"| P1["Phase 1<br/>Layers"]
-  P1 -->|"Three-layer demo;<br/>bounded memory"| P2["Phase 2<br/>Analysis"]
-  P2 -->|"Grammar bugs caught<br/>at build time"| P3["Phase 3<br/>Staging"]
-  P3 -->|"Engines agree;<br/>1.0 ships"| P4["Phase 4<br/>1.x releases"]
+  P0["Phase 0<br/>Core"] -->|"Core tests green; ≤ 1.0× Pidgin,<br/>≤ 1.5× Parlot"| P1["Phase 1<br/>Layers"]
+  P1 -->|"Three-layer demo; memory<br/>≤ 1.5× from 10 MB to 1 GB"| P2["Phase 2<br/>Analysis"]
+  P2 -->|"Every CRL diagnostic caught,<br/>no false positives"| P3["Phase 3<br/>Staging"]
+  P3 -->|"Engines agree; generated<br/>≤ 1.0× Parlot; 1.0 ships"| P4["Phase 4<br/>1.x releases"]
   P3 --> S["Research spike<br/>General parsing"]
 ```
 
@@ -26,7 +26,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 ### Phase 0 — Core
 
 **Scope:** Combinator set, interpreter, error model.  
-**Gate:** Core tests green; speed near Pidgin.
+**Gate:** Core tests green; interpreter at least as fast as Pidgin and within 1.5× of Parlot ([ADR-0003](docs/decisions/0003-numeric-gate-thresholds.md)).
 
 | Wave | Work item | Blocked by |
 | --- | --- | --- |
@@ -67,7 +67,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 ### Phase 1 — Layers
 
 **Scope:** Pipelines, buffers and spans, mode channels, streaming.  
-**Gate:** Three-layer demo runs; memory stays bounded.
+**Gate:** Three-layer demo runs; peak retained memory grows at most 1.5× from 10 MB to 1 GB of input ([ADR-0003](docs/decisions/0003-numeric-gate-thresholds.md)).
 
 | Wave | Work item | Blocked by |
 | --- | --- | --- |
@@ -98,7 +98,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 ### Phase 2 — Analysis
 
 **Scope:** Analyzers, deterministic mode, recovery, grammar-author tooling.  
-**Gate:** Classic grammar bugs caught at build time.
+**Gate:** Every CRL error and warning caught at build time, with no false positives on near misses ([ADR-0003](docs/decisions/0003-numeric-gate-thresholds.md)).
 
 | Wave | Work item | Blocked by |
 | --- | --- | --- |
@@ -131,7 +131,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 ### Phase 3 — Staging
 
 **Scope:** Source generator, helper inlining, engine agreement, 1.0 release.  
-**Gate:** Engines agree; 1.0 ships.
+**Gate:** Engines agree on 10,000 random cases; generated engine as fast as Parlot; 1.0 ships ([ADR-0003](docs/decisions/0003-numeric-gate-thresholds.md)).
 
 | Wave | Work item | Blocked by |
 | --- | --- | --- |
@@ -156,7 +156,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 ### Phase 4 — 1.x releases
 
 **Scope:** Incremental re-parsing, layer fusion, resumable async.  
-**Gate:** Each ships behind its own gate.
+**Gate:** Each ships behind its own gate, with thresholds in [ADR-0003](docs/decisions/0003-numeric-gate-thresholds.md).
 
 | Wave | Work item | Blocked by |
 | --- | --- | --- |
