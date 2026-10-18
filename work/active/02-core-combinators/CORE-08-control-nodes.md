@@ -14,6 +14,7 @@ Nodes that control backtracking and error labelling.
 
 - `Atomic`, `Lookahead`, `Not`, `Cut`.
 - `Named(label)` and `Context(text)`.
+- Each public combinator null-checks its parser arguments by taking its own `[CallerArgumentExpression]` parameter per parser argument and passing it to `Guard.NotNull`, so the `GrammarException` names the caller's expression (see `Grammar.Deterministic`, CORE-02).
 
 ## Acceptance criteria
 

@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -12,7 +12,8 @@ C# cannot infer `TIn` from a call like `Char('a')`, so grammars inherit a base c
 
 ## Scope
 
-- `Grammar<TIn>`, `TokenGrammar<TToken, TKind>` (with `TToken : IKinded<TKind>` and an overridable `Describe(TKind)`) and `CharGrammar : Grammar<char>`.
+- `Grammar<TIn>`, `TokenGrammar<TToken, TKind>` (with `TToken : IKinded<TKind>`) and `CharGrammar : Grammar<char>`.
+- `Describe(TKind)` moved to [ERR-02](../04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), its first consumer. How the renderer reaches a grammar's override is not settled.
 - `Return` and `Fail` on `Grammar<TIn>`. Their nodes exist from CORE-01, so they prove the pattern.
 - The static `Grammar` class, with `Grammar.Deterministic` stubbed until ANA-06.
 - Document in `docs/concepts/grammars-as-data.md` that combinators reject null arguments with a `GrammarException` naming the expression. CORE-01 built the check, but nothing public used it yet.
@@ -53,3 +54,10 @@ The Worked Example A criterion moved to INT-03, the first card that has every co
 ## Whitepaper references
 
 - [§ Authoring ergonomics](../../../whitepaper.md#authoring-ergonomics)
+
+## Progress notes
+
+- 2026-10-18 (Build): Started. Add `Grammar<TIn>`, `TokenGrammar<TToken, TKind>`, `CharGrammar` and the static `Grammar` class, with `Return` and `Fail` proving the unqualified-call pattern.
+- 2026-10-18 (Build): Moved `Describe(TKind)` to ERR-02: grammar classes are never instantiated and a class cannot have static virtuals, so how the renderer reaches an override needs a decision there. Added `Grammar<TIn>` (with `Return`, `Fail`; CA1000 suppressed on purpose), `TokenGrammar<TToken, TKind>`, `CharGrammar`, the static `Grammar` with `Deterministic` returning its argument unchecked, `GrammarBaseTests`, and the docs section. Found that `Guard.NotNull` named the combinator's parameter, not the caller's expression, so public combinators take their own `[CallerArgumentExpression]` parameter and forward it. Build, all 114 tests and the AOT publish pass. Next: maintainer review, then `/complete`.
+- 2026-10-18 (Build): Recorded the `[CallerArgumentExpression]` convention in the scope of CORE-04 to CORE-08, CORE-10 and CORE-11, with fixed-arity overloads instead of `params` for `Seq`, `OneOf`, `Match` and `Longest` (agreed with the maintainer).
+- 2026-10-18 (Build): Extended the convention to `Custom(scanner)` in CORE-12; other non-parser arguments keep plain parameter-name checks (agreed with the maintainer).
