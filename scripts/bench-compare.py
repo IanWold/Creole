@@ -65,8 +65,10 @@ def size(b: float | None) -> str:
 
 
 def ratio(old: float | None, new: float | None) -> str:
-    if not old or new is None:
+    if old is None or new is None:
         return "-"
+    if old == 0:
+        return "-" if new == 0 else "from 0"
     return f"{new / old:.2f}x"
 
 

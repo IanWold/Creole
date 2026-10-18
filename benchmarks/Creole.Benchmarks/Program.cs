@@ -13,9 +13,9 @@ using Creole.Benchmarks.Harness;
 BenchmarkSwitcher
     .FromAssembly(typeof(ThroughputColumn).Assembly)
     .Run(
-        args.Length == 0
-            ? ["--filter", "*"]
-            : args,
+        args.Contains("--filter")
+            ? args
+            : [.. args, "--filter", "*"],
         DefaultConfig.Instance
             .AddDiagnoser(MemoryDiagnoser.Default)
             .AddColumn(new ThroughputColumn())

@@ -12,9 +12,9 @@
 | Check that it runs | add `--job dry` (one cold iteration; the numbers mean nothing) |
 | Compare two runs | `python3 scripts/bench-compare.py <old-run> <new-run>` |
 
-With no arguments the program runs every benchmark. Any arguments go to BenchmarkDotNet unchanged.
+Without `--filter` the program runs every benchmark. Other arguments go to BenchmarkDotNet unchanged.
 
-Each run writes to a new folder under the current directory, `BenchmarkDotNet.Artifacts/runs/<UTC yyyyMMdd-HHmmss>-<commit>/`, with full JSON, GitHub Markdown, CSV and HTML reports per class. The folder is git-ignored. `bench-compare.py` matches benchmarks by full name and prints mean time and allocation with new/old ratios. It warns when the two runs used different hardware or runtimes.
+Each run writes to a new folder under the current directory, `BenchmarkDotNet.Artifacts/runs/<UTC yyyyMMdd-HHmmss>/`, with full JSON, GitHub Markdown, CSV and HTML reports per class. The folder is git-ignored. `bench-compare.py` matches benchmarks by full name and prints mean time and allocation with new/old ratios. It warns when the two runs used different hardware or runtimes.
 
 The on-demand [Benchmarks workflow](../.github/workflows/benchmarks.yml) runs the harness on a GitHub runner and uploads the run folder. Shared runners are noisy, so use it to check that the harness runs and to spot large regressions, not to set thresholds.
 
@@ -40,7 +40,7 @@ Known differences:
 | System.Text.Json | Reads UTF-8 bytes; the combinator baselines read a `string`. |
 | Parlot | Its string literal rejects the JSON `\/` escape, so the inputs leave that escape out. `Separated` fails on an empty list, so the grammar wraps it in `ZeroOrOne`. |
 | Pidgin | Arithmetic has two Pidgin baselines. `Pidgin` uses `ExpressionParser`, the idiomatic choice; `PidginFolds` folds `Many` by hand and is faster. Set "near Pidgin speed" against the faster one. |
-| Parlot | Parlot 1.5.12, the latest stable release, has no build-time generator; only `Compile()` is measured. Add a generated variant when a stable release ships one. |
+| Parlot | Parlot's build-time generator ships only as preview packages (`Parlot.SourceGenerator` 1.6.0 and 2.0.0 previews), so only stable Parlot 1.5.12, interpreted and with `Compile()`, is measured. FND-06 decides whether gate thresholds need the generated variant. |
 
 ## Adding a benchmark
 
