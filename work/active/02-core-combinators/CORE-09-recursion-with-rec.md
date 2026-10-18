@@ -15,14 +15,17 @@
 - `Rec` node with lazy resolution.
 - `[CallerArgumentExpression]` captures the rule name (for example `Value`).
 - Rule names feed `GrammarException` rule paths such as `Document → Value → ObjectValue`.
+- Interpreter lowering of `Rec` cycles: the lowering context from INT-02 lowers each node once and resolves a cycle through a placeholder plan node that is filled when the target is lowered. Moved here from INT-02 with the maintainer.
 
 ## Acceptance criteria
 
 - [ ] Mutually recursive grammars like Example A resolve correctly.
+- [ ] Lowering a grammar with `Rec` cycles terminates, lowers each node once and produces a plan that parses recursive input.
 
 ## Blocked by
 
 - [CORE-02 Grammar base classes and authoring surface](../02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md)
+- [INT-02 Plan lowering and cache](../03-interpreter/INT-02-plan-lowering-and-cache.md)
 
 ## Unblocks
 
@@ -34,3 +37,4 @@
 
 - [§ LINQ query syntax](../../../whitepaper.md#linq-query-syntax)
 - [§ Developer experience for grammar authors](../../../whitepaper.md#developer-experience-for-grammar-authors)
+- [§ Interpreted engine](../../../whitepaper.md#interpreted-engine)

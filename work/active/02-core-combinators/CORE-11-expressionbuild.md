@@ -15,6 +15,7 @@ An operator-precedence node, so grammars never need left recursion for operators
 - `Expression.Build(atom, table)` with prefix, postfix, left-, right- and non-associative infix operators per level.
 - Specify precedence-climbing semantics and error behavior.
 - Expose the table so analysis treats the node as one well-understood unit.
+- Each public combinator null-checks its parser arguments by taking its own `[CallerArgumentExpression]` parameter per parser argument and passing it to `Guard.NotNull`, so the `GrammarException` names the caller's expression (see `Grammar.Deterministic`, CORE-02).
 
 ## Acceptance criteria
 

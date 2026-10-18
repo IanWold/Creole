@@ -5,7 +5,42 @@ on:
     branches: [ "main" ]
 
 jobs:
+  # Skips the other jobs when a push to an open PR changes only Markdown and the
+  # previous commit's run of this workflow succeeded. Anything else runs everything.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+    - id: diff
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REPO: ${{ github.repository }}
+        ACTION: ${{ github.event.action }}
+        BEFORE: ${{ github.event.before }}
+        HEAD: ${{ github.event.pull_request.head.sha }}
+      run: |
+        code=true
+        # No grep -q: under pipefail an early exit can SIGPIPE the writer and read as "no code".
+        if [ "$ACTION" = synchronize ] && git cat-file -e "$BEFORE^{commit}" 2>/dev/null \
+           && changed=$(git diff --name-only "$BEFORE" "$HEAD") && [ -n "$changed" ] \
+           && ! printf '%s\n' "$changed" | grep -v '\.md$' > /dev/null; then
+          prev=$(gh api "repos/$REPO/actions/workflows/build.yml/runs?head_sha=$BEFORE&event=pull_request&per_page=1" \
+                 --jq '.workflow_runs[0].conclusion // "none"' || echo "lookup-failed")
+          echo "Markdown-only push; previous run on $BEFORE concluded: $prev"
+          [ "$prev" = success ] && code=false
+        fi
+        echo "code=$code" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -25,6 +60,8 @@ jobs:
       run: dotnet test --no-build --verbosity normal
 
   aot-smoke:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
@@ -38,6 +75,8 @@ jobs:
       run: ./artifacts/aot-smoke/Creole.AotSmoke
 
   pack:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7

@@ -15,6 +15,7 @@ A hand-written scanner escape hatch for tokens no regular expression can describ
 - `IScanner<TIn, TOut>`, `ScannerInfo(Nullable, First)`, `CharSet`.
 - `Custom(scanner)` as the single node case for user code.
 - Document the contract: the scanner must fail without consuming input.
+- `Custom` null-checks its scanner with its own `[CallerArgumentExpression]` parameter, passed on to `Guard`, so the `GrammarException` names the caller's expression (see `Grammar.Deterministic`, CORE-02). Scanners usually live in `static readonly` fields, so a null one is likely a field declared later in the class. The message should say to declare the scanner before the rules that use it, not suggest `Rec`.
 
 ## Acceptance criteria
 
