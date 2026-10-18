@@ -17,6 +17,7 @@ Sequencing and maps: the shapes that make up most grammar code.
 - `Before`, `Then`, `Between`, `Ignore`, `Optional`.
 - `Slice()` and `Text()` capture nodes.
 - Each public combinator null-checks its parser arguments by taking its own `[CallerArgumentExpression]` parameter per parser argument and passing it to `Guard.NotNull`, so the `GrammarException` names the caller's expression (see `Grammar.Deterministic`, CORE-02). A `params` array cannot capture each element's expression, so the `Seq` overloads take fixed-arity overloads, each with one expression parameter per operand, rather than `params`.
+- A combinator whose result type is built from `TOut`, such as `Optional`, is an extension member in a static class, not an instance method of `Parser<TIn, TOut>`. As an instance method it makes Native AOT expand the parser type without end (IL3054), as CORE-07 found with `Many`.
 
 ## Acceptance criteria
 

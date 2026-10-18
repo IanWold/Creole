@@ -30,4 +30,10 @@ internal sealed class PlanBuilder
     public static Plan<TIn, TOut> Return<TIn, TOut>(TOut value) => new ReturnPlan<TIn, TOut>(value);
 
     public static Plan<TIn, TOut> Fail<TIn, TOut>() => new FailPlan<TIn, TOut>();
+
+    /// <summary>
+    /// Stands in for the lowering of a node kind the interpreter cannot run yet. INT-03 replaces every call.
+    /// </summary>
+    public static Plan<TIn, TOut> NotYetExecutable<TIn, TOut>(NodeKind kind) =>
+        throw new NotSupportedException($"The interpreter cannot run {kind} nodes yet.");
 }
