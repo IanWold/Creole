@@ -274,7 +274,28 @@ Every branch is visible to analysis, unlike `Bind`. `Bind` remains for grammars 
 
 ### Expressions
 
-`Expression.Build(atom, table)` takes an operator table (prefix, postfix, left-, right- and non-associative infix per precedence level) and compiles to precedence climbing. Grammars never need left recursion for operators, and analysis treats the result as one well-understood node. This is the precedence-table pattern of Willis and Wu (Haskell Symposium 2021).
+`Expression.Build(atom, table)` builds one node from an atom and an operator table. Grammars never need left recursion for operators, and analysis reads the table directly. The table is the precedence-table pattern of Willis and Wu (Haskell Symposium 2021). Creole parses it by precedence climbing rather than folding it into chains, so a prefix operator can appear in any operand position ([ADR-0004](work/docs/decisions/0004-expression-build-operator-table-and-semantics.md)).
+
+```csharp
+static readonly Parser<char, double> Expr = Expression.Build(Atom, op =>
+[
+    [op.Postfix(Char('!'), (x, _) => Factorial(x))],
+    [op.InfixR(Char('^'), (l, _, r) => Math.Pow(l, r))],
+    [op.Prefix(Char('-'), (_, x) => -x)],
+    [op.InfixL(Char('*'), (l, _, r) => l * r), op.InfixL(Char('/'), (l, _, r) => l / r)],
+    [op.InfixL(Char('+'), (l, _, r) => l + r), op.InfixL(Char('-'), (l, _, r) => l - r)],
+    [op.InfixN(Char('<'), (l, _, r) => l < r ? 1 : 0)],
+]);
+```
+
+- **Table.** Levels are listed tightest first, and every level produces the atom's type. Each operator is a parser of any type plus a combine function that receives the operator's value, so an AST node can record the operator's span. The lambda's `op` fixes the result type, so the combine functions need no annotations.
+- **Checks.** `Build` throws a `GrammarException` for an empty table or level, or a level that mixes infix associativities. Prefix and postfix operators may share a level with infix ones.
+- **Operands.** Wherever an operand is expected, prefix operators are tried first, and a prefix operator's operand is parsed at its own level. So `2 ^ -x` is `2 ^ (-x)` and `-x ^ 2` is `-(x ^ 2)`. Prefix and postfix operators repeat: `- -x`, `f()()`. At one level, prefix applies before postfix.
+- **Operators.** After an operand, postfix and infix operators are tried, tighter levels first. Prefix operators are never tried there, so `-` can be both prefix and infix. A token used as both postfix and infix goes to whichever is tried first, which analysis reports as an ambiguity.
+- **Non-associative chains.** In `a < b < c`, the second `<` fails committed with "'<' cannot be chained; add parentheses". `a < b + 1` is unaffected.
+- **Errors.** Ordinary commit semantics apply. An operator that fails without consuming ends the expression; one that consumed input commits, so a missing right operand is an error at that point. Operand recursion counts against `ParseOptions.MaxDepth`.
+
+This differs from Pidgin's `ExpressionParser` in three ways: Pidgin applies prefix and postfix operators once unless they are marked chainable, it cannot parse `2 ^ -x` when `-` is looser than `^`, and it leaves `< c` unparsed instead of reporting the chain.
 
 ### Text capture
 
