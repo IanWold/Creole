@@ -19,7 +19,7 @@ The allocation-free cursor every engine reads through.
 
 ## Acceptance criteria
 
-- [ ] Micro-benchmarks show no allocation per read.
+- [ ] Tests show no allocation per read, for in-memory and segmented input.
 
 ## Blocked by
 
@@ -39,3 +39,4 @@ The allocation-free cursor every engine reads through.
 
 - 2026-10-18 (Build): Started. Plan a `Cursor<TIn>` ref struct over a current segment (span plus base offset) with a refill hook left for LAY-01, plus in-memory sources over `string`, `ReadOnlyMemory<char>` and `T[]`; prove zero allocation per read with BenchmarkDotNet's MemoryDiagnoser.
 - 2026-10-18 (Build): Increment 1 of 3 done. Added public `Cursor<T>` ref struct (`Position`, `IsAtEnd`, `TryPeek`, `TryRead`, `Advance(int)`, `Available`; internal `Reset`) and internal `ICursorSource<T>` for LAY-01. In-memory input goes through the internal `Cursor<T>(ReadOnlySpan<T>)` constructor, which takes `string`, `T[]` and `ReadOnlyMemory<T>.Span` directly; a separate factory class was redundant. The cursor holds a span, not a `ReadOnlyMemory<T>`; `Slice` adds an internal memory field when it is built, with no public change. 19 cursor tests, one a CsCheck property over random segmentations pass. Next: allocation proof (test and `CursorBenchmarks`).
+- 2026-10-18 (Build): Increment 2 of 3 done. Added `CursorAllocationTests`, which assert zero bytes from `GC.GetAllocatedBytesForCurrentThread` over 2^20 reads in four patterns: `TryRead` over a string, `TryPeek` plus `Advance(1)` over an `int[]`, `Available` scans across segments, and `TryRead` across segments followed by `Reset`. Moved the test `SegmentedSource<T>` to its own file. Acceptance criterion changed with the maintainer from "Micro-benchmarks show no allocation per read" to "Tests show no allocation per read, for in-memory and segmented input": § Benchmark plan covers only whole-grammar comparisons, the tests are exact and run on every `dotnet test`, and a `--job short` run of cursor micro-benchmarks gave sub-nanosecond timings with error above the mean (allocation was zero). The micro-benchmarks were removed; LAY-01 can add one if it needs to compare the fast path before and after the stream buffer. Next: `docs/engines/cursor.md`.
