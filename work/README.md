@@ -37,7 +37,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 2 | ✅ [FND-04](active/01-foundations/FND-04-test-infrastructure.md) Test infrastructure | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | 2 | ✅ [FND-05](active/01-foundations/FND-05-benchmark-harness.md) Benchmark harness | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | 2 | ✅ [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md) Validate C# 15 features and decide `ParseResult<T>` | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md); .NET 11 / C# 15 GA (expected November 2026) |
-| 2 | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) Grammar node model | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
+| 2 | ✅ [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) Grammar node model | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | 2 | [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) Cursor and in-memory input | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | 2 | [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) SourceSpan, SourceId and LineMap | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | 3 | [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) Fix numeric gate thresholds | [FND-05](active/01-foundations/FND-05-benchmark-harness.md) |
@@ -51,7 +51,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 3 | [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md) Expression.Build | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
 | 3 | [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md) Custom primitives | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
 | 3 | [INT-02](active/03-interpreter/INT-02-plan-lowering-and-cache.md) Plan lowering and cache | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md), [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) |
-| 3 | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) Error and result types | ✅ [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) |
+| 3 | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) Error and result types | [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) |
 | 4 | [CORE-03](active/02-core-combinators/CORE-03-primitive-nodes.md) Primitive nodes | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
 | 4 | [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md) Bind and LINQ query syntax | [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) |
 | 4 | [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) Diagnostic rendering | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) |
@@ -147,7 +147,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 4 | [GEN-10](active/11-source-generator/GEN-10-measure-the-interpreter-fallback-rate.md) Measure the interpreter fallback rate | [GEN-04](active/11-source-generator/GEN-04-interpreter-fallback-and-crl0301.md), [REL-01](active/14-release/REL-01-worked-example-samples.md) |
 | 4 | [BENCH-02](active/13-benchmarks/BENCH-02-full-benchmark-suite.md) Full benchmark suite | [FND-05](active/01-foundations/FND-05-benchmark-harness.md), [ERR-07](active/04-errors-and-recovery/ERR-07-lexer-recovery-and-cascade-suppression.md), [STRM-02](active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md), [GEN-05](active/11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md), [GEN-06](active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md) |
 | 4 | [REL-02](active/14-release/REL-02-documentation.md) Documentation | [RSLN-03](active/10-roslyn-analyzers/RSLN-03-build-time-diagnostic-reporting.md), [GEN-04](active/11-source-generator/GEN-04-interpreter-fallback-and-crl0301.md), [TOOL-01](active/12-grammar-author-tooling/TOOL-01-creoletesting-assertions.md) |
-| 4 | [REL-04](active/14-release/REL-04-public-api-review-and-freeze.md) Public API review and freeze | ✅ [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [ERR-07](active/04-errors-and-recovery/ERR-07-lexer-recovery-and-cascade-suppression.md), [SPAN-07](active/05-source-spans/SPAN-07-embedded-languages.md), [STRM-03](active/08-streaming/STRM-03-streaming-diagnostics.md), [GEN-06](active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md), [TOOL-01](active/12-grammar-author-tooling/TOOL-01-creoletesting-assertions.md) |
+| 4 | [REL-04](active/14-release/REL-04-public-api-review-and-freeze.md) Public API review and freeze | [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [ERR-07](active/04-errors-and-recovery/ERR-07-lexer-recovery-and-cascade-suppression.md), [SPAN-07](active/05-source-spans/SPAN-07-embedded-languages.md), [STRM-03](active/08-streaming/STRM-03-streaming-diagnostics.md), [GEN-06](active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md), [TOOL-01](active/12-grammar-author-tooling/TOOL-01-creoletesting-assertions.md) |
 | 5 | [TOOL-06](active/12-grammar-author-tooling/TOOL-06-engineagreementcheck.md) EngineAgreement.Check | [GEN-08](active/11-source-generator/GEN-08-differential-engine-agreement-tests.md) |
 | 5 | [REL-03](active/14-release/REL-03-migration-guides.md) Migration guides | [BENCH-02](active/13-benchmarks/BENCH-02-full-benchmark-suite.md) |
 | 6 | [REL-05](active/14-release/REL-05-ship-10.md) Ship 1.0 **(1.0 release)** | [FND-01](active/01-foundations/FND-01-reserve-the-creole-nuget-package-id.md), [MODE-06](active/07-mode-channels/MODE-06-model-based-tests-for-mode-rollback.md), [GEN-07](active/11-source-generator/GEN-07-debugging-generated-code.md), [GEN-08](active/11-source-generator/GEN-08-differential-engine-agreement-tests.md), [GEN-09](active/11-source-generator/GEN-09-native-aot-and-trimming-validation.md), [GEN-10](active/11-source-generator/GEN-10-measure-the-interpreter-fallback-rate.md), [TOOL-06](active/12-grammar-author-tooling/TOOL-06-engineagreementcheck.md), [BENCH-02](active/13-benchmarks/BENCH-02-full-benchmark-suite.md), [REL-02](active/14-release/REL-02-documentation.md), [REL-03](active/14-release/REL-03-migration-guides.md), [REL-04](active/14-release/REL-04-public-api-review-and-freeze.md) |
@@ -197,7 +197,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) Grammar node model — Build
+- None yet.
 
 ### Can start now
 
@@ -205,6 +205,15 @@ These items have all their blockers done:
 
 - [FND-01](active/01-foundations/FND-01-reserve-the-creole-nuget-package-id.md) Reserve the Creole NuGet package ID
 - [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) Fix numeric gate thresholds
+- [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) Grammar base classes and authoring surface
+- [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) Sequencing and mapping nodes
+- [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md) Choice nodes
+- [CORE-06](active/02-core-combinators/CORE-06-longest.md) Longest
+- [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md) Repetition nodes
+- [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md) Control nodes
+- [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) Recursion with Rec
+- [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md) Expression.Build
+- [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md) Custom primitives
 - [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) Cursor and in-memory input
 - [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) SourceSpan, SourceId and LineMap
 
@@ -231,7 +240,7 @@ The immutable grammar-tree model and the full combinator vocabulary. Folder: [`a
 
 | Work item | Phase | Blocked by |
 | --- | --- | --- |
-| [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) Grammar node model | 0 | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
+| ✅ [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) Grammar node model | 0 | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) Grammar base classes and authoring surface | 0 | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
 | [CORE-03](active/02-core-combinators/CORE-03-primitive-nodes.md) Primitive nodes | 0 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
 | [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) Sequencing and mapping nodes | 0 | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
@@ -265,7 +274,7 @@ The error model, furthest-failure reporting, rendering, withdrawal and recovery.
 
 | Work item | Phase | Blocked by |
 | --- | --- | --- |
-| [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) Error and result types | 0 | ✅ [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) |
+| [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) Error and result types | 0 | [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) |
 | [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) Furthest-failure tracking and labels | 0 | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) |
 | [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) Diagnostic rendering | 0 | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) |
 | [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md) Diagnostic withdrawal | 1 | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) |
@@ -402,7 +411,7 @@ Worked examples, documentation, migration guides, API freeze and shipping 1.0. F
 | [REL-01](active/14-release/REL-01-worked-example-samples.md) Worked-example samples | 2 | [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md), [INT-04](active/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md), [LAY-07](active/06-layers-and-pipelines/LAY-07-three-layer-demo-and-bounded-memory-check.md), [MODE-03](active/07-mode-channels/MODE-03-rollback-rule.md), [ANA-06](active/09-static-analysis/ANA-06-deterministic-mode.md) |
 | [REL-02](active/14-release/REL-02-documentation.md) Documentation | 3 | [RSLN-03](active/10-roslyn-analyzers/RSLN-03-build-time-diagnostic-reporting.md), [GEN-04](active/11-source-generator/GEN-04-interpreter-fallback-and-crl0301.md), [TOOL-01](active/12-grammar-author-tooling/TOOL-01-creoletesting-assertions.md) |
 | [REL-03](active/14-release/REL-03-migration-guides.md) Migration guides | 3 | [BENCH-02](active/13-benchmarks/BENCH-02-full-benchmark-suite.md) |
-| [REL-04](active/14-release/REL-04-public-api-review-and-freeze.md) Public API review and freeze | 3 | ✅ [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [ERR-07](active/04-errors-and-recovery/ERR-07-lexer-recovery-and-cascade-suppression.md), [SPAN-07](active/05-source-spans/SPAN-07-embedded-languages.md), [STRM-03](active/08-streaming/STRM-03-streaming-diagnostics.md), [GEN-06](active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md), [TOOL-01](active/12-grammar-author-tooling/TOOL-01-creoletesting-assertions.md) |
+| [REL-04](active/14-release/REL-04-public-api-review-and-freeze.md) Public API review and freeze | 3 | [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [ERR-07](active/04-errors-and-recovery/ERR-07-lexer-recovery-and-cascade-suppression.md), [SPAN-07](active/05-source-spans/SPAN-07-embedded-languages.md), [STRM-03](active/08-streaming/STRM-03-streaming-diagnostics.md), [GEN-06](active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md), [TOOL-01](active/12-grammar-author-tooling/TOOL-01-creoletesting-assertions.md) |
 | [REL-05](active/14-release/REL-05-ship-10.md) Ship 1.0 | 3 | [FND-01](active/01-foundations/FND-01-reserve-the-creole-nuget-package-id.md), [MODE-06](active/07-mode-channels/MODE-06-model-based-tests-for-mode-rollback.md), [GEN-07](active/11-source-generator/GEN-07-debugging-generated-code.md), [GEN-08](active/11-source-generator/GEN-08-differential-engine-agreement-tests.md), [GEN-09](active/11-source-generator/GEN-09-native-aot-and-trimming-validation.md), [GEN-10](active/11-source-generator/GEN-10-measure-the-interpreter-fallback-rate.md), [TOOL-06](active/12-grammar-author-tooling/TOOL-06-engineagreementcheck.md), [BENCH-02](active/13-benchmarks/BENCH-02-full-benchmark-suite.md), [REL-02](active/14-release/REL-02-documentation.md), [REL-03](active/14-release/REL-03-migration-guides.md), [REL-04](active/14-release/REL-04-public-api-review-and-freeze.md) |
 
 ### INC — Incremental re-parsing (1.x)
