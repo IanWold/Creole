@@ -38,3 +38,4 @@ The public span type and on-demand line and column lookup.
 ## Progress notes
 
 - 2026-10-18 (Build): Started. Build directly from § Source spans and provenance; settle the SourceId registry shape, CharStart/CharEnd defaults and how LineMap counts scalar-value columns in the /build plan.
+- 2026-10-18 (Build): Increment 1 done. Added `SourceId`, `SourceRegistry` (per instance, thread-safe; `default` id is Unnamed) and `SourceSpan` (two constructors instead of `init` char offsets, so every span is validated), with tests and docs/concepts/spans.md. Build clean; 55 tests pass. Next: increment 2, `LineMap` with its builder, `LinePosition` (1-based), the CsCheck model test and the test past 2 GB.
