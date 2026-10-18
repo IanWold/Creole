@@ -559,7 +559,7 @@ Lexer layers recover the same way. `Layer.Tokens(..., onError: Recover.SkipChar(
 
 ### Results
 
-`ParseResult<T>` is a union of Parsed, Recovered and Failed (§ Using C# 15 unions). Recovered and Failed carry a `DiagnosticBag` ordered by span. `Parsed<T>` means no errors were recorded. After recovery a value can exist alongside errors, which is what editors and linters want, and the Recovered case makes that state impossible to overlook.
+`ParseResult<T>` is a union of Parsed, Recovered and Failed (§ Using C# 15 unions). Recovered and Failed carry a `Diagnostics` collection ordered by span. `Parsed<T>` means no errors were recorded. After recovery a value can exist alongside errors, which is what editors and linters want, and the Recovered case makes that state impossible to overlook.
 
 ### Limits for untrusted input
 

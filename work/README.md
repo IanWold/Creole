@@ -198,7 +198,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- None yet.
+- [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) Error and result types — Build
 
 ### Can start now
 
@@ -211,7 +211,6 @@ These items have all their blockers done:
 - [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md) Control nodes
 - [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) Recursion with Rec
 - [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md) Custom primitives
-- [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) Error and result types
 - [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) StreamBuffer and pulling cursor
 
 ## Epics

@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Errors, diagnostics and recovery](../../README.md#err--errors-diagnostics-and-recovery) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -15,11 +15,15 @@ The public shapes for results and errors, using C# 15 unions as decided in FND-0
 - `ParseError` with span, layer, unexpected, expected and context.
 - `Unexpected` and `Expectation` unions with their case records.
 - `ParseResult<T>` as the declared union `ParseResult<T>(Parsed<T>, Recovered<T>, Failed)` ([ADR-0002](../../docs/decisions/0002-parseresult-as-a-plain-union.md)). No public API returns or exposes `default(ParseResult<T>)`.
-- `Diagnostics` / `DiagnosticBag` ordered by span, with `Count`, `Empty` and `Render()`.
+- `Diagnostics`, an immutable collection of `ParseError` ordered by span, with `Count`, `Empty` and `Render()`.
+- `Render()` is minimal: one line per error. The rich format (source names, lines and columns, gutter, carets) is [ERR-03](ERR-03-diagnostic-rendering.md).
 
 ## Acceptance criteria
 
-- [ ] The whitepaper's `switch` on `json.Parse(text)` compiles without a default arm.
+- [ ] The whitepaper's `switch` on `json.Parse(text)` compiles without a default arm in an assembly that references Creole, and dropping a case is CS8509.
+- [ ] No public API returns `default(ParseResult<T>)`: a test lists every public member that returns `ParseResult<T>` and fails if one has no test showing its result is never `default`.
+- [ ] `Diagnostics` orders errors by span whatever order they arrive in, and keeps arrival order for equal spans (property test). `Count` and `Empty` are tested.
+- [ ] `Render()` writes one line per error in span order, with layer, span, unexpected, expected and context (snapshot test).
 
 ## Blocked by
 
@@ -43,3 +47,9 @@ The public shapes for results and errors, using C# 15 unions as decided in FND-0
 ## Artifacts
 
 - [ADR-0002: `ParseResult<T>` is a plain C# 15 union](../../docs/decisions/0002-parseresult-as-a-plain-union.md)
+
+## Progress notes
+
+- 2026-10-18 (Build): Started. Design is settled by ADR-0002 and § The error model; build the records and unions, `ParseResult<T>`, and the span-ordered diagnostics collection, with a compile test of the whitepaper's switch. Next: `/build` plan.
+- 2026-10-18 (Build): Increment 1 done: `ParseError` (element-wise equality over `Expected` and `Context`), `Unexpected`, `Expectation` and their case records in `src/Creole`, `ErrorModelTests` (13 pass; full suite passes), and `docs/concepts/errors.md`. Checked in scratch that Roslyn 5.9.0 reads Creole's unions from metadata: a full switch is clean and a missing case is CS8509, so the snippet test needs no package bump. Next: increment 2, results and `Diagnostics`.
+- 2026-10-18 (Build): Increment 1 restructured before commit, at the maintainer's request: one type per file under `src/Creole/Errors/`, namespace `Creole`. Convention added to CONTRIBUTING.md § Conventions and `.claude/rules/dotnet.md`. Build and all tests pass. Next: increment 2, results and `Diagnostics`, also in `Errors/`.
