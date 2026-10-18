@@ -16,6 +16,7 @@ Sequencing and maps: the shapes that make up most grammar code.
 - `Select` and `As` as instance methods, allowing an explicit result type so union conversions apply.
 - `Before`, `Then`, `Between`, `Ignore`, `Optional`.
 - `Slice()` and `Text()` capture nodes.
+- Each public combinator null-checks its parser arguments by taking its own `[CallerArgumentExpression]` parameter per parser argument and passing it to `Guard.NotNull`, so the `GrammarException` names the caller's expression (see `Grammar.Deterministic`, CORE-02). A `params` array cannot capture each element's expression, so the `Seq` overloads take fixed-arity overloads, each with one expression parameter per operand, rather than `params`.
 
 ## Acceptance criteria
 

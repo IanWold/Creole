@@ -15,6 +15,7 @@ Repetition combinators with Pidgin-compatible behavior.
 - `Many`, `AtLeastOnce`, `Repeat(min, max)`.
 - `SepBy`, `SepBy1`, `SepEndBy`, `Until(terminator)`.
 - Allocation-free `SkipMany` and `SkipAtLeastOnce`.
+- Each public combinator null-checks its parser arguments by taking its own `[CallerArgumentExpression]` parameter per parser argument and passing it to `Guard.NotNull`, so the `GrammarException` names the caller's expression (see `Grammar.Deterministic`, CORE-02).
 
 ## Acceptance criteria
 

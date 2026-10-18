@@ -18,6 +18,7 @@ Query syntax stays first-class. Each `from` clause is classified as an analyzabl
 - Handle transparent identifiers in queries with three or more clauses.
 - `where` as a filter that fails committed after consuming; `let` as a map.
 - Verify behavior under Native AOT (expressions are interpreted) and trimming.
+- Each public combinator null-checks its parser arguments by taking its own `[CallerArgumentExpression]` parameter per parser argument and passing it to `Guard.NotNull`, so the `GrammarException` names the caller's expression (see `Grammar.Deterministic`, CORE-02).
 
 ## Acceptance criteria
 

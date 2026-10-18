@@ -14,6 +14,7 @@ Maximal munch as an ordinary combinator: every alternative runs atomically from 
 
 - `Longest(p1, ..., pn)` node.
 - Expose alternatives so engines can compile regular ones to a single DFA (INT-06).
+- Each public combinator null-checks its parser arguments by taking its own `[CallerArgumentExpression]` parameter per parser argument and passing it to `Guard.NotNull`, so the `GrammarException` names the caller's expression (see `Grammar.Deterministic`, CORE-02). A `params` array cannot capture each element's expression, so `Longest`'s overloads take fixed-arity overloads, each with one expression parameter per operand, rather than `params`.
 
 ## Acceptance criteria
 

@@ -15,7 +15,8 @@ Report the furthest failure with merged expectations, without allocating until a
 - Per-layer furthest failure stored as a buffer index plus an interned expectation-set handle.
 - Merge expected sets at equal positions; build `ParseError` lazily.
 - `Named` replaces the expected set only when `p` fails without consuming.
-- `Context` stack; `Describe(TKind)` for display.
+- `Context` stack.
+- `Describe(TKind)` on `TokenGrammar` for display (moved from CORE-02). Run `/decide` first on how the renderer reaches it: grammar classes hold static fields and are never instantiated, so an instance `virtual` has no caller, and a class cannot declare static virtual members. Options include passing a grammar instance to the pipeline, a self-typed `TokenGrammar<TSelf, TToken, TKind>`, or a static abstract interface member on the token or kind type.
 
 ## Acceptance criteria
 
