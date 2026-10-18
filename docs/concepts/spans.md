@@ -33,3 +33,33 @@ sources.GetName(SourceId.Unnamed);    // null
 - Adding the same name twice gives two different ids.
 - An id means something only in the registry that issued it. Ids from different registries can compare equal, and `GetName` throws `ArgumentException` for an id it did not issue.
 - A registry is safe to use from several threads.
+
+## Lines and columns
+
+A `LineMap` turns character offsets into lines and columns. Build it once per source, then look up as many offsets as you need. It records where lines start and does not keep the text.
+
+```csharp
+var map = LineMap.Create("{\r\n  \"port\": 8080\r\n}");
+
+LinePosition quote = map.GetPosition(5);    // 2:3, the quote before "port"
+long lines = map.LineCount;                 // 3
+```
+
+- Lines and columns start at 1. `LinePosition` formats as `line:column`.
+- Line breaks are LF, CRLF and CR. NEL, U+2028 and U+2029 do not end a line.
+- Columns count Unicode scalar values, so an emoji written as a surrogate pair is one column. A lone surrogate is also one column.
+- The LF of a CRLF is on the same line as its CR. An offset on the second half of a surrogate pair has the same column as the first half.
+- Any offset from 0 to the text's length is valid. The length itself is the position just past the last character. Other offsets throw `ArgumentOutOfRangeException`.
+
+For text that does not fit in one string, such as a source longer than 2 GB, feed it to a `LineMap.Builder` in chunks. A CRLF or a surrogate pair may be split across two chunks.
+
+```csharp
+var builder = new LineMap.Builder();
+
+foreach (ReadOnlyMemory<char> chunk in chunks)
+{
+    builder.Append(chunk.Span);
+}
+
+LineMap map = builder.Build();
+```
