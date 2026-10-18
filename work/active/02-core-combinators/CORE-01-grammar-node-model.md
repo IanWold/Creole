@@ -12,7 +12,9 @@ Every combinator call builds an immutable node in a grammar tree. This item esta
 
 ## Scope
 
-- `Parser<TIn, TOut>` abstract base as a `closed` hierarchy with an internal `NodeKind`.
+- `Parser<TIn, TOut>` abstract base with `internal` constructors and `internal sealed` node classes, not `closed` ([ADR-0001](../../docs/decisions/0001-grammar-node-encoding-and-engine-dispatch.md)).
+- The structural view: an internal `NodeKind` and the node's children in an untyped form, for consumers that need only structure.
+- The convention for typed engine operations: an `internal abstract` member on `Parser<TIn, TOut>` that every node overrides, forwarding its typed fields to the engine. INT-02 adds the first one, lowering.
 - Immutability and identity semantics for nodes.
 - `Unit` and `IKinded<TKind>`.
 - Null-argument checks on every combinator, throwing a `GrammarException` that names the argument expression via `[CallerArgumentExpression]` (the run-time half of CRL0004).
@@ -21,7 +23,7 @@ Every combinator call builds an immutable node in a grammar tree. This item esta
 ## Acceptance criteria
 
 - [ ] Node types cannot be subclassed outside the assembly.
-- [ ] Adding a node kind without handling it in an engine's dispatch switch produces a build warning.
+- [ ] A node type that does not implement every abstract node member fails to compile, and a switch expression over `NodeKind` that misses a kind fails the build.
 
 ## Blocked by
 
@@ -47,6 +49,14 @@ Every combinator call builds an immutable node in a grammar tree. This item esta
 - [§ Where unions are not used](../../../whitepaper.md#where-unions-are-not-used)
 - [§ Diagnostics](../../../whitepaper.md#diagnostics)
 
+## Artifacts
+
+- [Research: grammar node encoding and dispatch](../../docs/research/2026-10-18-grammar-node-encoding-and-dispatch.md)
+- [ADR-0001: Grammar node encoding and engine dispatch](../../docs/decisions/0001-grammar-node-encoding-and-engine-dispatch.md)
+
 ## Progress notes
 
 - 2026-10-18 (Build): Started. Probed `closed` on the pinned RC 2 SDK (11.0.100-rc.2.26504.105): a `closed` generic base compiles, and a switch missing a case gives CS8509 (an error here, since warnings are errors). `closed` is implicitly abstract, so `abstract closed` is CS9384. Not yet confirmed on the GA compiler; FND-07 does that. Derivation from another assembly is not yet tested (criterion 1). Next: `/build` to plan against the acceptance criteria.
+- 2026-10-18 (Designing): Moved back from Build before any code. On RC 2 a `closed` `Parser<TIn, TOut>` cannot hold nodes with a type parameter missing from the base: `Map<TIn, TA, TOut> : Parser<TIn, TOut>` is error CS9383. Nodes that fix `TOut` (`Tok<TIn> : Parser<TIn, TIn>`) compile, but a generic engine switch over `Parser<TIn, TOut>` cannot name them and gets CS8509. Only nodes shaped exactly `X<TIn, TOut>`, with other types hidden in an internal object reached through a visitor, give a checkable switch. § Where unions are not used assumes this works directly. Next: `/decide` on how nodes encode intermediate types and how engine dispatch is made complete (closed plus inner visitors, a plain visitor interface, or an internal `NodeKind` enum switch).
+- 2026-10-18 (Designing): Research note written. `closed` cannot hold nodes with hidden or fixed type arguments; the spec makes this final. The note supports an abstract `internal` method per typed operation (missing override is CS0534), a `NodeKind` enum for consumers that need only structure, and an `internal` constructor instead of `closed` (other assemblies get CS1729). Next: `/decide` on node encoding and engine dispatch.
+- 2026-10-18 (Building): ADR-0001 accepted by the maintainer: option D, an internal constructor plus one abstract member per engine operation, with a `NodeKind` structural view; no `closed`. Whitepaper, scope and criterion 2 updated to match. Back to Build. Next: `/build CORE-01` to plan against the revised criteria.

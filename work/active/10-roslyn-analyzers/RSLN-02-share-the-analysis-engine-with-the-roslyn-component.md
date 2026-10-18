@@ -13,7 +13,7 @@ The same analysis must run at run time (net11.0) and inside the compiler (netsta
 ## Scope
 
 - Factor analysis over an abstract grammar model, shared by source linking or a common netstandard2.0 library.
-- Adapters from runtime nodes and from the build-time model.
+- Adapters from runtime nodes and from the build-time model. The runtime adapter reads each node's `NodeKind` and children and switches on `NodeKind` with a switch expression, so a new kind fails the build ([ADR-0001](../../docs/decisions/0001-grammar-node-encoding-and-engine-dispatch.md)).
 
 ## Acceptance criteria
 
@@ -31,3 +31,8 @@ The same analysis must run at run time (net11.0) and inside the compiler (netsta
 ## Whitepaper references
 
 - [§ Where analysis runs](../../../whitepaper.md#where-analysis-runs)
+
+## Artifacts
+
+- [Research: grammar node encoding and dispatch](../../docs/research/2026-10-18-grammar-node-encoding-and-dispatch.md)
+- [ADR-0001: Grammar node encoding and engine dispatch](../../docs/decisions/0001-grammar-node-encoding-and-engine-dispatch.md)
