@@ -30,7 +30,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 
 | Wave | Work item | Blocked by |
 | --- | --- | --- |
-| 1 | [FND-01](active/01-foundations/FND-01-reserve-the-creole-nuget-package-id.md) Reserve the Creole NuGet package ID | — |
+| 1 | ✅ [FND-01](active/01-foundations/FND-01-reserve-the-creole-nuget-package-id.md) Reserve the Creole NuGet package ID | — |
 | 1 | ✅ [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) Repository and solution scaffolding | — |
 | 1 | ✅ [FND-08](active/01-foundations/FND-08-whitepaper-editorial-cleanup.md) Whitepaper editorial cleanup | — |
 | 2 | ✅ [FND-03](active/01-foundations/FND-03-continuous-integration.md) Continuous integration | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
@@ -204,7 +204,6 @@ Cards whose Status is Researching, Designing or Building:
 
 These items have all their blockers done:
 
-- [FND-01](active/01-foundations/FND-01-reserve-the-creole-nuget-package-id.md) Reserve the Creole NuGet package ID
 - [CORE-03](active/02-core-combinators/CORE-03-primitive-nodes.md) Primitive nodes
 - [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) Sequencing and mapping nodes
 - [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md) Choice nodes
@@ -223,7 +222,7 @@ Repository, CI, test and benchmark infrastructure, and the decisions code will d
 
 | Work item | Phase | Blocked by |
 | --- | --- | --- |
-| [FND-01](active/01-foundations/FND-01-reserve-the-creole-nuget-package-id.md) Reserve the Creole NuGet package ID | 0 | — |
+| ✅ [FND-01](active/01-foundations/FND-01-reserve-the-creole-nuget-package-id.md) Reserve the Creole NuGet package ID | 0 | — |
 | ✅ [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) Repository and solution scaffolding | 0 | — |
 | ✅ [FND-03](active/01-foundations/FND-03-continuous-integration.md) Continuous integration | 0 | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | ✅ [FND-04](active/01-foundations/FND-04-test-infrastructure.md) Test infrastructure | 0 | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
