@@ -13,12 +13,12 @@ The Phase 2 gate: classic grammar bugs are caught at build time.
 
 ## Scope
 
-- A corpus of deliberately buggy grammars, one per CRL error and warning.
+- A corpus of deliberately buggy grammars, one per CRL error and warning, each paired with a near miss that must not trigger it.
 - A test project that compiles the corpus and asserts the expected build-time diagnostics.
 
 ## Acceptance criteria
 
-- [ ] Every corpus entry produces its expected diagnostic at build time.
+- [ ] Every buggy grammar produces its expected diagnostic at build time, and no near miss produces one ([ADR-0003](../../docs/decisions/0003-numeric-gate-thresholds.md)).
 
 ## Blocked by
 

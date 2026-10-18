@@ -18,7 +18,7 @@ Fused engines join the differential tests and the benchmark gate.
 
 ## Acceptance criteria
 
-- [ ] Agreement holds and the measured win meets the threshold.
+- [ ] Agreement holds, and fused code is at least 1.2× faster than the best unfused generated code (geometric mean over JSON, arithmetic and Example B), with no benchmark slower ([ADR-0003](../../docs/decisions/0003-numeric-gate-thresholds.md)).
 
 ## Blocked by
 

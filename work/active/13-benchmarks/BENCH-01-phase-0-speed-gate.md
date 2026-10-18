@@ -9,16 +9,16 @@
 
 ## Summary
 
-The Phase 0 gate: core tests green and speed near Pidgin.
+The Phase 0 gate: core tests green, and the interpreter at least as fast as Pidgin and within 1.5× of Parlot.
 
 ## Scope
 
 - Character-level JSON and arithmetic grammars on the interpreter.
-- Compare against Pidgin and Parlot baselines from FND-05.
+- Compare against the FND-05 Pidgin (`PidginFolds` for arithmetic) and stable Parlot baselines in the same run; median of three runs on the gate machine ([ADR-0003](../../docs/decisions/0003-numeric-gate-thresholds.md)).
 
 ## Acceptance criteria
 
-- [ ] The Phase 0 threshold from FND-06 is met, or the gap is understood and recorded.
+- [ ] The Phase 0 speed thresholds in [ADR-0003](../../docs/decisions/0003-numeric-gate-thresholds.md) are met (time: geometric mean ≤ 1.0× Pidgin, no benchmark above 1.25× Pidgin, geometric mean ≤ 1.5× Parlot; allocations ≤ Pidgin's on every benchmark), or the gap is understood and recorded.
 
 ## Blocked by
 

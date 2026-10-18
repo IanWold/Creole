@@ -30,6 +30,7 @@ The published benchmark suite across every engine.
 
 ## Unblocks
 
+- [BENCH-03 Phase 3 speed gate](BENCH-03-phase-3-speed-gate.md)
 - [REL-03 Migration guides](../14-release/REL-03-migration-guides.md)
 - [REL-05 Ship 1.0](../14-release/REL-05-ship-10.md)
 - [FUS-01 Fusion feasibility measurement](../16-layer-fusion/FUS-01-fusion-feasibility-measurement.md)

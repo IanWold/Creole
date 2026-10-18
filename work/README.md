@@ -6,7 +6,7 @@ This folder breaks the [Creole whitepaper](../whitepaper.md) into epics and work
 - Every work item lists what blocks it and what it unblocks. Blockers are hard dependencies: an item should not start until its blockers are done.
 - Phases follow the whitepaper's [Roadmap](../whitepaper.md#roadmap). An item can start as soon as its blockers are done, even if earlier phases still have unrelated work open.
 
-**Totals:** 18 epics, 116 work items.
+**Totals:** 18 epics, 117 work items.
 
 ## Roadmap
 
@@ -40,7 +40,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 2 | ✅ [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) Grammar node model | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | 2 | ✅ [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) Cursor and in-memory input | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | 2 | ✅ [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) SourceSpan, SourceId and LineMap | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
-| 3 | [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) Fix numeric gate thresholds | [FND-05](active/01-foundations/FND-05-benchmark-harness.md) |
+| 3 | ✅ [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) Fix numeric gate thresholds | [FND-05](active/01-foundations/FND-05-benchmark-harness.md) |
 | 3 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) Grammar base classes and authoring surface | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
 | 3 | [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md) Repetition nodes | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
 | 3 | [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md) Expression.Build | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
@@ -149,8 +149,9 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 4 | [REL-02](active/14-release/REL-02-documentation.md) Documentation | [RSLN-03](active/10-roslyn-analyzers/RSLN-03-build-time-diagnostic-reporting.md), [GEN-04](active/11-source-generator/GEN-04-interpreter-fallback-and-crl0301.md), [TOOL-01](active/12-grammar-author-tooling/TOOL-01-creoletesting-assertions.md) |
 | 4 | [REL-04](active/14-release/REL-04-public-api-review-and-freeze.md) Public API review and freeze | [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [ERR-07](active/04-errors-and-recovery/ERR-07-lexer-recovery-and-cascade-suppression.md), [SPAN-07](active/05-source-spans/SPAN-07-embedded-languages.md), [STRM-03](active/08-streaming/STRM-03-streaming-diagnostics.md), [GEN-06](active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md), [TOOL-01](active/12-grammar-author-tooling/TOOL-01-creoletesting-assertions.md) |
 | 5 | [TOOL-06](active/12-grammar-author-tooling/TOOL-06-engineagreementcheck.md) EngineAgreement.Check | [GEN-08](active/11-source-generator/GEN-08-differential-engine-agreement-tests.md) |
+| 5 | [BENCH-03](active/13-benchmarks/BENCH-03-phase-3-speed-gate.md) Phase 3 speed gate **(Phase 3 gate)** | [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md), [BENCH-02](active/13-benchmarks/BENCH-02-full-benchmark-suite.md) |
 | 5 | [REL-03](active/14-release/REL-03-migration-guides.md) Migration guides | [BENCH-02](active/13-benchmarks/BENCH-02-full-benchmark-suite.md) |
-| 6 | [REL-05](active/14-release/REL-05-ship-10.md) Ship 1.0 **(1.0 release)** | [FND-01](active/01-foundations/FND-01-reserve-the-creole-nuget-package-id.md), [MODE-06](active/07-mode-channels/MODE-06-model-based-tests-for-mode-rollback.md), [GEN-07](active/11-source-generator/GEN-07-debugging-generated-code.md), [GEN-08](active/11-source-generator/GEN-08-differential-engine-agreement-tests.md), [GEN-09](active/11-source-generator/GEN-09-native-aot-and-trimming-validation.md), [GEN-10](active/11-source-generator/GEN-10-measure-the-interpreter-fallback-rate.md), [TOOL-06](active/12-grammar-author-tooling/TOOL-06-engineagreementcheck.md), [BENCH-02](active/13-benchmarks/BENCH-02-full-benchmark-suite.md), [REL-02](active/14-release/REL-02-documentation.md), [REL-03](active/14-release/REL-03-migration-guides.md), [REL-04](active/14-release/REL-04-public-api-review-and-freeze.md) |
+| 6 | [REL-05](active/14-release/REL-05-ship-10.md) Ship 1.0 **(1.0 release)** | [FND-01](active/01-foundations/FND-01-reserve-the-creole-nuget-package-id.md), [MODE-06](active/07-mode-channels/MODE-06-model-based-tests-for-mode-rollback.md), [GEN-07](active/11-source-generator/GEN-07-debugging-generated-code.md), [GEN-08](active/11-source-generator/GEN-08-differential-engine-agreement-tests.md), [GEN-09](active/11-source-generator/GEN-09-native-aot-and-trimming-validation.md), [GEN-10](active/11-source-generator/GEN-10-measure-the-interpreter-fallback-rate.md), [TOOL-06](active/12-grammar-author-tooling/TOOL-06-engineagreementcheck.md), [BENCH-02](active/13-benchmarks/BENCH-02-full-benchmark-suite.md), [BENCH-03](active/13-benchmarks/BENCH-03-phase-3-speed-gate.md), [REL-02](active/14-release/REL-02-documentation.md), [REL-03](active/14-release/REL-03-migration-guides.md), [REL-04](active/14-release/REL-04-public-api-review-and-freeze.md) |
 
 ### Phase 4 — 1.x releases
 
@@ -204,7 +205,6 @@ Cards whose Status is Researching, Designing or Building:
 These items have all their blockers done:
 
 - [FND-01](active/01-foundations/FND-01-reserve-the-creole-nuget-package-id.md) Reserve the Creole NuGet package ID
-- [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) Fix numeric gate thresholds
 - [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) Grammar base classes and authoring surface
 - [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md) Repetition nodes
 - [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md) Expression.Build
@@ -225,7 +225,7 @@ Repository, CI, test and benchmark infrastructure, and the decisions code will d
 | ✅ [FND-03](active/01-foundations/FND-03-continuous-integration.md) Continuous integration | 0 | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | ✅ [FND-04](active/01-foundations/FND-04-test-infrastructure.md) Test infrastructure | 0 | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
 | ✅ [FND-05](active/01-foundations/FND-05-benchmark-harness.md) Benchmark harness | 0 | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md) |
-| [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) Fix numeric gate thresholds | 0 | [FND-05](active/01-foundations/FND-05-benchmark-harness.md) |
+| ✅ [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) Fix numeric gate thresholds | 0 | [FND-05](active/01-foundations/FND-05-benchmark-harness.md) |
 | ✅ [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md) Validate C# 15 features and decide `ParseResult<T>` | 0 | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md); .NET 11 / C# 15 GA (expected November 2026) |
 | ✅ [FND-08](active/01-foundations/FND-08-whitepaper-editorial-cleanup.md) Whitepaper editorial cleanup | 0 | — |
 
@@ -396,6 +396,7 @@ Phase gates and the published benchmark suite. Folder: [`active/13-benchmarks/`]
 | --- | --- | --- |
 | [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) Phase 0 speed gate | 0 | [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md), [INT-05](active/03-interpreter/INT-05-interpreter-lowering-rewrites.md), [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [INT-08](active/03-interpreter/INT-08-single-layer-parse-api.md), [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) |
 | [BENCH-02](active/13-benchmarks/BENCH-02-full-benchmark-suite.md) Full benchmark suite | 3 | [FND-05](active/01-foundations/FND-05-benchmark-harness.md), [ERR-07](active/04-errors-and-recovery/ERR-07-lexer-recovery-and-cascade-suppression.md), [STRM-02](active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md), [GEN-05](active/11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md), [GEN-06](active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md) |
+| [BENCH-03](active/13-benchmarks/BENCH-03-phase-3-speed-gate.md) Phase 3 speed gate | 3 | [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md), [BENCH-02](active/13-benchmarks/BENCH-02-full-benchmark-suite.md) |
 
 ### REL — Samples, docs and 1.0 release
 
@@ -407,7 +408,7 @@ Worked examples, documentation, migration guides, API freeze and shipping 1.0. F
 | [REL-02](active/14-release/REL-02-documentation.md) Documentation | 3 | [RSLN-03](active/10-roslyn-analyzers/RSLN-03-build-time-diagnostic-reporting.md), [GEN-04](active/11-source-generator/GEN-04-interpreter-fallback-and-crl0301.md), [TOOL-01](active/12-grammar-author-tooling/TOOL-01-creoletesting-assertions.md) |
 | [REL-03](active/14-release/REL-03-migration-guides.md) Migration guides | 3 | [BENCH-02](active/13-benchmarks/BENCH-02-full-benchmark-suite.md) |
 | [REL-04](active/14-release/REL-04-public-api-review-and-freeze.md) Public API review and freeze | 3 | [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [ERR-07](active/04-errors-and-recovery/ERR-07-lexer-recovery-and-cascade-suppression.md), [SPAN-07](active/05-source-spans/SPAN-07-embedded-languages.md), [STRM-03](active/08-streaming/STRM-03-streaming-diagnostics.md), [GEN-06](active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md), [TOOL-01](active/12-grammar-author-tooling/TOOL-01-creoletesting-assertions.md) |
-| [REL-05](active/14-release/REL-05-ship-10.md) Ship 1.0 | 3 | [FND-01](active/01-foundations/FND-01-reserve-the-creole-nuget-package-id.md), [MODE-06](active/07-mode-channels/MODE-06-model-based-tests-for-mode-rollback.md), [GEN-07](active/11-source-generator/GEN-07-debugging-generated-code.md), [GEN-08](active/11-source-generator/GEN-08-differential-engine-agreement-tests.md), [GEN-09](active/11-source-generator/GEN-09-native-aot-and-trimming-validation.md), [GEN-10](active/11-source-generator/GEN-10-measure-the-interpreter-fallback-rate.md), [TOOL-06](active/12-grammar-author-tooling/TOOL-06-engineagreementcheck.md), [BENCH-02](active/13-benchmarks/BENCH-02-full-benchmark-suite.md), [REL-02](active/14-release/REL-02-documentation.md), [REL-03](active/14-release/REL-03-migration-guides.md), [REL-04](active/14-release/REL-04-public-api-review-and-freeze.md) |
+| [REL-05](active/14-release/REL-05-ship-10.md) Ship 1.0 | 3 | [FND-01](active/01-foundations/FND-01-reserve-the-creole-nuget-package-id.md), [MODE-06](active/07-mode-channels/MODE-06-model-based-tests-for-mode-rollback.md), [GEN-07](active/11-source-generator/GEN-07-debugging-generated-code.md), [GEN-08](active/11-source-generator/GEN-08-differential-engine-agreement-tests.md), [GEN-09](active/11-source-generator/GEN-09-native-aot-and-trimming-validation.md), [GEN-10](active/11-source-generator/GEN-10-measure-the-interpreter-fallback-rate.md), [TOOL-06](active/12-grammar-author-tooling/TOOL-06-engineagreementcheck.md), [BENCH-02](active/13-benchmarks/BENCH-02-full-benchmark-suite.md), [BENCH-03](active/13-benchmarks/BENCH-03-phase-3-speed-gate.md), [REL-02](active/14-release/REL-02-documentation.md), [REL-03](active/14-release/REL-03-migration-guides.md), [REL-04](active/14-release/REL-04-public-api-review-and-freeze.md) |
 
 ### INC — Incremental re-parsing (1.x)
 
