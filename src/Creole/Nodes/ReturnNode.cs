@@ -1,3 +1,5 @@
+using Creole.Plans;
+
 namespace Creole.Nodes;
 
 /// <summary>
@@ -10,4 +12,6 @@ internal sealed class ReturnNode<TIn, TOut>(TOut value) : Parser<TIn, TOut>
     internal override NodeKind Kind => NodeKind.Return;
 
     internal override IReadOnlyList<INode> Children => [];
+
+    internal override Plan<TIn, TOut> Lower(PlanBuilder builder) => PlanBuilder.Return<TIn, TOut>(Value);
 }
