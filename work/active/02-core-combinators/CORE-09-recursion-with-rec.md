@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -13,8 +13,8 @@
 ## Scope
 
 - `Rec` node with lazy resolution.
-- `[CallerArgumentExpression]` captures the rule name (for example `Value`).
-- Rule names feed `GrammarException` rule paths such as `Document → Value → ObjectValue`.
+- Rule names per [ADR-0009](../../docs/decisions/0009-where-rule-names-come-from.md): `[CallerArgumentExpression]` names the rule when the reference is a plain member reference (`Rec(() => Value)` is `Value`); otherwise `[CallerMemberName]` does (`Value = Rec(() => OneOf(...))` is `Value`).
+- Rule names feed `GrammarException` rule paths such as `Document → Value → ObjectValue`. Lowering errors name the path of `Rec`s being lowered; field names for rules outside `Rec` come with GEN-01.
 - Interpreter lowering of `Rec` cycles: the lowering context from INT-02 lowers each node once and resolves a cycle through a placeholder plan node that is filled when the target is lowered. Moved here from INT-02 with the maintainer.
 
 ## Acceptance criteria
@@ -38,3 +38,12 @@
 - [§ LINQ query syntax](../../../whitepaper.md#linq-query-syntax)
 - [§ Developer experience for grammar authors](../../../whitepaper.md#developer-experience-for-grammar-authors)
 - [§ Interpreted engine](../../../whitepaper.md#interpreted-engine)
+
+## Artifacts
+
+- [ADR-0009: Rule names come from `Rec`, the enclosing field, and a generated name table](../../docs/decisions/0009-where-rule-names-come-from.md) (Accepted)
+
+## Progress notes
+
+- 2026-10-19 (Designing): Started. Blockers CORE-02 and INT-02 are done. Build plan agreed with the maintainer in two increments: (1) the `Rec` node, `Grammar<TIn>.Rec` in `GrammarOfTIn.Rec.cs`, `NodeKind.Rec` at the end of the enum, lazy resolution cached in a `PublicationOnly` `Lazy` (null results not cached), an Example A structure test, docs in `docs/concepts/grammars-as-data.md`; (2) cycle lowering in `PlanBuilder`: in-progress nodes reached again get a `ForwardPlan` placeholder filled when the node finishes, `Rec` lowers to its target's plan, lowering errors name the path of named `Rec`s, a `Rec`-only cycle is a `GrammarException`, tested with a counting test node (no parse results; INT-03). Planning showed `Rec` alone cannot name most rules at run time, so drafted ADR-0009 (Proposed). Next: maintainer accepts or revises ADR-0009, then fold it in and build increment 1.
+- 2026-10-19 (Building): ADR-0009 accepted with option C; the name table goes in GEN-01, and TOOL-05 moved to Phase 3 behind it. Folded into the whitepaper (§ LINQ query syntax, § Developer experience for grammar authors, § Source-generated engine) and cards (GEN-01, TOOL-05, ANA-02, TOOL-02, FND-09, this card's scope). Next: build increment 1 (the `Rec` node).

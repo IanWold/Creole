@@ -19,6 +19,7 @@ Creole is built and tested on the .NET 11 RC 2 SDK. When .NET 11 and C# 15 reach
 - Re-check the `[Union]` member-provider pattern `Maybe<T>` relies on ([ADR-0007](../../docs/decisions/0007-maybe-as-a-non-boxing-union.md)): a public `object? Value` is required, `TryGetValue` alone drives matching, `default` matches `Nothing`, and creating and matching a `Maybe<int>` allocates nothing.
 - Re-check CORE-07's finding that instance methods returning a type built from `TOut` fail the AOT smoke publish (IL3054).
 - Re-check CORE-05's findings behind [ADR-0005](../../docs/decisions/0005-match-cases-infer-every-type-from-a-typed-lambda.md) and [ADR-0006](../../docs/decisions/0006-switch-and-match-take-a-collection-beyond-eight-cases.md), pinned in `MatchNodeTests`: `Case<V1Header>(branch, (h, body) => …)` does not compile (CS1501); the typed-lambda `Case(...)` compiles beside `TokenGrammar.Case<T>()`; `Match` on a non-union is CS0311; declared unions implement `IUnion`. Also that a collection expression of tuples infers `Switch`'s `TOut` (`SwitchNodeTests.ACollectionOfCasesBuildsTheSameNode`).
+- Re-check [ADR-0009](../../docs/decisions/0009-where-rule-names-come-from.md)'s finding that a `[CallerMemberName]` parameter called from a static field initializer receives the field's name, pinned by CORE-09's `RecTests`. If it changed, a `Rec` at a rule's definition is unnamed until GEN-01 names it.
 - Point CLAUDE.md's project facts and the work README's FND-07 note at the GA results.
 
 ## Acceptance criteria

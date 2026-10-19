@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | Epic | [Grammar-author tooling](../../README.md#tool--grammar-author-tooling) |
-| Phase | Phase 2 — Analysis |
+| Phase | Phase 3 — Staging |
 | Status | Not started |
 
 ## Summary
@@ -14,6 +14,7 @@ Document a language straight from its grammar.
 
 - Export any rule as EBNF.
 - Export railroad diagrams (SVG).
+- Nonterminals use rule names ([ADR-0009](../../docs/decisions/0009-where-rule-names-come-from.md)). Example A's `ArrayValue` and `ObjectValue` are not `Rec`s, so their names come from GEN-01's name table; this card moved to Phase 3 for that reason.
 
 ## Acceptance criteria
 
@@ -27,6 +28,7 @@ Document a language straight from its grammar.
 - [CORE-07 Repetition nodes](../02-core-combinators/CORE-07-repetition-nodes.md)
 - [CORE-08 Control nodes](../02-core-combinators/CORE-08-control-nodes.md)
 - [CORE-11 Expression.Build](../02-core-combinators/CORE-11-expressionbuild.md)
+- [GEN-01 Generator skeleton and registration](../11-source-generator/GEN-01-generator-skeleton-and-registration.md)
 
 ## Unblocks
 
