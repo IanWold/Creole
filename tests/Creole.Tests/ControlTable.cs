@@ -8,6 +8,11 @@ namespace Creole.Tests;
 internal abstract record ControlShape
 {
     /// <summary>
+    /// Produces its items' values joined. Fails if the item does not match at least once.
+    /// </summary>
+    public record AtLeastOnce(ControlShape Item) : ControlShape;
+
+    /// <summary>
     /// Produces its item's value.
     /// </summary>
     public record Atomic(ControlShape Item) : ControlShape;
@@ -142,6 +147,7 @@ internal static class ControlTable
     /// </summary>
     public static Parser<char, string> Build(ControlShape shape) => shape switch
     {
+        ControlShape.AtLeastOnce s => Build(s.Item).AtLeastOnce().Select(string.Concat),
         ControlShape.Atomic s => Grammar<char>.Atomic(Build(s.Item)),
         ControlShape.Chars s => s.Text.Skip(1).Aggregate(
             CharGrammar.Char(s.Text[0]).Select(c => c.ToString()),

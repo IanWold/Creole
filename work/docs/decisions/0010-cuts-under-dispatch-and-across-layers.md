@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| Status | Accepted |
+| Status | Superseded by 0011 |
 | Date | 2026-10-19 |
 | Cards | [CORE-08](../../active/02-core-combinators/CORE-08-control-nodes.md), [INT-03](../../active/03-interpreter/INT-03-execute-the-core-combinators.md), [GEN-02](../../active/11-source-generator/GEN-02-emit-the-core-combinators.md), [ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md), [LAY-02](../../active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) |
 | Whitepaper | [§ Choice and backtracking](../../../whitepaper.md#choice-and-backtracking), [§ Bookmarks and retention](../../../whitepaper.md#bookmarks-and-retention), [§ Source-generated engine](../../../whitepaper.md#source-generated-engine) |
