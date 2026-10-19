@@ -53,7 +53,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 4 | [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md) Control nodes | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
 | 4 | [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) Recursion with Rec | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md), [INT-02](active/03-interpreter/INT-02-plan-lowering-and-cache.md) |
 | 4 | [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md) Custom primitives | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
-| 4 | [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) Diagnostic rendering | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) |
+| 4 | ✅ [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) Diagnostic rendering | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) |
 | 5 | [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md) Bind and LINQ query syntax | [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) |
 | 5 | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md) Execute the core combinators | [CORE-03](active/02-core-combinators/CORE-03-primitive-nodes.md), [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md), [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md), [CORE-06](active/02-core-combinators/CORE-06-longest.md), [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md), [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md), [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md), [INT-02](active/03-interpreter/INT-02-plan-lowering-and-cache.md) |
 | 6 | [INT-04](active/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md) Execute Bind, Expression.Build and Custom | [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md), [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md), [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md), [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md) |
@@ -198,7 +198,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) Diagnostic rendering — Build
+- None yet.
 
 ### Can start now
 
@@ -271,7 +271,7 @@ The error model, furthest-failure reporting, rendering, withdrawal and recovery.
 | --- | --- | --- |
 | ✅ [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) Error and result types | 0 | [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) |
 | [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) Furthest-failure tracking and labels | 0 | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) |
-| [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) Diagnostic rendering | 0 | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) |
+| ✅ [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) Diagnostic rendering | 0 | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) |
 | [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md) Diagnostic withdrawal | 1 | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) |
 | [ERR-05](active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md) Recover combinator and strategies | 2 | [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md), [LAY-04](active/06-layers-and-pipelines/LAY-04-layer-local-state.md), [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md), [STRM-01](active/08-streaming/STRM-01-starved-outcome.md) |
 | [ERR-06](active/04-errors-and-recovery/ERR-06-orinsert-for-missing-items.md) OrInsert for missing items | 2 | [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [SPAN-03](active/05-source-spans/SPAN-03-synthetic-items.md) |
