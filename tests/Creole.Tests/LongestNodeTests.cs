@@ -89,6 +89,10 @@ public class LongestNodeTests
     }
 
     [Fact]
-    public void LongestNamesTheCallersExpression() =>
-        Assert.Equal(NullMessage("later"), Assert.Throws<GrammarException>(() => Grammar<char>.Longest(_parserA, _parserB, (Parser<char, int>)null!)).Message);
+    public void LongestNamesTheCallersExpression()
+    {
+        Parser<char, int> later = null!;
+
+        Assert.Equal(NullMessage("later"), Assert.Throws<GrammarException>(() => Grammar<char>.Longest(_parserA, _parserB, later)).Message);
+    }
 }
