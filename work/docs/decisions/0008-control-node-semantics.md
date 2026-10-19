@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| Status | Accepted |
+| Status | Superseded by 0010 |
 | Date | 2026-10-19 |
 | Cards | [CORE-08](../../active/02-core-combinators/CORE-08-control-nodes.md), [INT-03](../../active/03-interpreter/INT-03-execute-the-core-combinators.md), [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [LAY-02](../../active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) |
 | Whitepaper | [§ Choice and backtracking](../../../whitepaper.md#choice-and-backtracking), [§ The error model](../../../whitepaper.md#the-error-model) |

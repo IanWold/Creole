@@ -252,9 +252,9 @@ A fifth outcome, **Starved**, exists only in streaming mode and is never visible
 - `Lookahead(p)`: run `p`, then rewind on success. If `p` fails after consuming, the failure stays committed, as in Parsec.
 - `Not(p)`: succeed without consuming if `p` fails, whether or not `p` consumed; if `p` succeeds, rewind and fail without consuming. `Not` never consumes.
 - `Cut`: from this point, failure stays committed even inside an enclosing `Atomic`. After `if` and `(` are seen, a failure is reported here instead of being retried elsewhere, which improves messages and lets buffers release earlier.
-
-A cut stays in force until the parse leaves the nearest enclosing `Lookahead`, `Not` or `Longest` alternative, which must rewind by definition, or until the parse ends. While it is in force, no `Atomic` inside that boundary rewinds, even if the alternative or repetition step that held the cut has since failed without consuming and the parse has moved on. A cut never turns an empty failure into a committed one: `Or` and repetition still decide by whether the cursor moved. Engines can keep the cut as one flag on the parse state, saved and cleared by `Atomic` and the three boundaries, so `Or` and repetition pay nothing ([ADR-0008](work/docs/decisions/0008-control-node-semantics.md)).
 - Literal primitives (`String("<=")`, `Kind(k)`) are atomic by construction: they fail without consuming.
+
+An `Atomic` keeps a failure if a cut passed inside it is still in force; a cut passed before the `Atomic` was entered does not affect it. A cut stops being in force when the parse leaves the nearest enclosing `Lookahead`, `Not` or `Longest` alternative, which must rewind by definition. It also stops when the attempt that passed it fails without consuming and an `Or`, `Optional`, repetition or `Recover` moves on: the light mark that undoes a `SetMode` there undoes the cut too (§ Bookmarks and retention). Otherwise it lasts until the parse ends. A cut never turns an empty failure into a committed one, and a skipped alternative would only have failed without consuming, so dispatching on FIRST sets gives the same result as trying alternatives in order. Each layer has its own cut, kept as one flag that `Atomic`, the three boundaries and every light mark save and restore ([ADR-0010](work/docs/decisions/0010-cuts-under-dispatch-and-across-layers.md), refining [ADR-0008](work/docs/decisions/0008-control-node-semantics.md)).
 
 ### Longest match
 
@@ -407,8 +407,8 @@ The downstream parser holds a cursor, which is just an index. Reading past the f
 
 Two kinds of mark remember a position:
 
-- **Pinning bookmarks**, taken by `Atomic`, `Lookahead`, `Not` and `Longest` over non-regular alternatives. These may rewind the cursor, so they keep their slots alive until they exit. An `Atomic` can release its bookmark as soon as a cut is in force inside it, because it can no longer rewind (§ Choice and backtracking).
-- **Light marks**, taken by `Or`, repetition and `Recover`. They record the cursor position, the mode log's length, the diagnostic count and the layer-state reference, but pin nothing. Under commit semantics `Or` never rewinds consumed input: once an alternative consumes, any failure is committed. Its mark only undoes zero-width effects, such as a `SetMode`, when an alternative fails without consuming.
+- **Pinning bookmarks**, taken by `Atomic`, `Lookahead`, `Not` and `Longest` over non-regular alternatives. These may rewind the cursor, so they keep their slots alive until they exit. An `Atomic` can release its bookmark once a cut inside it is permanent: no attempt between the cut and the `Atomic` can still fail without consuming, and no `Lookahead`, `Not` or `Longest` alternative lies between them. For the usual cut, after the tokens that identify a construct, that is the moment it is passed (§ Choice and backtracking).
+- **Light marks**, taken by `Or`, `Optional`, repetition, `Expression.Build`'s operators and `Recover`. They record the cursor position, the mode log's length, the diagnostic count, the layer-state reference and the cut flag, but pin nothing. Under commit semantics `Or` never rewinds consumed input: once an alternative consumes, any failure is committed. Its mark only undoes zero-width effects, such as a `SetMode` or a `Cut`, when an alternative fails without consuming.
 
 The buffer may discard every slot below the minimum of the cursor and the oldest pinning bookmark, returning segments to the pool. Each layer in turn pins its own input at the `stepStart` of the oldest output slot it still holds, so any retained item can be produced again. Every mark also snapshots layer-local state and the mode log length (§ Feedback).
 
@@ -417,7 +417,7 @@ The buffer may discard every slot below the minimum of the cursor and the oldest
 1. **Work once.** Each upstream item is produced once per parse, unless a mode change invalidates it.
 2. **Bounded memory.** Memory at a boundary is proportional to the longest window held by a pinning bookmark in the layer above, plus the input of the steps that produced retained items. `Or` and repetition add nothing, so a large document parsed without `Atomic`, `Lookahead` or `Not` keeps a constant number of items per boundary, however deeply its `Or`s nest.
 3. **Deterministic parser layers take no pinning bookmarks**, so the token buffer beneath them holds one item of lookahead. Lexer lookahead is separate: a `Longest` DFA backs up to its last accepting state, so the character buffer holds up to the longest such backup (§ Static analysis).
-4. **Upstream backtracking is private.** A layer's own `Atomic` and `Longest` happen while it runs one step and are invisible downstream.
+4. **Upstream backtracking is private.** A layer's own `Atomic` and `Longest` happen while it runs one step and are invisible downstream. So are its cuts: each layer has its own cut flag.
 
 Two-pass designs that tokenize everything first hold the whole token list in memory. A Creole pipeline over a multi-gigabyte JSON-lines file needs memory proportional to its largest record plus lookahead.
 
