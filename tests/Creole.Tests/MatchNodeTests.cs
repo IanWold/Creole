@@ -11,24 +11,22 @@ public class MatchNodeTests
         public sealed record V2Header(int Id);
         public union Header(V1Header, V2Header);
         public sealed record Record(int Id, string Body);
-        public enum K { Other }
-        public readonly record struct Tok(K Kind) : IKinded<K>;
+        public enum K { Ident, Num }
+        public sealed record Ident(string Name);
+        public sealed record Num(int Value);
 
-        // Stands in for TokenGrammar once CORE-03 adds Case<T>() for union tokens.
-        public abstract class TokenGrammarWithCase<TToken, TKind> : TokenGrammar<TToken, TKind>
-            where TToken : IKinded<TKind>
-            where TKind : struct, System.Enum
+        public union Tok(Ident, Num) : IKinded<K>
         {
-            public static Parser<TToken, T> Case<T>() => throw new System.NotImplementedException();
+            public K Kind => this switch { Ident => K.Ident, Num => K.Num };
         }
 
-        public sealed class Formats : TokenGrammarWithCase<Tok, K>
+        public sealed class Formats : TokenGrammar<Tok, K>
         {
             public static readonly Parser<Tok, Header> HeaderParser = null!;
             public static readonly Parser<Tok, string> BodyV1 = null!;
             public static readonly Parser<Tok, string> BodyV2 = null!;
             public static readonly Parser<Tok, string> Body = null!;
-            public static readonly Parser<Tok, V1Header> UnionToken = Case<V1Header>();
+            public static readonly Parser<Tok, Ident> Name = Case<Ident>();
 
             {{RULE}}
         }

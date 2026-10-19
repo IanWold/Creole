@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace Creole;
 
@@ -103,7 +104,69 @@ public sealed class Diagnostics : IReadOnlyList<ParseError>, IEquatable<Diagnost
     /// <returns>The lines joined by <c>\n</c>, or an empty string when there are no errors.</returns>
     /// <remarks>
     /// Each line is the error's <see cref="ParseError.ToString"/>. Offsets are character offsets (<see cref="SourceSpan.CharStart"/> to <see cref="SourceSpan.CharEnd"/>).
+    /// To show errors against the lines they point into, pass the source texts to <see cref="Render(ReadOnlySpan{SourceText})"/>.
     /// </remarks>
     public string Render() =>
         string.Join('\n', (IEnumerable<ParseError>)_errors);
+
+    /// <summary>
+    /// Writes each error against the line of source text it points into, such as:
+    /// <code>
+    /// error[parser]: expected ',' or '}'
+    ///  --> config.json:3:16
+    ///   |
+    /// 3 |   "port": 8080 "host": "x"
+    ///   |                ^^^^^^ unexpected string "host"
+    ///   = note: in object starting at 2:1
+    /// </code>
+    /// </summary>
+    /// <param name="sources">The text of every source the errors point into, each with a different <see cref="SourceText.Id"/>.</param>
+    /// <returns>The errors in span order, separated by blank lines, or an empty string when there are no errors.</returns>
+    /// <remarks>
+    /// Columns count Unicode scalar values. Carets are aligned for a terminal: by grapheme cluster, with wide characters as two columns and tabs expanded to stops of four.
+    /// </remarks>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="sources"/> contains a null or a repeated id, lacks a source an error points into, or has a text shorter than an error's span.
+    /// </exception>
+    public string Render(params ReadOnlySpan<SourceText> sources)
+    {
+        var byId = new Dictionary<SourceId, SourceText>(sources.Length);
+
+        foreach (var source in sources)
+        {
+            if (source is null)
+            {
+                throw new ArgumentException("The source texts cannot contain null.", nameof(sources));
+            }
+
+            if (!byId.TryAdd(source.Id, source))
+            {
+                throw new ArgumentException($"Two source texts have the id {source.Id}.", nameof(sources));
+            }
+        }
+
+        var builder = new StringBuilder();
+
+        foreach (var error in _errors)
+        {
+            if (!byId.TryGetValue(error.Span.Source, out var source))
+            {
+                throw new ArgumentException($"No source text was given for {error.Span.Source}, which an error points into.", nameof(sources));
+            }
+
+            if (error.Span.CharEnd > source.Text.Length)
+            {
+                throw new ArgumentException($"An error's span ends at character {error.Span.CharEnd}, past the end of the text for {error.Span.Source}, which has {source.Text.Length} characters.", nameof(sources));
+            }
+
+            if (builder.Length > 0)
+            {
+                builder.Append("\n\n");
+            }
+
+            DiagnosticRenderer.Append(builder, error, source);
+        }
+
+        return builder.ToString();
+    }
 }

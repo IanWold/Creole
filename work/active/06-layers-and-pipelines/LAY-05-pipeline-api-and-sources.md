@@ -16,6 +16,7 @@ Chain layers into a parser and run it over in-memory or reader input.
 - `Parse(text, source:)` and lazy `ParseMany` returning `IEnumerable<ParseResult<T>>`.
 - `TextReader` sources with blocking pulls.
 - Immutable, thread-shareable pipelines; each call owns its buffers and state.
+- Make Example A's `result.Diagnostics.Render()` show the full format. That format needs the source text (`Diagnostics.Render(SourceText)`, from [ERR-03](../04-errors-and-recovery/ERR-03-diagnostic-rendering.md)), so either results carry their `SourceText` or the example passes it in. Decide which.
 
 ## Acceptance criteria
 
