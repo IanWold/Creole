@@ -5,6 +5,37 @@ namespace Creole;
 public abstract partial class Grammar<TIn>
 {
     /// <summary>
+    /// A case of a <c>Match</c>: when the union's value is a <typeparamref name="TCase"/>, run <paramref name="branch"/> and combine the two.
+    /// </summary>
+    /// <typeparam name="TCase">The union case this case applies to. C# infers it from the type of the lambda's first parameter.</typeparam>
+    /// <typeparam name="TBranch">The type <paramref name="branch"/> produces.</typeparam>
+    /// <typeparam name="TOut">The type the <c>Match</c> produces.</typeparam>
+    /// <param name="branch">The parser to run after the scrutinee when this case applies.</param>
+    /// <param name="combine">Combines the union's case value and the branch's result into the result of the <c>Match</c>.</param>
+    /// <param name="branchExpression">
+    /// The caller's expression for <paramref name="branch"/>, used in the error message.
+    /// The compiler fills it in; do not pass it.
+    /// </param>
+    /// <param name="combineExpression">
+    /// The caller's expression for <paramref name="combine"/>, used in the error message.
+    /// The compiler fills it in; do not pass it.
+    /// </param>
+    /// <returns>A case to pass to <c>Match</c>.</returns>
+    /// <exception cref="GrammarException"><paramref name="branch"/> or <paramref name="combine"/> is null.</exception>
+    /// <remarks>
+    /// Give the lambda's parameters their types and no type arguments to <c>Case</c>, so C# infers all three:
+    /// <c>Case(BodyV1, static (V1Header h, Body body) =&gt; new Record(h.Id, body))</c>.
+    /// C# cannot infer the others from one explicit type argument, so <c>Case&lt;V1Header&gt;(...)</c> does not compile (ADR-0005).
+    /// </remarks>
+    public static MatchCase<TIn, TOut> Case<TCase, TBranch, TOut>(
+        Parser<TIn, TBranch> branch,
+        Func<TCase, TBranch, TOut> combine,
+        [CallerArgumentExpression(nameof(branch))] string branchExpression = "",
+        [CallerArgumentExpression(nameof(combine))] string combineExpression = ""
+    ) =>
+        new TypedMatchCase<TIn, TCase, TBranch, TOut>(Guard.NotNull(branch, branchExpression), Guard.NotNull(combine, combineExpression));
+
+    /// <summary>
     /// A parser that tries 2 alternatives in order and produces the result of the first that matches.
     /// </summary>
     /// <typeparam name="TOut">The type every alternative produces.</typeparam>

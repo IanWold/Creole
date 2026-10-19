@@ -15,4 +15,5 @@ internal enum NodeKind
     Expression,
     Or,
     Switch,
+    Match,
 }

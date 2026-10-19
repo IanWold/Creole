@@ -20,7 +20,7 @@ The layout follows the scope of [REL-02](../work/active/14-release/REL-02-docume
 | --- | --- |
 | [Grammars as data](concepts/grammars-as-data.md) | The `Parser<TIn, TOut>` type, immutability and identity, the grammar base classes, `IKinded<TKind>` and `GrammarException`. |
 | [Expressions](concepts/expressions.md) | `Expression.Build` and its operator table: prefix, postfix and infix operators, levels, and the checks made when the grammar is built. |
-| [Choice](concepts/choice.md) | `Or` and `OneOf`: ordered choice with commit semantics. `Switch`: choosing a branch by a parsed key. Their Pidgin names. |
+| [Choice](concepts/choice.md) | `Or` and `OneOf`: ordered choice with commit semantics. `Switch`: choosing a branch by a parsed key. `Match` and `Case`: choosing a branch by a union's case. Their Pidgin names. |
 | [Repetition](concepts/repetition.md) | `Many`, `AtLeastOnce`, `Repeat`, `SepBy`, `SepBy1`, `SepEndBy`, `Until`, `SkipMany` and `SkipAtLeastOnce`, and their Pidgin names. |
 | [Errors](concepts/errors.md) | `ParseError`, the `Unexpected` and `Expectation` unions, `ParseResult<T>` and its cases, and `Diagnostics`: what a parse reports. |
 | [Source spans](concepts/spans.md) | `SourceSpan`, `SourceId`, `SourceRegistry` and `LineMap`: where items came from in the original source, as offsets or as lines and columns. |
