@@ -49,7 +49,7 @@ public static readonly Parser<char, string> If = String("if").Before(Not(LetterO
 
 ## `Cut`
 
-`Cut` is a parser that always succeeds without consuming input. Once it has succeeded, no enclosing `Atomic` rewinds a failure. Put it where the grammar knows which construct it is reading:
+`Cut` is a parser that always succeeds without consuming input. While it stays in force, the `Atomic`s around it do not rewind a failure. Put it where the grammar knows which construct it is reading:
 
 ```csharp
 // After "if" and "(", a failure is reported here instead of being retried elsewhere.
@@ -63,8 +63,9 @@ How far a cut reaches:
 
 - **It reaches every enclosing `Atomic`**, not just the nearest one, and it stays in force after the `Atomic` around it has succeeded.
 - **It stops at the nearest `Lookahead`, `Not` or `Longest` alternative.** These must rewind, so a cut inside one only affects `Atomic`s inside it. With no such boundary around it, a cut lasts until the parse ends.
-- **It is dropped with an attempt that fails without consuming.** In `Atomic(Cut.Then(Char('x')).Or(Char('a').Then(Char('b'))))` on input `ac`, the first alternative passes the cut and fails without consuming, so the cut is dropped and `Or` tries the second. That reads `a` and fails at `c`, and `Atomic` rewinds. The same holds for a cut in a repetition step or an `Optional` that failed without consuming. A cut in a step that succeeded, or failed after consuming, stays in force.
-- **So dispatch is exact.** An engine may pick an alternative by the next item instead of trying each in order: an alternative it skips would only have failed without consuming, and its cut would have been dropped.
+- **It is dropped with an attempt that fails without consuming.** An attempt is each alternative of `Or` or `OneOf`, including the last; the item of `Optional`; each item of a repetition, mandatory or not; each separator with the item after it, and each terminator; and each operator and atom of `Expression.Build`. In `Atomic(Cut.Then(Char('x')).Or(Char('a').Then(Char('b'))))` on input `ac`, the first alternative passes the cut and fails without consuming, so the cut is dropped and `Or` tries the second. That reads `a` and fails at `c`, and `Atomic` rewinds. The cut is dropped whether the combinator then moves on, stops or fails, so a cut in the last alternative behaves like one in the first. A cut in an attempt that succeeded, or failed after consuming, stays in force.
+- **Nesting does not matter.** `Seq(a, Seq(Cut, c))` behaves like `Seq(a, Cut, c)`, so building a sequence with `Then` and `Before` gives the same result as listing it in one `Seq`.
+- **So dispatch is exact.** An engine may pick an alternative, or skip an item, by the next item of input instead of trying it: an attempt it skips would only have failed without consuming, and its cut would have been dropped.
 - **A cut after a lookahead commits once the lookahead matches.** In `Atomic(Lookahead(Char('a')).Before(Cut).Then(Char('a').Then(Char('b'))))`, the cut runs only on input starting with `a`, and then a failure at the `b` stays committed.
 - **It never makes a failure without consuming committed.** `Or`, `Optional` and repetition still look only at whether input was consumed, so `Atomic(Cut.Then(Char('a'))).Or(Char('b'))` matches `b`.
 - **A cut before an `Atomic` has no effect on it.** Only a cut passed inside an `Atomic` stops it rewinding.

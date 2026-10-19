@@ -68,15 +68,25 @@ internal abstract record ControlShape
     public record Or(ControlShape First, ControlShape Second) : ControlShape;
 
     /// <summary>
+    /// Produces its items' values joined; the separators' values are discarded.
+    /// </summary>
+    public record SepBy(ControlShape Item, ControlShape Separator) : ControlShape;
+
+    /// <summary>
     /// Produces its steps' values joined.
     /// </summary>
     public record Seq(params ControlShape[] Steps) : ControlShape;
+
+    /// <summary>
+    /// Produces its items' values joined; the terminator's value is discarded.
+    /// </summary>
+    public record Until(ControlShape Item, ControlShape Terminator) : ControlShape;
 }
 
 internal record ControlCase(string Name, ControlShape Shape, string Input, Outcome Expected);
 
 /// <summary>
-/// The control-node semantics of ADR-0008 as cases: a grammar, an input and the outcome every engine must give.
+/// The control-node semantics as cases: a grammar, an input and the outcome every engine must give.
 /// </summary>
 internal static class ControlTable
 {
@@ -119,6 +129,12 @@ internal static class ControlTable
         new("Cut: never makes a failure without consuming committed", Or(Atomic(Seq(_cut, _a)), _b), "b", Ok("b", 1)),
         new("Cut: before an Atomic does not stop it rewinding", Seq(_cut, Or(Atomic(_ab), _ac)), "ac", Ok("ac", 2)),
         new("Cut: is dropped with an alternative that fails without consuming", Atomic(Or(Seq(_cut, _x), _ab)), "ac", _failEmpty),
+        new("Cut: is dropped with the last alternative that fails without consuming", Atomic(Seq(_a, Or(_b, Seq(_cut, _x)))), "ac", _failEmpty),
+        new("Cut: is dropped with a mandatory item that fails without consuming", Atomic(Seq(_a, AtLeastOnce(Seq(_cut, _x)))), "ac", _failEmpty),
+        new("Cut: is dropped with an Until terminator that fails without consuming", Atomic(Seq(_a, Until(_x, Seq(_cut, _b)))), "ac", _failEmpty),
+        new("Cut: is dropped with an Until item that fails without consuming", Atomic(Seq(_a, Until(Seq(_cut, _x), _b))), "ac", _failEmpty),
+        new("Cut: is dropped with a SepBy separator that fails without consuming", Atomic(Seq(SepBy(_a, Seq(_cut, _b)), _x)), "ac", _failEmpty),
+        new("Cut: in a nested sequence stays in force", Atomic(Seq(_a, Seq(_cut, _b))), "ac", _failConsumed),
         new("Cut: is dropped with a repetition step that fails without consuming", Atomic(Seq(Many(Seq(_cut, _x)), _ab)), "ac", _failEmpty),
         new("Cut: in a repetition step that succeeded stays in force", Atomic(Seq(Many(Seq(_a, _cut)), _b)), "aac", _failConsumed),
         new("Cut: is dropped with an Optional that fails without consuming", Atomic(Seq(Optional(Seq(_cut, _x)), _ab)), "ac", _failEmpty),
@@ -162,12 +178,16 @@ internal static class ControlTable
         ControlShape.Not s => Grammar<char>.Not(Build(s.Item)).As(""),
         ControlShape.Optional s => Build(s.Item).Optional().Select(m => m.GetValueOrDefault("")),
         ControlShape.Or s => Build(s.First).Or(Build(s.Second)),
+        ControlShape.SepBy s => Build(s.Item).SepBy(Build(s.Separator)).Select(string.Concat),
+        ControlShape.Until s => Build(s.Item).Until(Build(s.Terminator)).Select(string.Concat),
         ControlShape.Seq s => s.Steps.Skip(1).Aggregate(
             Build(s.Steps[0]),
             (text, step) => Grammar<char>.Seq(text, Build(step)).Select((t, next) => t + next)
         ),
         _ => throw new ArgumentOutOfRangeException(nameof(shape), shape, null),
     };
+
+    private static ControlShape.AtLeastOnce AtLeastOnce(ControlShape item) => new ControlShape.AtLeastOnce(item);
 
     private static ControlShape.Atomic Atomic(ControlShape item) => new ControlShape.Atomic(item);
 
@@ -189,5 +209,9 @@ internal static class ControlTable
 
     private static ControlShape.Or Or(ControlShape first, ControlShape second) => new ControlShape.Or(first, second);
 
+    private static ControlShape.SepBy SepBy(ControlShape item, ControlShape separator) => new ControlShape.SepBy(item, separator);
+
     private static ControlShape.Seq Seq(params ControlShape[] steps) => new ControlShape.Seq(steps);
+
+    private static ControlShape.Until Until(ControlShape item, ControlShape terminator) => new ControlShape.Until(item, terminator);
 }

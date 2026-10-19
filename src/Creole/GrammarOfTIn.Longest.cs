@@ -24,7 +24,7 @@ public abstract partial class Grammar<TIn>
     /// Every alternative runs atomically from the same position: one that fails, even after consuming input, does not match, and the input it read is given back.
     /// Of the alternatives that match, the one that consumed the most input wins; a tie goes to the earliest.
     /// If every alternative fails, the parser fails without consuming input.
-    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0008).
+    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0011).
     /// For more than 16 alternatives, nest <c>Longest</c> calls: <c>Longest(a, Longest(b, c))</c> matches the same input as <c>Longest(a, b, c)</c>.
     /// </remarks>
     public static Parser<TIn, TOut> Longest<TOut>(
@@ -64,7 +64,7 @@ public abstract partial class Grammar<TIn>
     /// Every alternative runs atomically from the same position: one that fails, even after consuming input, does not match, and the input it read is given back.
     /// Of the alternatives that match, the one that consumed the most input wins; a tie goes to the earliest.
     /// If every alternative fails, the parser fails without consuming input.
-    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0008).
+    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0011).
     /// For more than 16 alternatives, nest <c>Longest</c> calls: <c>Longest(a, Longest(b, c))</c> matches the same input as <c>Longest(a, b, c)</c>.
     /// </remarks>
     public static Parser<TIn, TOut> Longest<TOut>(
@@ -112,7 +112,7 @@ public abstract partial class Grammar<TIn>
     /// Every alternative runs atomically from the same position: one that fails, even after consuming input, does not match, and the input it read is given back.
     /// Of the alternatives that match, the one that consumed the most input wins; a tie goes to the earliest.
     /// If every alternative fails, the parser fails without consuming input.
-    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0008).
+    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0011).
     /// For more than 16 alternatives, nest <c>Longest</c> calls: <c>Longest(a, Longest(b, c))</c> matches the same input as <c>Longest(a, b, c)</c>.
     /// </remarks>
     public static Parser<TIn, TOut> Longest<TOut>(
@@ -168,7 +168,7 @@ public abstract partial class Grammar<TIn>
     /// Every alternative runs atomically from the same position: one that fails, even after consuming input, does not match, and the input it read is given back.
     /// Of the alternatives that match, the one that consumed the most input wins; a tie goes to the earliest.
     /// If every alternative fails, the parser fails without consuming input.
-    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0008).
+    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0011).
     /// For more than 16 alternatives, nest <c>Longest</c> calls: <c>Longest(a, Longest(b, c))</c> matches the same input as <c>Longest(a, b, c)</c>.
     /// </remarks>
     public static Parser<TIn, TOut> Longest<TOut>(
@@ -232,7 +232,7 @@ public abstract partial class Grammar<TIn>
     /// Every alternative runs atomically from the same position: one that fails, even after consuming input, does not match, and the input it read is given back.
     /// Of the alternatives that match, the one that consumed the most input wins; a tie goes to the earliest.
     /// If every alternative fails, the parser fails without consuming input.
-    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0008).
+    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0011).
     /// For more than 16 alternatives, nest <c>Longest</c> calls: <c>Longest(a, Longest(b, c))</c> matches the same input as <c>Longest(a, b, c)</c>.
     /// </remarks>
     public static Parser<TIn, TOut> Longest<TOut>(
@@ -304,7 +304,7 @@ public abstract partial class Grammar<TIn>
     /// Every alternative runs atomically from the same position: one that fails, even after consuming input, does not match, and the input it read is given back.
     /// Of the alternatives that match, the one that consumed the most input wins; a tie goes to the earliest.
     /// If every alternative fails, the parser fails without consuming input.
-    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0008).
+    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0011).
     /// For more than 16 alternatives, nest <c>Longest</c> calls: <c>Longest(a, Longest(b, c))</c> matches the same input as <c>Longest(a, b, c)</c>.
     /// </remarks>
     public static Parser<TIn, TOut> Longest<TOut>(
@@ -384,7 +384,7 @@ public abstract partial class Grammar<TIn>
     /// Every alternative runs atomically from the same position: one that fails, even after consuming input, does not match, and the input it read is given back.
     /// Of the alternatives that match, the one that consumed the most input wins; a tie goes to the earliest.
     /// If every alternative fails, the parser fails without consuming input.
-    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0008).
+    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0011).
     /// For more than 16 alternatives, nest <c>Longest</c> calls: <c>Longest(a, Longest(b, c))</c> matches the same input as <c>Longest(a, b, c)</c>.
     /// </remarks>
     public static Parser<TIn, TOut> Longest<TOut>(
@@ -472,7 +472,7 @@ public abstract partial class Grammar<TIn>
     /// Every alternative runs atomically from the same position: one that fails, even after consuming input, does not match, and the input it read is given back.
     /// Of the alternatives that match, the one that consumed the most input wins; a tie goes to the earliest.
     /// If every alternative fails, the parser fails without consuming input.
-    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0008).
+    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0011).
     /// For more than 16 alternatives, nest <c>Longest</c> calls: <c>Longest(a, Longest(b, c))</c> matches the same input as <c>Longest(a, b, c)</c>.
     /// </remarks>
     public static Parser<TIn, TOut> Longest<TOut>(
@@ -568,7 +568,7 @@ public abstract partial class Grammar<TIn>
     /// Every alternative runs atomically from the same position: one that fails, even after consuming input, does not match, and the input it read is given back.
     /// Of the alternatives that match, the one that consumed the most input wins; a tie goes to the earliest.
     /// If every alternative fails, the parser fails without consuming input.
-    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0008).
+    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0011).
     /// For more than 16 alternatives, nest <c>Longest</c> calls: <c>Longest(a, Longest(b, c))</c> matches the same input as <c>Longest(a, b, c)</c>.
     /// </remarks>
     public static Parser<TIn, TOut> Longest<TOut>(
@@ -672,7 +672,7 @@ public abstract partial class Grammar<TIn>
     /// Every alternative runs atomically from the same position: one that fails, even after consuming input, does not match, and the input it read is given back.
     /// Of the alternatives that match, the one that consumed the most input wins; a tie goes to the earliest.
     /// If every alternative fails, the parser fails without consuming input.
-    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0008).
+    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0011).
     /// For more than 16 alternatives, nest <c>Longest</c> calls: <c>Longest(a, Longest(b, c))</c> matches the same input as <c>Longest(a, b, c)</c>.
     /// </remarks>
     public static Parser<TIn, TOut> Longest<TOut>(
@@ -784,7 +784,7 @@ public abstract partial class Grammar<TIn>
     /// Every alternative runs atomically from the same position: one that fails, even after consuming input, does not match, and the input it read is given back.
     /// Of the alternatives that match, the one that consumed the most input wins; a tie goes to the earliest.
     /// If every alternative fails, the parser fails without consuming input.
-    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0008).
+    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0011).
     /// For more than 16 alternatives, nest <c>Longest</c> calls: <c>Longest(a, Longest(b, c))</c> matches the same input as <c>Longest(a, b, c)</c>.
     /// </remarks>
     public static Parser<TIn, TOut> Longest<TOut>(
@@ -904,7 +904,7 @@ public abstract partial class Grammar<TIn>
     /// Every alternative runs atomically from the same position: one that fails, even after consuming input, does not match, and the input it read is given back.
     /// Of the alternatives that match, the one that consumed the most input wins; a tie goes to the earliest.
     /// If every alternative fails, the parser fails without consuming input.
-    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0008).
+    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0011).
     /// For more than 16 alternatives, nest <c>Longest</c> calls: <c>Longest(a, Longest(b, c))</c> matches the same input as <c>Longest(a, b, c)</c>.
     /// </remarks>
     public static Parser<TIn, TOut> Longest<TOut>(
@@ -1032,7 +1032,7 @@ public abstract partial class Grammar<TIn>
     /// Every alternative runs atomically from the same position: one that fails, even after consuming input, does not match, and the input it read is given back.
     /// Of the alternatives that match, the one that consumed the most input wins; a tie goes to the earliest.
     /// If every alternative fails, the parser fails without consuming input.
-    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0008).
+    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0011).
     /// For more than 16 alternatives, nest <c>Longest</c> calls: <c>Longest(a, Longest(b, c))</c> matches the same input as <c>Longest(a, b, c)</c>.
     /// </remarks>
     public static Parser<TIn, TOut> Longest<TOut>(
@@ -1168,7 +1168,7 @@ public abstract partial class Grammar<TIn>
     /// Every alternative runs atomically from the same position: one that fails, even after consuming input, does not match, and the input it read is given back.
     /// Of the alternatives that match, the one that consumed the most input wins; a tie goes to the earliest.
     /// If every alternative fails, the parser fails without consuming input.
-    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0008).
+    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0011).
     /// For more than 16 alternatives, nest <c>Longest</c> calls: <c>Longest(a, Longest(b, c))</c> matches the same input as <c>Longest(a, b, c)</c>.
     /// </remarks>
     public static Parser<TIn, TOut> Longest<TOut>(
@@ -1312,7 +1312,7 @@ public abstract partial class Grammar<TIn>
     /// Every alternative runs atomically from the same position: one that fails, even after consuming input, does not match, and the input it read is given back.
     /// Of the alternatives that match, the one that consumed the most input wins; a tie goes to the earliest.
     /// If every alternative fails, the parser fails without consuming input.
-    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0008).
+    /// A <see cref="Cut"/> inside an alternative stays inside it: it does not stop the alternative's input being given back, or an <see cref="Atomic"/> around this parser rewinding (ADR-0011).
     /// For more than 16 alternatives, nest <c>Longest</c> calls: <c>Longest(a, Longest(b, c))</c> matches the same input as <c>Longest(a, b, c)</c>.
     /// </remarks>
     public static Parser<TIn, TOut> Longest<TOut>(
