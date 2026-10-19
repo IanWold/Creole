@@ -22,6 +22,8 @@ Review and freeze the 1.0 public surface.
 ## Blocked by
 
 - [FND-07 Validate C# 15 features and decide `ParseResult<T>`](../01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md)
+- [FND-09 Move to the .NET 11 GA SDK](../01-foundations/FND-09-move-to-the-net-11-ga-sdk.md)
+- [CORE-13 Extension members guard their receiver](../02-core-combinators/CORE-13-extension-members-guard-their-receiver.md)
 - [ERR-07 Lexer recovery and cascade suppression](../04-errors-and-recovery/ERR-07-lexer-recovery-and-cascade-suppression.md)
 - [SPAN-07 Embedded languages](../05-source-spans/SPAN-07-embedded-languages.md)
 - [STRM-03 Streaming diagnostics](../08-streaming/STRM-03-streaming-diagnostics.md)

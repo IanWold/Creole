@@ -22,8 +22,13 @@ public class NodeModelTests
     }
 
     [Fact]
-    public void EachNodeKindHasOneNodeType() =>
-        Assert.Equal(Enum.GetValues<NodeKind>().Length, _nodeTypes.Length);
+    public void EachNodeKindHasOneNodeTypeAndSequenceHasOnePerArity()
+    {
+        var names = _nodeTypes.Select(type => type.Name.Split('`')[0]).ToArray();
+
+        Assert.Equal(Enum.GetValues<NodeKind>().Length, names.Distinct().Count());
+        Assert.Equal(7, names.Count(name => name == "SequenceNode"));
+    }
 
     [Fact]
     public void EveryPrimitiveNodeExposesItsFirstSet() =>

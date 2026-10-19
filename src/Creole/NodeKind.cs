@@ -21,4 +21,9 @@ internal enum NodeKind
     String,
     Kind,
     Case,
+    Sequence,
+    Map,
+    Optional,
+    Slice,
+    Text,
 }

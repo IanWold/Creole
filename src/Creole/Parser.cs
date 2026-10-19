@@ -16,7 +16,7 @@ namespace Creole;
 /// To add hand-written scanning code, wrap it in a custom primitive instead of deriving from this class.
 /// </para>
 /// </remarks>
-public abstract class Parser<TIn, TOut> : INode
+public abstract partial class Parser<TIn, TOut> : INode
 {
     /// <summary>
     /// The direct child nodes, in grammar order. Empty for leaves.
