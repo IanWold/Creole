@@ -173,7 +173,7 @@ Creole uses C# 15 unions wherever a value is one of a fixed set of shapes, so th
 | Parse results | `ParseResult<T>(Parsed<T>, Recovered<T>, Failed)` | Callers cannot forget the parsed-with-errors case |
 | Error details | `Unexpected(UnexpectedItem, EndOfInput, CustomMessage)` and `Expectation(Label, ExpectedItem, EndOfInput)` | Renderers and language servers switch exhaustively |
 | Lexer modes | e.g. `LexMode(Code, TemplateText, Regex)` | Layer.Modal switches cover every case; cases should carry no data (§ Feedback) |
-| Selective choice | `p.Match(Case<A>(pa), Case<B>(pb))` over a union-valued `p` | Analysis checks every case has a branch (CRL0105) |
+| Selective choice | `p.Match(Case(pa, (A a, TA x) => …), Case(pb, (B b, TB y) => …))` over a union-valued `p` | Analysis checks every case has a branch (CRL0105) |
 | Optional results | `Maybe<T>(T, Nothing)`, the result of `p.Optional()` | Consumers cannot forget the empty case, and `default` is `Nothing` ([ADR-0007](work/docs/decisions/0007-maybe-as-a-non-boxing-union.md)) |
 | User syntax trees | e.g. `JsonValue(JsonString, JsonNumber, ...)` | Implicit conversions replace casts in grammar actions |
 
@@ -209,10 +209,12 @@ public union Header(V1Header, V2Header);
 
 static readonly Parser<byte, Record> Record =
     HeaderParser.Match(
-        Case<V1Header>(BodyV1, static (h, body) => new Record(h.Id, body)),
-        Case<V2Header>(BodyV2, static (h, body) => new Record(h.Id, body)));
+        Case(BodyV1, static (V1Header h, Body body) => new Record(h.Id, body)),
+        Case(BodyV2, static (V2Header h, Body body) => new Record(h.Id, body)));
 // Dropping a case is analyzer error CRL0105, not a runtime surprise.
 ```
+
+Each case is a branch parser and a function that combines the union's case with the branch's result. The lambda's parameter types name the case, so every type is inferred. C# cannot infer the rest from one explicit type argument, which is why the case is not written `Case<V1Header>(...)` ([ADR-0005](work/docs/decisions/0005-match-cases-infer-every-type-from-a-typed-lambda.md), restated in [ADR-0006](work/docs/decisions/0006-switch-and-match-take-a-collection-beyond-eight-cases.md)). `Match` accepts any type implementing `IUnion`, which declared unions do. Cases are tried in order; if none applies, `Match` fails.
 
 ### Where unions are not used
 
@@ -267,7 +269,9 @@ Parser<byte, Record> record =
         @default: Fail<Record>("unsupported version"));
 ```
 
-Every branch is visible to analysis, unlike `Bind`. `Bind` remains for grammars that are genuinely data-dependent, such as a length prefix followed by that many items.
+Every branch is visible to analysis, unlike `Bind`. `Match` is the same idea over a union's cases (§ Using C# 15 unions).
+
+Both take up to eight cases as separate arguments, so a null branch is reported by its expression. Beyond that, they take the cases as a collection, such as `Opcode.Switch([(0x01, Nop), /* … */ (0x2A, Halt)], @default: …)` or a table built in code. Nesting is no substitute: a nested `Switch` would parse the scrutinee again ([ADR-0006](work/docs/decisions/0006-switch-and-match-take-a-collection-beyond-eight-cases.md)). `Bind` remains for grammars that are genuinely data-dependent, such as a length prefix followed by that many items.
 
 ### Repetition and structure
 

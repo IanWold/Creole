@@ -6,6 +6,6 @@ Added 2026-10-19.
 
 **Why it might matter:** Union tokens are meant to be the ergonomic option. Requiring a parallel kind enum doubles the work and lets the enum and the cases drift apart. Analysis also cannot relate a case type to a kind, so a choice mixing `Kind(k)` and `Case<T>()` is treated as possibly overlapping.
 
-**Touches:** [§ Where unions are not used](../../whitepaper.md#where-unions-are-not-used), [§ Authoring ergonomics](../../whitepaper.md#authoring-ergonomics), [CORE-03](../active/02-core-combinators/CORE-03-primitive-nodes.md), [ANA-01](../active/09-static-analysis/ANA-01-grammar-property-analysis.md), CORE-05's `Case<A>(parser, func)`.
+**Touches:** [§ Where unions are not used](../../whitepaper.md#where-unions-are-not-used), [§ Authoring ergonomics](../../whitepaper.md#authoring-ergonomics), [CORE-03](../active/02-core-combinators/CORE-03-primitive-nodes.md), [ANA-01](../active/09-static-analysis/ANA-01-grammar-property-analysis.md), CORE-05's `Case(branch, combine)` for `Match` ([ADR-0006](../docs/decisions/0006-switch-and-match-take-a-collection-beyond-eight-cases.md)).
 
 **First question:** Where should union-token grammars live (`TokenGrammar`, `Grammar<TIn>` with `TIn : IUnion`, or a separate base class), and how should analysis treat case types: as their own kind space, or mapped to kinds? Is the cost of the current design (an extra enum) worth a new base class?

@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Done |
 
 ## Summary
 
@@ -12,14 +12,14 @@ Ordered choice with commit semantics, plus the selective forms that keep every b
 
 ## Scope
 
-- `Or` and `OneOf`.
-- `Switch` over a scrutinee with statically known branches and `@default`.
-- `Match(Case<A>(...), Case<B>(...))` over a union-valued parser.
+- `Or` and `OneOf`, with 2 to 16 alternatives.
+- `Switch` over a scrutinee with statically known branches and `@default`: 1 to 8 cases as separate arguments, or any number as a collection ([ADR-0006](../../docs/decisions/0006-switch-and-match-take-a-collection-beyond-eight-cases.md)).
+- `Match(Case(branch, (A a, B b) => …), …)` over a parser whose value implements `IUnion`: 1 to 8 cases as separate arguments, or any number as a collection ([ADR-0005](../../docs/decisions/0005-match-cases-infer-every-type-from-a-typed-lambda.md), [ADR-0006](../../docs/decisions/0006-switch-and-match-take-a-collection-beyond-eight-cases.md)).
 - Each public combinator null-checks its parser arguments by taking its own `[CallerArgumentExpression]` parameter per parser argument and passing it to `Guard.NotNull`, so the `GrammarException` names the caller's expression (see `Grammar.Deterministic`, CORE-02). A `params` array cannot capture each element's expression, so `OneOf` and `Match` take fixed-arity overloads, each with one expression parameter per operand, rather than `params`.
 
 ## Acceptance criteria
 
-- [ ] Branches of `Switch` and `Match` are reachable from the node for analysis.
+- [x] Branches of `Switch` and `Match` are reachable from the node for analysis.
 
 ## Blocked by
 
@@ -36,3 +36,36 @@ Ordered choice with commit semantics, plus the selective forms that keep every b
 - [§ Choice and backtracking](../../../whitepaper.md#choice-and-backtracking)
 - [§ Selective choice](../../../whitepaper.md#selective-choice)
 - [§ Using C# 15 unions](../../../whitepaper.md#using-c-15-unions)
+
+## Artifacts
+
+- [ADR-0005: `Match` cases infer every type from a typed lambda](../../docs/decisions/0005-match-cases-infer-every-type-from-a-typed-lambda.md) (Superseded by 0006)
+- [ADR-0006: `Switch` and `Match` take a collection beyond eight cases](../../docs/decisions/0006-switch-and-match-take-a-collection-beyond-eight-cases.md) (Accepted)
+
+## Progress notes
+
+- 2026-10-19 (Designing): Started. Blocker CORE-02 is done. Spike on SDK 11.0.100-rc.2.26504.105 (scratchpad, not checked in): the whitepaper's `Case<V1Header>(BodyV1, static (h, body) => …)` does not compile, because C# needs all type arguments or none; from a `TokenGrammar` class declaring `Case<T>()` it fails with CS1501. `Case(BodyV1, static (V1Header h, Body body) => …)` compiles there. Declared unions implement `System.Runtime.CompilerServices.IUnion`. `[CallerArgumentExpression]` can name an extension-block receiver. `Version.Switch((1, RecordV1), …)` fails inference (CS0411) when `Version` produces `byte`; it works when the key type matches. Maintainer chose the typed-lambda form and caps of 16 for `OneOf` and 8 for `Switch` and `Match`; drafted ADR-0005. Plan approved: increment 1 `Or`/`OneOf`, 2 `Switch`, 3 `Match`/`Case`. Next: maintainer accepts ADR-0005, then whitepaper sample update and Build.
+- 2026-10-19 (Designing): ADR-0005 accepted by the maintainer. Whitepaper § Using C# 15 unions and § Selective choice updated; scope updated. Card moves to Building. Next: increment 1, `Or` and `OneOf`.
+- 2026-10-19 (Building): Increment 1 done: `OrNode` and `NodeKind.Or`; `Or` as an extension member in `Choice` (names a null receiver too); `OneOf` with 2 to 16 alternatives in `GrammarOfTIn.Choice.cs`; `ChoiceNodeTests` (reflection checks every overload pairs each alternative with its own expression); docs/concepts/choice.md. `dotnet test`: 295 passed. AOT smoke publish clean. Next: increment 2, `Switch`.
+- 2026-10-19 (Designing): During increment 2, found that ADR-0005's "Larger choices nest" is false for `Switch` and `Match`: a nested one re-parses the scrutinee, so more than 8 cases could not be written. Spike on RC 2: `Version.Switch([(1, A), (2, B)], @default: A)` and an array both bind to an `IReadOnlyList` overload and infer `TOut`; separate tuple arguments still bind to the fixed overload. Maintainer chose a collection overload; drafted ADR-0006, superseding ADR-0005. Increment 2 is uncommitted in the working tree: `SwitchNode`, `NodeKind.Switch`, `Guard.BranchNotNull`, fixed `Switch` overloads in `Choice.Switch.cs`; no tests or docs yet. Next: maintainer accepts ADR-0006, then finish increment 2 with the collection overload.
+- 2026-10-19 (Designing): ADR-0006 accepted by the maintainer; ADR-0005 superseded. Whitepaper § Selective choice and § Using C# 15 unions updated; scope updated. Card back to Building. Next: finish increment 2 with the `Switch` collection overload, tests and docs.
+- 2026-10-19 (Building): Increment 2 done: `SwitchNode` (children: scrutinee, branches in order, default) and `NodeKind.Switch`; `Switch` with 1 to 8 cases as separate arguments and an `IReadOnlyList` collection overload, both through one builder in `Choice.Switch.cs`; `Guard.BranchNotNull`; duplicate keys and empty collections rejected; `SwitchNodeTests`; docs/concepts/choice.md § Selective choice with `Switch`. No structural view interface for `Switch`: analysis tells scrutinee, branches and default apart by position in `Children`. `dotnet test`: 329 passed. AOT smoke publish clean. Next: increment 3, `Match` and `Case`.
+- 2026-10-19 (Building): Increment 3 done: `NodeKind.Match`; public `MatchCase<TIn, TOut>` with internal `TypedMatchCase`; `MatchNode` (children: scrutinee, then each branch) with `IMatchNode` view (union type, each case's type and branch, for CRL0105); `Case` on `Grammar<TIn>`; `Match` with 1 to 8 cases and a collection overload in `Choice.Match.cs`, constrained to `IUnion`; duplicate case types rejected. `MatchNodeTests` include snippet compiles: the whitepaper's `Match` compiles from a class standing in for CORE-03's `TokenGrammar.Case<T>()`; `Case<V1Header>(…)` gives CS1501; `Match` over a non-union gives CS0311. docs/concepts/choice.md § `Match`. `dotnet test`: 360 passed. AOT smoke publish clean. Every scope item is built; the criterion is shown by `SwitchBuildsOneNodeWithEveryBranchReachable` and `MatchBuildsOneNodeWithEveryBranchReachable`. Next: maintainer review, PR and `/complete CORE-05`.
+- 2026-10-19 (Building): Merged origin/main (CORE-03, ERR-03), uncommitted for the maintainer. Conflicts in `NodeKind` and docs/README.md kept both sides, with CORE-03's kinds before ours. CORE-03's `CaseOverloadsOnTokenGrammarAndGrammarBothResolve` used the pre-ADR-0005 `Case<V1Header>(Body, (h, body) => …)` and failed with CS1501; updated it to the typed-lambda form and removed its skip. `MatchNodeTests` now compiles against the real `TokenGrammar.Case<T>()` instead of a stand-in. Stale `Case<A>(...)` mentions in CORE-02 and an idea note updated. `dotnet test`: 500 passed, 0 skipped. AOT smoke publish clean. Next: maintainer commits the merge, opens the PR and runs `/complete CORE-05`.
+- 2026-10-19 (Building): Merged origin/main again (CORE-04), uncommitted for the maintainer. Conflicts kept both sides: `NodeKind` (CORE-04's kinds before ours), the decisions index (CORE-04's ADR-0007 after ours), the whitepaper's union table (our `Match` row and CORE-04's `Maybe<T>` row); the work README's "Can start now" drops both CORE-04 (done) and CORE-05 (in progress). Our extension members already meet CORE-13's receiver rule. Added CORE-05's RC 2 findings to FND-09's re-check list. `dotnet test`: 529 passed, 0 skipped. AOT smoke publish clean. Next: maintainer commits the merge, opens the PR and runs `/complete CORE-05`.
+- 2026-10-19 (Building): Completed. Verified on the merged branch (commit 56019f9): `dotnet build` 0 warnings; `dotnet test` 529 passed, 0 skipped; the criterion's tests pass, and both fail when the branches are removed from `Children`.
+
+## Outcome
+
+- **Ordered choice:** `OrNode` (`NodeKind.Or`); `p.Or(q)` in [src/Creole/Choice.cs](../../../src/Creole/Choice.cs); `OneOf` with 2 to 16 alternatives in [src/Creole/GrammarOfTIn.Choice.cs](../../../src/Creole/GrammarOfTIn.Choice.cs). Nested `Or` calls are kept as written, not flattened.
+- **`Switch`:** `SwitchNode` (`NodeKind.Switch`, children: scrutinee, branches in order, default); 1 to 8 cases as separate arguments plus an `IReadOnlyList` overload in [src/Creole/Choice.Switch.cs](../../../src/Creole/Choice.Switch.cs). Duplicate keys and empty collections throw. `Guard.BranchNotNull` names the case of a null branch inside a tuple.
+- **`Match`:** `MatchNode` (`NodeKind.Match`, children: scrutinee, then each branch) with the `IMatchNode` view (union type, and each case's type and branch, for CRL0105 in ANA-01); public `MatchCase<TIn, TOut>` with internal `TypedMatchCase`; `Case` in `GrammarOfTIn.Choice.cs`; `Match` constrained to `IUnion`, 1 to 8 cases plus a collection overload, in [src/Creole/Choice.Match.cs](../../../src/Creole/Choice.Match.cs). Duplicate case types throw.
+- Every combinator names a null receiver or argument by the caller's expression, so the code already meets [CORE-13](CORE-13-extension-members-guard-their-receiver.md)'s rule.
+- `Lower` returns `PlanBuilder.NotYetExecutable` for all three nodes; INT-03 executes them. The XML docs state the run-time rules it must implement.
+- **Tests:** [ChoiceNodeTests](../../../tests/Creole.Tests/ChoiceNodeTests.cs), [SwitchNodeTests](../../../tests/Creole.Tests/SwitchNodeTests.cs), [MatchNodeTests](../../../tests/Creole.Tests/MatchNodeTests.cs). Reflection checks every generated overload. Snippet compiles show that the whitepaper's `Match` compiles beside `TokenGrammar.Case<T>()`, that `Case<V1Header>(…)` is CS1501, and that `Match` on a non-union is CS0311. The criterion is shown by `SwitchBuildsOneNodeWithEveryBranchReachable` and `MatchBuildsOneNodeWithEveryBranchReachable`.
+- **Docs:** [docs/concepts/choice.md](../../../docs/concepts/choice.md), indexed in docs/README.md.
+- **Deviations from the whitepaper sketch**, both accepted:
+  - [ADR-0005](../../docs/decisions/0005-match-cases-infer-every-type-from-a-typed-lambda.md): `Case<V1Header>(branch, (h, body) => …)` cannot compile in C#, so cases infer every type from a typed lambda: `Case(branch, (V1Header h, Body body) => …)`.
+  - [ADR-0006](../../docs/decisions/0006-switch-and-match-take-a-collection-beyond-eight-cases.md), superseding ADR-0005: `Switch` and `Match` take a collection beyond eight cases, because nesting them would parse the scrutinee again.
+- **Not done here:** nothing checks yet that every union case has a branch or that a case type belongs to the union; that is CRL0105 in ANA-01. Merging main also updated CORE-03's `CaseOverloadsOnTokenGrammarAndGrammarBothResolve` to the ADR-0005 form.
+- **Follow-up:** [FND-09](../01-foundations/FND-09-move-to-the-net-11-ga-sdk.md) re-checks this card's RC 2 findings on the GA SDK.

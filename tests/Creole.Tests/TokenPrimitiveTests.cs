@@ -1,5 +1,3 @@
-using System.Reflection;
-
 namespace Creole.Tests;
 
 file enum J { String, Number, Comma }
@@ -54,9 +52,7 @@ public class TokenPrimitiveTests
         {
             public static readonly Parser<Tok, Ident> Name = Case<Ident>();
             public static readonly Parser<Tok, int> Body = Return(0);
-        #if MATCH_CASE
-            public static readonly object Branch = Case<V1Header>(Body, static (h, body) => h.Id + body);
-        #endif
+            public static readonly object Branch = Case(Body, static (V1Header h, int body) => h.Id + body);
         }
         """;
 
@@ -87,21 +83,8 @@ public class TokenPrimitiveTests
         Assert.True(Primitive(UnionTokens.Name, NodeKind.Case).First.Overlaps(Primitive(UnionTokens.NumberKind, NodeKind.Kind).First));
 
     [Fact]
-    public void CaseOverloadsOnTokenGrammarAndGrammarBothResolve()
-    {
+    public void CaseOverloadsOnTokenGrammarAndGrammarBothResolve() =>
         Assert.Empty(SnippetCompiler.Compile("CaseResolution", CaseSnippet));
-
-        var grammarHasCase = typeof(Grammar<>)
-            .GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
-            .Any(method => method.Name == "Case");
-
-        if (!grammarHasCase)
-        {
-            Assert.Skip("Grammar<TIn>.Case<A>(parser, func) arrives with CORE-05.");
-        }
-
-        Assert.Empty(SnippetCompiler.Compile("CaseResolution", "#define MATCH_CASE\n" + CaseSnippet));
-    }
 
     [Fact]
     public void CaseRejectsATokenTypeThatIsNotAUnion() =>

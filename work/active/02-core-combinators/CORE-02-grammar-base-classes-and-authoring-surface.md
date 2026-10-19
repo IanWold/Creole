@@ -24,7 +24,7 @@ Each node card adds its own entry points to the class that [§ Authoring ergonom
 | --- | --- |
 | CORE-03 | `Any`, `Token`, `Satisfy`, `End`; `Kind(k)` and `Case<T>()` for union tokens on `TokenGrammar`; character classes, `String` and `CIString` on `CharGrammar` |
 | CORE-04 | `Seq`; `Text()` and `Slice()` for character layers |
-| CORE-05 | `OneOf`; `Case<A>(...)` for `Match` |
+| CORE-05 | `OneOf`; `Case(branch, combine)` for `Match` ([ADR-0006](../../docs/decisions/0006-switch-and-match-take-a-collection-beyond-eight-cases.md)) |
 | CORE-06 | `Longest` |
 | CORE-08 | `Atomic`, `Lookahead`, `Not` if they are static |
 | CORE-09 | `Rec` |

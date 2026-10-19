@@ -16,6 +16,15 @@ internal static class Guard
         parser ?? throw new GrammarException($"'{expression}' is null. If it refers to a rule declared later in the class, wrap the reference in Rec(() => {expression}).");
 
     /// <summary>
+    /// Returns <paramref name="branch"/>, or throws a <see cref="GrammarException"/> naming the case it belongs to and suggesting <c>Rec</c> if it is null.
+    /// Use it for a parser inside a case, whose own expression the compiler cannot capture.
+    /// </summary>
+    /// <param name="branch">The case's parser.</param>
+    /// <param name="caseDescription">How the message names the case, such as <c>'(2, RecordV2)'</c> with its quotes, or <c>case 3</c>.</param>
+    public static Parser<TIn, TOut> BranchNotNull<TIn, TOut>([NotNull] Parser<TIn, TOut>? branch, string caseDescription) =>
+        branch ?? throw new GrammarException($"The branch in {caseDescription} is null. If it refers to a rule declared later in the class, wrap the reference in Rec(() => ...).");
+
+    /// <summary>
     /// Returns <paramref name="value"/>, or throws a <see cref="GrammarException"/> naming the argument expression if it is null.
     /// </summary>
     public static T NotNull<T>([NotNull] T? value, [CallerArgumentExpression(nameof(value))] string expression = "") where T : class =>

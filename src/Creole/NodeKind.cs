@@ -26,4 +26,7 @@ internal enum NodeKind
     Optional,
     Slice,
     Text,
+    Or,
+    Switch,
+    Match,
 }
