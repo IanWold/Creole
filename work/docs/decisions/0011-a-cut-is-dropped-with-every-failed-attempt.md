@@ -81,7 +81,7 @@ Forces:
 
 ### A. Every light-mark attempt drops its cut (recommended)
 
-Each attempt made by a combinator that takes a light mark restores the cut flag if it fails without consuming. That covers every alternative of `Or` and `OneOf` including the last, the item of `Optional`, every item of a repetition whether mandatory or not, and the attempts of `SepBy` separators, `Until` terminators, `Expression.Build` operators and atoms, and `Recover`. It doesn't matter whether the combinator then moves on, stops or fails.
+Each attempt made by a combinator that takes a light mark restores the cut flag if it fails without consuming. That covers every alternative of `Or` and `OneOf` including the last, the item of `Optional`, every item of a repetition whether mandatory or not, and the attempts of separators (`SepBy`, `SepBy1`, `SepEndBy`), `Until` terminators, `Expression.Build` operators and atoms, and `Recover`. It doesn't matter whether the combinator then moves on, stops or fails.
 
 - **Pros:**
   - Choice dispatch is exact. The measurements found 0 differences, and that holds for the last alternative and mandatory items too.
@@ -125,18 +125,18 @@ Option **A**. Accepted by the maintainer on 2026-10-19.
 This record supersedes ADR-0010 as a whole, because a record can only be superseded whole. ADR-0010's point 2 (bookmark release at a permanent cut) and point 3 (one cut flag per layer) stand unchanged. ADR-0008's points 1, 2 and 4 to 7 stand, as ADR-0010 said. The cut rule is now:
 
 1. `Cut` succeeds without consuming input and puts a cut in force.
-2. `Atomic(p)` rewinds a failure of `p` unless a cut passed inside `p` is still in force. Each `Atomic` starts with no cut in force. A cut passed inside an inner `Atomic` that has since succeeded is still in force.
+2. `Atomic(p)` rewinds a failure of `p` unless a cut passed inside `p` is still in force. Each `Atomic` starts with no cut in force. A cut passed inside an inner `Atomic` is still in force after it, whether that `Atomic` succeeded or failed (point 7: it merges its cut outward on exit).
 3. **Attempts.** The following combinators take a light mark before each attempt they make:
    - `Or` and `OneOf`: each alternative;
    - `Optional`: its item;
-   - every repetition: each item, mandatory or not, and each `SepBy` separator and `Until` terminator;
+   - every repetition: each item, mandatory or not, each separator of `SepBy`, `SepBy1` and `SepEndBy`, and each `Until` terminator;
    - `Expression.Build`: each operator and each atom;
    - `Recover`: its parser.
    
-   When an attempt fails without consuming, its light mark restores the cut flag to its value when the attempt started. It does so whether the combinator then moves on, stops or fails.
+   When an attempt fails without consuming, its light mark restores the cut flag to its value when the attempt started. It does so whether the combinator then moves on, stops or fails. Only the failed attempt's cut is dropped: when a separator matches without consuming and the item after it then fails without consuming, the list ends, and a cut the separator passed stays in force, because the separator's own attempt succeeded. A `SetMode` in that separator stays in effect for the same reason (confirmed by the maintainer, 2026-10-19).
 4. **Boundaries.** A cut passed inside a `Lookahead`, a `Not` or a `Longest` alternative does not survive the parse leaving it, whichever way that boundary ends.
 5. A cut never turns a failure that consumed nothing into a committed one.
-6. **Dispatch.** An engine may skip an attempt listed in point 3 when the next item shows it would fail without consuming. It must not skip any other node that can reach a `Cut` without consuming and is enclosed by an `Atomic`.
+6. **Dispatch.** An engine may skip an attempt listed in point 3 when the next item shows it would fail without consuming. It must not skip any other node that is enclosed by an `Atomic` and can reach a `Cut` without consuming, outside any `Lookahead`, `Not` or `Longest` alternative. A cut inside one of those boundaries cannot leave it, so skipping the boundary is exact.
 7. **Implementation.** As ADR-0010 described: one flag per layer. `Atomic` and the three boundaries save and clear it on entry. On exit, `Atomic` merges its saved value with the current one, and a boundary restores its saved value. Each light mark saves the flag, and restores it on its attempt's empty failure.
 
 Deciding reason: A is the only rule measured that keeps both exact choice dispatch and grouping-independent sequences. The only optimisation it rules out is one the design does not plan.
@@ -144,7 +144,7 @@ Deciding reason: A is the only rule measured that keeps both exact choice dispat
 What would change this:
 
 - A generator design that needs to fail fast inside sequences over nodes that can reach a cut. B would then trade grouping independence for it.
-- A case outside the measured space where A's choice dispatch is not exact. The checked-in model's dispatch test exists to find one.
+- A case outside the measured space where A's choice dispatch is not exact. The checked-in model's tests cover every grammar to depth 3; an independent review of CORE-08 also found none in about 17 million random cases to depth 6.
 
 ## Consequences
 
@@ -157,7 +157,7 @@ What would change this:
   - B's every-node restore.
   - The last-alternative exception implied by ADR-0010's wording.
 - **Risks and how they are watched:**
-  - The measurements came from a model that is not checked in. CORE-08 checks in a model of rule A with three tests, over the same space of grammars:
+  - The measurements came from a model that is not checked in. CORE-08 checks in a model of rule A with three tests over every grammar to depth 3, a larger space than the measurements because it adds `SepBy` and `Until`:
     - it gives every table row its expected outcome;
     - choice dispatch matches running in order;
     - flattening sequences changes no outcome.

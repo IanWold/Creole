@@ -29,6 +29,21 @@ public class ControlModelTests
     }
 
     [Fact]
+    public void FirstAndNullableAreSound()
+    {
+        var difference = FirstDifference((shape, input) => ControlModel.InOrder.Run(shape, input).Outcome switch
+        {
+            Outcome.Ok { Consumed: 0 } when !ControlModel.Nullable(shape) =>
+                $"{ControlModel.Describe(shape)} on \"{input}\" succeeds without consuming, but is not nullable",
+            Outcome.Ok { Consumed: > 0 } or Outcome.FailConsumed when !ControlModel.First(shape, input[0]) =>
+                $"{ControlModel.Describe(shape)} on \"{input}\" consumes '{input[0]}' first, which is not in its FIRST set",
+            _ => null,
+        });
+
+        Assert.Null(difference);
+    }
+
+    [Fact]
     public void NestingSequencesChangesNoResult()
     {
         var difference = FirstDifference((shape, input) =>

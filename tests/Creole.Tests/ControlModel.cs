@@ -15,7 +15,7 @@ namespace Creole.Tests;
 /// <para>
 /// <see cref="Run"/> returns the outcome and whether a cut is in force afterwards.
 /// Two engines that agree on both agree in every context, and a difference in either shows in some context:
-/// the cut shows when the grammar is wrapped in <c>Atomic(Seq(prefix, grammar))</c> with a prefix that consumes.
+/// the cut shows when the grammar is wrapped in <c>Atomic(Seq(prefix, grammar, rest))</c>, with a prefix that consumes and, if the grammar succeeds, a rest that then fails.
 /// </para>
 /// <para>
 /// With <c>dispatch</c> set, the model skips every attempt that the next item shows would fail without consuming, as a generator's <c>switch</c> does.
