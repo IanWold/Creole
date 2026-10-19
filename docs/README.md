@@ -18,7 +18,7 @@ The layout follows the scope of [REL-02](../work/active/14-release/REL-02-docume
 
 | Page | Contents |
 | --- | --- |
-| [Grammars as data](concepts/grammars-as-data.md) | The `Parser<TIn, TOut>` type, immutability and identity, the grammar base classes, `IKinded<TKind>` and `GrammarException`. |
+| [Grammars as data](concepts/grammars-as-data.md) | The `Parser<TIn, TOut>` type, immutability and identity, the grammar base classes, recursion and rule names with `Rec`, `IKinded<TKind>` and `GrammarException`. |
 | [Expressions](concepts/expressions.md) | `Expression.Build` and its operator table: prefix, postfix and infix operators, levels, and the checks made when the grammar is built. |
 | [Primitives](concepts/primitives.md) | `Any`, `Token`, `Satisfy` and `End`; the character classes; `String` and `CIString`; `Kind` and `Case<T>()` for tokens. |
 | [Choice](concepts/choice.md) | `Or` and `OneOf`: ordered choice with commit semantics. `Switch`: choosing a branch by a parsed key. `Match` and `Case`: choosing a branch by a union's case. Their Pidgin names. |

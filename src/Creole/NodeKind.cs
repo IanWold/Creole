@@ -29,4 +29,5 @@ internal enum NodeKind
     Or,
     Switch,
     Match,
+    Rec,
 }
