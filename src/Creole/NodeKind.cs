@@ -29,6 +29,7 @@ internal enum NodeKind
     Or,
     Switch,
     Match,
+    Longest,
     Atomic,
     Lookahead,
     Not,

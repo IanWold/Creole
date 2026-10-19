@@ -5,6 +5,20 @@ public class RepetitionNodeTests
     private static readonly Parser<char, string> _comma = Grammar<char>.Return(",");
     private static readonly Parser<char, int> _item = Grammar<char>.Return(1);
 
+    public static TheoryData<string> Combinators => new()
+    {
+        nameof(Repetition.Many),
+        nameof(Repetition.AtLeastOnce),
+        "Repeat(3)",
+        "Repeat(2, 5)",
+        nameof(Repetition.SepBy),
+        nameof(Repetition.SepBy1),
+        nameof(Repetition.SepEndBy),
+        nameof(Repetition.Until),
+        nameof(Repetition.SkipMany),
+        nameof(Repetition.SkipAtLeastOnce),
+    };
+
     public static TheoryData<string, int, int?> RepeatCases => new()
     {
         { nameof(Repetition.Many), 0, null },
@@ -24,8 +38,28 @@ public class RepetitionNodeTests
         _ => throw new ArgumentOutOfRangeException(nameof(combinator)),
     };
 
+    private static object Call(string combinator, Parser<char, int> rule) => combinator switch
+    {
+        nameof(Repetition.Many) => rule.Many(),
+        nameof(Repetition.AtLeastOnce) => rule.AtLeastOnce(),
+        "Repeat(3)" => rule.Repeat(3),
+        "Repeat(2, 5)" => rule.Repeat(2, 5),
+        nameof(Repetition.SepBy) => rule.SepBy(_comma),
+        nameof(Repetition.SepBy1) => rule.SepBy1(_comma),
+        nameof(Repetition.SepEndBy) => rule.SepEndBy(_comma),
+        nameof(Repetition.Until) => rule.Until(_comma),
+        nameof(Repetition.SkipMany) => rule.SkipMany(),
+        nameof(Repetition.SkipAtLeastOnce) => rule.SkipAtLeastOnce(),
+        _ => throw new ArgumentOutOfRangeException(nameof(combinator)),
+    };
+
     private static string NullMessage(string expression) =>
         $"'{expression}' is null. If it refers to a rule declared later in the class, wrap the reference in Rec(() => {expression}).";
+
+    [Theory]
+    [MemberData(nameof(Combinators))]
+    public void NullReceiverNamesTheExpression(string combinator) =>
+        Assert.Equal(NullMessage("rule"), Assert.Throws<GrammarException>(() => Call(combinator, null!)).Message);
 
     [Fact]
     public void NullSeparatorNamesTheExpression()

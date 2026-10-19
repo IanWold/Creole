@@ -33,6 +33,11 @@ internal abstract record ControlShape
     public record Lookahead(ControlShape Item) : ControlShape;
 
     /// <summary>
+    /// Produces the value of the alternative that consumed the most.
+    /// </summary>
+    public record Longest(ControlShape First, ControlShape Second) : ControlShape;
+
+    /// <summary>
     /// Produces its items' values joined.
     /// </summary>
     public record Many(ControlShape Item) : ControlShape;
@@ -116,6 +121,8 @@ internal static class ControlTable
         new("Cut: stops an Atomic inside a Lookahead", Lookahead(Atomic(Seq(_a, _cut, _b))), "ac", _failConsumed),
         new("Cut: does not escape a Not", Atomic(Seq(Not(Seq(_a, _cut, _b)), _ab)), "ac", _failEmpty),
         new("Cut: Not still succeeds when an Atomic inside it keeps a committed failure", Not(Atomic(Seq(_a, _cut, _b))), "ac", Ok("", 0)),
+        new("Cut: does not escape a Longest alternative", Atomic(Seq(Longest(Seq(_a, _cut), _x), _ab)), "ac", _failEmpty),
+        new("Cut: does not stop Longest giving back a failed alternative", Longest(Seq(_a, _cut, _b), _a), "ac", Ok("a", 1)),
 
         new("Named: does not change a success", Named(_ab, "ab"), "ab", Ok("ab", 2)),
         new("Named: does not change a failure without consuming", Named(_a, "a"), "x", _failEmpty),
@@ -138,6 +145,7 @@ internal static class ControlTable
         ControlShape.Context s => Build(s.Item).Context(s.Text),
         ControlShape.Cut => Grammar<char>.Cut.As(""),
         ControlShape.Lookahead s => Grammar<char>.Lookahead(Build(s.Item)),
+        ControlShape.Longest s => Grammar<char>.Longest(Build(s.First), Build(s.Second)),
         ControlShape.Many s => Build(s.Item).Many().Select(string.Concat),
         ControlShape.Named s => Build(s.Item).Named(s.Label),
         ControlShape.Not s => Grammar<char>.Not(Build(s.Item)).As(""),
@@ -155,6 +163,8 @@ internal static class ControlTable
     private static ControlShape.Context Context(ControlShape item, string text) => new ControlShape.Context(item, text);
 
     private static ControlShape.Lookahead Lookahead(ControlShape item) => new ControlShape.Lookahead(item);
+
+    private static ControlShape.Longest Longest(ControlShape first, ControlShape second) => new ControlShape.Longest(first, second);
 
     private static ControlShape.Many Many(ControlShape item) => new ControlShape.Many(item);
 

@@ -1,6 +1,6 @@
 # Choice
 
-Choice combinators pick one of several parsers. `p.Or(q)`, `p.Switch(...)` and `p.Match(...)` are extension members of `Parser<TIn, TOut>` in the `Choice` class. `OneOf` and `Case` are members of `Grammar<TIn>`, so a grammar class calls them unqualified. The design is in the [whitepaper's § Choice and backtracking](../../whitepaper.md#choice-and-backtracking) and [§ Selective choice](../../whitepaper.md#selective-choice).
+Choice combinators pick one of several parsers. `p.Or(q)`, `p.Switch(...)` and `p.Match(...)` are extension members of `Parser<TIn, TOut>` in the `Choice` class. `OneOf`, `Longest` and `Case` are members of `Grammar<TIn>`, so a grammar class calls them unqualified. The design is in the [whitepaper's § Choice and backtracking](../../whitepaper.md#choice-and-backtracking), [§ Longest match](../../whitepaper.md#longest-match) and [§ Selective choice](../../whitepaper.md#selective-choice).
 
 > Nothing runs these combinators yet. They build grammar nodes, and the interpreter that executes them arrives with INT-03. Each method's XML documentation states the behaviour engines must implement; this page will describe it once it runs.
 
@@ -18,6 +18,25 @@ Choice uses commit semantics: the next alternative is tried only if the one befo
 `a.Or(b).Or(c)` matches the same input as `OneOf(a, b, c)`, but the grammar tree keeps the nesting you wrote: a choice inside a choice.
 
 For more than 16 alternatives, nest `OneOf` calls. Each overload takes its alternatives as separate parameters rather than a `params` array, so a null alternative is reported by the expression you passed (see [Grammars as data](grammars-as-data.md)). `Or` also names a null receiver, such as `Later.Or(x)` where `Later` is declared further down the class.
+
+## Longest match
+
+`Longest(p1, …, pn)` is maximal munch, the rule lexers use to pick a token. It runs every alternative from the same position and produces the result of the one that consumed the most input. A tie goes to the earliest alternative.
+
+```csharp
+// Lt, Le, If and Identifier produce a Tok.
+public static readonly Parser<char, Tok> Token = Longest(Lt, Le, If, Identifier);
+```
+
+On `<=` the result is `Le`, though `Lt` comes first and also matches. On `iffy` it is `Identifier`, which matches four characters to `If`'s two. On `if` both match two characters, so the earlier one, `If`, wins. Put keywords before the identifier rule.
+
+Unlike `OneOf`, every alternative runs atomically. An alternative that fails, even after consuming input, simply does not match, and the input it read is given back. With `Longest(Lt, Spaceship)`, where `Spaceship` is `<=>`, the input `<=x` produces `Lt`: `Spaceship` read `<=` before failing. If every alternative fails, `Longest` fails without consuming input. An alternative that succeeds without consuming input beats one that fails, and loses to any that consumes something. A `Cut` inside an alternative stays inside it (see [Backtracking and labels](control.md)).
+
+`Longest` takes 2 to 16 alternatives, each as a separate parameter so a null one is reported by its expression. For more, nest calls: `Longest(a, Longest(b, c))` matches the same input as `Longest(a, b, c)` and picks the same winner. The grammar tree keeps the nesting you wrote.
+
+`Longest` works on any input type, so a token layer can use it too. When every alternative is regular, engines are meant to compile it to a single DFA rather than run the alternatives one by one; that arrives with INT-06.
+
+The examples on this page are rows of `LongestTable` in the tests, which INT-03 runs against the interpreter.
 
 ## Selective choice with `Switch`
 
@@ -80,5 +99,6 @@ Every branch is part of the grammar, so analysis sees all of them. Nothing check
 | --- | --- |
 | `p.Or(q)` | `p.Or(q)` |
 | `OneOf(p1, …, pn)` | `OneOf(p1, …, pn)` |
+| `Longest(p1, …, pn)` | none |
 
-Both libraries use commit semantics. Pidgin's `OneOf` also takes a `params` array or an `IEnumerable`, so it has no limit on the number of alternatives. Pidgin's `Try` corresponds to Creole's `Atomic`.
+Both libraries use commit semantics. Pidgin's `OneOf` also takes a `params` array or an `IEnumerable`, so it has no limit on the number of alternatives. Pidgin's `Try` corresponds to Creole's `Atomic`. Pidgin has no longest-match combinator; the nearest is `OneOf` over `Try` alternatives ordered so that longer tokens come first.

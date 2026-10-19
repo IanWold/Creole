@@ -21,7 +21,7 @@ The layout follows the scope of [REL-02](../work/active/14-release/REL-02-docume
 | [Grammars as data](concepts/grammars-as-data.md) | The `Parser<TIn, TOut>` type, immutability and identity, the grammar base classes, `IKinded<TKind>` and `GrammarException`. |
 | [Expressions](concepts/expressions.md) | `Expression.Build` and its operator table: prefix, postfix and infix operators, levels, and the checks made when the grammar is built. |
 | [Primitives](concepts/primitives.md) | `Any`, `Token`, `Satisfy` and `End`; the character classes; `String` and `CIString`; `Kind` and `Case<T>()` for tokens. |
-| [Choice](concepts/choice.md) | `Or` and `OneOf`: ordered choice with commit semantics. `Switch`: choosing a branch by a parsed key. `Match` and `Case`: choosing a branch by a union's case. Their Pidgin names. |
+| [Choice](concepts/choice.md) | `Or` and `OneOf`: ordered choice with commit semantics. `Longest`: maximal munch, the longest match wins. `Switch`: choosing a branch by a parsed key. `Match` and `Case`: choosing a branch by a union's case. Their Pidgin names. |
 | [Backtracking and labels](concepts/control.md) | `Atomic`, `Lookahead`, `Not` and `Cut`: when a parse may rewind, and how far a cut reaches. `Named` and `Context`: what a failure reports. |
 | [Repetition](concepts/repetition.md) | `Many`, `AtLeastOnce`, `Repeat`, `SepBy`, `SepBy1`, `SepEndBy`, `Until`, `SkipMany` and `SkipAtLeastOnce`, and their Pidgin names. |
 | [Sequencing and mapping](concepts/sequencing.md) | `Seq`, `Select`, `As`, `Ignore`, `Before`, `Then`, `Between`, `Optional` with the union `Maybe<T>`, and `Slice` and `Text`: running parsers in order and shaping their results. |

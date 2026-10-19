@@ -14,6 +14,7 @@ Full rules: CONTRIBUTING.md § Code. Style that `.editorconfig` enforces at buil
 - Every file in a project uses the project's namespace (`Creole`, `Creole.Testing`, `Creole.Tests`, `Creole.Benchmarks`, …), whatever folder it is in.
 - `sealed` is optional on private, internal and `file` types. Node and plan classes stay `sealed` (ADR-0001).
 - Member order: by kind (nested classes, structs, records, other nested types; constants; fields; properties and indexers; events; constructors; methods; operators), then accessibility (private first, public last), then name ignoring case and a leading `_`. Exception: a field or property comes after any member its initializer reads (CRL0004). Details in CONTRIBUTING.md § Conventions.
+- A combinator null-checks each parser argument, and an extension member its receiver too, with a `[CallerArgumentExpression]` parameter passed to `Guard.NotNull`. `ExtensionReceiverTests` checks the receivers. An instance method cannot check its receiver (C# throws `NullReferenceException` first); CRL0004 covers it.
 - Every public type and member has XML docs. A public API change updates `docs/` in the same change.
 - `<summary>` tags go on their own lines (`/// <summary>`, the text, `/// </summary>`), even for one-line summaries. Other XML doc tags may stay inline.
 - Break XML doc lines only at natural breaks (end of a sentence, a colon, a semicolon), never at a column width.
