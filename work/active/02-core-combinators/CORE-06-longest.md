@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -34,3 +34,7 @@ Maximal munch as an ordinary combinator: every alternative runs atomically from 
 ## Whitepaper references
 
 - [§ Longest match](../../../whitepaper.md#longest-match)
+
+## Progress notes
+
+- 2026-10-19 (Building): Added `LongestNode` (`NodeKind.Longest`, at the end of the enum) and `Grammar<TIn>.Longest` for 2 to 16 alternatives in `GrammarOfTIn.Longest.cs`. Any node can be an alternative, so CORE-12's `Custom` node needs no change here. The examples are in `tests/Creole.Tests/LongestTable.cs` with `LongestTable.ToParser` for INT-03; `LongestTableTests` only builds each row. Semantics documented in `docs/concepts/choice.md` § Longest match, including two calls the whitepaper leaves implicit: when every alternative fails, `Longest` fails without consuming input (follows from "atomically"), and beyond 16 alternatives you nest calls, which is equivalent because ties go left at both levels. 574 tests pass. Next: maintainer review, then `/complete`.
