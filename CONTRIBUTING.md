@@ -43,6 +43,7 @@ Each card moves through some or all of **Research → Design → Build**, and ev
 | [`work/docs/decisions/`](work/docs/decisions/README.md) | Decision records: what we chose and why. |
 | [`work/docs/archive/`](work/docs/archive/README.md) | Superseded process artifacts kept for history. |
 | [`scripts/work.py`](scripts/work.py) | Tracker checks and mechanical edits (see [Keeping the tracker consistent](#keeping-the-tracker-consistent)). |
+| [`scripts/gen-east-asian-width.py`](scripts/gen-east-asian-width.py) | Regenerates `src/Creole/Errors/EastAsianWidth.g.cs` from the Unicode Character Database when the runtime's Unicode version changes. |
 | `.claude/` | Claude Code configuration: skills, subagents, path-scoped rules and hooks (see [Working with Claude](#working-with-claude)). |
 | `src/`, `tests/`, `benchmarks/`, [`samples/`](samples/README.md) | The code (see [Code](#code)). |
 

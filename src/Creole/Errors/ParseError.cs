@@ -84,6 +84,37 @@ public sealed record ParseError(
     private static ReadOnlyCollection<Expectation> CopyExpected(IReadOnlyList<Expectation> expected) =>
         Copy(expected, nameof(Expected), static expectation => expectation.Value is not null);
 
+    /// <summary>
+    /// Describes <see cref="Expected"/> as a list, such as <c>value, '[' or end of input</c>. Empty when nothing was expected.
+    /// </summary>
+    internal string DescribeExpected()
+    {
+        var builder = new StringBuilder();
+
+        for (var i = 0; i < Expected.Count; i++)
+        {
+            builder.Append(i == 0 ? "" : i == Expected.Count - 1 ? " or " : ", ");
+            builder.Append(Expected[i] switch
+            {
+                Label label => label.Name,
+                ExpectedItem item => item.Display,
+                EndOfInput => "end of input",
+            });
+        }
+
+        return builder.ToString();
+    }
+
+    /// <summary>
+    /// Describes <see cref="Unexpected"/>, such as <c>unexpected string "host"</c>. A <see cref="CustomMessage"/> is its text alone.
+    /// </summary>
+    internal string DescribeUnexpected() => Unexpected switch
+    {
+        UnexpectedItem item => $"unexpected {item.Display}",
+        EndOfInput => "unexpected end of input",
+        CustomMessage message => message.Text,
+    };
+
     /// <inheritdoc/>
     public bool Equals(ParseError? other) =>
         other is not null
@@ -121,27 +152,11 @@ public sealed record ParseError(
         var builder = new StringBuilder();
 
         builder.Append(CultureInfo.InvariantCulture, $"error[{Layer}] at {Span.CharStart}..{Span.CharEnd}: ");
-        builder.Append(Unexpected switch
-        {
-            UnexpectedItem item => $"unexpected {item.Display}",
-            EndOfInput => "unexpected end of input",
-            CustomMessage message => message.Text,
-        });
+        builder.Append(DescribeUnexpected());
 
         if (Expected.Count > 0)
         {
-            builder.Append("; expected ");
-
-            for (var i = 0; i < Expected.Count; i++)
-            {
-                builder.Append(i == 0 ? "" : i == Expected.Count - 1 ? " or " : ", ");
-                builder.Append(Expected[i] switch
-                {
-                    Label label => label.Name,
-                    ExpectedItem item => item.Display,
-                    EndOfInput => "end of input",
-                });
-            }
+            builder.Append("; expected ").Append(DescribeExpected());
         }
 
         foreach (var line in Context)

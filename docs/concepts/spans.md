@@ -51,6 +51,8 @@ long lines = map.LineCount;                 // 3
 - The LF of a CRLF is on the same line as its CR. An offset on the second half of a surrogate pair has the same column as the first half.
 - Any offset from 0 to the text's length is valid. The length itself is the position just past the last character. Other offsets throw `ArgumentOutOfRangeException`.
 
+To show errors against a source, wrap its text in a `SourceText`, which builds the `LineMap` on first use. Columns in a rendered location count scalar values as above, while the carets under the line follow what a terminal shows: grapheme clusters, wide characters and tab stops ([Errors § Rendering against the source](errors.md#rendering-against-the-source)).
+
 For text that does not fit in one string, such as a source longer than 2 GB, feed it to a `LineMap.Builder` in chunks. A CRLF or a surrogate pair may be split across two chunks.
 
 ```csharp
