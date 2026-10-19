@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -39,3 +39,12 @@ Sequencing and maps: the shapes that make up most grammar code.
 - [§ Types](../../../whitepaper.md#types)
 - [§ Small API consequences](../../../whitepaper.md#small-api-consequences)
 - [§ Text capture](../../../whitepaper.md#text-capture)
+
+## Artifacts
+
+- Docs: [Sequencing and mapping](../../../docs/concepts/sequencing.md)
+
+## Progress notes
+
+- 2026-10-19 (Build): Started. Plan agreed. `SequenceNode<TIn, T1, …, Tn, TOut>` for 2 to 8 operands holds typed operands and a `Func<T1, …, Tn, TOut>` selector; all arities share `NodeKind.Sequence`. `Seq(...)` produces a value tuple through a cached selector. N-ary `Select` is an extension member in `Sequencing` on `Parser<TIn, (T1, …, Tn)>` and replaces the tuple selector, so `Seq(...).Select(...)` is one node; it cannot take an explicit result type (CS1593, measured on RC 2), so union targets cast in the lambda. Unary `Select`, `As`, `Ignore` (a `Map` node) and `Before`, `Then`, `Between` (sequence nodes) are instance methods. `Optional` returns `Option<T>`, a new struct in Pidgin's `Maybe<T>` shape. `Slice` and `Text` are separate nodes on `Parser<char, TOut>`. Next: increment 1, sequencing and mapping; increment 2, `Optional`, `Slice`, `Text`.
+- 2026-10-19 (Build): Increment 1 done: `SequenceNode` (2 to 8 operands, one file) and `MapNode`, with `NodeKind` members `Sequence` and `Map`; `Seq` in `GrammarOfTIn.Sequence.cs`; N-ary `Select` in `Sequencing.cs`; `Select`, `As`, `Ignore` in `Parser.Mapping.cs`; `Before`, `Then`, `Between` in `Parser.Sequencing.cs` (`Parser` is now `partial`). Tests in `SequencingNodeTests.cs` pin the criterion at every arity; turning off the `Select` fusion fails exactly those two tests. `NodeModelTests` now allows one sequence node type per arity. `dotnet build` with 0 warnings; `dotnet test` with 275 passed; the AOT smoke publish, which now uses every new combinator, with 0 IL warnings. Pidgin names on the docs page checked against Pidgin 3.5.1 by reflection. The criterion appears met. Next: increment 2, `Optional` with `Option<T>`, `Slice` and `Text`.

@@ -231,7 +231,7 @@ Package versions are managed centrally in [`Directory.Packages.props`](Directory
 ### Conventions
 
 - `.editorconfig` is the style guide. Do not argue with it in review; change it.
-- One type per file, named after the type. A helper used only in that file is a `file` type placed after the main type, not a nested type. Nest a type only when a `file` type cannot do the job: it is part of the containing type's API (such as `LineMap.Builder`), it appears in a member signature of the containing type, or it is used from another file.
+- One type per file, named after the type. The exception is generic types that share a name and differ only in arity, such as `SequenceNode<TIn, T1, T2, TOut>` to `SequenceNode<TIn, T1, …, T8, TOut>`: they go in one file named after the shared name, in order of arity. A helper used only in that file is a `file` type placed after the main type, not a nested type. Nest a type only when a `file` type cannot do the job: it is part of the containing type's API (such as `LineMap.Builder`), it appears in a member signature of the containing type, or it is used from another file.
 - Folders group files by area but do not change the namespace. Every file in a project uses the project's namespace, whatever folder it is in: `Creole` for `src/Creole`, `Creole.Testing` for `src/Creole.Testing`, `Creole.Tests` for `tests/Creole.Tests`, and so on. `.editorconfig` turns off the folder check (IDE0130).
 - `sealed` is optional on private, internal and `file` types. Node and plan classes stay `sealed` ([ADR-0001](work/docs/decisions/0001-grammar-node-encoding-and-engine-dispatch.md), § [Interpreted engine](whitepaper.md#interpreted-engine)).
 - Members of a type are ordered by kind, then accessibility, then name:
