@@ -21,7 +21,7 @@ The layout follows the scope of [REL-02](../work/active/14-release/REL-02-docume
 | [Grammars as data](concepts/grammars-as-data.md) | The `Parser<TIn, TOut>` type, immutability and identity, the grammar base classes, `IKinded<TKind>` and `GrammarException`. |
 | [Expressions](concepts/expressions.md) | `Expression.Build` and its operator table: prefix, postfix and infix operators, levels, and the checks made when the grammar is built. |
 | [Repetition](concepts/repetition.md) | `Many`, `AtLeastOnce`, `Repeat`, `SepBy`, `SepBy1`, `SepEndBy`, `Until`, `SkipMany` and `SkipAtLeastOnce`, and their Pidgin names. |
-| [Sequencing and mapping](concepts/sequencing.md) | `Seq`, `Select`, `As`, `Ignore`, `Before`, `Then`, `Between`, `Optional` with `Maybe<T>`, and `Slice` and `Text`: running parsers in order and shaping their results. |
+| [Sequencing and mapping](concepts/sequencing.md) | `Seq`, `Select`, `As`, `Ignore`, `Before`, `Then`, `Between`, `Optional` with the union `Maybe<T>`, and `Slice` and `Text`: running parsers in order and shaping their results. |
 | [Errors](concepts/errors.md) | `ParseError`, the `Unexpected` and `Expectation` unions, `ParseResult<T>` and its cases, and `Diagnostics`: what a parse reports. |
 | [Source spans](concepts/spans.md) | `SourceSpan`, `SourceId`, `SourceRegistry` and `LineMap`: where items came from in the original source, as offsets or as lines and columns. |
 | [The cursor](engines/cursor.md) | `Cursor<T>`: absolute positions, reading without allocation, bulk scans over segmented input. |

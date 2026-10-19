@@ -15,4 +15,7 @@ internal enum NodeKind
     Expression,
     Sequence,
     Map,
+    Optional,
+    Slice,
+    Text,
 }
