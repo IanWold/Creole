@@ -14,10 +14,12 @@ The most common bug in Sprache and Pidgin grammars: a field initializer reads a 
 
 - Read field initializers in declaration order and flag references to later fields outside `Rec`.
 - Code fix that wraps the reference in `Rec`.
+- A `DiagnosticSuppressor` for the nullable warnings C# gives on the safe form. With nullable enabled, the compiler treats a field declared later as maybe null inside a lambda in an earlier initializer, although `Rec` calls the lambda only after the class is initialized. `Rec(() => Later)` itself no longer warns, since `Rec` takes `Func<Parser<TIn, TOut>?>` (CORE-09). A later field used inside a larger `Rec` lambda, as in Example A's `Value = Rec(() => OneOf(..., ArrayValue, ObjectValue))`, still warns CS8604 (measured on RC 2 during CORE-09). Suppress CS8603 and CS8604 only where the expression is a later field of the same grammar class read inside a `Rec` lambda, the case CRL0004 accepts as safe.
 
 ## Acceptance criteria
 
 - [ ] The whitepaper's `Value` and `ArrayValue` example is flagged and fixed.
+- [ ] Example A, as written in the whitepaper, builds with nullable enabled and warnings as errors, and the same later-field reference outside `Rec` still warns. CORE-09's `RecTests` pins Example A with a `#pragma warning disable CS8604`; remove it once the suppressor ships.
 
 ## Blocked by
 

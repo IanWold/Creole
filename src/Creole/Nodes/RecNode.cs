@@ -41,5 +41,5 @@ internal sealed class RecNode<TIn, TOut>(Func<Parser<TIn, TOut>?> reference, str
     public Parser<TIn, TOut> Target => _target.Value;
 
     internal override Plan<TIn, TOut> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, TOut>(Kind);
+        builder.Rec(this);
 }

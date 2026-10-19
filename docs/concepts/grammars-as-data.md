@@ -61,7 +61,8 @@ public sealed class Lists : CharGrammar
 
 - `Rec(() => p)` calls the lambda once, when the grammar is first used, not when `Rec` is called. Every use then sees the same parser.
 - Wrap a reference in `Rec` when the field it reads is declared later, or when it closes a cycle between rules. Other references need no `Rec`.
-- If the lambda returns null at first use, Creole throws a `GrammarException` naming the lambda.
+- If the lambda returns null at first use, Creole throws a `GrammarException` naming the lambda and the path of named rules that led to it, such as `Rule path: Expr → Term`.
+- Rules that refer to each other only through `Rec`, such as `A = Rec(() => B)` and `B = Rec(() => A)`, would never parse anything. Creole throws a `GrammarException` naming the cycle when the grammar is first used.
 - The lambda's return type is nullable, so `Rec(() => LaterField)` compiles without a nullable warning. A later field used *inside* a larger lambda, such as `Rec(() => OneOf(A, LaterField))`, still gets warning CS8604, because the compiler does not know the lambda runs after the field is set. Write `LaterField!`, or wrap that reference in its own `Rec`.
 
 ### Rule names
