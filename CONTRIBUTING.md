@@ -231,6 +231,8 @@ Package versions are managed centrally in [`Directory.Packages.props`](Directory
 ### Conventions
 
 - `.editorconfig` is the style guide. Do not argue with it in review; change it.
+- One type per file, named after the type. A small internal helper used only by that type may share its file.
+- Folders group files by area. A folder of internal types has its own namespace (`Creole.Nodes`, `Creole.Plans`). A folder of public types keeps the `Creole` namespace (`Errors/`), so callers need no extra `using`.
 - Every public type and member has XML docs ([Documentation](#documentation)).
 - Do not suppress a warning without a comment saying why.
 - The runtime libraries stay Native AOT and trim safe: no runtime IL emission, and no reflection on the hot path (G8).
