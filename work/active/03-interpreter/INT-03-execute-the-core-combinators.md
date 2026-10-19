@@ -13,7 +13,7 @@ The interpreter runs every analyzable node family with Parsec-style commit seman
 ## Scope
 
 - Four outcomes as `bool` plus cursor movement.
-- `Or` and `OneOf` commit; `Atomic` rewinds; `Lookahead`, `Not`; `Cut` overrides an enclosing `Atomic`.
+- `Or` and `OneOf` commit; `Atomic` rewinds; `Lookahead`, `Not`; `Cut` overrides an enclosing `Atomic` up to the nearest `Lookahead`, `Not` or `Longest` alternative, and is dropped when the attempt that passed it fails without consuming. Each light mark (`Or`, `Optional`, repetition, operators) saves and restores the cut flag ([ADR-0010](../../docs/decisions/0010-cuts-under-dispatch-and-across-layers.md)).
 - `Longest` by running each alternative atomically (the DFA path is INT-06).
 - CORE-03's primitives fail without consuming input. `String` and `CIString` are atomic, and `CIString` compares by `ToLowerInvariant`. Test both.
 - Repetition, sequencing, `Switch` and `Match`.
@@ -26,6 +26,7 @@ The interpreter runs every analyzable node family with Parsec-style commit seman
 - [ ] The grammar classes in Worked Example A compile against the API, apart from `Layer.Tokens` (LAY-03). Moved here from CORE-02.
 - [ ] The interpreter passes every row of the CORE-07 repetition table, and handles the rows where Pidgin throws on a repeated parser that consumes nothing. Moved here from [CORE-07](../02-core-combinators/CORE-07-repetition-nodes.md).
 - [ ] The interpreter passes every row of the CORE-06 `Longest` table: `<=` beats `<`, `iffy` beats `if`, and ties go to the earliest alternative. Moved here from [CORE-06](../02-core-combinators/CORE-06-longest.md).
+- [ ] The interpreter passes every row of the CORE-08 control table, including `Cut` inside nested `Atomic`s and a cut dropped with an abandoned alternative. Moved here from [CORE-08](../02-core-combinators/CORE-08-control-nodes.md).
 - [ ] A plan lowered from a grammar with `Rec` cycles parses recursive input. Moved here from [CORE-09](../02-core-combinators/CORE-09-recursion-with-rec.md).
 
 ## Blocked by

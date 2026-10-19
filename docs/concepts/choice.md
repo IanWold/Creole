@@ -13,7 +13,7 @@ Choice combinators pick one of several parsers. `p.Or(q)`, `p.Switch(...)` and `
 
 Every alternative produces the same type. When alternatives build different cases of a syntax tree, convert each to the common type, for example with a union.
 
-Choice uses commit semantics: the next alternative is tried only if the one before it failed **without consuming input**. An alternative that fails after consuming input fails the whole choice. `Atomic`, which arrives with CORE-08, will let the next alternative run from the same position.
+Choice uses commit semantics: the next alternative is tried only if the one before it failed **without consuming input**. An alternative that fails after consuming input fails the whole choice. Wrap an alternative in `Atomic` to let the next one run from the same position (see [Backtracking and labels](control.md)).
 
 `a.Or(b).Or(c)` matches the same input as `OneOf(a, b, c)`, but the grammar tree keeps the nesting you wrote: a choice inside a choice.
 
@@ -30,7 +30,7 @@ public static readonly Parser<char, Tok> Token = Longest(Lt, Le, If, Identifier)
 
 On `<=` the result is `Le`, though `Lt` comes first and also matches. On `iffy` it is `Identifier`, which matches four characters to `If`'s two. On `if` both match two characters, so the earlier one, `If`, wins. Put keywords before the identifier rule.
 
-Unlike `OneOf`, every alternative runs atomically. An alternative that fails, even after consuming input, simply does not match, and the input it read is given back. With `Longest(Lt, Spaceship)`, where `Spaceship` is `<=>`, the input `<=x` produces `Lt`: `Spaceship` read `<=` before failing. If every alternative fails, `Longest` fails without consuming input. An alternative that succeeds without consuming input beats one that fails, and loses to any that consumes something.
+Unlike `OneOf`, every alternative runs atomically. An alternative that fails, even after consuming input, simply does not match, and the input it read is given back. With `Longest(Lt, Spaceship)`, where `Spaceship` is `<=>`, the input `<=x` produces `Lt`: `Spaceship` read `<=` before failing. If every alternative fails, `Longest` fails without consuming input. An alternative that succeeds without consuming input beats one that fails, and loses to any that consumes something. A `Cut` inside an alternative stays inside it (see [Backtracking and labels](control.md)).
 
 `Longest` takes 2 to 16 alternatives, each as a separate parameter so a null one is reported by its expression. For more, nest calls: `Longest(a, Longest(b, c))` matches the same input as `Longest(a, b, c)` and picks the same winner. The grammar tree keeps the nesting you wrote.
 
@@ -101,4 +101,4 @@ Every branch is part of the grammar, so analysis sees all of them. Nothing check
 | `OneOf(p1, …, pn)` | `OneOf(p1, …, pn)` |
 | `Longest(p1, …, pn)` | none |
 
-Both libraries use commit semantics. Pidgin's `OneOf` also takes a `params` array or an `IEnumerable`, so it has no limit on the number of alternatives. Pidgin's `Try` corresponds to Creole's planned `Atomic`. Pidgin has no longest-match combinator; the nearest is `OneOf` over `Try` alternatives ordered so that longer tokens come first.
+Both libraries use commit semantics. Pidgin's `OneOf` also takes a `params` array or an `IEnumerable`, so it has no limit on the number of alternatives. Pidgin's `Try` corresponds to Creole's `Atomic`. Pidgin has no longest-match combinator; the nearest is `OneOf` over `Try` alternatives ordered so that longer tokens come first.

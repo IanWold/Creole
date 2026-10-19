@@ -14,6 +14,7 @@ Interpreter support for the dependent, operator-precedence and user-scanner node
 
 - `Bind` with the once-compiled continuation.
 - Precedence climbing for `Expression.Build`, with the semantics of [ADR-0004](../../docs/decisions/0004-expression-build-operator-table-and-semantics.md) points 3 to 5.
+- `Named` on an expression follows [ADR-0008](../../docs/decisions/0008-control-node-semantics.md) point 4: it also applies when the expression succeeds without consuming. ADR-0004 point 5 states the earlier rule. Operator attempts take light marks, so a cut in an operator that fails without consuming is dropped ([ADR-0010](../../docs/decisions/0010-cuts-under-dispatch-and-across-layers.md)).
 - docs/concepts/expressions.md gains the parsing rules and the behavioural differences from Pidgin (repeated prefix and postfix, `2 ^ -x`, non-associative chains), which CORE-11 left out because nothing ran them.
 - `Custom` scanners invoked through `IScanner`.
 
