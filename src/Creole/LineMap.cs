@@ -184,6 +184,15 @@ public sealed class LineMap
     }
 
     /// <summary>
+    /// Returns the character offset where <paramref name="line"/> starts, or <see cref="Length"/> for the line after the last.
+    /// </summary>
+    /// <param name="line">A line number from 1 to <see cref="LineCount"/> + 1.</param>
+    internal long GetLineStart(long line) =>
+        line <= LineCount
+        ? _lineStarts[line - 1]
+        : Length;
+
+    /// <summary>
     /// Builds a line map for text held in memory.
     /// </summary>
     public static LineMap Create(ReadOnlySpan<char> text)

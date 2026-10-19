@@ -108,9 +108,76 @@ The reasons are in [ADR-0002](../../work/docs/decisions/0002-parseresult-as-a-pl
 - `new Diagnostics(errors)` sorts `errors`. It throws `ArgumentException` if one is null.
 - Two collections are equal when they hold equal errors in the same order.
 
-### Rendering
+### Rendering against the source
 
-`Render()` writes one line per error, in order, joined by `\n`. `ParseError.ToString()` gives the same line for one error.
+`Render(sources)` shows each error against the line it points into, in the format of the whitepaper's [§ The error model](../../whitepaper.md#the-error-model). Pass a `SourceText` for every source the errors point into:
+
+```csharp
+var sources = new SourceRegistry();
+var config = sources.Add("config.json");
+
+// diagnostics: the errors from parsing text, with spans that point into config.
+string report = diagnostics.Render(new SourceText(config, sources.GetName(config), text));
+```
+
+```text
+error[parser]: expected ',' or '}'
+ --> config.json:3:16
+  |
+3 |   "port": 8080 "host": "x"
+  |                ^^^^^^ unexpected string "host"
+  = note: in object starting at 2:1
+```
+
+- **Headline.** `error[layer]:` and what was expected. The carets are labelled with what was found. When nothing was expected, the headline says what was found and the carets have no label. A `CustomMessage` is shown as its text.
+- **Location.** ` --> name:line:column`, or ` --> line:column` for a source with no name. Lines and columns start at 1, and columns count Unicode scalar values, as [`LineMap`](spans.md) does.
+- **Notes.** One `= note:` line per context line, innermost first.
+- **Order.** Errors come in span order, so they are grouped by source, in the order the `SourceRegistry` issued the ids, with `SourceId.Unnamed` first. A blank line separates errors, and lines are joined by `\n`.
+
+#### `SourceText`
+
+A `SourceText` holds a source's full text with the id and name to show it under. It builds the source's `LineMap` on first use and keeps it, so many errors in one source share it.
+
+| Constructor | Use |
+| --- | --- |
+| `new SourceText(text, name)` | A source with no registry id (`SourceId.Unnamed`). `name` may be omitted or null. |
+| `new SourceText(id, name, text)` | A source with an id from a `SourceRegistry`. `name` is usually `registry.GetName(id)`. |
+
+`Render(sources)` throws `ArgumentException` if an error points into a source with no text, if two texts have the same id, if a text is null, or if an error's span ends past the end of its text. That last one usually means the wrong text was passed.
+
+#### Caret alignment
+
+Carets line up under the span in a terminal with a monospace font:
+
+| Input | How it is shown |
+| --- | --- |
+| Tab | Spaces to the next stop. Stops are every 4 columns. |
+| East Asian Wide or Fullwidth character, such as CJK ideographs and most emoji | Two columns. |
+| Regional-indicator flag, or a cluster with U+FE0F (emoji presentation) | Two columns. |
+| Combining mark, ZWJ and other format characters | No column of their own. A mark shares its base character's cell. |
+| Line break | Never shown. CR, LF and CRLF all end a line. |
+| Control character (C0 or DEL) | Its Control Picture, such as `␛` for ESC, one column. |
+| C1 control character or lone surrogate | U+FFFD, one column. |
+| Anything else, including East Asian Ambiguous characters | One column. |
+
+Widths are measured per grapheme cluster, as .NET's `StringInfo` splits text (Unicode extended grapheme clusters). A span that starts or ends inside a cluster marks the whole cluster. The location still counts scalar values, so `e` followed by U+0301 is two columns in ` --> ` but one caret.
+
+- An empty span, or a span over only a line break, gets one caret where it is, after the last character if it is at the end of the line.
+- A span over several lines is shown on its first line, with carets to the end of that line.
+- Control characters are replaced so that printing a diagnostic cannot send escape sequences to a terminal. The replacement applies to the source line only. Layer names, `Display` strings, messages and context lines are printed as given.
+
+What this does not handle:
+
+- **Ambiguous width.** Terminals set up for CJK show East Asian Ambiguous characters two columns wide. Creole counts them as one.
+- **Font and terminal differences.** Some terminals draw some emoji, flags or ZWJ sequences at a width other than two.
+- **Indic conjuncts.** .NET 11 does not join conjuncts such as क्ष into one cluster (Unicode 15.1's rule GB9c), so carets under them can be off by a column.
+- **Right-to-left text.** Carets follow the order of the characters in memory, not their order on screen.
+
+The width table comes from Unicode 16.0.0, the version .NET 11 uses. `scripts/gen-east-asian-width.py` regenerates it.
+
+### One line per error
+
+`Render()`, with no sources, writes one line per error, in order, joined by `\n`. `ParseError.ToString()` gives the same line for one error.
 
 ```text
 error[lexer] at 4..7: number too large
@@ -120,4 +187,4 @@ error[parser] at 30..30: unexpected end of input; expected value, '[' or end of 
 
 - The offsets are character offsets, `CharStart..CharEnd`.
 - The expected part is left out when nothing was expected. Context lines follow, innermost first.
-- `Render()` shows no file names, lines or columns.
+- `Render()` shows no file names, lines or columns. Use it when the source text is not at hand.
