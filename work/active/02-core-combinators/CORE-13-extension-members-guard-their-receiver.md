@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -34,3 +34,12 @@ A combinator written as an extension member, such as `p.Many()`, can be called o
 ## Whitepaper references
 
 - [§ Diagnostics](../../../whitepaper.md#diagnostics)
+
+## Artifacts
+
+- Docs: [Grammars as data](../../../docs/concepts/grammars-as-data.md), [Repetition](../../../docs/concepts/repetition.md)
+
+## Progress notes
+
+- 2026-10-19 (Building): Started. Blocker CORE-07 is Done and the card fixes the approach, so it enters at Build.
+- 2026-10-19 (Building): Built in one increment; this card merges before CORE-06, CORE-08 and CORE-09. Code: each of the 10 `Repetition` members takes `parserExpression` and calls `Guard.NotNull`, with the receiver's parameter first as in `Choice` (agreed with the maintainer); `Repeat(count)` passes it on. Tests: `RepetitionNodeTests.NullReceiverNamesTheExpression`, one row per member; `ExtensionReceiverTests`, which finds every public static `[Extension]` method in `Creole` whose first parameter is a parser, plus a fixture test showing the check reports only the unguarded member. Measured on RC 2: extension methods compile to such methods; extension properties and static extension members carry no `[Extension]`, so they are not checked. Removing the receiver parameter from `SkipAtLeastOnce`, `SepBy1` and `Maybe.Optional` in turn failed the test, naming exactly that member (built with warnings not as errors, because the leftover `<param>` tag is CS1572). Rule text in CONTRIBUTING.md § Conventions and `.claude/rules/dotnet.md`; docs in grammars-as-data.md and repetition.md. Verified: `dotnet build` 0 warnings; `dotnet test` 541 passed, 0 failed; AOT smoke publish clean. All criteria appear met. Next: `/complete CORE-13`.

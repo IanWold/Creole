@@ -200,7 +200,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- None yet.
+- [CORE-13](active/02-core-combinators/CORE-13-extension-members-guard-their-receiver.md) Extension members guard their receiver — Building
 
 ### Can start now
 
@@ -210,7 +210,6 @@ These items have all their blockers done:
 - [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md) Control nodes
 - [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) Recursion with Rec
 - [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md) Bind and LINQ query syntax
-- [CORE-13](active/02-core-combinators/CORE-13-extension-members-guard-their-receiver.md) Extension members guard their receiver
 - [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) StreamBuffer and pulling cursor
 
 ## Epics
