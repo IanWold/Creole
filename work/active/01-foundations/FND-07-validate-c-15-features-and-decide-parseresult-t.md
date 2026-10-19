@@ -30,6 +30,7 @@ The design relies on unions and hand-written `[Union]` structs, and may use a `c
 
 ## Unblocks
 
+- [FND-09 Move to the .NET 11 GA SDK](../01-foundations/FND-09-move-to-the-net-11-ga-sdk.md)
 - [ERR-01 Error and result types](../04-errors-and-recovery/ERR-01-error-and-result-types.md)
 - [REL-04 Public API review and freeze](../14-release/REL-04-public-api-review-and-freeze.md)
 

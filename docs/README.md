@@ -23,6 +23,7 @@ The layout follows the scope of [REL-02](../work/active/14-release/REL-02-docume
 | [Primitives](concepts/primitives.md) | `Any`, `Token`, `Satisfy` and `End`; the character classes; `String` and `CIString`; `Kind` and `Case<T>()` for tokens. |
 | [Choice](concepts/choice.md) | `Or` and `OneOf`: ordered choice with commit semantics. `Switch`: choosing a branch by a parsed key. `Match` and `Case`: choosing a branch by a union's case. Their Pidgin names. |
 | [Repetition](concepts/repetition.md) | `Many`, `AtLeastOnce`, `Repeat`, `SepBy`, `SepBy1`, `SepEndBy`, `Until`, `SkipMany` and `SkipAtLeastOnce`, and their Pidgin names. |
+| [Sequencing and mapping](concepts/sequencing.md) | `Seq`, `Select`, `As`, `Ignore`, `Before`, `Then`, `Between`, `Optional` with the union `Maybe<T>`, and `Slice` and `Text`: running parsers in order and shaping their results. |
 | [Errors](concepts/errors.md) | `ParseError`, the `Unexpected` and `Expectation` unions, `ParseResult<T>` and its cases, and `Diagnostics`: what a parse reports, and how to render it against the source with `SourceText`. |
 | [Source spans](concepts/spans.md) | `SourceSpan`, `SourceId`, `SourceRegistry` and `LineMap`: where items came from in the original source, as offsets or as lines and columns. |
 | [The cursor](engines/cursor.md) | `Cursor<T>`: absolute positions, reading without allocation, bulk scans over segmented input. |

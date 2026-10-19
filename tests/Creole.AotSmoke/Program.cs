@@ -1,6 +1,12 @@
 using Creole;
 
-if (Calc.Expr is null)
+if (Calc.Expr is null || Sequences.Pair is null || Sequences.Captured is null)
+{
+    return 1;
+}
+
+Maybe<int> just = 3;
+if (just switch { int value => value, Nothing => 0 } != 3 || default(Maybe<int>) != new Nothing())
 {
     return 1;
 }
@@ -22,4 +28,18 @@ internal class Calc : CharGrammar
         [op.InfixL(_minus, (l, _, r) => l - r)],
         [op.InfixN(Return(0L), (l, _, r) => l < r ? 1 : 0)],
     ]);
+}
+
+internal class Sequences : CharGrammar
+{
+    private static readonly Parser<char, string> _comma = Return(",");
+    private static readonly Parser<char, int> _one = Return(1);
+
+    public static readonly Parser<char, string> Pair =
+        Seq(_one.Before(_comma), _one.Then(_comma), _one.Between(_comma, _comma), _one.As(2L), _one.Ignore())
+            .Select(static (a, b, c, d, _) => $"{a}{b}{c}{d}")
+            .Select(static text => text + "!");
+
+    public static readonly Parser<char, string> Captured =
+        Seq(_one.Optional(), _one.Slice(), _one.Text()).Select(static (sign, slice, text) => $"{sign}{slice}{text}");
 }

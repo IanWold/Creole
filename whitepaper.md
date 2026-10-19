@@ -174,6 +174,7 @@ Creole uses C# 15 unions wherever a value is one of a fixed set of shapes, so th
 | Error details | `Unexpected(UnexpectedItem, EndOfInput, CustomMessage)` and `Expectation(Label, ExpectedItem, EndOfInput)` | Renderers and language servers switch exhaustively |
 | Lexer modes | e.g. `LexMode(Code, TemplateText, Regex)` | Layer.Modal switches cover every case; cases should carry no data (§ Feedback) |
 | Selective choice | `p.Match(Case(pa, (A a, TA x) => …), Case(pb, (B b, TB y) => …))` over a union-valued `p` | Analysis checks every case has a branch (CRL0105) |
+| Optional results | `Maybe<T>(T, Nothing)`, the result of `p.Optional()` | Consumers cannot forget the empty case, and `default` is `Nothing` ([ADR-0007](work/docs/decisions/0007-maybe-as-a-non-boxing-union.md)) |
 | User syntax trees | e.g. `JsonValue(JsonString, JsonNumber, ...)` | Implicit conversions replace casts in grammar actions |
 
 ```csharp
@@ -217,7 +218,7 @@ Each case is a branch parser and a function that combines the union's case with 
 
 ### Where unions are not used
 
-- **Hot-path values.** Steps return `bool` and read consumption from the cursor (§ Combinator semantics), so no union is involved. `Emit<T>` is a hand-written `[Union]` struct using C# 15's non-boxing access pattern (`HasValue` plus `TryGetValue`), so it keeps exhaustive matching without allocating.
+- **Hot-path values.** Steps return `bool` and read consumption from the cursor (§ Combinator semantics), so no union is involved. `Emit<T>` is a hand-written `[Union]` struct using C# 15's non-boxing access pattern (`HasValue` plus `TryGetValue`), so it keeps exhaustive matching without allocating. `Maybe<T>` uses the same pattern through `TryGetValue` alone. Its empty state is the case type `Nothing` rather than a null `Value`, so `default` matches `Nothing` and a switch needs no null arm.
 - **Grammar nodes.** Neither unions nor C# 15's `closed` classes can hold nodes such as `Map<TIn, TA, TOut>`, whose type `TA` does not appear in `Parser<TIn, TOut>`. Instead each engine operation is an abstract method every node must implement (§ Types, [ADR-0001](work/docs/decisions/0001-grammar-node-encoding-and-engine-dispatch.md)). Adding a combinator without teaching the interpreter is a build error, which protects G7. The source generator reads syntax rather than node types, so its share of G7 rests on the CRL0301 fallback and the differential tests (§ Equivalence). User-written scanners join through a single `Custom` node (§ Custom primitives), so the set of nodes stays fixed.
 - **Tokens, by default.** Tokens can be unions, matched with `Case<Ident>()` instead of `Kind(k)`, and analysis treats each case type as a kind. But a union token boxes struct cases, so a lexer would allocate per token. `IKinded<TKind>` struct tokens remain the fast path, and fused layers never materialize tokens either way.
 
