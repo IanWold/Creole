@@ -7,6 +7,7 @@ Thoughts not yet ready to be cards or research notes. See [CONTRIBUTING.md § Id
 | Idea | Added | Touches | Summary |
 | --- | --- | --- | --- |
 | [Union tokens and `IKinded`](union-tokens-and-ikinded.md) | 2026-10-19 | § Where unions are not used, CORE-03, ANA-01 | Research spike: union tokens must also implement `IKinded<TKind>` to use `TokenGrammar`, which the whitepaper does not seem to intend. |
+| [Full-word combinator names](full-word-combinator-names.md) | 2026-10-19 | § Authoring ergonomics, § Repetition and structure, § Expressions, ADR-0004 | Rename the public combinators to consistent full words (`SepBy1` beside `AtLeastOnce`) before more cards add names; needs `/decide`. |
 
 ## Dropped
 

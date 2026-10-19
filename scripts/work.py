@@ -154,6 +154,50 @@ def rel(p: Path) -> str:
 
 # ---------------------------------------------------------------- check
 
+WAVE_ROW_RE = re.compile(r"^\| (\d+) \| (?:✅ )?\[([A-Z]+-\d+)\]")
+
+
+def check_waves(rtext: str, cards: dict[str, Card]) -> list[str]:
+    """Each card sits in its phase's table, at its dependency depth across all phases,
+    counted so that the phase's shallowest card is wave 1 (CONTRIBUTING.md § Epics, phases, waves and gates)."""
+    errors: list[str] = []
+    roadmap = rtext.split("\n## Epics", 1)[0]
+    placed: dict[str, tuple[str, int]] = {}
+    heading = ""
+    for line in roadmap.splitlines():
+        if line.startswith("### "):
+            heading = line[4:].strip()
+        elif m := WAVE_ROW_RE.match(line):
+            placed[m.group(2)] = (heading, int(m.group(1)))
+
+    depth: dict[str, int] = {}
+
+    def depth_of(cid: str, seen: frozenset[str] = frozenset()) -> int:
+        if cid not in depth:
+            if cid in seen:
+                errors.append(f"work/README.md: dependency cycle through {cid}")
+                return 1
+            blockers = [b for b in cards[cid].blocked_by if b in cards]
+            depth[cid] = 1 + max((depth_of(b, seen | {cid}) for b in blockers), default=0)
+        return depth[cid]
+
+    shallowest: dict[str, int] = {}
+    for cid, (phase, _) in placed.items():
+        if cid in cards:
+            shallowest[phase] = min(shallowest.get(phase, depth_of(cid)), depth_of(cid))
+    for cid, (phase, wave) in placed.items():
+        if cid not in cards:
+            continue
+        if cards[cid].fields.get("Phase") != phase:
+            errors.append(f"work/README.md: {cid} is in the '{phase}' table, but its card says '{cards[cid].fields.get('Phase')}'")
+        expected = depth_of(cid) - shallowest[phase] + 1
+        if wave != expected:
+            errors.append(f"work/README.md: {cid} is in wave {wave} of '{phase}', expected wave {expected}")
+    for c in cards.values():
+        if c.location != "backburner" and c.id not in placed:
+            errors.append(f"work/README.md: {c.id} is in no phase table")
+    return errors
+
 def collect() -> tuple[list[str], list[str], dict[str, Card]]:
     """Run every consistency check. Returns (errors, warnings, cards)."""
     errors: list[str] = []
@@ -227,6 +271,7 @@ def collect() -> tuple[list[str], list[str], dict[str, Card]]:
         expected_ip = {c.id for c in cards.values() if c.status in ("Researching", "Designing", "Building")}
         if listed_ip != expected_ip:
             errors.append(f"work/README.md: 'In progress' lists {sorted(listed_ip)}, cards say {sorted(expected_ip)}")
+        errors.extend(check_waves(rtext, cards))
 
     # Index READMEs for research and decisions list every document.
     for sub in ("research", "decisions", "archive"):
