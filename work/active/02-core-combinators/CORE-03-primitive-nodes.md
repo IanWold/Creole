@@ -27,6 +27,7 @@ The leaf nodes of every grammar.
 
 ## Unblocks
 
+- [CORE-12 Custom primitives](../02-core-combinators/CORE-12-custom-primitives.md)
 - [INT-03 Execute the core combinators](../03-interpreter/INT-03-execute-the-core-combinators.md)
 - [ANA-01 Grammar property analysis](../09-static-analysis/ANA-01-grammar-property-analysis.md)
 - [TOOL-05 EBNF and railroad diagram export](../12-grammar-author-tooling/TOOL-05-ebnf-and-railroad-diagram-export.md)

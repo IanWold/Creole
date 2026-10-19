@@ -20,7 +20,7 @@
 ## Acceptance criteria
 
 - [ ] Mutually recursive grammars like Example A resolve correctly.
-- [ ] Lowering a grammar with `Rec` cycles terminates, lowers each node once and produces a plan that parses recursive input.
+- [ ] Lowering a grammar with `Rec` cycles terminates and lowers each node once. Parsing recursive input with the lowered plan moved to [INT-03](../03-interpreter/INT-03-execute-the-core-combinators.md), the first card that executes the nodes a recursive grammar needs (agreed with the maintainer on 2026-10-19).
 
 ## Blocked by
 

@@ -25,6 +25,8 @@ A hand-written scanner escape hatch for tokens no regular expression can describ
 ## Blocked by
 
 - [CORE-02 Grammar base classes and authoring surface](../02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md)
+- [CORE-03 Primitive nodes](../02-core-combinators/CORE-03-primitive-nodes.md)
+- [CORE-06 Longest](../02-core-combinators/CORE-06-longest.md)
 
 ## Unblocks
 
