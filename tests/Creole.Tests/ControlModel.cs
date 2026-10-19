@@ -9,7 +9,8 @@ namespace Creole.Tests;
 /// a cut passed inside an <c>Atomic</c> stops it rewinding;
 /// a cut does not survive leaving a <c>Lookahead</c>, a <c>Not</c> or a <c>Longest</c> alternative;
 /// and a cut is dropped with every attempt that fails without consuming.
-/// An attempt is anything a light mark holds: each alternative of <c>Or</c>, the item of <c>Optional</c>, each repetition item whether mandatory or not, each <c>SepBy</c> separator with the item after it, and each <c>Until</c> terminator.
+/// An attempt is anything a light mark holds: each alternative of <c>Or</c>, the item of <c>Optional</c>, each repetition item whether mandatory or not, each <c>SepBy</c> separator, and each <c>Until</c> terminator.
+/// The model covers <c>Many</c>, <c>AtLeastOnce</c>, <c>SepBy</c> and <c>Until</c>; <c>SepBy1</c>, <c>SepEndBy</c>, ranged <c>Repeat</c> and <c>Expression.Build</c> follow the same rule but are not modelled.
 /// </para>
 /// <para>
 /// <see cref="Run"/> returns the outcome and whether a cut is in force afterwards.
@@ -38,7 +39,8 @@ internal sealed class ControlModel(bool dispatch)
 
     /// <summary>
     /// Every shape up to <paramref name="depth"/> over the leaves <c>a</c>, <c>b</c>, <c>ab</c> and <c>Cut</c>, with every unary control and repetition shape and binary <c>Seq</c>, <c>Or</c>, <c>Longest</c>, <c>SepBy</c> and <c>Until</c>.
-    /// Repetitions of an item that can succeed without consuming are left out: analysis rejects them, and engines guard against them at run time.
+    /// Repetitions that can loop without consuming are left out: a <c>Many</c>, <c>AtLeastOnce</c> or <c>Until</c> item that can succeed without consuming, or a <c>SepBy</c> whose item and separator both can.
+    /// Analysis reports them (CRL0001), and engines guard against them at run time.
     /// </summary>
     public static IEnumerable<ControlShape> AllShapes(int depth)
     {
@@ -192,7 +194,7 @@ internal sealed class ControlModel(bool dispatch)
         ControlShape.Seq s => FirstOfSteps(s.Steps, c),
         ControlShape.Or s => First(s.First, c) || First(s.Second, c),
         ControlShape.Longest s => First(s.First, c) || First(s.Second, c),
-        ControlShape.SepBy s => First(s.Item, c),
+        ControlShape.SepBy s => First(s.Item, c) || (Nullable(s.Item) && First(s.Separator, c)),
         ControlShape.Until s => First(s.Terminator, c) || First(s.Item, c),
         ControlShape.Atomic s => First(s.Item, c),
         ControlShape.Lookahead s => First(s.Item, c),
@@ -244,7 +246,7 @@ internal sealed class ControlModel(bool dispatch)
     {
         ControlShape.Many s => Nullable(s.Item) || RepeatsNullable(s.Item),
         ControlShape.AtLeastOnce s => Nullable(s.Item) || RepeatsNullable(s.Item),
-        ControlShape.SepBy s => Nullable(s.Item) || RepeatsNullable(s.Item) || RepeatsNullable(s.Separator),
+        ControlShape.SepBy s => (Nullable(s.Item) && Nullable(s.Separator)) || RepeatsNullable(s.Item) || RepeatsNullable(s.Separator),
         ControlShape.Until s => Nullable(s.Item) || RepeatsNullable(s.Item) || RepeatsNullable(s.Terminator),
         ControlShape.Seq s => s.Steps.Any(RepeatsNullable),
         ControlShape.Or s => RepeatsNullable(s.First) || RepeatsNullable(s.Second),
@@ -512,33 +514,36 @@ file sealed class Evaluator(bool dispatch, string input)
         }
 
         value = first;
-        var pair = new ControlShape.Seq(separator, item);
-
-        bool RunPair(out string v)
-        {
-            v = "";
-            return Eval(separator, out _) && Eval(item, out v);
-        }
 
         while (true)
         {
             var start = Position;
 
-            // The separator and the item after it are one attempt; the separator's value is discarded.
-            switch (Attempt(pair, RunPair, out var itemValue))
+            // The separator and the item after it are separate attempts; the separator's value is discarded.
+            switch (Attempt(separator, out _))
+            {
+                case AttemptResult.CommittedFailure:
+                    return false;
+
+                case AttemptResult.EmptyFailure:
+                    return true;
+            }
+
+            switch (Attempt(item, out var next))
             {
                 case AttemptResult.Success when Position == start:
                     throw new NullableRepetitionException();
 
                 case AttemptResult.Success:
-                    value += itemValue;
+                    value += next;
                     continue;
 
                 case AttemptResult.CommittedFailure:
                     return false;
 
                 default:
-                    return true;
+                    // An item that fails without consuming ends the list only if the separator consumed nothing either.
+                    return Position == start;
             }
         }
     }

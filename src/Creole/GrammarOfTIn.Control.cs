@@ -15,7 +15,7 @@ public abstract partial class Grammar<TIn>
     /// <para>
     /// The cut stops being in force when the parse leaves the nearest enclosing <see cref="Lookahead"/>, <see cref="Not"/> or <c>Longest</c> alternative.
     /// It also stops when the attempt that passed it fails without consuming.
-    /// An attempt is each alternative of <c>Or</c> or <c>OneOf</c>, including the last; the item of <c>Optional</c>; each item of a repetition, mandatory or not; each separator with the item after it, and each terminator; and each operator and atom of <c>Expression.Build</c>.
+    /// An attempt is each alternative of <c>Or</c> or <c>OneOf</c>, including the last; the item of <c>Optional</c>; each item of a repetition, mandatory or not; each separator and each terminator; and each operator and atom of <c>Expression.Build</c>.
     /// The cut is dropped whether the combinator then moves on, stops or fails.
     /// Otherwise it lasts until the parse ends, and nesting a sequence inside another does not change that.
     /// A cut never turns a failure that consumed nothing into a committed one, so <c>Or</c> and repetition behave as they would without it, and engines may dispatch on the next item instead of trying attempts in order.
