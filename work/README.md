@@ -51,7 +51,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 4 | ✅ [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md) Choice nodes | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
 | 4 | ✅ [CORE-06](active/02-core-combinators/CORE-06-longest.md) Longest | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
 | 4 | ✅ [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md) Control nodes | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
-| 4 | [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) Recursion with Rec | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md), [INT-02](active/03-interpreter/INT-02-plan-lowering-and-cache.md) |
+| 4 | ✅ [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) Recursion with Rec | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md), [INT-02](active/03-interpreter/INT-02-plan-lowering-and-cache.md) |
 | 4 | ✅ [CORE-13](active/02-core-combinators/CORE-13-extension-members-guard-their-receiver.md) Extension members guard their receiver | [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md) |
 | 4 | ✅ [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) Diagnostic rendering | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) |
 | 5 | [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md) Bind and LINQ query syntax | [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) |
@@ -105,7 +105,6 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | Wave | Work item | Blocked by |
 | --- | --- | --- |
 | 1 | [RSLN-04](active/10-roslyn-analyzers/RSLN-04-crl0004-forward-field-reference-analyzer.md) CRL0004 forward field reference analyzer | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md), [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) |
-| 1 | [TOOL-05](active/12-grammar-author-tooling/TOOL-05-ebnf-and-railroad-diagram-export.md) EBNF and railroad diagram export | [CORE-03](active/02-core-combinators/CORE-03-primitive-nodes.md), [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md), [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md), [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md), [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md), [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md) |
 | 3 | [ANA-01](active/09-static-analysis/ANA-01-grammar-property-analysis.md) Grammar property analysis | [CORE-03](active/02-core-combinators/CORE-03-primitive-nodes.md), [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md), [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md), [CORE-06](active/02-core-combinators/CORE-06-longest.md), [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md), [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md), [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md), [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md), [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md), [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md), [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) |
 | 4 | [ERR-06](active/04-errors-and-recovery/ERR-06-orinsert-for-missing-items.md) OrInsert for missing items | [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [SPAN-03](active/05-source-spans/SPAN-03-synthetic-items.md) |
 | 4 | [SPAN-07](active/05-source-spans/SPAN-07-embedded-languages.md) Embedded languages | [SPAN-02](active/05-source-spans/SPAN-02-out-of-band-span-storage.md), [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) |
@@ -139,6 +138,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | --- | --- | --- |
 | 1 | [GEN-01](active/11-source-generator/GEN-01-generator-skeleton-and-registration.md) Generator skeleton and registration | [INT-02](active/03-interpreter/INT-02-plan-lowering-and-cache.md), [RSLN-01](active/10-roslyn-analyzers/RSLN-01-roslyn-grammar-reader.md) |
 | 2 | [GEN-02](active/11-source-generator/GEN-02-emit-the-core-combinators.md) Emit the core combinators | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [GEN-01](active/11-source-generator/GEN-01-generator-skeleton-and-registration.md) |
+| 2 | [TOOL-05](active/12-grammar-author-tooling/TOOL-05-ebnf-and-railroad-diagram-export.md) EBNF and railroad diagram export | [CORE-03](active/02-core-combinators/CORE-03-primitive-nodes.md), [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md), [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md), [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md), [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md), [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md), [GEN-01](active/11-source-generator/GEN-01-generator-skeleton-and-registration.md) |
 | 3 | [GEN-03](active/11-source-generator/GEN-03-lambda-and-helper-inlining.md) Lambda and helper inlining | [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md), [GEN-02](active/11-source-generator/GEN-02-emit-the-core-combinators.md) |
 | 3 | [GEN-04](active/11-source-generator/GEN-04-interpreter-fallback-and-crl0301.md) Interpreter fallback and CRL0301 | [GEN-02](active/11-source-generator/GEN-02-emit-the-core-combinators.md) |
 | 3 | [GEN-05](active/11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md) Generated DFAs, scans and jump tables | [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [ANA-06](active/09-static-analysis/ANA-06-deterministic-mode.md), [ANA-07](active/09-static-analysis/ANA-07-linear-maximal-munch.md), [GEN-02](active/11-source-generator/GEN-02-emit-the-core-combinators.md) |
@@ -206,11 +206,11 @@ Cards whose Status is Researching, Designing or Building:
 
 These items have all their blockers done:
 
-- [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) Recursion with Rec
 - [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md) Bind and LINQ query syntax
 - [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md) Custom primitives
+- [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md) Execute the core combinators
 - [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) StreamBuffer and pulling cursor
-- [TOOL-05](active/12-grammar-author-tooling/TOOL-05-ebnf-and-railroad-diagram-export.md) EBNF and railroad diagram export
+- [RSLN-04](active/10-roslyn-analyzers/RSLN-04-crl0004-forward-field-reference-analyzer.md) CRL0004 forward field reference analyzer
 
 ## Epics
 
@@ -244,7 +244,7 @@ The immutable grammar-tree model and the full combinator vocabulary. Folder: [`a
 | ✅ [CORE-06](active/02-core-combinators/CORE-06-longest.md) Longest | 0 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
 | ✅ [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md) Repetition nodes | 0 | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
 | ✅ [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md) Control nodes | 0 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md) |
-| [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) Recursion with Rec | 0 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md), [INT-02](active/03-interpreter/INT-02-plan-lowering-and-cache.md) |
+| ✅ [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) Recursion with Rec | 0 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md), [INT-02](active/03-interpreter/INT-02-plan-lowering-and-cache.md) |
 | [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md) Bind and LINQ query syntax | 0 | [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) |
 | ✅ [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md) Expression.Build | 0 | [CORE-01](active/02-core-combinators/CORE-01-grammar-node-model.md) |
 | [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md) Custom primitives | 0 | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md), [CORE-03](active/02-core-combinators/CORE-03-primitive-nodes.md), [CORE-06](active/02-core-combinators/CORE-06-longest.md) |
@@ -387,7 +387,7 @@ Creole.Testing, tracing, Explain, fuzzing and grammar documentation export. Fold
 | [TOOL-02](active/12-grammar-author-tooling/TOOL-02-tracing.md) Tracing | 2 | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) |
 | [TOOL-03](active/12-grammar-author-tooling/TOOL-03-explain.md) Explain | 2 | [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [TOOL-02](active/12-grammar-author-tooling/TOOL-02-tracing.md) |
 | [TOOL-04](active/12-grammar-author-tooling/TOOL-04-grammar-fuzzing.md) Grammar fuzzing | 2 | [ANA-01](active/09-static-analysis/ANA-01-grammar-property-analysis.md) |
-| [TOOL-05](active/12-grammar-author-tooling/TOOL-05-ebnf-and-railroad-diagram-export.md) EBNF and railroad diagram export | 2 | [CORE-03](active/02-core-combinators/CORE-03-primitive-nodes.md), [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md), [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md), [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md), [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md), [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md) |
+| [TOOL-05](active/12-grammar-author-tooling/TOOL-05-ebnf-and-railroad-diagram-export.md) EBNF and railroad diagram export | 3 | [CORE-03](active/02-core-combinators/CORE-03-primitive-nodes.md), [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md), [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md), [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md), [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md), [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md), [GEN-01](active/11-source-generator/GEN-01-generator-skeleton-and-registration.md) |
 | [TOOL-06](active/12-grammar-author-tooling/TOOL-06-engineagreementcheck.md) EngineAgreement.Check | 3 | [GEN-08](active/11-source-generator/GEN-08-differential-engine-agreement-tests.md) |
 
 ### BENCH — Benchmarks

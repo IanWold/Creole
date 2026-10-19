@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Done |
 
 ## Summary
 
@@ -13,14 +13,14 @@
 ## Scope
 
 - `Rec` node with lazy resolution.
-- `[CallerArgumentExpression]` captures the rule name (for example `Value`).
-- Rule names feed `GrammarException` rule paths such as `Document → Value → ObjectValue`.
+- Rule names per [ADR-0009](../../docs/decisions/0009-where-rule-names-come-from.md): `[CallerArgumentExpression]` names the rule when the reference is a plain member reference (`Rec(() => Value)` is `Value`); otherwise `[CallerMemberName]` does (`Value = Rec(() => OneOf(...))` is `Value`).
+- Rule names feed `GrammarException` rule paths such as `Document → Value → ObjectValue`. Lowering errors name the path of `Rec`s being lowered; field names for rules outside `Rec` come with GEN-01.
 - Interpreter lowering of `Rec` cycles: the lowering context from INT-02 lowers each node once and resolves a cycle through a placeholder plan node that is filled when the target is lowered. Moved here from INT-02 with the maintainer.
 
 ## Acceptance criteria
 
-- [ ] Mutually recursive grammars like Example A resolve correctly.
-- [ ] Lowering a grammar with `Rec` cycles terminates and lowers each node once. Parsing recursive input with the lowered plan moved to [INT-03](../03-interpreter/INT-03-execute-the-core-combinators.md), the first card that executes the nodes a recursive grammar needs (agreed with the maintainer on 2026-10-19).
+- [x] Mutually recursive grammars like Example A resolve correctly.
+- [x] Lowering a grammar with `Rec` cycles terminates and lowers each node once. Parsing recursive input with the lowered plan moved to [INT-03](../03-interpreter/INT-03-execute-the-core-combinators.md), the first card that executes the nodes a recursive grammar needs (agreed with the maintainer on 2026-10-19).
 
 ## Blocked by
 
@@ -38,3 +38,31 @@
 - [§ LINQ query syntax](../../../whitepaper.md#linq-query-syntax)
 - [§ Developer experience for grammar authors](../../../whitepaper.md#developer-experience-for-grammar-authors)
 - [§ Interpreted engine](../../../whitepaper.md#interpreted-engine)
+
+## Artifacts
+
+- [ADR-0009: Rule names come from `Rec`, the enclosing field, and a generated name table](../../docs/decisions/0009-where-rule-names-come-from.md) (Accepted)
+
+## Progress notes
+
+- 2026-10-19 (Designing): Started. Blockers CORE-02 and INT-02 are done. Build plan agreed with the maintainer in two increments: (1) the `Rec` node, `Grammar<TIn>.Rec` in `GrammarOfTIn.Rec.cs`, `NodeKind.Rec` at the end of the enum, lazy resolution cached in a `PublicationOnly` `Lazy` (null results not cached), an Example A structure test, docs in `docs/concepts/grammars-as-data.md`; (2) cycle lowering in `PlanBuilder`: in-progress nodes reached again get a `ForwardPlan` placeholder filled when the node finishes, `Rec` lowers to its target's plan, lowering errors name the path of named `Rec`s, a `Rec`-only cycle is a `GrammarException`, tested with a counting test node (no parse results; INT-03). Planning showed `Rec` alone cannot name most rules at run time, so drafted ADR-0009 (Proposed). Next: maintainer accepts or revises ADR-0009, then fold it in and build increment 1.
+- 2026-10-19 (Building): ADR-0009 accepted with option C; the name table goes in GEN-01, and TOOL-05 moved to Phase 3 behind it. Folded into the whitepaper (§ LINQ query syntax, § Developer experience for grammar authors, § Source-generated engine) and cards (GEN-01, TOOL-05, ANA-02, TOOL-02, FND-09, this card's scope). Next: build increment 1 (the `Rec` node).
+- 2026-10-19 (Building): Increment 1 built. Code: `Grammar<TIn>.Rec` (`GrammarOfTIn.Rec.cs`) with `[CallerArgumentExpression]` and `[CallerMemberName]`; `RecNode` (resolves on first read through a `PublicationOnly` `Lazy`, so a null result throws a `GrammarException` and is not kept); `RuleName.From` (ADR-0009's rule); `NodeKind.Rec` at the end of the enum; `INode` remarks on cycles. `RecNode.Lower` is still `NotYetExecutable` until increment 2. Call made during Build: the reference is `Func<Parser<TIn, TOut>?>`, because on RC 2 with nullable enabled `Rec(() => LaterField)` warns CS8603 with a non-nullable return (measured in a scratch program). Finding not fixed here: a later field used inside a larger `Rec` lambda, as in Example A's `Rec(() => OneOf(..., ArrayValue, ObjectValue))`, warns CS8604 whatever `Rec`'s signature is; `RecTests` pins Example A with a justified pragma and the docs tell users to write `!`. Tests: `tests/Creole.Tests/RecTests.cs` (names from both sources and the edge cases, forward reference, null reference and null target, lazy single resolution, Example A built from the real combinators with cycles through `Value`, and the docs example). Docs: "Recursion with `Rec`" and "Rule names" in `docs/concepts/grammars-as-data.md`, docs index row. Verified: `dotnet build` 0 warnings; `dotnet test` 553 passed, 0 failed; AOT smoke publish clean. Next: maintainer reviews and commits, then increment 2 (cycle lowering).
+- 2026-10-19 (Building): Increment 2 built. Code: `PlanBuilder` tracks nodes being lowered; reaching one again returns a `ForwardPlan` (new, `Plans/ForwardPlan.cs`) that is filled when the node's plan is built. `RecNode.Lower` calls `PlanBuilder.Rec`, which lowers to the target's plan, so a cycle costs one indirection on its closing edge. Rule paths: the builder keeps the named nodes being lowered; a `GrammarException` raised while resolving a `Rec` is rethrown with `Rule path: …` (inner exception kept); a cycle made only of `Rec`s is a `GrammarException` naming it (`B → A → B`), detected at the back edge. Tests: `tests/Creole.Tests/RecLoweringTests.cs` with a counting test node `AltNode` (`TestNodes.cs`): mutual and self recursion finish lowering, lower each node once, and close through a forward plan whose target is the same object as the plan it closes on; either node on a cycle can be the root; `PlanCache` lowers a cyclic grammar once; a `Rec` lowers to its target's plan; the null-target and `Rec`-only cycle errors with their paths. No parse results (INT-03). Docs: the two lowering errors in `docs/concepts/grammars-as-data.md`. Verified: `dotnet build` 0 warnings; `dotnet test` 561 passed, 0 failed; AOT smoke publish clean. Both acceptance criteria appear met (criterion 1 by `RecTests.ExampleAIsAGraphWithCyclesThroughValue`, criterion 2 by `RecLoweringTests`). Open: whether the CS8604 suppressor goes on RSLN-04 or a new card. Next: maintainer commits, then `/complete CORE-09`.
+- 2026-10-19 (Building): The CS8604 finding is now in RSLN-04's scope (a `DiagnosticSuppressor`, agreed with the maintainer), with a criterion to remove the pragma in `RecTests`. Next: maintainer commits, then `/complete CORE-09`.
+- 2026-10-19 (Done): Verified after merging main (CORE-06, CORE-08, CORE-13): `dotnet build` 0 warnings; `dotnet test` 743 passed, 0 failed; the 32 `RecTests` and `RecLoweringTests` cases pass; AOT smoke publish clean.
+
+## Outcome
+
+Delivered `Rec` with lazy resolution, rule names and cycle lowering.
+
+- **API:** `Grammar<TIn>.Rec<TOut>(Func<Parser<TIn, TOut>?> reference, [CallerArgumentExpression] …, [CallerMemberName] …)` in `src/Creole/GrammarOfTIn.Rec.cs`. It is a static, not an extension member.
+- **Node:** `RecNode` (`src/Creole/Nodes/RecNode.cs`), with `NodeKind.Rec` last in the enum. It resolves on first read through a `PublicationOnly` `Lazy`, so the target is one node however often it is read, and a null result throws a `GrammarException` without being kept.
+- **Names:** `RuleName.From` (`src/Creole/RuleName.cs`) applies [ADR-0009](../../docs/decisions/0009-where-rule-names-come-from.md): the referenced member, otherwise the calling member.
+- **Lowering:** `PlanBuilder` returns a `ForwardPlan` (`src/Creole/Plans/ForwardPlan.cs`) when a cycle reaches a node still being lowered, and fills it when that node's plan is built. A `Rec` lowers to its target's plan. A `GrammarException` raised while resolving a `Rec` gains the rule path; a cycle made only of `Rec`s is a `GrammarException` naming it.
+- **Evidence:** criterion 1 by `RecTests.ExampleAIsAGraphWithCyclesThroughValue` and `ExampleAResolvesToOneNodeEachTime` (Example A built from the real combinators); criterion 2 by `RecLoweringTests` (mutual and self recursion lower each node once and close through a forward plan; `PlanCache` lowers a cyclic grammar once).
+- **Docs:** "Recursion with `Rec`" and "Rule names" in [docs/concepts/grammars-as-data.md](../../../docs/concepts/grammars-as-data.md); XML docs on every new member.
+
+Deviations: none from the whitepaper. [ADR-0009](../../docs/decisions/0009-where-rule-names-come-from.md) (Accepted) settled where rule names come from, since `Rec` alone cannot name most rules; the whitepaper was updated with it. Calls made during Build: the reference returns a nullable parser, because `Rec(() => LaterField)` otherwise warns CS8603 under nullable (measured on RC 2); a `Rec`-only cycle is rejected at lowering because its plan would forward to itself.
+
+Scope changes agreed with the maintainer: parsing recursive input moved to [INT-03](../03-interpreter/INT-03-execute-the-core-combinators.md). Follow-ups: [RSLN-04](../10-roslyn-analyzers/RSLN-04-crl0004-forward-field-reference-analyzer.md) suppresses CS8603/CS8604 for later fields inside a `Rec` lambda and removes the pragma in `RecTests`; [GEN-01](../11-source-generator/GEN-01-generator-skeleton-and-registration.md) registers field names; [FND-09](../01-foundations/FND-09-move-to-the-net-11-ga-sdk.md) re-checks the `[CallerMemberName]` behaviour on GA; INT-03 replaces the test-only `AltNode` cycles with real ones.

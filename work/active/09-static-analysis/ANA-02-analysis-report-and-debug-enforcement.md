@@ -13,7 +13,7 @@ Analysis results are available in tests and enforced on first use in Debug build
 ## Scope
 
 - `grammar.Analyze()` returning a report with errors, warnings and infos.
-- On first use in Debug builds, errors throw `GrammarException` naming the rule path.
+- On first use in Debug builds, errors throw `GrammarException` naming the rule path. Names come from GEN-01's name table and from `Rec` ([ADR-0009](../../docs/decisions/0009-where-rule-names-come-from.md)); unnamed nodes are left out of the path. Before GEN-01, only `Rec`s are named, so Example A's path shows `Value` but not `Document` or `ObjectValue`.
 
 ## Acceptance criteria
 

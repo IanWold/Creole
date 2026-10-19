@@ -36,4 +36,5 @@ internal enum NodeKind
     Cut,
     Named,
     Context,
+    Rec,
 }

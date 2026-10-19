@@ -162,7 +162,13 @@ The costs, stated plainly:
 - Queries with three or more clauses make C# allocate a transparent-identifier object per extra clause per match. The generator removes these; interpreted hot paths may prefer `Seq`.
 - `where` becomes a filter that fails committed if it rejects after consuming input, and `let` becomes a map.
 
-**Recursion and names.** `Rec(() => Value)` defers a reference so fields can refer to each other. `Rec` takes a `[CallerArgumentExpression]` parameter, so diagnostics name the rule `Value` without extra ceremony. `Named("value")` sets the label used in error messages.
+**Recursion and names.** `Rec(() => Value)` defers a reference so fields can refer to each other. Run-time tools (rule paths in `GrammarException`, traces, grammar export) name rules without extra ceremony; the names come from, in order ([ADR-0009](work/docs/decisions/0009-where-rule-names-come-from.md)):
+
+1. The source generator, which registers the name of every rule field in a `partial` grammar class (§ Source-generated engine).
+2. `Rec`'s `[CallerArgumentExpression]` parameter, when the reference is a plain member reference: `Rec(() => Value)` names the rule `Value`.
+3. Otherwise `Rec`'s `[CallerMemberName]` parameter, which is the enclosing field: `Value = Rec(() => OneOf(...))` also names the rule `Value`.
+
+A grammar that is never staged, such as one built at run time, is named only through `Rec`. Unnamed nodes are left out of rule paths. `Named("value")` is not a rule name: it sets the label used in error messages.
 
 ## Using C# 15 unions
 
@@ -644,7 +650,7 @@ Creole treats grammar authors as users with diagnostics of their own: mistakes i
 | --- | --- |
 | Catch grammar bugs early | Analyzer diagnostics (§ Static analysis) as you type, for grammars the generator can read |
 | Fix them quickly | Code fixes: rewrite left-recursive operators with `Expression.Build`, wrap an overlapping alternative in `Atomic`, wrap a forward field reference in `Rec`, rewrite an independent query as `Seq`, make a grammar class `partial` |
-| Understand a grammar error | `GrammarException` names the rule path (`Document → Value → ObjectValue`), never an internal node type |
+| Understand a grammar error | `GrammarException` names the rule path (`Document → Value → ObjectValue`), never an internal node type. Rule names come from the fields of `partial` grammar classes and from `Rec` (§ LINQ query syntax) |
 | See what the parser did | `ParseOptions.Trace` records every attempt: rule, span, outcome and why it failed. Traces render as indented text or export for a viewer |
 | Explain an error message | `diagnostic.Explain()` lists the alternatives tried at the furthest position and which `Named` label summarized them |
 | Debug generated code | Generated parsers carry `#line` directives back to grammar declarations, so breakpoints on grammar lines work |
@@ -699,15 +705,19 @@ public sealed partial class JsonGrammar : TokenGrammar<JTok, J>
 }
 
 // Generated. The static constructor runs after the field initializers and registers
-// compiled code for each rule; engines look it up when planning, so callers keep
-// using JsonGrammar.Value and get the compiled parser transparently.
+// each rule's field name and compiled code; engines look the code up when planning,
+// so callers keep using JsonGrammar.Value and get the compiled parser transparently.
 partial class JsonGrammar
 {
-    static JsonGrammar() => Staging.Register(Value, Parse_Value);
+    static JsonGrammar()
+    {
+        RuleNames.Register(Value, nameof(Value));
+        Staging.Register(Value, Parse_Value);
+    }
 }
 ```
 
-**Discovery.** The generator finds grammars by base type: any `partial` class deriving from `Grammar<TIn>` is staged, so no attribute is needed. An optional `[GrammarOptions]` attribute tunes staging per class. A grammar class that is not `partial` still runs on the interpreter and gets CRL0401. If the class already declares a static constructor, the generator registers from a module initializer instead. Parlot instead has users declare a `partial` parse method for its generator to implement; registration lets a grammar's own fields stay the entry point.
+**Discovery.** The generator finds grammars by base type: any `partial` class deriving from `Grammar<TIn>` is staged, so no attribute is needed. An optional `[GrammarOptions]` attribute tunes staging per class. Every rule field's name is registered, including rules whose code falls back to the interpreter, since a name needs only the declaration. A grammar class that is not `partial` still runs on the interpreter and gets CRL0401; its rules are named only through `Rec`. If the class already declares a static constructor, the generator registers from a module initializer instead. Parlot instead has users declare a `partial` parse method for its generator to implement; registration lets a grammar's own fields stay the entry point.
 
 The generator walks each field initializer with the semantic model, recognizing Creole API calls, and emits one method per rule:
 

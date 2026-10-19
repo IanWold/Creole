@@ -47,3 +47,38 @@ internal class PairPlan<TA, TB>(Plan<char, TA> first, Plan<char, TB> second) : P
         return true;
     }
 }
+
+internal class AltNode<T>(params Parser<char, T>[] alternatives) : Parser<char, T>
+{
+    private int _lowerCount;
+
+    internal override IReadOnlyList<INode> Children => alternatives;
+
+    internal override NodeKind Kind => NodeKind.Or;
+
+    public int LowerCount => Volatile.Read(ref _lowerCount);
+
+    internal override Plan<char, T> Lower(PlanBuilder builder)
+    {
+        Interlocked.Increment(ref _lowerCount);
+        return new AltPlan<T>([.. alternatives.Select(alternative => builder.Lower(alternative))]);
+    }
+}
+
+internal class AltPlan<T>(Plan<char, T>[] alternatives) : Plan<char, T>
+{
+    public IReadOnlyList<Plan<char, T>> Alternatives { get; } = alternatives;
+
+    public override bool TryParse(ref Cursor<char> cursor, ref T result)
+    {
+        foreach (var alternative in Alternatives)
+        {
+            if (alternative.TryParse(ref cursor, ref result))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}

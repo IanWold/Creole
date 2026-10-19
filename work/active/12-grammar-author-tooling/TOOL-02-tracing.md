@@ -12,7 +12,7 @@ See what the parser did.
 
 ## Scope
 
-- `ParseOptions.Trace` records every attempt: rule, span, outcome and why it failed.
+- `ParseOptions.Trace` records every attempt: rule, span, outcome and why it failed. Rule names come from GEN-01's name table and from `Rec` ([ADR-0009](../../docs/decisions/0009-where-rule-names-come-from.md)).
 - Render traces as indented text; export a format a viewer can load.
 - Tracing runs on the interpreter.
 

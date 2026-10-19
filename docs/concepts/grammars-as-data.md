@@ -43,6 +43,40 @@ public sealed class Versions : CharGrammar
 
 The static `Grammar` class holds operations on whole grammars. `Grammar.Deterministic(p)` will check that `p` is LL(1). The check is not implemented yet, so for now it returns `p` unchanged.
 
+## Recursion with `Rec`
+
+Field initializers run in declaration order. A rule that refers to a rule declared after it, or to itself, would read a field that is still null. `Rec` defers the reference until the grammar is first used:
+
+```csharp
+public sealed class Lists : CharGrammar
+{
+    // List is declared below, so this reference needs Rec.
+    private static readonly Parser<char, int> Item = Rec(() => List);
+
+    // A list is "[", then lists separated by ",", then "]". It produces how many lists it contains.
+    public static readonly Parser<char, int> List =
+        Item.SepBy(Char(',')).Between(Char('['), Char(']')).Select(static items => items.Count);
+}
+```
+
+- `Rec(() => p)` calls the lambda once, when the grammar is first used, not when `Rec` is called. Every use then sees the same parser.
+- Wrap a reference in `Rec` when the field it reads is declared later, or when it closes a cycle between rules. Other references need no `Rec`.
+- If the lambda returns null at first use, Creole throws a `GrammarException` naming the lambda and the path of named rules that led to it, such as `Rule path: Expr → Term`.
+- Rules that refer to each other only through `Rec`, such as `A = Rec(() => B)` and `B = Rec(() => A)`, would never parse anything. Creole throws a `GrammarException` naming the cycle when the grammar is first used.
+- The lambda's return type is nullable, so `Rec(() => LaterField)` compiles without a nullable warning. A later field used *inside* a larger lambda, such as `Rec(() => OneOf(A, LaterField))`, still gets warning CS8604, because the compiler does not know the lambda runs after the field is set. Write `LaterField!`, or wrap that reference in its own `Rec`.
+
+### Rule names
+
+`Rec` also names the rule, for diagnostics such as `GrammarException` rule paths:
+
+| You write | The rule's name |
+| --- | --- |
+| `Rec(() => Value)` | `Value`, the member the lambda returns |
+| `Rec(() => JsonGrammar.Value)` | `JsonGrammar.Value` |
+| `Value = Rec(() => OneOf(...))` | `Value`, the field being initialized |
+
+The rules are in [ADR-0009](../../work/docs/decisions/0009-where-rule-names-come-from.md). Rules that do not go through `Rec` have no name yet; the source generator will name every rule field of a `partial` grammar class.
+
 ## Tokens with kinds
 
 A token type can implement `IKinded<TKind>` to expose an enum kind. Make tokens structs so they never box:
