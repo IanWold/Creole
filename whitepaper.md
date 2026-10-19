@@ -1034,7 +1034,7 @@ In `(a) / 2`, the operand `(a)` ends in Operator mode, so `/` lexes as division.
 
 ## Comparison with existing .NET libraries
 
-Creole's differences are concentrated in three rows: stage count, feedback and analysis. Parlot already generates code at build time, so Creole's generator is a means, not a differentiator. On combinator vocabulary and commit semantics Creole deliberately follows Pidgin.
+Creole's differences are concentrated in three rows: stage count, feedback and analysis. Parlot's generator, so far only in preview packages, already generates code at build time, so Creole's generator is a means, not a differentiator. On combinator vocabulary and commit semantics Creole deliberately follows Pidgin.
 
 | Capability | Sprache | Superpower | Pidgin | Parlot | Creole (proposed) |
 | --- | --- | --- | --- | --- | --- |
@@ -1057,7 +1057,7 @@ Creole 1.0 ships after Phase 3, once both engines agree; incremental re-parsing,
 | Phase | Scope | Gate to pass |
 | --- | --- | --- |
 | 0. Core | Combinator set, interpreter, error model | Core tests green; interpreter at least as fast as Pidgin and within 1.5× of Parlot |
-| 1. Layers | Pipelines, buffers and spans, mode channels | Three-layer demo runs; peak retained memory grows at most 1.5× from 10 MB to 1 GB of input |
+| 1. Layers | Pipelines, buffers and spans, mode channels, streaming | Three-layer demo runs; peak retained memory grows at most 1.5× from 10 MB to 1 GB of input |
 | 2. Analysis | Analyzers, deterministic mode, recovery | Every CRL error and warning caught at build time, with no false positives on near misses |
 | 3. Staging | Source generator, helper inlining, engine agreement | Engines agree on 10,000 random cases; generated engine as fast as Parlot; **1.0 ships** |
 | 4. 1.x releases | Incremental re-parsing, layer fusion, resumable async | Each ships behind its own gate (below) |
@@ -1107,11 +1107,12 @@ The largest risks are the cost of maintaining two engines and the subtlety of mo
 - **General parsing backend.** Is a GLL or derivatives engine for ambiguous grammars worth building on the same grammar tree, with parse forests as the result type? Decided: explore in a post-1.0 spike (§ General parsing backend).
 - **Sprache adapter.** Is a `Creole.SpracheCompat` package that maps Sprache's API onto Creole worth the maintenance? Decided: no.
 - **`ParseResult<T>` as a union or a closed hierarchy.** A union's `Value` is null in a `default` instance, so switches might need a null arm. Decided: a plain union. On the .NET 11 RC 2 compiler a switch on a returned union needs no null arm, and a hand-written `[Union]` struct or a closed hierarchy fixes nothing that matters ([ADR-0002](work/docs/decisions/0002-parseresult-as-a-plain-union.md)).
+- **Closed enums for token kinds.** If closed enums ship, switches over `TKind` become exhaustive as well. Decided: wait for the language and adopt closed enums when they ship; no API change is needed.
+- **A build-time execution tier.** Should the generator execute grammar construction, as Parlot does, for subtrees it cannot read? Decided: no. The generator reads syntax only, and anything it cannot read runs on the interpreter.
 
 ### Still open
 
-- **Closed enums for token kinds.** If closed enums ship, switches over `TKind` become exhaustive as well. Decided: wait for the language and adopt closed enums when they ship; no API change is needed.
-- **A build-time execution tier.** Should the generator execute grammar construction, as Parlot does, for subtrees it cannot read? Decided: no. The generator reads syntax only, and anything it cannot read runs on the interpreter.
+Nothing is open.
 
 ## References
 
