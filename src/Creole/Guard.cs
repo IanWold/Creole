@@ -29,4 +29,12 @@ internal static class Guard
     /// </summary>
     public static T NotNull<T>([NotNull] T? value, [CallerArgumentExpression(nameof(value))] string expression = "") where T : class =>
         value ?? throw new GrammarException($"'{expression}' is null.");
+
+    /// <summary>
+    /// Returns <paramref name="value"/>, or throws a <see cref="GrammarException"/> naming the argument expression if it is null or empty.
+    /// </summary>
+    public static string NotNullOrEmpty([NotNull] string? value, [CallerArgumentExpression(nameof(value))] string expression = "") =>
+        NotNull(value, expression) is { Length: > 0 } text
+        ? text
+        : throw new GrammarException($"'{expression}' is empty.");
 }

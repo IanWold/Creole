@@ -1,7 +1,7 @@
 namespace Creole;
 
 /// <summary>
-/// Longest match over <see cref="Alternatives"/>: every alternative runs atomically from the same position, the one that consumed the most input wins, and a tie goes to the earliest. Backs <c>Longest</c>.
+/// Longest match over <see cref="Alternatives"/>: every alternative runs atomically from the same position, the one that consumed the most input wins, and a tie goes to the earliest. Each alternative is a cut boundary. Backs <c>Longest</c>.
 /// </summary>
 /// <param name="alternatives">The alternatives, in order of priority for ties. The node keeps this array, so pass a new one.</param>
 /// <remarks>

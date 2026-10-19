@@ -14,6 +14,7 @@ Reuse whole rule results, incremental-packrat style, for rules that opt in.
 
 - `.Reusable()` memoizes result, indexes, examined extent and entry state.
 - Reuse requires matching entry mode stack; `Bind` disables reuse; recovered items are never reused.
+- The memo records whether a cut escaped the rule, and a reuse replays it, or an enclosing `Atomic` could rewind on re-parse where a fresh parse keeps the failure. A cut escapes a rule that succeeds, that fails after consuming, or that fails without consuming outside any attempt ([ADR-0011](../../docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md)).
 
 ## Acceptance criteria
 

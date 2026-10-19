@@ -13,7 +13,7 @@ Generated code for every core node, with semantics and error tracking identical 
 ## Scope
 
 - `Seq` as straight-line code, `Or` as a `switch`, `Many` as a loop, `Rec` as direct (possibly mutually recursive) calls.
-- Control nodes, `Switch`, `Match` and commit semantics.
+- Control nodes, `Switch`, `Match` and commit semantics. A dispatched `Or`, `Optional` or loop saves and restores the cut flag as the interpreter's light marks do, so dispatch is exact. Generated code does not fail early on any other node that can reach a `Cut` without consuming inside an `Atomic` ([ADR-0011](../../docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md)). Compare against CORE-08's reference model.
 - Expectation-set tracking identical to ERR-02.
 
 ## Acceptance criteria

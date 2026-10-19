@@ -128,7 +128,7 @@ public sealed partial class Identifiers : CharGrammar          // CharGrammar : 
 }
 ```
 
-- `Grammar<TIn>` provides `Any`, `Token`, `Satisfy`, `End`, `Seq`, `OneOf`, `Longest`, `Rec`, `Return` and `Fail`.
+- `Grammar<TIn>` provides `Any`, `Token`, `Satisfy`, `End`, `Seq`, `OneOf`, `Longest`, `Atomic`, `Lookahead`, `Not`, `Cut`, `Rec`, `Return` and `Fail`.
 - `TokenGrammar<TToken, TKind>` adds `Kind(k)` for tokens implementing `IKinded<TKind>`.
 - `CharGrammar` adds character classes (`Char`, `Range`, `Digit`, `Letter`, `Whitespace`, `String`, `CIString`) and `Text()` / `Slice()` for capturing source text.
 
@@ -255,9 +255,12 @@ A fifth outcome, **Starved**, exists only in streaming mode and is never visible
 
 - `Or` / `OneOf`: ordered choice with commit semantics.
 - `Atomic(p)`: if `p` fails, rewind to the start so the failure counts as empty. Equivalent to Parsec's `try`.
-- `Lookahead(p)`: run `p`, then rewind on success. `Not(p)`: succeed without consuming if `p` fails.
+- `Lookahead(p)`: run `p`, then rewind on success. If `p` fails after consuming, the failure stays committed, as in Parsec.
+- `Not(p)`: succeed without consuming if `p` fails, whether or not `p` consumed; if `p` succeeds, rewind and fail without consuming. `Not` never consumes.
 - `Cut`: from this point, failure stays committed even inside an enclosing `Atomic`. After `if` and `(` are seen, a failure is reported here instead of being retried elsewhere, which improves messages and lets buffers release earlier.
 - Literal primitives (`String("<=")`, `Kind(k)`) are atomic by construction: they fail without consuming.
+
+An `Atomic` keeps a failure if a cut passed inside it is still in force; a cut passed before the `Atomic` was entered does not affect it. A cut stops being in force when the parse leaves the nearest enclosing `Lookahead`, `Not` or `Longest` alternative, which must rewind by definition. It also stops when the attempt that passed it fails without consuming. An attempt is anything a light mark holds: each alternative of `Or` and `OneOf` including the last, the item of `Optional`, each item of a repetition whether mandatory or not, each separator and terminator, each `Expression.Build` operator and atom, and the parser of `Recover`. The light mark that undoes a `SetMode` there undoes the cut too, whether the combinator then moves on, stops or fails (§ Bookmarks and retention). Otherwise the cut lasts until the parse ends. A cut never turns an empty failure into a committed one. An attempt that dispatch skips would only have failed without consuming, so dispatching on FIRST sets gives the same result as trying in order. Skipping any other node that can reach a `Cut` without consuming is not exact when an `Atomic` encloses it, so engines do not fail early there. Each layer has its own cut, kept as one flag that `Atomic`, the three boundaries and every light mark save and restore ([ADR-0011](work/docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md), refining [ADR-0010](work/docs/decisions/0010-cuts-under-dispatch-and-across-layers.md) and [ADR-0008](work/docs/decisions/0008-control-node-semantics.md)).
 
 ### Longest match
 
@@ -410,8 +413,8 @@ The downstream parser holds a cursor, which is just an index. Reading past the f
 
 Two kinds of mark remember a position:
 
-- **Pinning bookmarks**, taken by `Atomic`, `Lookahead`, `Not` and `Longest` over non-regular alternatives. These may rewind the cursor, so they keep their slots alive until they exit.
-- **Light marks**, taken by `Or`, repetition and `Recover`. They record the cursor position, the mode log's length, the diagnostic count and the layer-state reference, but pin nothing. Under commit semantics `Or` never rewinds consumed input: once an alternative consumes, any failure is committed. Its mark only undoes zero-width effects, such as a `SetMode`, when an alternative fails without consuming.
+- **Pinning bookmarks**, taken by `Atomic`, `Lookahead`, `Not` and `Longest` over non-regular alternatives. These may rewind the cursor, so they keep their slots alive until they exit. An `Atomic` can release its bookmark once a cut inside it is permanent: no attempt between the cut and the `Atomic` can still fail without consuming, and no `Lookahead`, `Not` or `Longest` alternative lies between them. For the usual cut, after the tokens that identify a construct, that is the moment it is passed (§ Choice and backtracking).
+- **Light marks**, taken before each attempt of `Or`, `Optional`, repetition, `Expression.Build` and `Recover` (§ Choice and backtracking lists them). They record the cursor position, the mode log's length, the diagnostic count, the layer-state reference and the cut flag, but pin nothing. Under commit semantics `Or` never rewinds consumed input: once an alternative consumes, any failure is committed. Its mark only undoes zero-width effects, such as a `SetMode` or a `Cut`, when an attempt fails without consuming, including the last alternative.
 
 The buffer may discard every slot below the minimum of the cursor and the oldest pinning bookmark, returning segments to the pool. Each layer in turn pins its own input at the `stepStart` of the oldest output slot it still holds, so any retained item can be produced again. Every mark also snapshots layer-local state and the mode log length (§ Feedback).
 
@@ -420,7 +423,7 @@ The buffer may discard every slot below the minimum of the cursor and the oldest
 1. **Work once.** Each upstream item is produced once per parse, unless a mode change invalidates it.
 2. **Bounded memory.** Memory at a boundary is proportional to the longest window held by a pinning bookmark in the layer above, plus the input of the steps that produced retained items. `Or` and repetition add nothing, so a large document parsed without `Atomic`, `Lookahead` or `Not` keeps a constant number of items per boundary, however deeply its `Or`s nest.
 3. **Deterministic parser layers take no pinning bookmarks**, so the token buffer beneath them holds one item of lookahead. Lexer lookahead is separate: a `Longest` DFA backs up to its last accepting state, so the character buffer holds up to the longest such backup (§ Static analysis).
-4. **Upstream backtracking is private.** A layer's own `Atomic` and `Longest` happen while it runs one step and are invisible downstream.
+4. **Upstream backtracking is private.** A layer's own `Atomic` and `Longest` happen while it runs one step and are invisible downstream. So are its cuts: each layer has its own cut flag.
 
 Two-pass designs that tokenize everything first hold the whole token list in memory. A Creole pipeline over a multi-gigabyte JSON-lines file needs memory proportional to its largest record plus lookahead.
 
@@ -536,7 +539,7 @@ public union Expectation(Label, ExpectedItem, EndOfInput);
 ```
 
 - **Furthest failure wins.** At equal positions, expected sets are merged.
-- **Labels.** `p.Named("value")` replaces `p`'s expected set with one label, but only when `p` fails without consuming. A committed failure inside it keeps its precise expectations.
+- **Labels.** `p.Named("value")` replaces `p`'s expected set with one label, but only when `p` consumes nothing, whether it fails or succeeds. The label replaces the expectations `p` recorded at its start position, and adds none if there were none. A committed failure inside it keeps its precise expectations, as do deeper failures that an `Atomic` rewound past ([ADR-0008](work/docs/decisions/0008-control-node-semantics.md)).
 - **Context.** `p.Context("in object")` pushes a line onto the context stack for failures inside `p`.
 - **Display.** `TokenGrammar` has an overridable `Describe(TKind)`, so expectations read `','` or `'}'` rather than `Comma` or `RBrace`.
 
@@ -722,7 +725,7 @@ The generator walks each field initializer with the semantic model, recognizing 
 private static bool Parse_Value(ref Cursor<JTok> c, out JsonValue result) { /* switch on c.PeekKind() ... */ }
 ```
 
-- `Seq` becomes straight-line code, `Or` a `switch`, `Many` a loop and `Rec` a direct, possibly mutually recursive, call.
+- `Seq` becomes straight-line code, `Or` a `switch`, `Many` a loop and `Rec` a direct, possibly mutually recursive, call. A `switch` may skip any alternative, and a loop any item, that the next item rules out. Code does not fail early on any other node that can reach a `Cut` without consuming inside an `Atomic` (§ Choice and backtracking).
 - Non-capturing lambdas passed to `Select` are inlined; the analyzer asks for the `static` modifier to make this explicit.
 - Expression-bodied static helper methods in the same compilation, such as `static Parser<char, T> Lexeme<T>(Parser<char, T> p) => p.Before(Ws);`, are inlined like macros, since this idiom is everywhere in combinator code.
 - Anything else (a captured local, a helper from another assembly, a grammar built in a loop) is emitted as a call into the interpreter for that subtree, with CRL0301 explaining why.

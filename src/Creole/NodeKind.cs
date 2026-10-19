@@ -30,5 +30,11 @@ internal enum NodeKind
     Switch,
     Match,
     Longest,
+    Atomic,
+    Lookahead,
+    Not,
+    Cut,
+    Named,
+    Context,
     Rec,
 }
