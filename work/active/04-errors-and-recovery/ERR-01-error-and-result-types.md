@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Errors, diagnostics and recovery](../../README.md#err--errors-diagnostics-and-recovery) |
 | Phase | Phase 0 — Core |
-| Status | Building |
+| Status | Done |
 
 ## Summary
 
@@ -20,10 +20,10 @@ The public shapes for results and errors, using C# 15 unions as decided in FND-0
 
 ## Acceptance criteria
 
-- [ ] The whitepaper's `switch` on `json.Parse(text)` compiles without a default arm in an assembly that references Creole, and dropping a case is CS8509.
-- [ ] No public API returns `default(ParseResult<T>)`: a test lists every public member that returns `ParseResult<T>` and fails if one has no test showing its result is never `default`.
-- [ ] `Diagnostics` orders errors by span whatever order they arrive in, and keeps arrival order for equal spans (property test). `Count` and `Empty` are tested.
-- [ ] `Render()` writes one line per error in span order, with layer, span, unexpected, expected and context (snapshot test).
+- [x] The whitepaper's `switch` on `json.Parse(text)` compiles without a default arm in an assembly that references Creole, and dropping a case is CS8509.
+- [x] No public API returns `default(ParseResult<T>)`: a test lists every public member that returns `ParseResult<T>` and fails if one has no test showing its result is never `default`.
+- [x] `Diagnostics` orders errors by span whatever order they arrive in, and keeps arrival order for equal spans (property test). `Count` and `Empty` are tested.
+- [x] `Render()` writes one line per error in span order, with layer, span, unexpected, expected and context (snapshot test).
 
 ## Blocked by
 
@@ -57,3 +57,28 @@ The public shapes for results and errors, using C# 15 unions as decided in FND-0
 - 2026-10-19 (Build): The maintainer changed `ParseResult<T>.Diagnostics` to switch over the three cases with no fallback, so a `default` result throws `SwitchExpressionException` there as in any switch. Test, XML doc and docs/concepts/errors.md updated to match; `DefaultHasNoDiagnostics` pins it. Full suite passes (228 in Creole.Tests). Next: `/complete ERR-01`.
 - 2026-10-19 (Build): `/complete` held. All four criteria pass their tests (31/31), but the independent critic review found, and inspection confirmed: `ParseError` keeps caller lists by reference (so `Diagnostics` is not immutable) and accepts null lists and a default `Unexpected`; `Failed` has no `Deconstruct`; the no-default reflection scan skips the union's own members, keys by name only (overloads collide), and ignores parameters and protected members; the ordering property test breaks ties on `Layer`, which also carries the arrival index, so it cannot detect a sort by layer; the whitepaper sample still has the `_ => Diagnostics.Empty` arm. Next: a fix increment for these, then `/complete` again.
 - 2026-10-19 (Build): Fix increment done. `ParseError` copies `Expected` and `Context` into read-only collections and rejects null parts and caseless union values; its `ToString()` switches on the unions with no fallback arm. `Failed` deconstructs. The no-default scan covers the union's own members, keys by declaring type and full signature, checks out and ref parameters and protected members, and its sanity test pins each kind. The ordering property test carries arrival order in `Context` with random layers; a mutation that sorted ties by layer made it fail. Whitepaper sample in § Using C# 15 unions updated editorially to the three-arm `Diagnostics` switch. Full suite passes (232 in Creole.Tests). Next: `/complete ERR-01`.
+- 2026-10-19 (Build): `/complete` re-run at 4ef9b2a. All four criteria met on evidence (35/35 ERR-01 tests; critic re-verified, with mutations confirming the member scan and the ordering property test catch their regressions). Held on one finding: `ParseError`'s `Layer`, `Unexpected`, `Expected` and `Context` are get-only, so `with` fails with CS0200 for them, unlike the positional record in § The error model. Next: maintainer chooses `init` accessors that validate and copy, or a recorded deviation; then `/complete`.
+- 2026-10-19 (Build): By the maintainer's choice, `ParseError`'s `Layer`, `Unexpected`, `Expected` and `Context` gained `init` accessors that check and copy as the constructor does, so `with` works again as for the positional record in § The error model. Tests `WithChangesEachPart` and `WithChecksAndCopiesLikeTheConstructor`; docs updated. Full suite passes (234 in Creole.Tests). Next: `/complete ERR-01`.
+
+## Outcome
+
+Delivered:
+
+- The error model in [src/Creole/Errors/](../../../src/Creole/Errors/): `ParseError`, the `Unexpected` and `Expectation` unions and their case records. `ParseError` copies its lists, rejects nulls and caseless union values, and applies the same checks to `with`. Two errors are equal when their parts are equal element by element.
+- `ParseResult<T>`, the declared union of `Parsed<T>`, `Recovered<T>` and `Failed` ([ADR-0002](../../docs/decisions/0002-parseresult-as-a-plain-union.md)). `Recovered<T>` and `Failed` require at least one error and deconstruct. `ParseResult<T>.Diagnostics` switches over the three cases, so a `default` result throws there as in any switch.
+- `Diagnostics`: an immutable `IReadOnlyList<ParseError>` ordered by source, start and end, stable for equal spans, with `Empty`, `Count` and a minimal one-line-per-error `Render()` (also `ParseError.ToString()`). The rich format is [ERR-03](ERR-03-diagnostic-rendering.md).
+- Tests: [ErrorModelTests.cs](../../../tests/Creole.Tests/ErrorModelTests.cs), [ParseResultTests.cs](../../../tests/Creole.Tests/ParseResultTests.cs) (the whitepaper switch, a separate-assembly Roslyn compile with CS8509 for a dropped case, and a reflection scan of public and protected members that expose `ParseResult<T>`), [DiagnosticsTests.cs](../../../tests/Creole.Tests/DiagnosticsTests.cs) (a CsCheck ordering property and a `Render()` snapshot). The Roslyn helper moved to [SnippetCompiler.cs](../../../tests/Creole.Tests/SnippetCompiler.cs) and parses at the preview language version.
+- Docs: [docs/concepts/errors.md](../../../docs/concepts/errors.md).
+- Whitepaper, editorial only: § Results names the collection `Diagnostics`, and the sample in § Using C# 15 unions switches over the three cases with no fallback arm.
+- Conventions: one type per file, and public-type folders keep the `Creole` namespace (CONTRIBUTING.md § Conventions).
+
+Verified by an independent critic review in two rounds. Its first round found mutable errors, a missing `Failed.Deconstruct`, holes in the member scan and a weak stability oracle; all were fixed, and mutations confirmed the scan and the ordering test catch their regressions.
+
+API detail settled here, not a design change: `Recovered<T>` and `Failed` have validating constructors instead of the sketch's positional parameters, with `Deconstruct` so patterns read the same.
+
+Follow-ups, no new cards:
+
+- The compiler-generated union constructors accept a null case, which makes a result equal to `default`; only nullable warnings guard it. Documented in docs/concepts/errors.md.
+- When a card adds a public member that exposes `ParseResult<T>` (INT's `Parse` overloads), it must add the member to `_coveredMembers` in ParseResultTests.cs with a test that it never returns `default`.
+- Re-run these tests on the GA SDK (FND-07's follow-up). All results here are from RC 2.
+

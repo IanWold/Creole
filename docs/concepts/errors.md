@@ -21,7 +21,7 @@ public sealed record ParseError(
 | `Expected` | What it would have accepted there. May be empty. |
 | `Context` | Lines such as `"in object starting at 2:3"`, innermost first. May be empty. |
 
-An error is immutable. It copies `Expected` and `Context`, so changing the lists you passed in afterwards does not change the error.
+An error is immutable. It copies `Expected` and `Context`, so changing the lists you passed in afterwards does not change the error. A `with` expression, such as `error with { Expected = merged }`, makes a new error and checks and copies the values it sets in the same way.
 
 The constructor throws `ArgumentNullException` if `Layer`, `Expected` or `Context` is null. It throws `ArgumentException` if `Unexpected` is `default`, or if a list contains a null or a `default` expectation.
 

@@ -15,6 +15,7 @@ namespace Creole;
 /// <remarks>
 /// <para>
 /// An error is immutable: it copies <paramref name="Expected"/> and <paramref name="Context"/>, so later changes to the lists passed in do not affect it.
+/// A <see langword="with"/> expression checks and copies the values it sets in the same way.
 /// </para>
 /// <para>
 /// Two errors are equal when their span, layer and unexpected value are equal and their <paramref name="Expected"/> and <paramref name="Context"/> lists hold equal elements in the same order.
@@ -35,24 +36,22 @@ public sealed record ParseError(
     /// <summary>
     /// The name of the layer that raised the error, such as <c>lexer</c> or <c>parser</c>.
     /// </summary>
-    public string Layer { get; } = Layer ?? throw new ArgumentNullException(nameof(Layer));
+    public string Layer { get; init => field = CheckLayer(value, nameof(Layer)); } = CheckLayer(Layer, nameof(Layer));
 
     /// <summary>
     /// What the parse found at <see cref="Span"/>.
     /// </summary>
-    public Unexpected Unexpected { get; } = Unexpected.Value is not null
-        ? Unexpected
-        : throw new ArgumentException("The unexpected value must hold a case.", nameof(Unexpected));
+    public Unexpected Unexpected { get; init => field = CheckUnexpected(value, nameof(Unexpected)); } = CheckUnexpected(Unexpected, nameof(Unexpected));
 
     /// <summary>
     /// What the parse would have accepted at <see cref="Span"/>, in the order it was recorded. May be empty.
     /// </summary>
-    public IReadOnlyList<Expectation> Expected { get; } = Copy(Expected, nameof(Expected), static expectation => expectation.Value is not null);
+    public IReadOnlyList<Expectation> Expected { get; init => field = CopyExpected(value); } = CopyExpected(Expected);
 
     /// <summary>
     /// The context lines for the error, innermost first. May be empty.
     /// </summary>
-    public IReadOnlyList<string> Context { get; } = Copy(Context, nameof(Context), static line => line is not null);
+    public IReadOnlyList<string> Context { get; init => field = CopyContext(value); } = CopyContext(Context);
 
     /// <inheritdoc/>
     public bool Equals(ParseError? other) =>
@@ -121,6 +120,20 @@ public sealed record ParseError(
 
         return builder.ToString();
     }
+
+    private static string CheckLayer(string layer, string name) =>
+        layer ?? throw new ArgumentNullException(name);
+
+    private static Unexpected CheckUnexpected(Unexpected unexpected, string name) =>
+        unexpected.Value is not null
+            ? unexpected
+            : throw new ArgumentException("The unexpected value must hold a case.", name);
+
+    private static ReadOnlyCollection<Expectation> CopyExpected(IReadOnlyList<Expectation> expected) =>
+        Copy(expected, nameof(Expected), static expectation => expectation.Value is not null);
+
+    private static ReadOnlyCollection<string> CopyContext(IReadOnlyList<string> context) =>
+        Copy(context, nameof(Context), static line => line is not null);
 
     private static ReadOnlyCollection<T> Copy<T>(IReadOnlyList<T> items, string name, Func<T, bool> isValid)
     {

@@ -131,4 +131,32 @@ public class ErrorModelTests
         Assert.Throws<ArgumentException>(() => new ParseError(_at3, "parser", default, [], []));
         Assert.Throws<ArgumentException>(() => new ParseError(_at3, "parser", new EndOfInput(), [default], []));
     }
+
+    [Fact]
+    public void WithChangesEachPart()
+    {
+        var error = new ParseError(_at3, "parser", new EndOfInput(), [new Label("value")], ["in array"]);
+
+        Assert.Equal(
+            new ParseError(_at3, "lexer", new UnexpectedItem("'x'"), [new ExpectedItem("','")], ["in object"]),
+            error with { Layer = "lexer", Unexpected = new UnexpectedItem("'x'"), Expected = [new ExpectedItem("','")], Context = ["in object"] }
+        );
+    }
+
+    [Fact]
+    public void WithChecksAndCopiesLikeTheConstructor()
+    {
+        var error = new ParseError(_at3, "parser", new EndOfInput(), [], []);
+        List<Expectation> expected = [new Label("value")];
+
+        var changed = error with { Expected = expected };
+        expected.Add(new EndOfInput());
+
+        Assert.Single(changed.Expected);
+        Assert.True(((ICollection<Expectation>)changed.Expected).IsReadOnly);
+        Assert.Throws<ArgumentNullException>(() => error with { Layer = null! });
+        Assert.Throws<ArgumentException>(() => error with { Unexpected = default });
+        Assert.Throws<ArgumentException>(() => error with { Expected = [default] });
+        Assert.Throws<ArgumentNullException>(() => error with { Context = null! });
+    }
 }
