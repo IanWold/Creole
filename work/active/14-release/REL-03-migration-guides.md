@@ -13,6 +13,7 @@ Guides for Pidgin and Sprache users.
 ## Scope
 
 - Pidgin: `Try` to `Atomic`, `Map` to `Seq(...).Select`, grammar base classes.
+- Pidgin's `Maybe<T>` against Creole's union `Maybe<T>`: `HasValue ? Value : x` becomes a switch over `T` and `Nothing`, `TryGetValue` or `GetValueOrDefault` ([ADR-0007](../../docs/decisions/0007-maybe-as-a-non-boxing-union.md)).
 - Sprache: commit-by-default and CRL0102, side by side with the benchmark grammars.
 
 ## Acceptance criteria
