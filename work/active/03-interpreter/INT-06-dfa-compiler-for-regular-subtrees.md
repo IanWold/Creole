@@ -12,7 +12,7 @@ Regular character subtrees and `Longest` over regular alternatives compile to DF
 
 ## Scope
 
-- Compute the regular property (no `Rec`, `Bind` or state).
+- Compute the regular property (no `Rec`, `Bind` or state). A DFA must give the same outcome as running the subtree with commit semantics, so the property also excludes, or the construction models, what a plain DFA ignores: an `Or` whose alternative can fail after consuming (`Or(ab, ac)` on `ac` fails committed), `Atomic`, `Lookahead`, `Not` and `Cut`. `Longest` over regular alternatives is unaffected, because each alternative runs atomically. Raised by the CORE-08 review.
 - NFA construction, subset construction and minimization.
 - `Longest` as one DFA with accepting states labelled by alternative, priority by order.
 - Interpreter executes DFA tables with maximal-munch backup.

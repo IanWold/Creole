@@ -16,6 +16,7 @@ One parse produces many diagnostics without cascades.
 - Restore the mode stack and layer state from `p`'s start as an ordinary mode change.
 - Strategies `SkipUntil(sync)` and `SkipNested(open, close)`.
 - Starved propagates through `Recover` unchanged.
+- `Recover` takes a light mark before running `p`: if `p` fails without consuming, the cut flag is restored ([ADR-0011](../../docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md)). `Recover` is not a cut boundary.
 
 ## Acceptance criteria
 

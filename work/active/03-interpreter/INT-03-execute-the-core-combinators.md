@@ -13,7 +13,7 @@ The interpreter runs every analyzable node family with Parsec-style commit seman
 ## Scope
 
 - Four outcomes as `bool` plus cursor movement.
-- `Or` and `OneOf` commit; `Atomic` rewinds; `Lookahead`, `Not`; `Cut` overrides an enclosing `Atomic` up to the nearest `Lookahead`, `Not` or `Longest` alternative, and is dropped when the attempt that passed it fails without consuming. Each light mark (`Or`, `Optional`, repetition, operators) saves and restores the cut flag ([ADR-0010](../../docs/decisions/0010-cuts-under-dispatch-and-across-layers.md)).
+- `Or` and `OneOf` commit; `Atomic` rewinds; `Lookahead`, `Not`; `Cut` overrides an enclosing `Atomic` up to the nearest `Lookahead`, `Not` or `Longest` alternative, and is dropped when the attempt that passed it fails without consuming. Each light mark (every `Or` alternative including the last, `Optional`, every repetition item including mandatory ones, separators, terminators) saves the cut flag and restores it on that attempt's empty failure ([ADR-0011](../../docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md)). Compare against CORE-08's reference model.
 - `Longest` by running each alternative atomically (the DFA path is INT-06).
 - CORE-03's primitives fail without consuming input. `String` and `CIString` are atomic, and `CIString` compares by `ToLowerInvariant`. Test both.
 - Repetition, sequencing, `Switch` and `Match`.

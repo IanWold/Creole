@@ -14,6 +14,7 @@ Staging is an optimization, never a dialect: unreadable subtrees call into the i
 
 - Emit calls into the interpreter for unreadable subtrees.
 - Report CRL0301 with the reason (captured local, helper from another assembly, grammar built in a loop).
+- Generated code and an interpreted subtree share the layer's one cut flag across every call between them, so a cut in a fallback subtree reaches a generated `Atomic` and the reverse ([ADR-0010](../../docs/decisions/0010-cuts-under-dispatch-and-across-layers.md) point 3, [ADR-0011](../../docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md)).
 
 ## Acceptance criteria
 
