@@ -29,5 +29,6 @@ internal enum NodeKind
     Or,
     Switch,
     Match,
+    Longest,
     Rec,
 }

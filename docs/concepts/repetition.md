@@ -21,7 +21,7 @@ Repetition combinators run a parser several times. They are extension members of
 
 The separator's and terminator's results are always discarded.
 
-`Repeat` throws a `GrammarException` if a count is negative or `max` is less than `min`. `SepBy`, `SepBy1`, `SepEndBy` and `Until` reject a null separator or terminator the same way as every combinator (see [Grammars as data](grammars-as-data.md)).
+`Repeat` throws a `GrammarException` if a count is negative or `max` is less than `min`. Every repetition combinator rejects a null `p`, and `SepBy`, `SepBy1`, `SepEndBy` and `Until` also reject a null separator or terminator, the same way as every combinator (see [Grammars as data](grammars-as-data.md)).
 
 ## Coming from Pidgin
 

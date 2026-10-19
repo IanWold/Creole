@@ -91,8 +91,10 @@ public readonly record struct JTok(J Kind, ReadOnlyMemory<char> Text) : IKinded<
 
 Building an invalid grammar throws a `GrammarException`, whose message says what is wrong.
 
-Combinators reject a null parser argument with a `GrammarException` that names the expression you passed. A null parser is usually a field whose initializer has not run yet, because it is declared later in the class. The message suggests the fix:
+Combinators reject a null parser argument with a `GrammarException` that names the expression you passed. That includes the parser that combinators such as `Many`, `Optional` and `Or` are called on: `item` in `item.Many()`. A null parser is usually a field whose initializer has not run yet, because it is declared later in the class. The message suggests the fix:
 
 ```text
 'document' is null. If it refers to a rule declared later in the class, wrap the reference in Rec(() => document).
 ```
+
+A combinator that is an instance method of `Parser<TIn, TOut>`, such as `Then` or `Select`, cannot check the parser it is called on. Calling one on a null parser throws a `NullReferenceException` before the combinator runs. The cause and the fix are the same.
