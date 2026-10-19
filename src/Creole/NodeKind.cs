@@ -13,4 +13,5 @@ internal enum NodeKind
     Separated,
     Until,
     Expression,
+    Or,
 }
