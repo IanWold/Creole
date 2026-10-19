@@ -21,6 +21,10 @@ public sealed record ParseError(
 | `Expected` | What it would have accepted there. May be empty. |
 | `Context` | Lines such as `"in object starting at 2:3"`, innermost first. May be empty. |
 
+An error is immutable. It copies `Expected` and `Context`, so changing the lists you passed in afterwards does not change the error.
+
+The constructor throws `ArgumentNullException` if `Layer`, `Expected` or `Context` is null. It throws `ArgumentException` if `Unexpected` is `default`, or if a list contains a null or a `default` expectation.
+
 Two errors are equal when all their parts are equal. `Expected` and `Context` are compared element by element, in order, so two errors built from separate lists with the same contents are equal.
 
 ## What was found: `Unexpected`
@@ -83,11 +87,11 @@ string summary = json.Parse(text) switch
 
 - `result.Diagnostics` gives the errors whichever case it holds: empty for `Parsed<T>`.
 - `Recovered<T>` and `Failed` throw `ArgumentException` if given no errors. A parse without errors is `Parsed<T>`.
-- `Recovered<T>` deconstructs: `var (value, diagnostics) = recovered;`.
+- Both `Recovered<T>` and `Failed` deconstruct, so positional patterns such as `Recovered<T>(var value, var diagnostics)` and `Failed(var diagnostics)` work.
 
 ### `default` results
 
-Creole never returns `default(ParseResult<T>)`, but your own code can create one, for example as an element of a new array. A `default` result holds no case:
+Creole never returns `default(ParseResult<T>)`, but your own code can create one, for example as an element of a new array. Passing a null case to a `ParseResult<T>` constructor, such as `new ParseResult<int>((Failed)null!)`, creates the same value. A `default` result holds no case:
 
 - A switch over it throws `SwitchExpressionException`.
 - Reading its `Diagnostics` throws `SwitchExpressionException` too.

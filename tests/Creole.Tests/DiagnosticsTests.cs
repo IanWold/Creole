@@ -32,21 +32,28 @@ public class DiagnosticsTests
     {
         var registry = new SourceRegistry();
         SourceId[] sources = [SourceId.Unnamed, registry.Add("a.json"), registry.Add("b.json")];
+        string[] layers = ["lexer", "layout", "parser"];
 
         var gen =
             from source in Gen.Int[0, sources.Length - 1]
             from start in Gen.Long[0, 8]
             from length in Gen.Long[0, 2]
-            select (source, start, end: start + length);
+            from layer in Gen.Int[0, layers.Length - 1]
+            select (source, start, end: start + length, layer);
 
         gen.List[0, 20].Sample(spans =>
         {
-            var arrived = spans.Select((span, i) => ErrorAt(sources[span.source], span.start, span.end, i.ToString("D2", System.Globalization.CultureInfo.InvariantCulture))).ToList();
+            var arrived = spans
+                .Select((span, i) => new ParseError(new SourceSpan(sources[span.source], span.start, span.end), layers[span.layer], new EndOfInput(), [], [$"{i}"]))
+                .ToList();
+
             var expected = arrived
-                .OrderBy(error => error.Span.Source.Value)
-                .ThenBy(error => error.Span.Start)
-                .ThenBy(error => error.Span.End)
-                .ThenBy(error => error.Layer, StringComparer.Ordinal);
+                .Select((error, i) => (error, i))
+                .OrderBy(entry => entry.error.Span.Source.Value)
+                .ThenBy(entry => entry.error.Span.Start)
+                .ThenBy(entry => entry.error.Span.End)
+                .ThenBy(entry => entry.i)
+                .Select(entry => entry.error);
 
             return new Diagnostics(arrived).SequenceEqual(expected);
         });

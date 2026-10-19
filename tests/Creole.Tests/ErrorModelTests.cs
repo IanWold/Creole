@@ -96,4 +96,39 @@ public class ErrorModelTests
 
         Assert.NotEqual(a, b);
     }
+
+    [Fact]
+    public void ErrorsCopyTheirLists()
+    {
+        List<Expectation> expected = [new Label("value")];
+        List<string> context = ["in array"];
+
+        var error = new ParseError(_at3, "parser", new EndOfInput(), expected, context);
+        var rendered = error.ToString();
+        var hash = error.GetHashCode();
+
+        expected.Add(new EndOfInput());
+        context.Clear();
+
+        Assert.Equal(rendered, error.ToString());
+        Assert.Equal(hash, error.GetHashCode());
+        Assert.True(((ICollection<Expectation>)error.Expected).IsReadOnly);
+        Assert.True(((ICollection<string>)error.Context).IsReadOnly);
+    }
+
+    [Fact]
+    public void NullPartsAreRejected()
+    {
+        Assert.Throws<ArgumentNullException>(() => new ParseError(_at3, null!, new EndOfInput(), [], []));
+        Assert.Throws<ArgumentNullException>(() => new ParseError(_at3, "parser", new EndOfInput(), null!, []));
+        Assert.Throws<ArgumentNullException>(() => new ParseError(_at3, "parser", new EndOfInput(), [], null!));
+        Assert.Throws<ArgumentException>(() => new ParseError(_at3, "parser", new EndOfInput(), [], [null!]));
+    }
+
+    [Fact]
+    public void UnionsWithNoCaseAreRejected()
+    {
+        Assert.Throws<ArgumentException>(() => new ParseError(_at3, "parser", default, [], []));
+        Assert.Throws<ArgumentException>(() => new ParseError(_at3, "parser", new EndOfInput(), [default], []));
+    }
 }

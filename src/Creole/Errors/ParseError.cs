@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text;
 
@@ -12,8 +13,17 @@ namespace Creole;
 /// <param name="Expected">What the parse would have accepted there, in the order it was recorded. May be empty.</param>
 /// <param name="Context">The context lines for the error, innermost first, such as <c>in object starting at 2:3</c>. May be empty.</param>
 /// <remarks>
+/// <para>
+/// An error is immutable: it copies <paramref name="Expected"/> and <paramref name="Context"/>, so later changes to the lists passed in do not affect it.
+/// </para>
+/// <para>
 /// Two errors are equal when their span, layer and unexpected value are equal and their <paramref name="Expected"/> and <paramref name="Context"/> lists hold equal elements in the same order.
+/// </para>
 /// </remarks>
+/// <exception cref="ArgumentNullException"><paramref name="Layer"/>, <paramref name="Expected"/> or <paramref name="Context"/> is null.</exception>
+/// <exception cref="ArgumentException">
+/// <paramref name="Unexpected"/> holds no case, or <paramref name="Expected"/> or <paramref name="Context"/> contains a null or a value that holds no case.
+/// </exception>
 public sealed record ParseError(
     SourceSpan Span,
     string Layer,
@@ -22,6 +32,28 @@ public sealed record ParseError(
     IReadOnlyList<string> Context
 )
 {
+    /// <summary>
+    /// The name of the layer that raised the error, such as <c>lexer</c> or <c>parser</c>.
+    /// </summary>
+    public string Layer { get; } = Layer ?? throw new ArgumentNullException(nameof(Layer));
+
+    /// <summary>
+    /// What the parse found at <see cref="Span"/>.
+    /// </summary>
+    public Unexpected Unexpected { get; } = Unexpected.Value is not null
+        ? Unexpected
+        : throw new ArgumentException("The unexpected value must hold a case.", nameof(Unexpected));
+
+    /// <summary>
+    /// What the parse would have accepted at <see cref="Span"/>, in the order it was recorded. May be empty.
+    /// </summary>
+    public IReadOnlyList<Expectation> Expected { get; } = Copy(Expected, nameof(Expected), static expectation => expectation.Value is not null);
+
+    /// <summary>
+    /// The context lines for the error, innermost first. May be empty.
+    /// </summary>
+    public IReadOnlyList<string> Context { get; } = Copy(Context, nameof(Context), static line => line is not null);
+
     /// <inheritdoc/>
     public bool Equals(ParseError? other) =>
         other is not null
@@ -59,12 +91,11 @@ public sealed record ParseError(
         var builder = new StringBuilder();
 
         builder.Append(CultureInfo.InvariantCulture, $"error[{Layer}] at {Span.CharStart}..{Span.CharEnd}: ");
-        builder.Append(Unexpected.Value switch
+        builder.Append(Unexpected switch
         {
             UnexpectedItem item => $"unexpected {item.Display}",
             EndOfInput => "unexpected end of input",
             CustomMessage message => message.Text,
-            _ => "unknown error",
         });
 
         if (Expected.Count > 0)
@@ -74,12 +105,11 @@ public sealed record ParseError(
             for (var i = 0; i < Expected.Count; i++)
             {
                 builder.Append(i == 0 ? "" : i == Expected.Count - 1 ? " or " : ", ");
-                builder.Append(Expected[i].Value switch
+                builder.Append(Expected[i] switch
                 {
                     Label label => label.Name,
                     ExpectedItem item => item.Display,
                     EndOfInput => "end of input",
-                    _ => "?",
                 });
             }
         }
@@ -90,5 +120,22 @@ public sealed record ParseError(
         }
 
         return builder.ToString();
+    }
+
+    private static ReadOnlyCollection<T> Copy<T>(IReadOnlyList<T> items, string name, Func<T, bool> isValid)
+    {
+        ArgumentNullException.ThrowIfNull(items, name);
+
+        T[] copy = [.. items];
+
+        foreach (var item in copy)
+        {
+            if (!isValid(item))
+            {
+                throw new ArgumentException("The list must not contain a null or a value that holds no case.", name);
+            }
+        }
+
+        return Array.AsReadOnly(copy);
     }
 }

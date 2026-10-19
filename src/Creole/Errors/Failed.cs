@@ -20,4 +20,10 @@ public sealed record Failed
     /// The errors that made the parse fail, ordered by span. Never empty.
     /// </summary>
     public Diagnostics Diagnostics { get; }
+
+    /// <summary>
+    /// Deconstructs the result into its errors.
+    /// </summary>
+    public void Deconstruct(out Diagnostics diagnostics) =>
+        diagnostics = Diagnostics;
 }

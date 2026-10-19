@@ -183,11 +183,11 @@ public sealed record Failed(Diagnostics Diagnostics);
 
 public union ParseResult<T>(Parsed<T>, Recovered<T>, Failed)
 {
-    public Diagnostics Diagnostics => Value switch
+    public Diagnostics Diagnostics => this switch
     {
+        Parsed<T>      => Diagnostics.Empty,
         Recovered<T> r => r.Diagnostics,
         Failed f       => f.Diagnostics,
-        _              => Diagnostics.Empty,
     };
 }
 
