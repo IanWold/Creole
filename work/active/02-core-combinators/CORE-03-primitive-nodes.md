@@ -19,7 +19,7 @@ The leaf nodes of every grammar.
 
 ## Acceptance criteria
 
-- [ ] Each primitive's node exposes what analysis needs: its FIRST set, or that it is opaque (`Satisfy`).
+- [x] Each primitive's node exposes what analysis needs: its FIRST set, or that it is opaque (`Satisfy`).
 
 ## Blocked by
 
@@ -45,3 +45,4 @@ The leaf nodes of every grammar.
 - 2026-10-19 (Build): Started. Primitive nodes expose their FIRST set through one internal representation shared by character and token layers, with `CharSet` designed for reuse by CORE-12.
 - 2026-10-19 (Build): Increment 1 done: internal `RangeSet`, `CharSet` (kept internal; CORE-12 makes it public) and `FirstSet` in `src/Creole/Analysis/`, and `IPrimitiveNode`. One `FirstSet` covers character and token layers: integer keys (character codes, enum kinds), union case types, literal values, plus any-item and end-of-input flags. Logged the union-token/`IKinded` concern as an idea. Build, 281 tests and the AOT publish pass. Next: increment 2, the `Grammar<TIn>` and `CharGrammar` primitives with `docs/concepts/primitives.md`.
 - 2026-10-19 (Build): Increment 2 done: `AnyNode`, `EndNode`, `TokenNode`, `SatisfyNode`, `CharClassNode` and `StringNode`, each implementing `IPrimitiveNode`; `Any`, `End`, `Token` and `Satisfy` in `GrammarOfTIn.Primitives.cs`; character classes, `String` and `CIString` on `CharGrammar` (CA1720 suppressed on `Char` and `String`); `docs/concepts/primitives.md`. Build, all tests and the AOT publish pass. Next: increment 3, `Kind` and `Case<T>()` on `TokenGrammar`.
+- 2026-10-19 (Build): Increment 3 done: `KindNode` and `CaseNode` with `Kind(k)` and `Case<T>()` on `TokenGrammar` (CA1000 suppressed as on `Grammar<TIn>`); `Case<T>()` throws `GrammarException` unless `TToken` is a union. Criterion met: all eight primitive node types implement `IPrimitiveNode` (`NodeModelTests.EveryPrimitiveNodeExposesItsFirstSet`), and `PrimitiveNodeTests` and `TokenPrimitiveTests` check each FIRST set and that `Satisfy` is opaque. `TokenPrimitiveTests.CaseOverloadsOnTokenGrammarAndGrammarBothResolve` skips its second half until CORE-05 adds `Grammar<TIn>.Case`; a scratch spike confirmed C# resolves both overloads. Build, 334 tests (1 skipped) and the AOT publish pass. Next: maintainer review, then `/complete`.

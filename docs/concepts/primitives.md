@@ -26,7 +26,7 @@ public sealed class Bytes : Grammar<byte>
 - Each one consumes at most one item. On anything else, or at the end of input, it fails without consuming input.
 - `Any` and `End` are properties. Every use refers to the same parser.
 - Put `End` last in a top-level rule to require that the rule reads the whole input.
-- `Satisfy` runs your code, so analysis cannot tell which items it accepts and treats it as matching any item. Prefer `Token` or a character class where one fits. The predicate must not have side effects: an engine may call it more than once for the same item. A null predicate throws a `GrammarException`.
+- `Satisfy` runs your code, so analysis cannot tell which items it accepts and treats it as matching any item. Prefer `Token`, a character class or `Kind` where one fits. The predicate must not have side effects: an engine may call it more than once for the same item. A null predicate throws a `GrammarException`.
 
 ## Characters
 
@@ -73,3 +73,46 @@ public sealed class Operators : CharGrammar
 - Both are atomic: if any character does not match, they fail without consuming input, so an enclosing choice tries its next alternative. On `abd`, `String("abc")` fails without consuming. Pidgin's `String` consumes `ab` in that case.
 - `CIString` compares one character at a time by `char.ToLowerInvariant`, as Pidgin does, so the result does not depend on the current culture. The match is always as long as `text`. One consequence: the Kelvin sign (U+212A) matches `k`, but the long s (U+017F) does not match `s`.
 - An empty or null `text` throws a `GrammarException`. To succeed without consuming input, use `Return("")`.
+
+## Tokens
+
+`TokenGrammar<TToken, TKind>` adds two ways to match one token by what kind it is.
+
+| Parser | Matches | Produces |
+| --- | --- | --- |
+| `Kind(k)` | one token whose `Kind` is `k` | the token |
+| `Case<T>()` | one token of a union token type whose case is `T` | the case value, typed `T` |
+
+```csharp
+public enum J { String, Number, Comma }
+
+public readonly record struct JTok(J Kind, string Text) : IKinded<J>;
+
+public sealed class JsonTokens : TokenGrammar<JTok, J>
+{
+    public static readonly Parser<JTok, JTok> Comma = Kind(J.Comma);
+}
+```
+
+- Both fail without consuming input on a token of another kind or case, or at the end of input.
+- Kinds make analysis precise: two `Kind` parsers with different kinds never match the same token.
+- `Case<T>()` is for tokens declared as a C# union, and it throws a `GrammarException` if `TToken` is not a union. It does not check that `T` is one of the union's cases; a parser for a type that is not a case never matches.
+- A union token must still implement `IKinded<TKind>` to be used with `TokenGrammar`:
+
+  ```csharp
+  public sealed record Ident(string Name);
+  public sealed record Number(int Value);
+
+  public union Tok(Ident, Number) : IKinded<J>
+  {
+      public J Kind => this switch { Ident => J.String, Number => J.Number };
+  }
+
+  public sealed class UnionTokens : TokenGrammar<Tok, J>
+  {
+      public static readonly Parser<Tok, Ident> Name = Case<Ident>();
+  }
+  ```
+
+- Analysis treats each case type as a kind, but it cannot tell which `TKind` a case has. It assumes `Kind(k)` and `Case<T>()` may match the same token.
+- A union stores its case as an `object`, so struct cases box. For the fastest lexers, prefer struct tokens matched with `Kind` ([whitepaper § Where unions are not used](../../whitepaper.md#where-unions-are-not-used)).

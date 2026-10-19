@@ -19,4 +19,6 @@ internal enum NodeKind
     Satisfy,
     CharClass,
     String,
+    Kind,
+    Case,
 }
