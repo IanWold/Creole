@@ -36,7 +36,12 @@ The leaf nodes of every grammar.
 - [§ Types](../../../whitepaper.md#types)
 - [§ Choice and backtracking](../../../whitepaper.md#choice-and-backtracking)
 
+## Artifacts
+
+- Docs: [Primitives](../../../docs/concepts/primitives.md)
+
 ## Progress notes
 
 - 2026-10-19 (Build): Started. Primitive nodes expose their FIRST set through one internal representation shared by character and token layers, with `CharSet` designed for reuse by CORE-12.
 - 2026-10-19 (Build): Increment 1 done: internal `RangeSet`, `CharSet` (kept internal; CORE-12 makes it public) and `FirstSet` in `src/Creole/Analysis/`, and `IPrimitiveNode`. One `FirstSet` covers character and token layers: integer keys (character codes, enum kinds), union case types, literal values, plus any-item and end-of-input flags. Logged the union-token/`IKinded` concern as an idea. Build, 281 tests and the AOT publish pass. Next: increment 2, the `Grammar<TIn>` and `CharGrammar` primitives with `docs/concepts/primitives.md`.
+- 2026-10-19 (Build): Increment 2 done: `AnyNode`, `EndNode`, `TokenNode`, `SatisfyNode`, `CharClassNode` and `StringNode`, each implementing `IPrimitiveNode`; `Any`, `End`, `Token` and `Satisfy` in `GrammarOfTIn.Primitives.cs`; character classes, `String` and `CIString` on `CharGrammar` (CA1720 suppressed on `Char` and `String`); `docs/concepts/primitives.md`. Build, all tests and the AOT publish pass. Next: increment 3, `Kind` and `Case<T>()` on `TokenGrammar`.

@@ -13,4 +13,10 @@ internal enum NodeKind
     Separated,
     Until,
     Expression,
+    Any,
+    End,
+    Token,
+    Satisfy,
+    CharClass,
+    String,
 }
