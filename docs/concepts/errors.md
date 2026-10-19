@@ -90,7 +90,7 @@ string summary = json.Parse(text) switch
 Creole never returns `default(ParseResult<T>)`, but your own code can create one, for example as an element of a new array. A `default` result holds no case:
 
 - A switch over it throws `SwitchExpressionException`.
-- Its `Diagnostics` is empty.
+- Reading its `Diagnostics` throws `SwitchExpressionException` too.
 - If your code might hold one, add a `null` arm. The compiler still reports missing cases.
 
 The reasons are in [ADR-0002](../../work/docs/decisions/0002-parseresult-as-a-plain-union.md).

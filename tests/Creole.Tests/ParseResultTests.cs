@@ -5,6 +5,17 @@ namespace Creole.Tests;
 
 public class ParseResultTests
 {
+    private static class ScanTarget
+    {
+        public static ParseResult<int> Direct() => new Parsed<int>(1);
+
+        public static Task<ParseResult<int>> Wrapped() => Task.FromResult<ParseResult<int>>(new Parsed<int>(1));
+
+        public static ParseResult<int>[] Many { get; } = [];
+
+        public static int Unrelated() => 0;
+    }
+
     private sealed record JsonValue(string Text);
 
     private sealed class JsonStandIn(Diagnostics errors)
@@ -118,8 +129,11 @@ public class ParseResultTests
         };
 
         Assert.Equal("default", described);
-        Assert.Same(Diagnostics.Empty, result.Diagnostics);
     }
+
+    [Fact]
+    public void DefaultHasNoDiagnostics() =>
+        Assert.Throws<SwitchExpressionException>(() => default(ParseResult<int>).Diagnostics);
 
     [Fact]
     public void DefaultThrowsInASwitchWithoutANullArm()
@@ -142,17 +156,6 @@ public class ParseResultTests
             .Where(member => !_coveredMembers.Contains(member));
 
         Assert.Empty(uncovered);
-    }
-
-    private static class ScanTarget
-    {
-        public static ParseResult<int> Direct() => new Parsed<int>(1);
-
-        public static Task<ParseResult<int>> Wrapped() => Task.FromResult<ParseResult<int>>(new Parsed<int>(1));
-
-        public static ParseResult<int>[] Many { get; } = [];
-
-        public static int Unrelated() => 0;
     }
 
     [Fact]

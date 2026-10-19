@@ -18,8 +18,9 @@ namespace Creole;
 public union ParseResult<T>(Parsed<T>, Recovered<T>, Failed)
 {
     /// <summary>
-    /// The errors the parse recorded, ordered by span. Empty for <see cref="Parsed{T}"/> and for a <see langword="default"/> value.
+    /// The errors the parse recorded, ordered by span. Empty for <see cref="Parsed{T}"/>.
     /// </summary>
+    /// <exception cref="System.Runtime.CompilerServices.SwitchExpressionException">The result is <see langword="default"/> and holds no case.</exception>
     public Diagnostics Diagnostics => this switch
     {
         Parsed<T> => Diagnostics.Empty,
