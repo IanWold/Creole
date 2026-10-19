@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Errors, diagnostics and recovery](../../README.md#err--errors-diagnostics-and-recovery) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -34,3 +34,9 @@ Render diagnostics against the original text in the format shown in the whitepap
 
 - [§ The error model](../../../whitepaper.md#the-error-model)
 - [§ Source spans and provenance](../../../whitepaper.md#source-spans-and-provenance)
+
+## Progress notes
+
+- 2026-10-19 (Build): Started. The format is settled by § The error model; build a renderer over `Diagnostics` with grapheme clusters from `StringInfo` and an East Asian Width table generated from the UCD. Next: `/build` plan for approval.
+- 2026-10-19 (Build): Plan approved: increment 1, display width; increment 2, a refactor that shares the expected and unexpected wording from `ParseError.ToString()`; increment 3, `SourceText`, `Diagnostics.Render(params ReadOnlySpan<SourceText>)` and docs. Checked on RC 2: `StringInfo` gives UAX #29 clusters, but GB9c is not applied (क्ष splits), and .NET has no East Asian Width API. The runtime's Unicode data is 16.0.0 (runtime-assets 13b701d). Added a scope line to LAY-05 about where `Render()` gets the source text.
+- 2026-10-19 (Build): Increment 1 done: `scripts/gen-east-asian-width.py` generates `src/Creole/Errors/EastAsianWidth.g.cs` from Unicode 16.0.0 (122 W/F ranges, binary search over a constant span). Internal `DisplayWidth` measures clusters (W/F, regional indicators or U+FE0F give 2; Mn, Me or Cf first gives 0; otherwise 1), expands tabs to stops of 4, shows C0 and DEL as Control Pictures and C1 and lone surrogates as U+FFFD, and places carets with whole-cluster snapping. `DisplayWidthTests` 46 pass; full suite 280 pass; AOT smoke publishes clean. Next: increment 2, the refactor.
