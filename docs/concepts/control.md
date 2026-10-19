@@ -1,6 +1,6 @@
 # Backtracking and labels
 
-Control combinators decide when a parse may go back and try again, and what a failure reports. `Atomic`, `Lookahead`, `Not` and `Cut` are members of `Grammar<TIn>`, so a grammar class calls them unqualified. `p.Named(label)` and `p.Context(text)` are extension members of `Parser<TIn, TOut>` in the `ErrorReporting` class. The design and its reasons are in the [whitepaper's § Choice and backtracking](../../whitepaper.md#choice-and-backtracking) and [ADR-0008](../../work/docs/decisions/0008-control-node-semantics.md).
+Control combinators decide when a parse may go back and try again, and what a failure reports. `Atomic`, `Lookahead`, `Not` and `Cut` are members of `Grammar<TIn>`, so a grammar class calls them unqualified. `p.Named(label)` and `p.Context(text)` are extension members of `Parser<TIn, TOut>` in the `ErrorReporting` class. The design and its reasons are in the [whitepaper's § Choice and backtracking](../../whitepaper.md#choice-and-backtracking) and [ADR-0008](../../work/docs/decisions/0008-control-node-semantics.md), refined by [ADR-0010](../../work/docs/decisions/0010-cuts-under-dispatch-and-across-layers.md).
 
 > Nothing runs these combinators yet. They build grammar nodes, and the interpreter that executes them arrives with INT-03. Each method's XML documentation and this page state the behaviour engines must implement. `ControlTable` in the test project lists it as cases: a grammar, an input and the expected outcome.
 
@@ -12,7 +12,7 @@ A parser that fails **without consuming input** lets an enclosing choice try its
 
 | Combinator | Parser succeeds | Parser fails without consuming | Parser fails after consuming |
 | --- | --- | --- | --- |
-| `Atomic(p)` | succeeds as `p` did | fails without consuming | rewinds and fails without consuming, unless a cut is in force |
+| `Atomic(p)` | succeeds as `p` did | fails without consuming | rewinds and fails without consuming, unless a cut passed inside `p` is still in force |
 | `Lookahead(p)` | rewinds; succeeds with `p`'s value, consuming nothing | fails without consuming | fails after consuming |
 | `Not(p)` | rewinds; fails without consuming | succeeds with `Unit`, consuming nothing | rewinds; succeeds with `Unit`, consuming nothing |
 | `Cut` | always succeeds, consuming nothing | — | — |
@@ -25,7 +25,7 @@ When input is streamed, an attempt can also run out of buffered data. That is no
 `Atomic(p)` runs `p`. If `p` fails after consuming input, `Atomic` rewinds to where it started, so the failure counts as having consumed nothing. It is Parsec's `try`.
 
 ```csharp
-// Without Atomic, "x = 1" would fail inside the first alternative after reading "x".
+// Without Atomic, "x=1" would fail inside the first alternative after reading "x".
 public static readonly Parser<char, char> Separator =
     Atomic(Seq(Letter, Char(':')).Select((name, colon) => colon)).Or(Seq(Letter, Char('=')).Select((name, equals) => equals));
 ```
@@ -63,9 +63,11 @@ How far a cut reaches:
 
 - **It reaches every enclosing `Atomic`**, not just the nearest one, and it stays in force after the `Atomic` around it has succeeded.
 - **It stops at the nearest `Lookahead`, `Not` or `Longest` alternative.** These must rewind, so a cut inside one only affects `Atomic`s inside it. With no such boundary around it, a cut lasts until the parse ends.
-- **It stays in force even if the step that held it is abandoned.** In `Atomic(Cut.Then(Char('x')).Or(Char('a').Then(Char('b'))))` on input `ac`, the first alternative passes the cut and fails without consuming, so `Or` tries the second. That reads `a` and fails at `c`, and the cut stops `Atomic` from rewinding. This also applies to a cut in a repetition step or an `Optional` that failed without consuming.
+- **It is dropped with an attempt that fails without consuming.** In `Atomic(Cut.Then(Char('x')).Or(Char('a').Then(Char('b'))))` on input `ac`, the first alternative passes the cut and fails without consuming, so the cut is dropped and `Or` tries the second. That reads `a` and fails at `c`, and `Atomic` rewinds. The same holds for a cut in a repetition step or an `Optional` that failed without consuming. A cut in a step that succeeded, or failed after consuming, stays in force.
+- **So dispatch is exact.** An engine may pick an alternative by the next item instead of trying each in order: an alternative it skips would only have failed without consuming, and its cut would have been dropped.
+- **A cut after a lookahead commits once the lookahead matches.** In `Atomic(Lookahead(Char('a')).Before(Cut).Then(Char('a').Then(Char('b'))))`, the cut runs only on input starting with `a`, and then a failure at the `b` stays committed.
 - **It never makes a failure without consuming committed.** `Or`, `Optional` and repetition still look only at whether input was consumed, so `Atomic(Cut.Then(Char('a'))).Or(Char('b'))` matches `b`.
-- **A cut before an `Atomic` has no effect on it.** Each `Atomic` starts with no cut in force.
+- **A cut before an `Atomic` has no effect on it.** Only a cut passed inside an `Atomic` stops it rewinding.
 
 `Cut` produces `Unit`. To keep it out of a result, attach it with `Before` or `Then`: `Char('(').Before(Cut)`.
 

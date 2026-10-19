@@ -13,9 +13,10 @@ public abstract partial class Grammar<TIn>
     /// A later failure is then reported there instead of being retried elsewhere, and engines can release input they no longer need to rewind to.
     /// </para>
     /// <para>
-    /// The cut stays in force until the parse leaves the nearest enclosing <see cref="Lookahead"/>, <see cref="Not"/> or <c>Longest</c> alternative, or until the parse ends.
-    /// It stays in force even if the alternative or repetition step that held it later fails without consuming and the parse moves on.
-    /// A cut never turns a failure that consumed nothing into a committed one, so <c>Or</c> and repetition behave as they would without it.
+    /// The cut stops being in force when the parse leaves the nearest enclosing <see cref="Lookahead"/>, <see cref="Not"/> or <c>Longest</c> alternative.
+    /// It also stops when the attempt that passed it fails without consuming and an enclosing <c>Or</c>, <c>Optional</c>, repetition or operator attempt moves on: the cut is dropped with the failed attempt.
+    /// Otherwise it lasts until the parse ends.
+    /// A cut never turns a failure that consumed nothing into a committed one, so <c>Or</c> and repetition behave as they would without it, and engines may dispatch on the next item instead of trying alternatives in order.
     /// </para>
     /// <para>
     /// Every use refers to the same parser.
@@ -37,7 +38,9 @@ public abstract partial class Grammar<TIn>
     /// It is Parsec's <c>try</c>.
     /// </para>
     /// <para>
-    /// If a <see cref="Cut"/> succeeded inside <paramref name="parser"/>, at any depth and not contained by a <see cref="Lookahead"/>, <see cref="Not"/> or <c>Longest</c> alternative, the failure is not rewound and stays committed.
+    /// If a <see cref="Cut"/> succeeded inside <paramref name="parser"/> and is still in force, the failure is not rewound and stays committed.
+    /// A cut is still in force at any depth, unless it was inside a <see cref="Lookahead"/>, <see cref="Not"/> or <c>Longest</c> alternative, or was dropped because the attempt that passed it failed without consuming.
+    /// A cut passed before this parser started has no effect on it.
     /// Success, and failure without consuming, pass through unchanged.
     /// </para>
     /// </remarks>
