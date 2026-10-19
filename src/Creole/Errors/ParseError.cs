@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Text;
+
 namespace Creole;
 
 /// <summary>
@@ -48,5 +51,44 @@ public sealed record ParseError(
         }
 
         return hash.ToHashCode();
+    }
+
+    /// <inheritdoc/>
+    public override string ToString()
+    {
+        var builder = new StringBuilder();
+
+        builder.Append(CultureInfo.InvariantCulture, $"error[{Layer}] at {Span.CharStart}..{Span.CharEnd}: ");
+        builder.Append(Unexpected.Value switch
+        {
+            UnexpectedItem item => $"unexpected {item.Display}",
+            EndOfInput => "unexpected end of input",
+            CustomMessage message => message.Text,
+            _ => "unknown error",
+        });
+
+        if (Expected.Count > 0)
+        {
+            builder.Append("; expected ");
+
+            for (var i = 0; i < Expected.Count; i++)
+            {
+                builder.Append(i == 0 ? "" : i == Expected.Count - 1 ? " or " : ", ");
+                builder.Append(Expected[i].Value switch
+                {
+                    Label label => label.Name,
+                    ExpectedItem item => item.Display,
+                    EndOfInput => "end of input",
+                    _ => "?",
+                });
+            }
+        }
+
+        foreach (var line in Context)
+        {
+            builder.Append("; ").Append(line);
+        }
+
+        return builder.ToString();
     }
 }
