@@ -15,6 +15,7 @@ The interpreter runs every analyzable node family with Parsec-style commit seman
 - Four outcomes as `bool` plus cursor movement.
 - `Or` and `OneOf` commit; `Atomic` rewinds; `Lookahead`, `Not`; `Cut` overrides an enclosing `Atomic`.
 - `Longest` by running each alternative atomically (the DFA path is INT-06).
+- CORE-03's primitives fail without consuming input. `String` and `CIString` are atomic, and `CIString` compares by `ToLowerInvariant`. Test both.
 - Repetition, sequencing, `Switch` and `Match`.
 - Run-time guard against nullable repetition until analysis exists.
 - Replace every `PlanBuilder.NotYetExecutable` stub with a real plan. INT-02 added them so nodes merged before INT-03 compile against the abstract `Lower` member.

@@ -26,6 +26,13 @@ public class NodeModelTests
         Assert.Equal(Enum.GetValues<NodeKind>().Length, _nodeTypes.Length);
 
     [Fact]
+    public void EveryPrimitiveNodeExposesItsFirstSet() =>
+        Assert.Equal(
+            [typeof(AnyNode<>), typeof(CaseNode<,>), typeof(CharClassNode), typeof(EndNode<>), typeof(KindNode<,>), typeof(SatisfyNode<>), typeof(StringNode), typeof(TokenNode<>)],
+            _nodeTypes.Where(type => type.IsAssignableTo(typeof(IPrimitiveNode))).OrderBy(type => type.Name, StringComparer.Ordinal)
+        );
+
+    [Fact]
     public void FailIsALeafHoldingItsMessage()
     {
         INode node = new FailNode<char, int>("unsupported version");
