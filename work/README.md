@@ -72,9 +72,9 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 
 | Wave | Work item | Blocked by |
 | --- | --- | --- |
-| 1 | [FND-09](active/01-foundations/FND-09-move-to-the-net-11-ga-sdk.md) Move to the .NET 11 GA SDK | [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md); .NET 11 / C# 15 GA (expected November 2026) |
 | 1 | [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) StreamBuffer and pulling cursor | [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) |
 | 2 | [SPAN-02](active/05-source-spans/SPAN-02-out-of-band-span-storage.md) Out-of-band span storage | [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md), [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) |
+| 3 | [FND-09](active/01-foundations/FND-09-move-to-the-net-11-ga-sdk.md) Move to the .NET 11 GA SDK | [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md); .NET 11 / C# 15 GA (expected November 2026) |
 | 3 | [SPAN-04](active/05-source-spans/SPAN-04-span-combinators.md) Span combinators | [SPAN-02](active/05-source-spans/SPAN-02-out-of-band-span-storage.md) |
 | 4 | [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) Marks and retention | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) |
 | 4 | [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) Layer abstraction and Emit | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) |
@@ -187,8 +187,8 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 1 | [GLL-01](active/18-general-parsing-spike/GLL-01-define-the-declarative-subset.md) Define the declarative subset | [ANA-01](active/09-static-analysis/ANA-01-grammar-property-analysis.md) |
 | 2 | [GLL-02](active/18-general-parsing-spike/GLL-02-gll-interpreter-prototype.md) GLL interpreter prototype | [GLL-01](active/18-general-parsing-spike/GLL-01-define-the-declarative-subset.md) |
 | 3 | [GLL-03](active/18-general-parsing-spike/GLL-03-disambiguation-filters.md) Disambiguation filters | [GLL-02](active/18-general-parsing-spike/GLL-02-gll-interpreter-prototype.md) |
-| 4 | [GLL-04](active/18-general-parsing-spike/GLL-04-general-parsing-measurements.md) General parsing measurements | [BENCH-02](active/13-benchmarks/BENCH-02-full-benchmark-suite.md), [GLL-03](active/18-general-parsing-spike/GLL-03-disambiguation-filters.md) |
-| 5 | [GLL-05](active/18-general-parsing-spike/GLL-05-general-parsing-decision.md) General parsing decision **(Spike decision)** | [GLL-04](active/18-general-parsing-spike/GLL-04-general-parsing-measurements.md) |
+| 6 | [GLL-04](active/18-general-parsing-spike/GLL-04-general-parsing-measurements.md) General parsing measurements | [BENCH-02](active/13-benchmarks/BENCH-02-full-benchmark-suite.md), [GLL-03](active/18-general-parsing-spike/GLL-03-disambiguation-filters.md) |
+| 7 | [GLL-05](active/18-general-parsing-spike/GLL-05-general-parsing-decision.md) General parsing decision **(Spike decision)** | [GLL-04](active/18-general-parsing-spike/GLL-04-general-parsing-measurements.md) |
 
 ### Critical path to 1.0
 

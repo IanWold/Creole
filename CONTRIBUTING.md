@@ -145,7 +145,7 @@ A card in progress should always say where it stands, so any session can pick it
 ### Adding or changing cards
 
 - New card IDs take the next unused number for the epic's prefix.
-- Add the card to its epic table in `work/README.md`, and to its phase table in the right wave (the wave is one more than the highest wave among its blockers).
+- Add the card to its epic table in `work/README.md`, and to its phase table in the right wave (see § Epics, phases, waves and gates; `scripts/work.py check` reports a wrong wave).
 - Update `**Totals:**` in `work/README.md`.
 - If the card belongs to no existing epic, create the epic: a new numbered folder, a new prefix, a section under `## Epics` in `work/README.md`.
 - Scope changes to a card in progress are fine if they are small and noted in progress notes. Anything larger becomes a new card.
@@ -154,7 +154,7 @@ A card in progress should always say where it stands, so any session can pick it
 
 - **Epics** group cards by area and own a folder. An epic's prefix (`FND`, `CORE`, …) is its cards' ID prefix.
 - **Phases** follow the whitepaper's [Roadmap](whitepaper.md#roadmap). A card can start as soon as its blockers are done, even if earlier phases still have unrelated open work.
-- **Waves** group a phase's cards by dependency depth. Everything in one wave can run in parallel.
+- **Waves** group a phase's cards by dependency depth. Everything in one wave can run in parallel. A card's depth counts its blockers in every phase: it is 1 with no blockers, else one more than its deepest blocker's depth. A card's wave is its depth minus the depth of the shallowest card in its phase, plus 1, so each phase starts at wave 1. So a card whose blockers are all in earlier phases is not automatically in wave 1: LAY-02 is in Phase 1, wave 4, because its blocker INT-03 is deep in Phase 0.
 - **Gates** are cards with a `Gate` row. A gate card is done only when the gate's criterion is shown to hold, with evidence (test results, benchmark numbers) recorded in its Outcome. Numeric thresholds come from [FND-06](work/active/01-foundations/FND-06-fix-numeric-gate-thresholds.md).
 
 ## Research notes

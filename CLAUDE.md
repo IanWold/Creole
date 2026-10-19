@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Creole is a proposed parser-combinator library for .NET 11 and C# 15: layered streaming pipelines with feedback, grammars as inspectable data with build-time analysis, and staged compilation through a Roslyn source generator. The whitepaper, the work breakdown and the empty solution exist; library code starts with CORE-01.
+Creole is a proposed parser-combinator library for .NET 11 and C# 15: layered streaming pipelines with feedback, grammars as inspectable data with build-time analysis, and staged compilation through a Roslyn source generator. Phase 0 is under way: the node model, primitives, sequencing, choice, repetition, `Longest`, `Expression.Build`, plan lowering and the error model are built; the interpreter (INT-03) is not.
 
 ## How you work here
 
@@ -66,7 +66,7 @@ Match the whitepaper: plain English, short declarative sentences, concrete claim
 ## Project facts
 
 - Diagnostics use the prefix `CRL` (for example CRL0004, CRL0301). Each gets a page in `docs/reference/diagnostics/` when it is introduced. IDs are public contract.
-- Gate thresholds such as "near Pidgin speed" are not numbers yet; [FND-06](work/active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) fixes them.
+- Gate thresholds are numbers, fixed by [FND-06](work/active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) in [ADR-0003](work/docs/decisions/0003-numeric-gate-thresholds.md) and the whitepaper's Roadmap.
 - [FND-07](work/active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md) was done on the RC 2 compiler ([ADR-0002](work/docs/decisions/0002-parseresult-as-a-plain-union.md)). When `global.json` moves to the GA SDK, re-run its spike or the tests that rely on unions; [FND-09](work/active/01-foundations/FND-09-move-to-the-net-11-ga-sdk.md) tracks this and the other RC 2 findings.
 - The project was once called Strata. That name is taken on NuGet; do not use it.
 - Python 3 and `gh` are available.
