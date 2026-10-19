@@ -8,7 +8,7 @@ if (Calc.Expr is null)
 Console.WriteLine("Creole AOT smoke: OK");
 return 0;
 
-internal sealed class Calc : CharGrammar
+internal class Calc : CharGrammar
 {
     private static readonly Parser<char, double> _atom = Return(1.0);
     private static readonly Parser<char, char> _minus = Return('-');

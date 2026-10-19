@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using Creole.Nodes;
 
 namespace Creole;
 
@@ -24,48 +23,8 @@ public sealed class OperatorFactory<TIn, T>
 
     private OperatorFactory() { }
 
-    /// <summary>
-    /// A prefix operator, such as unary minus in <c>-x</c>.
-    /// </summary>
-    /// <typeparam name="TOp">The type the operator parser produces.</typeparam>
-    /// <param name="op">The parser that matches the operator.</param>
-    /// <param name="combine">Combines the operator's value and the operand.</param>
-    /// <param name="opExpression">Filled in by the compiler with the expression passed as <paramref name="op"/>.</param>
-    /// <param name="combineExpression">Filled in by the compiler with the expression passed as <paramref name="combine"/>.</param>
-    /// <returns>The operator, to place in a level of the table.</returns>
-    /// <exception cref="GrammarException"><paramref name="op"/> or <paramref name="combine"/> is null.</exception>
-    /// <remarks>
-    /// Prefix operators repeat: <c>- -x</c> applies the operator twice. The operand is parsed at this operator's level,
-    /// so an operator from a looser level cannot be its operand without parentheses.
-    /// </remarks>
-    public ExpressionOperator<TIn, T> Prefix<TOp>(
-        Parser<TIn, TOp> op,
-        Func<TOp, T, T> combine,
-        [CallerArgumentExpression(nameof(op))] string opExpression = "",
-        [CallerArgumentExpression(nameof(combine))] string combineExpression = ""
-    ) =>
-        new PrefixOperator<TIn, TOp, T>(Guard.NotNull(op, opExpression), Guard.NotNull(combine, combineExpression));
-
-    /// <summary>
-    /// A postfix operator, such as factorial in <c>n!</c> or a call in <c>f()</c>.
-    /// </summary>
-    /// <typeparam name="TOp">The type the operator parser produces.</typeparam>
-    /// <param name="op">The parser that matches the operator.</param>
-    /// <param name="combine">Combines the operand and the operator's value.</param>
-    /// <param name="opExpression">Filled in by the compiler with the expression passed as <paramref name="op"/>.</param>
-    /// <param name="combineExpression">Filled in by the compiler with the expression passed as <paramref name="combine"/>.</param>
-    /// <returns>The operator, to place in a level of the table.</returns>
-    /// <exception cref="GrammarException"><paramref name="op"/> or <paramref name="combine"/> is null.</exception>
-    /// <remarks>
-    /// Postfix operators repeat: <c>f()()</c> applies the operator twice.
-    /// </remarks>
-    public ExpressionOperator<TIn, T> Postfix<TOp>(
-        Parser<TIn, TOp> op,
-        Func<T, TOp, T> combine,
-        [CallerArgumentExpression(nameof(op))] string opExpression = "",
-        [CallerArgumentExpression(nameof(combine))] string combineExpression = ""
-    ) =>
-        new PostfixOperator<TIn, TOp, T>(Guard.NotNull(op, opExpression), Guard.NotNull(combine, combineExpression));
+    private static InfixOperator<TIn, TOp, T> Infix<TOp>(Fixity fixity, Parser<TIn, TOp> op, Func<T, TOp, T, T> combine, string opExpression, string combineExpression) =>
+        new(fixity, Guard.NotNull(op, opExpression), Guard.NotNull(combine, combineExpression));
 
     /// <summary>
     /// A left-associative infix operator: <c>a - b - c</c> is <c>(a - b) - c</c>.
@@ -84,24 +43,6 @@ public sealed class OperatorFactory<TIn, T>
         [CallerArgumentExpression(nameof(combine))] string combineExpression = ""
     ) =>
         Infix(Fixity.InfixL, op, combine, opExpression, combineExpression);
-
-    /// <summary>
-    /// A right-associative infix operator: <c>a ^ b ^ c</c> is <c>a ^ (b ^ c)</c>.
-    /// </summary>
-    /// <typeparam name="TOp">The type the operator parser produces.</typeparam>
-    /// <param name="op">The parser that matches the operator.</param>
-    /// <param name="combine">Combines the left operand, the operator's value and the right operand.</param>
-    /// <param name="opExpression">Filled in by the compiler with the expression passed as <paramref name="op"/>.</param>
-    /// <param name="combineExpression">Filled in by the compiler with the expression passed as <paramref name="combine"/>.</param>
-    /// <returns>The operator, to place in a level of the table.</returns>
-    /// <exception cref="GrammarException"><paramref name="op"/> or <paramref name="combine"/> is null.</exception>
-    public ExpressionOperator<TIn, T> InfixR<TOp>(
-        Parser<TIn, TOp> op,
-        Func<T, TOp, T, T> combine,
-        [CallerArgumentExpression(nameof(op))] string opExpression = "",
-        [CallerArgumentExpression(nameof(combine))] string combineExpression = ""
-    ) =>
-        Infix(Fixity.InfixR, op, combine, opExpression, combineExpression);
 
     /// <summary>
     /// A non-associative infix operator: <c>a &lt; b</c> is allowed, but <c>a &lt; b &lt; c</c> is an error.
@@ -125,6 +66,64 @@ public sealed class OperatorFactory<TIn, T>
     ) =>
         Infix(Fixity.InfixN, op, combine, opExpression, combineExpression);
 
-    private static InfixOperator<TIn, TOp, T> Infix<TOp>(Fixity fixity, Parser<TIn, TOp> op, Func<T, TOp, T, T> combine, string opExpression, string combineExpression) =>
-        new(fixity, Guard.NotNull(op, opExpression), Guard.NotNull(combine, combineExpression));
+    /// <summary>
+    /// A right-associative infix operator: <c>a ^ b ^ c</c> is <c>a ^ (b ^ c)</c>.
+    /// </summary>
+    /// <typeparam name="TOp">The type the operator parser produces.</typeparam>
+    /// <param name="op">The parser that matches the operator.</param>
+    /// <param name="combine">Combines the left operand, the operator's value and the right operand.</param>
+    /// <param name="opExpression">Filled in by the compiler with the expression passed as <paramref name="op"/>.</param>
+    /// <param name="combineExpression">Filled in by the compiler with the expression passed as <paramref name="combine"/>.</param>
+    /// <returns>The operator, to place in a level of the table.</returns>
+    /// <exception cref="GrammarException"><paramref name="op"/> or <paramref name="combine"/> is null.</exception>
+    public ExpressionOperator<TIn, T> InfixR<TOp>(
+        Parser<TIn, TOp> op,
+        Func<T, TOp, T, T> combine,
+        [CallerArgumentExpression(nameof(op))] string opExpression = "",
+        [CallerArgumentExpression(nameof(combine))] string combineExpression = ""
+    ) =>
+        Infix(Fixity.InfixR, op, combine, opExpression, combineExpression);
+
+    /// <summary>
+    /// A postfix operator, such as factorial in <c>n!</c> or a call in <c>f()</c>.
+    /// </summary>
+    /// <typeparam name="TOp">The type the operator parser produces.</typeparam>
+    /// <param name="op">The parser that matches the operator.</param>
+    /// <param name="combine">Combines the operand and the operator's value.</param>
+    /// <param name="opExpression">Filled in by the compiler with the expression passed as <paramref name="op"/>.</param>
+    /// <param name="combineExpression">Filled in by the compiler with the expression passed as <paramref name="combine"/>.</param>
+    /// <returns>The operator, to place in a level of the table.</returns>
+    /// <exception cref="GrammarException"><paramref name="op"/> or <paramref name="combine"/> is null.</exception>
+    /// <remarks>
+    /// Postfix operators repeat: <c>f()()</c> applies the operator twice.
+    /// </remarks>
+    public ExpressionOperator<TIn, T> Postfix<TOp>(
+        Parser<TIn, TOp> op,
+        Func<T, TOp, T> combine,
+        [CallerArgumentExpression(nameof(op))] string opExpression = "",
+        [CallerArgumentExpression(nameof(combine))] string combineExpression = ""
+    ) =>
+        new PostfixOperator<TIn, TOp, T>(Guard.NotNull(op, opExpression), Guard.NotNull(combine, combineExpression));
+
+    /// <summary>
+    /// A prefix operator, such as unary minus in <c>-x</c>.
+    /// </summary>
+    /// <typeparam name="TOp">The type the operator parser produces.</typeparam>
+    /// <param name="op">The parser that matches the operator.</param>
+    /// <param name="combine">Combines the operator's value and the operand.</param>
+    /// <param name="opExpression">Filled in by the compiler with the expression passed as <paramref name="op"/>.</param>
+    /// <param name="combineExpression">Filled in by the compiler with the expression passed as <paramref name="combine"/>.</param>
+    /// <returns>The operator, to place in a level of the table.</returns>
+    /// <exception cref="GrammarException"><paramref name="op"/> or <paramref name="combine"/> is null.</exception>
+    /// <remarks>
+    /// Prefix operators repeat: <c>- -x</c> applies the operator twice.
+    /// The operand is parsed at this operator's level, so an operator from a looser level cannot be its operand without parentheses.
+    /// </remarks>
+    public ExpressionOperator<TIn, T> Prefix<TOp>(
+        Parser<TIn, TOp> op,
+        Func<TOp, T, T> combine,
+        [CallerArgumentExpression(nameof(op))] string opExpression = "",
+        [CallerArgumentExpression(nameof(combine))] string combineExpression = ""
+    ) =>
+        new PrefixOperator<TIn, TOp, T>(Guard.NotNull(op, opExpression), Guard.NotNull(combine, combineExpression));
 }

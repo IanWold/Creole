@@ -1,6 +1,6 @@
 using System.Runtime.CompilerServices;
 
-namespace Creole.Plans;
+namespace Creole;
 
 /// <summary>
 /// Lowers each grammar on first use and keeps its plan for as long as the grammar is alive.
@@ -8,8 +8,7 @@ namespace Creole.Plans;
 /// <remarks>
 /// The cache is keyed by the root node asked for, so a grammar is lowered once however many threads ask for it at the same time.
 /// Children are not cached on their own: they are lowered as part of their root.
-/// <see cref="ConditionalWeakTable{TKey, TValue}.GetValue"/> may run its callback more than once in a race,
-/// but only the stored <see cref="Lazy{T}"/> is ever evaluated, so lowering itself runs once.
+/// <see cref="ConditionalWeakTable{TKey, TValue}.GetValue"/> may run its callback more than once in a race, but only the stored <see cref="Lazy{T}"/> is ever evaluated, so lowering itself runs once.
 /// If lowering throws, every later call throws the same exception.
 /// </remarks>
 internal static class PlanCache

@@ -1,4 +1,4 @@
-namespace Creole.Plans;
+namespace Creole;
 
 /// <summary>
 /// Succeeds without consuming input and produces a fixed value.

@@ -2,13 +2,11 @@ using System.Globalization;
 using Pidgin;
 using static Pidgin.Parser;
 
-namespace Creole.Benchmarks.Json;
+namespace Creole.Benchmarks;
 
 public static class PidginJson
 {
     public static readonly Pidgin.Parser<char, JsonValue> Parser = Build();
-
-    public static JsonValue Parse(string text) => Parser.ParseOrThrow(text);
 
     private static Pidgin.Parser<char, JsonValue> Build()
     {
@@ -66,4 +64,6 @@ public static class PidginJson
 
         return SkipWhitespaces.Then(json).Before(Pidgin.Parser<char>.End);
     }
+
+    public static JsonValue Parse(string text) => Parser.ParseOrThrow(text);
 }

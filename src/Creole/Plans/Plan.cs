@@ -1,4 +1,4 @@
-namespace Creole.Plans;
+namespace Creole;
 
 /// <summary>
 /// A node of the interpreter's execution plan: the lowered, executable form of a grammar node.

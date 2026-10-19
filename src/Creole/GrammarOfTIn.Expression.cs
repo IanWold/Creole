@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using Creole.Nodes;
 
 namespace Creole;
 
@@ -11,9 +10,8 @@ public abstract partial class Grammar<TIn>
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The class is nested in <see cref="Grammar{TIn}"/> so that <typeparamref name="TIn"/> is fixed and a grammar
-    /// class calls <c>Expression.Build</c> unqualified. Inside a grammar class it takes precedence over
-    /// <see cref="System.Linq.Expressions.Expression"/>; the generic <c>Expression&lt;TDelegate&gt;</c> still resolves.
+    /// The class is nested in <see cref="Grammar{TIn}"/> so that <typeparamref name="TIn"/> is fixed and a grammar class calls <c>Expression.Build</c> unqualified.
+    /// Inside a grammar class it takes precedence over <see cref="System.Linq.Expressions.Expression"/>; the generic <c>Expression&lt;TDelegate&gt;</c> still resolves.
     /// </para>
     /// <para>
     /// The design and its reasons are in ADR-0004 and the whitepaper's § Expressions.
@@ -28,8 +26,8 @@ public abstract partial class Grammar<TIn>
         /// <typeparam name="T">The type the atom and every level of the expression produce.</typeparam>
         /// <param name="atom">The operand parser, such as a number, a name or a parenthesized expression.</param>
         /// <param name="table">
-        /// Returns the operator table: a list of levels, tightest first, each a list of operators made with the
-        /// <see cref="OperatorFactory{TIn, T}"/> it receives. It runs once, inside this method.
+        /// Returns the operator table: a list of levels, tightest first, each a list of operators made with the <see cref="OperatorFactory{TIn, T}"/> it receives.
+        /// It runs once, inside this method.
         /// </param>
         /// <param name="atomExpression">Filled in by the compiler with the expression passed as <paramref name="atom"/>.</param>
         /// <param name="tableExpression">Filled in by the compiler with the expression passed as <paramref name="table"/>.</param>

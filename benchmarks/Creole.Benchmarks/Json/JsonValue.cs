@@ -1,17 +1,10 @@
 using System.Globalization;
 using System.Text;
 
-namespace Creole.Benchmarks.Json;
+namespace Creole.Benchmarks;
 
 public abstract class JsonValue
 {
-    public string ToCanonicalString()
-    {
-        var builder = new StringBuilder();
-        Write(builder, this);
-        return builder.ToString();
-    }
-
     private static void Write(StringBuilder builder, JsonValue value)
     {
         switch (value)
@@ -86,6 +79,13 @@ public abstract class JsonValue
 
         builder.Append('"');
     }
+
+    public string ToCanonicalString()
+    {
+        var builder = new StringBuilder();
+        Write(builder, this);
+        return builder.ToString();
+    }
 }
 
 public sealed class JsonNull : JsonValue
@@ -97,12 +97,12 @@ public sealed class JsonNull : JsonValue
 
 public sealed class JsonBool : JsonValue
 {
-    public static readonly JsonBool True = new(true);
     public static readonly JsonBool False = new(false);
-
-    private JsonBool(bool value) => Value = value;
+    public static readonly JsonBool True = new(true);
 
     public bool Value { get; }
+
+    private JsonBool(bool value) => Value = value;
 }
 
 public sealed class JsonNumber(double value) : JsonValue

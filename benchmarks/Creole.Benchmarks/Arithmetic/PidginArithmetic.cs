@@ -2,39 +2,12 @@ using Pidgin;
 using Pidgin.Expression;
 using static Pidgin.Parser;
 
-namespace Creole.Benchmarks.Arithmetic;
+namespace Creole.Benchmarks;
 
 public static class PidginArithmetic
 {
-    public static readonly Pidgin.Parser<char, double> OperatorTable = BuildOperatorTable();
-
     public static readonly Pidgin.Parser<char, double> Folds = BuildFolds();
-
-    public static double Evaluate(Pidgin.Parser<char, double> parser, string text) =>
-        parser.ParseOrThrow(text);
-
-    private static Pidgin.Parser<char, T> Tok<T>(Pidgin.Parser<char, T> parser) =>
-        parser.Before(SkipWhitespaces);
-
-    private static Pidgin.Parser<char, double> BuildOperatorTable()
-    {
-        static Pidgin.Parser<char, Func<double, double, double>> Binary(char op, Func<double, double, double> f) =>
-            Tok(Char(op)).ThenReturn(f);
-
-        var number = Tok(UnsignedLong(10)).Select(static n => (double)n);
-        Pidgin.Parser<char, double> expression = null!;
-        var group = Rec(() => expression).Between(Tok(Char('(')), Tok(Char(')')));
-
-        expression = ExpressionParser.Build(
-            number.Or(group),
-            [
-                Operator.PrefixChainable(Tok(Char('-')).ThenReturn<Func<double, double>>(static x => -x)),
-                Operator.InfixL(Binary('*', static (a, b) => a * b)).And(Operator.InfixL(Binary('/', static (a, b) => a / b))),
-                Operator.InfixL(Binary('+', static (a, b) => a + b)).And(Operator.InfixL(Binary('-', static (a, b) => a - b))),
-            ]);
-
-        return SkipWhitespaces.Then(expression).Before(Pidgin.Parser<char>.End);
-    }
+    public static readonly Pidgin.Parser<char, double> OperatorTable = BuildOperatorTable();
 
     private static Pidgin.Parser<char, double> BuildFolds()
     {
@@ -58,4 +31,30 @@ public static class PidginArithmetic
 
         return SkipWhitespaces.Then(expression).Before(Pidgin.Parser<char>.End);
     }
+
+    private static Pidgin.Parser<char, double> BuildOperatorTable()
+    {
+        static Pidgin.Parser<char, Func<double, double, double>> Binary(char op, Func<double, double, double> f) =>
+            Tok(Char(op)).ThenReturn(f);
+
+        var number = Tok(UnsignedLong(10)).Select(static n => (double)n);
+        Pidgin.Parser<char, double> expression = null!;
+        var group = Rec(() => expression).Between(Tok(Char('(')), Tok(Char(')')));
+
+        expression = ExpressionParser.Build(
+            number.Or(group),
+            [
+                Operator.PrefixChainable(Tok(Char('-')).ThenReturn<Func<double, double>>(static x => -x)),
+                Operator.InfixL(Binary('*', static (a, b) => a * b)).And(Operator.InfixL(Binary('/', static (a, b) => a / b))),
+                Operator.InfixL(Binary('+', static (a, b) => a + b)).And(Operator.InfixL(Binary('-', static (a, b) => a - b))),
+            ]);
+
+        return SkipWhitespaces.Then(expression).Before(Pidgin.Parser<char>.End);
+    }
+
+    private static Pidgin.Parser<char, T> Tok<T>(Pidgin.Parser<char, T> parser) =>
+        parser.Before(SkipWhitespaces);
+
+    public static double Evaluate(Pidgin.Parser<char, double> parser, string text) =>
+        parser.ParseOrThrow(text);
 }

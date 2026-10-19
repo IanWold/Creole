@@ -1,6 +1,4 @@
 using BenchmarkDotNet.Attributes;
-using Creole.Benchmarks.Arithmetic;
-using Creole.Benchmarks.Inputs;
 
 namespace Creole.Benchmarks;
 

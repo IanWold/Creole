@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-namespace Creole.Plans;
+namespace Creole;
 
 /// <summary>
 /// The shape of a rule compiled by the source generator:
@@ -14,9 +14,8 @@ internal delegate bool StagedParse<TIn, TOut>(ref Cursor<TIn> cursor, out TOut r
 /// Lowering uses a node's registered code in place of the node's own plan.
 /// </summary>
 /// <remarks>
-/// Generated grammar classes register each rule from their static constructor, which runs before the rule
-/// can be used, so registration comes before lowering. A registration made after a grammar was lowered does
-/// not change that grammar's cached plan.
+/// Generated grammar classes register each rule from their static constructor, which runs before the rule can be used, so registration comes before lowering.
+/// A registration made after a grammar was lowered does not change that grammar's cached plan.
 /// </remarks>
 internal static class Staging
 {

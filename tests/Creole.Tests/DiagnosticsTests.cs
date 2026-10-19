@@ -8,10 +8,16 @@ public class DiagnosticsTests
         new(new SourceSpan(source, start, end), layer, new EndOfInput(), [], []);
 
     [Fact]
-    public void EmptyHasNoErrors()
+    public void CollectionsWithEqualErrorsAreEqual()
     {
-        Assert.Empty(Diagnostics.Empty);
-        Assert.Equal("", Diagnostics.Empty.Render());
+        var a = new Diagnostics([ErrorAt(SourceId.Unnamed, 1, 2), ErrorAt(SourceId.Unnamed, 4, 5)]);
+        var b = new Diagnostics([ErrorAt(SourceId.Unnamed, 4, 5), ErrorAt(SourceId.Unnamed, 1, 2)]);
+        var c = new Diagnostics([ErrorAt(SourceId.Unnamed, 1, 2)]);
+
+        Assert.Equal(a, b);
+        Assert.Equal(a.GetHashCode(), b.GetHashCode());
+        Assert.NotEqual(a, c);
+        Assert.Equal(new Failed(a), new Failed(b));
     }
 
     [Fact]
@@ -25,6 +31,13 @@ public class DiagnosticsTests
         Assert.Same(early, diagnostics[0]);
         Assert.Same(late, diagnostics[1]);
         Assert.Equal([early, late], diagnostics);
+    }
+
+    [Fact]
+    public void EmptyHasNoErrors()
+    {
+        Assert.Empty(Diagnostics.Empty);
+        Assert.Equal("", Diagnostics.Empty.Render());
     }
 
     [Fact]
@@ -67,16 +80,12 @@ public class DiagnosticsTests
     }
 
     [Fact]
-    public void CollectionsWithEqualErrorsAreEqual()
+    public void RenderUsesCharacterOffsets()
     {
-        var a = new Diagnostics([ErrorAt(SourceId.Unnamed, 1, 2), ErrorAt(SourceId.Unnamed, 4, 5)]);
-        var b = new Diagnostics([ErrorAt(SourceId.Unnamed, 4, 5), ErrorAt(SourceId.Unnamed, 1, 2)]);
-        var c = new Diagnostics([ErrorAt(SourceId.Unnamed, 1, 2)]);
+        var error = new ParseError(new SourceSpan(SourceId.Unnamed, 10, 14, 8, 9), "decoder", new UnexpectedItem("byte 0xFF"), [], []);
 
-        Assert.Equal(a, b);
-        Assert.Equal(a.GetHashCode(), b.GetHashCode());
-        Assert.NotEqual(a, c);
-        Assert.Equal(new Failed(a), new Failed(b));
+        Assert.Equal("error[decoder] at 8..9: unexpected byte 0xFF", error.ToString());
+        Assert.Equal(error.ToString(), new Diagnostics([error]).Render());
     }
 
     [Fact]
@@ -97,14 +106,5 @@ public class DiagnosticsTests
                 .ReplaceLineEndings("\n"),
             diagnostics.Render()
         );
-    }
-
-    [Fact]
-    public void RenderUsesCharacterOffsets()
-    {
-        var error = new ParseError(new SourceSpan(SourceId.Unnamed, 10, 14, 8, 9), "decoder", new UnexpectedItem("byte 0xFF"), [], []);
-
-        Assert.Equal("error[decoder] at 8..9: unexpected byte 0xFF", error.ToString());
-        Assert.Equal(error.ToString(), new Diagnostics([error]).Render());
     }
 }

@@ -19,22 +19,6 @@ public class ErrorModelTests
     };
 
     [Fact]
-    public void UnexpectedSwitchCoversEveryCase()
-    {
-        Assert.Equal("string \"host\"", DescribeFound(new UnexpectedItem("string \"host\"")));
-        Assert.Equal("end of input", DescribeFound(new EndOfInput()));
-        Assert.Equal("number too large", DescribeFound(new CustomMessage("number too large")));
-    }
-
-    [Fact]
-    public void ExpectationSwitchCoversEveryCase()
-    {
-        Assert.Equal("value", DescribeWanted(new Label("value")));
-        Assert.Equal("','", DescribeWanted(new ExpectedItem("','")));
-        Assert.Equal("end of input", DescribeWanted(new EndOfInput()));
-    }
-
-    [Fact]
     public void EndOfInputIsEitherUnion()
     {
         var end = new EndOfInput();
@@ -44,57 +28,6 @@ public class ErrorModelTests
 
         Assert.Same(end, unexpected.Value);
         Assert.Same(end, expectation.Value);
-    }
-
-    [Fact]
-    public void ParseErrorKeepsItsParts()
-    {
-        var error = new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new ExpectedItem("','")], ["in array"]);
-
-        Assert.Equal(_at3, error.Span);
-        Assert.Equal("parser", error.Layer);
-        Assert.Equal(new UnexpectedItem("'x'"), error.Unexpected.Value);
-        Assert.Equal(new ExpectedItem("','"), Assert.Single(error.Expected).Value);
-        Assert.Equal("in array", Assert.Single(error.Context));
-    }
-
-    [Fact]
-    public void ErrorsWithEqualPartsAreEqual()
-    {
-        var a = new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("value"), new EndOfInput()], ["in array"]);
-        var b = new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("value"), new EndOfInput()], ["in array"]);
-
-        Assert.Equal(a, b);
-        Assert.Equal(a.GetHashCode(), b.GetHashCode());
-    }
-
-    public static TheoryData<ParseError> Variants() =>
-    [
-        new ParseError(new SourceSpan(SourceId.Unnamed, 4, 5), "parser", new UnexpectedItem("'x'"), [new Label("value")], []),
-        new ParseError(_at3, "lexer", new UnexpectedItem("'x'"), [new Label("value")], []),
-        new ParseError(_at3, "parser", new EndOfInput(), [new Label("value")], []),
-        new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("number")], []),
-        new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("value"), new EndOfInput()], []),
-        new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [], []),
-        new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("value")], ["in array"]),
-    ];
-
-    [Theory]
-    [MemberData(nameof(Variants))]
-    public void ErrorsDifferingInAnyPartAreNotEqual(ParseError variant)
-    {
-        var baseline = new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("value")], []);
-
-        Assert.NotEqual(baseline, variant);
-    }
-
-    [Fact]
-    public void ExpectationOrderMatters()
-    {
-        var a = new ParseError(_at3, "parser", new EndOfInput(), [new ExpectedItem("','"), new ExpectedItem("'}'")], []);
-        var b = new ParseError(_at3, "parser", new EndOfInput(), [new ExpectedItem("'}'"), new ExpectedItem("','")], []);
-
-        Assert.NotEqual(a, b);
     }
 
     [Fact]
@@ -116,6 +49,42 @@ public class ErrorModelTests
         Assert.True(((ICollection<string>)error.Context).IsReadOnly);
     }
 
+    [Theory]
+    [MemberData(nameof(Variants))]
+    public void ErrorsDifferingInAnyPartAreNotEqual(ParseError variant)
+    {
+        var baseline = new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("value")], []);
+
+        Assert.NotEqual(baseline, variant);
+    }
+
+    [Fact]
+    public void ErrorsWithEqualPartsAreEqual()
+    {
+        var a = new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("value"), new EndOfInput()], ["in array"]);
+        var b = new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("value"), new EndOfInput()], ["in array"]);
+
+        Assert.Equal(a, b);
+        Assert.Equal(a.GetHashCode(), b.GetHashCode());
+    }
+
+    [Fact]
+    public void ExpectationOrderMatters()
+    {
+        var a = new ParseError(_at3, "parser", new EndOfInput(), [new ExpectedItem("','"), new ExpectedItem("'}'")], []);
+        var b = new ParseError(_at3, "parser", new EndOfInput(), [new ExpectedItem("'}'"), new ExpectedItem("','")], []);
+
+        Assert.NotEqual(a, b);
+    }
+
+    [Fact]
+    public void ExpectationSwitchCoversEveryCase()
+    {
+        Assert.Equal("value", DescribeWanted(new Label("value")));
+        Assert.Equal("','", DescribeWanted(new ExpectedItem("','")));
+        Assert.Equal("end of input", DescribeWanted(new EndOfInput()));
+    }
+
     [Fact]
     public void NullPartsAreRejected()
     {
@@ -126,11 +95,42 @@ public class ErrorModelTests
     }
 
     [Fact]
+    public void ParseErrorKeepsItsParts()
+    {
+        var error = new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new ExpectedItem("','")], ["in array"]);
+
+        Assert.Equal(_at3, error.Span);
+        Assert.Equal("parser", error.Layer);
+        Assert.Equal(new UnexpectedItem("'x'"), error.Unexpected.Value);
+        Assert.Equal(new ExpectedItem("','"), Assert.Single(error.Expected).Value);
+        Assert.Equal("in array", Assert.Single(error.Context));
+    }
+
+    [Fact]
+    public void UnexpectedSwitchCoversEveryCase()
+    {
+        Assert.Equal("string \"host\"", DescribeFound(new UnexpectedItem("string \"host\"")));
+        Assert.Equal("end of input", DescribeFound(new EndOfInput()));
+        Assert.Equal("number too large", DescribeFound(new CustomMessage("number too large")));
+    }
+
+    [Fact]
     public void UnionsWithNoCaseAreRejected()
     {
         Assert.Throws<ArgumentException>(() => new ParseError(_at3, "parser", default, [], []));
         Assert.Throws<ArgumentException>(() => new ParseError(_at3, "parser", new EndOfInput(), [default], []));
     }
+
+    public static TheoryData<ParseError> Variants() =>
+    [
+        new ParseError(new SourceSpan(SourceId.Unnamed, 4, 5), "parser", new UnexpectedItem("'x'"), [new Label("value")], []),
+        new ParseError(_at3, "lexer", new UnexpectedItem("'x'"), [new Label("value")], []),
+        new ParseError(_at3, "parser", new EndOfInput(), [new Label("value")], []),
+        new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("number")], []),
+        new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("value"), new EndOfInput()], []),
+        new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [], []),
+        new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("value")], ["in array"]),
+    ];
 
     [Fact]
     public void WithChangesEachPart()

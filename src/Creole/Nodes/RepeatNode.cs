@@ -1,6 +1,4 @@
-using Creole.Plans;
-
-namespace Creole.Nodes;
+namespace Creole;
 
 /// <summary>
 /// Runs <see cref="Item"/> between <see cref="Min"/> and <see cref="Max"/> times and collects the results.
@@ -8,18 +6,18 @@ namespace Creole.Nodes;
 /// </summary>
 internal sealed class RepeatNode<TIn, T>(Parser<TIn, T> item, int min, int? max) : Parser<TIn, IReadOnlyList<T>>
 {
-    public Parser<TIn, T> Item { get; } = item;
+    internal override IReadOnlyList<INode> Children => [Item];
 
-    public int Min { get; } = min;
+    internal override NodeKind Kind => NodeKind.Repeat;
+
+    public Parser<TIn, T> Item { get; } = item;
 
     /// <summary>
     /// The most items to read, or null for no limit.
     /// </summary>
     public int? Max { get; } = max;
 
-    internal override NodeKind Kind => NodeKind.Repeat;
-
-    internal override IReadOnlyList<INode> Children => [Item];
+    public int Min { get; } = min;
 
     internal override Plan<TIn, IReadOnlyList<T>> Lower(PlanBuilder builder) =>
         PlanBuilder.NotYetExecutable<TIn, IReadOnlyList<T>>(Kind);

@@ -1,6 +1,4 @@
-using Creole.Plans;
-
-namespace Creole.Nodes;
+namespace Creole;
 
 /// <summary>
 /// An operator-precedence expression over <see cref="Atom"/>, built by <c>Expression.Build</c> (ADR-0004).
@@ -12,21 +10,21 @@ internal sealed class ExpressionNode<TIn, T>(Parser<TIn, T> atom, ExpressionOper
     private readonly INode[] _children = [atom, .. levels.SelectMany(level => level.Select(op => op.Node))];
     private readonly OperatorInfo[][] _view = [.. levels.Select(level => level.Select(op => new OperatorInfo(op.Fixity, op.Node)).ToArray())];
 
-    public Parser<TIn, T> Atom { get; } = atom;
-
-    /// <summary>
-    /// The levels of the table, tightest first, each with its operators in declaration order.
-    /// </summary>
-    public IReadOnlyList<IReadOnlyList<ExpressionOperator<TIn, T>>> Levels { get; } = levels;
-
-    internal override NodeKind Kind => NodeKind.Expression;
-
     /// <summary>
     /// The atom, then every operator parser in table order.
     /// </summary>
     internal override IReadOnlyList<INode> Children => _children;
 
+    internal override NodeKind Kind => NodeKind.Expression;
+
+    public Parser<TIn, T> Atom { get; } = atom;
+
     INode IExpressionNode.Atom => Atom;
+
+    /// <summary>
+    /// The levels of the table, tightest first, each with its operators in declaration order.
+    /// </summary>
+    public IReadOnlyList<IReadOnlyList<ExpressionOperator<TIn, T>>> Levels { get; } = levels;
 
     IReadOnlyList<IReadOnlyList<OperatorInfo>> IExpressionNode.Levels => _view;
 

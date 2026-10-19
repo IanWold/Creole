@@ -1,15 +1,13 @@
 using System.Globalization;
 using System.Text;
 
-namespace Creole.Benchmarks.Inputs;
+namespace Creole.Benchmarks;
 
 public static class JsonInputs
 {
-    public const string Small = "small";
-    public const string Medium = "medium";
     public const string Large = "large";
-
-    public static readonly IReadOnlyList<string> Names = [Small, Medium, Large];
+    public const string Medium = "medium";
+    public const string Small = "small";
 
     private static readonly Dictionary<string, Lazy<string>> _documents = new()
     {
@@ -18,6 +16,8 @@ public static class JsonInputs
         [Large] = new(() => Generate(seed: 3, targetBytes: 1_000_000)),
     };
 
+    private static readonly string[] _escapes = [@"\""", @"\\", @"\n", @"\t", @"\r", @"\u00e9", @"\u4e2d"];
+
     private static readonly string[] _words =
     [
         "alpha", "bravo", "charlie", "delta", "echo", "foxtrot", "golf", "hotel", "india", "juliett",
@@ -25,13 +25,7 @@ public static class JsonInputs
         "café", "naïve", "über", "日本語", "Ελληνικά",
     ];
 
-    private static readonly string[] _escapes = [@"\""", @"\\", @"\n", @"\t", @"\r", @"\u00e9", @"\u4e2d"];
-
-    public static string Get(string name) =>
-        _documents[name].Value;
-
-    public static int Utf8Length(string name) =>
-        Encoding.UTF8.GetByteCount(Get(name));
+    public static readonly IReadOnlyList<string> Names = [Small, Medium, Large];
 
     private static string Generate(int seed, int targetBytes)
     {
@@ -50,6 +44,28 @@ public static class JsonInputs
         builder.Append("\n]\n");
 
         return builder.ToString();
+    }
+
+    private static void WriteNumber(StringBuilder builder, Random random)
+    {
+        var integer = random.Next(-1_000_000, 1_000_000);
+        builder.Append(integer.ToString(CultureInfo.InvariantCulture));
+
+        switch (random.Next(4))
+        {
+            case 1:
+                builder.Append('.').Append(random.Next(0, 1000).ToString("D3", CultureInfo.InvariantCulture));
+                break;
+
+            case 2:
+                builder.Append('.').Append(random.Next(0, 100).ToString(CultureInfo.InvariantCulture));
+                builder.Append(random.Next(100) < 50 ? "e" : "E").Append(random.Next(100) < 50 ? "-" : "+");
+                builder.Append(random.Next(0, 20).ToString(CultureInfo.InvariantCulture));
+                break;
+
+            default:
+                break;
+        }
     }
 
     private static void WriteRecord(StringBuilder builder, Random random, int id, int depth)
@@ -125,25 +141,9 @@ public static class JsonInputs
         builder.Append('"');
     }
 
-    private static void WriteNumber(StringBuilder builder, Random random)
-    {
-        var integer = random.Next(-1_000_000, 1_000_000);
-        builder.Append(integer.ToString(CultureInfo.InvariantCulture));
+    public static string Get(string name) =>
+        _documents[name].Value;
 
-        switch (random.Next(4))
-        {
-            case 1:
-                builder.Append('.').Append(random.Next(0, 1000).ToString("D3", CultureInfo.InvariantCulture));
-                break;
-
-            case 2:
-                builder.Append('.').Append(random.Next(0, 100).ToString(CultureInfo.InvariantCulture));
-                builder.Append(random.Next(100) < 50 ? "e" : "E").Append(random.Next(100) < 50 ? "-" : "+");
-                builder.Append(random.Next(0, 20).ToString(CultureInfo.InvariantCulture));
-                break;
-
-            default:
-                break;
-        }
-    }
+    public static int Utf8Length(string name) =>
+        Encoding.UTF8.GetByteCount(Get(name));
 }

@@ -1,17 +1,11 @@
 using Parlot.Fluent;
 
-namespace Creole.Benchmarks.Json;
+namespace Creole.Benchmarks;
 
 public static class ParlotJson
 {
-    public static readonly Parser<JsonValue> Interpreted = Build();
-
     public static readonly Parser<JsonValue> Compiled = Build().Compile();
-
-    public static JsonValue Parse(Parser<JsonValue> parser, string text) =>
-        parser.TryParse(text, out var value) && value is not null
-        ? value
-        : throw new FormatException("Parlot failed to parse JSON.");
+    public static readonly Parser<JsonValue> Interpreted = Build();
 
     private static Parser<JsonValue> Build()
     {
@@ -43,4 +37,9 @@ public static class ParlotJson
 
         return json.AndSkip(SkipWhiteSpace(Always())).Eof();
     }
+
+    public static JsonValue Parse(Parser<JsonValue> parser, string text) =>
+        parser.TryParse(text, out var value) && value is not null
+        ? value
+        : throw new FormatException("Parlot failed to parse JSON.");
 }

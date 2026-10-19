@@ -1,16 +1,9 @@
 using System.Text.Json;
 
-namespace Creole.Benchmarks.Json;
+namespace Creole.Benchmarks;
 
 public static class SystemTextJsonBaseline
 {
-    public static JsonValue Parse(byte[] utf8)
-    {
-        var reader = new Utf8JsonReader(utf8);
-        reader.Read();
-        return ReadValue(ref reader);
-    }
-
     private static JsonValue ReadValue(ref Utf8JsonReader reader)
     {
         switch (reader.TokenType)
@@ -56,5 +49,12 @@ public static class SystemTextJsonBaseline
             default:
                 throw new JsonException($"Unexpected token {reader.TokenType}.");
         }
+    }
+
+    public static JsonValue Parse(byte[] utf8)
+    {
+        var reader = new Utf8JsonReader(utf8);
+        reader.Read();
+        return ReadValue(ref reader);
     }
 }

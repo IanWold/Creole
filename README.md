@@ -2,6 +2,9 @@
 
 # Creole
 
+[![Creole Nuget Version](https://img.shields.io/nuget/v/Creole?style=for-the-badge&logo=nuget&label=Creole)](https://www.nuget.org/packages/Creole)
+[![Creole.Testing Nuget Version](https://img.shields.io/nuget/v/Creole.Testing?style=for-the-badge&logo=nuget&label=Creole.Testing)](https://www.nuget.org/packages/Creole.Testing)
+
 A **layered**, **analyzable** parser-combinator library for .NET
 
 _Currently in the early stages: there is a whitepaper and a plan, but not much else to see. Yet..._

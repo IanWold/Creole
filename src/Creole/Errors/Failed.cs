@@ -6,6 +6,11 @@ namespace Creole;
 public sealed record Failed
 {
     /// <summary>
+    /// The errors that made the parse fail, ordered by span. Never empty.
+    /// </summary>
+    public Diagnostics Diagnostics { get; }
+
+    /// <summary>
     /// Creates a failed result.
     /// </summary>
     /// <param name="diagnostics">The errors that made the parse fail.</param>
@@ -15,11 +20,6 @@ public sealed record Failed
     {
         Diagnostics = Diagnostics.RequireAny(diagnostics);
     }
-
-    /// <summary>
-    /// The errors that made the parse fail, ordered by span. Never empty.
-    /// </summary>
-    public Diagnostics Diagnostics { get; }
 
     /// <summary>
     /// Deconstructs the result into its errors.

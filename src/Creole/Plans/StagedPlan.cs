@@ -1,4 +1,4 @@
-namespace Creole.Plans;
+namespace Creole;
 
 /// <summary>
 /// Runs a rule's compiled code in place of the plan the interpreter would build for it.

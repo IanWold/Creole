@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using Creole.Nodes;
 
 namespace Creole;
 
@@ -26,8 +25,8 @@ public static class Repetition
         /// </summary>
         /// <returns>A parser that produces the list of results, which is empty if this parser never matched.</returns>
         /// <remarks>
-        /// Repetition stops at the first attempt that fails without consuming input. An attempt that fails after
-        /// consuming input fails the whole repetition.
+        /// Repetition stops at the first attempt that fails without consuming input.
+        /// An attempt that fails after consuming input fails the whole repetition.
         /// </remarks>
         public Parser<TIn, IReadOnlyList<TOut>> Many() =>
             new RepeatNode<TIn, TOut>(parser, 0, null);
@@ -55,8 +54,7 @@ public static class Repetition
             parser.Repeat(count, count);
 
         /// <summary>
-        /// A parser that runs this parser at least <paramref name="min"/> and at most <paramref name="max"/> times
-        /// and produces the results in order.
+        /// A parser that runs this parser at least <paramref name="min"/> and at most <paramref name="max"/> times and produces the results in order.
         /// </summary>
         /// <param name="min">The fewest times this parser must match.</param>
         /// <param name="max">The most times this parser is run.</param>
@@ -112,8 +110,7 @@ public static class Repetition
             new SeparatedNode<TIn, TOut, TSep>(parser, Guard.NotNull(separator, separatorExpression), 1, false);
 
         /// <summary>
-        /// A parser that runs this parser zero or more times with <paramref name="separator"/> between the matches and optionally after the last one,
-        /// and produces this parser's results in order.
+        /// A parser that runs this parser zero or more times with <paramref name="separator"/> between the matches and optionally after the last one, and produces this parser's results in order.
         /// </summary>
         /// <typeparam name="TSep">The type of value the separator produces. It is discarded.</typeparam>
         /// <param name="separator">The parser that matches between items, such as a comma.</param>

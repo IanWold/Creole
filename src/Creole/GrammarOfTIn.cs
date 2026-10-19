@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using Creole.Nodes;
 
 namespace Creole;
 
@@ -26,13 +25,6 @@ public abstract partial class Grammar<TIn>
     protected Grammar() { }
 
     /// <summary>
-    /// A parser that succeeds without consuming input and produces <paramref name="value"/>.
-    /// </summary>
-    /// <typeparam name="TOut">The type of the value produced.</typeparam>
-    /// <param name="value">The value to produce.</param>
-    public static Parser<TIn, TOut> Return<TOut>(TOut value) => new ReturnNode<TIn, TOut>(value);
-
-    /// <summary>
     /// A parser that fails without consuming input, reporting <paramref name="message"/>.
     /// </summary>
     /// <typeparam name="TOut">
@@ -41,4 +33,11 @@ public abstract partial class Grammar<TIn>
     /// <param name="message">The message reported when the parser fails.</param>
     /// <exception cref="GrammarException"><paramref name="message"/> is null.</exception>
     public static Parser<TIn, TOut> Fail<TOut>(string message) => new FailNode<TIn, TOut>(message);
+
+    /// <summary>
+    /// A parser that succeeds without consuming input and produces <paramref name="value"/>.
+    /// </summary>
+    /// <typeparam name="TOut">The type of the value produced.</typeparam>
+    /// <param name="value">The value to produce.</param>
+    public static Parser<TIn, TOut> Return<TOut>(TOut value) => new ReturnNode<TIn, TOut>(value);
 }

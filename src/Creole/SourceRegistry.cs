@@ -9,8 +9,8 @@ namespace Creole;
 /// </remarks>
 public sealed class SourceRegistry
 {
-    private readonly List<string> _names = [];
     private readonly Lock _lock = new();
+    private readonly List<string> _names = [];
 
     /// <summary>
     /// The number of sources added so far, not counting <see cref="SourceId.Unnamed"/>.

@@ -8,7 +8,7 @@ using BenchmarkDotNet.Exporters.Json;
 using BenchmarkDotNet.Order;
 using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
-using Creole.Benchmarks.Harness;
+using Creole.Benchmarks;
 
 BenchmarkSwitcher
     .FromAssembly(typeof(ThroughputColumn).Assembly)

@@ -10,6 +10,16 @@ namespace Creole;
 public sealed record Recovered<T>
 {
     /// <summary>
+    /// The errors the parse recovered from, ordered by span. Never empty.
+    /// </summary>
+    public Diagnostics Diagnostics { get; }
+
+    /// <summary>
+    /// The value the parse produced.
+    /// </summary>
+    public T Value { get; }
+
+    /// <summary>
     /// Creates a recovered result.
     /// </summary>
     /// <param name="value">The value the parse produced.</param>
@@ -21,16 +31,6 @@ public sealed record Recovered<T>
         Value = value;
         Diagnostics = Diagnostics.RequireAny(diagnostics);
     }
-
-    /// <summary>
-    /// The value the parse produced.
-    /// </summary>
-    public T Value { get; }
-
-    /// <summary>
-    /// The errors the parse recovered from, ordered by span. Never empty.
-    /// </summary>
-    public Diagnostics Diagnostics { get; }
 
     /// <summary>
     /// Deconstructs the result into its value and errors.

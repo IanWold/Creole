@@ -2,56 +2,55 @@ namespace Creole.Tests;
 
 internal abstract record Shape
 {
-    public sealed record Character(char Value) : Shape;
+    public record AtLeastOnce(Shape Item) : Shape;
 
-    public sealed record TwoCharacters(char First, char Second) : Shape;
+    public record Character(char Value) : Shape;
 
-    public sealed record Return(string Value) : Shape;
+    public record Many(Shape Item) : Shape;
 
-    public sealed record Many(Shape Item) : Shape;
+    public record Repeat(Shape Item, int Count) : Shape;
 
-    public sealed record AtLeastOnce(Shape Item) : Shape;
+    public record RepeatRange(Shape Item, int Min, int Max) : Shape;
 
-    public sealed record Repeat(Shape Item, int Count) : Shape;
+    public record Return(string Value) : Shape;
 
-    public sealed record RepeatRange(Shape Item, int Min, int Max) : Shape;
+    public record SepBy(Shape Item, Shape Separator) : Shape;
 
-    public sealed record SepBy(Shape Item, Shape Separator) : Shape;
+    public record SepBy1(Shape Item, Shape Separator) : Shape;
 
-    public sealed record SepBy1(Shape Item, Shape Separator) : Shape;
+    public record SepEndBy(Shape Item, Shape Separator) : Shape;
 
-    public sealed record SepEndBy(Shape Item, Shape Separator) : Shape;
+    public record SkipAtLeastOnce(Shape Item) : Shape;
 
-    public sealed record Until(Shape Item, Shape Terminator) : Shape;
+    public record SkipMany(Shape Item) : Shape;
 
-    public sealed record SkipMany(Shape Item) : Shape;
+    public record TwoCharacters(char First, char Second) : Shape;
 
-    public sealed record SkipAtLeastOnce(Shape Item) : Shape;
+    public record Until(Shape Item, Shape Terminator) : Shape;
 }
 
 internal abstract record Outcome
 {
-    public sealed record Ok(string Value, int Consumed) : Outcome;
+    public record FailConsumed : Outcome;
 
-    public sealed record FailEmpty : Outcome;
+    public record FailEmpty : Outcome;
 
-    public sealed record FailConsumed : Outcome;
+    public record Ok(string Value, int Consumed) : Outcome;
 
-    public sealed record Throws : Outcome;
+    public record Throws : Outcome;
 }
 
-internal sealed record RepetitionCase(string Name, Shape Shape, string Input, Outcome Expected);
+internal record RepetitionCase(string Name, Shape Shape, string Input, Outcome Expected);
 
 internal static class RepetitionTable
 {
+    private static readonly Shape _comma = new Shape.Character(',');
+    private static readonly Outcome _failConsumed = new Outcome.FailConsumed();
+    private static readonly Outcome _failEmpty = new Outcome.FailEmpty();
     private static readonly Shape _letterA = new Shape.Character('a');
     private static readonly Shape _lettersAB = new Shape.TwoCharacters('a', 'b');
     private static readonly Shape _returnX = new Shape.Return("x");
-    private static readonly Shape _comma = new Shape.Character(',');
     private static readonly Shape _semicolon = new Shape.Character(';');
-
-    private static readonly Outcome _failEmpty = new Outcome.FailEmpty();
-    private static readonly Outcome _failConsumed = new Outcome.FailConsumed();
     private static readonly Outcome _throws = new Outcome.Throws();
 
     public static readonly IReadOnlyList<RepetitionCase> Cases =

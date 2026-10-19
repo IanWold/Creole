@@ -1,8 +1,6 @@
 using System.Text;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
-using Creole.Benchmarks.Inputs;
-using Creole.Benchmarks.Json;
 
 namespace Creole.Benchmarks;
 
@@ -21,17 +19,6 @@ public class JsonBenchmarks
     public static long InputBytes(BenchmarkCase benchmarkCase) =>
         JsonInputs.Utf8Length((string)benchmarkCase.Parameters[nameof(Input)]!);
 
-    [GlobalSetup]
-    public void Setup()
-    {
-        _text = JsonInputs.Get(Input);
-        _utf8 = Encoding.UTF8.GetBytes(_text);
-    }
-
-    [Benchmark(Baseline = true)]
-    public JsonValue SystemTextJson() =>
-        SystemTextJsonBaseline.Parse(_utf8);
-
     [Benchmark]
     public JsonValue Parlot() =>
         ParlotJson.Parse(ParlotJson.Interpreted, _text);
@@ -44,11 +31,22 @@ public class JsonBenchmarks
     public JsonValue Pidgin() =>
         PidginJson.Parse(_text);
 
-    [Benchmark]
-    public JsonValue Superpower() =>
-        SuperpowerJson.Parse(_text);
+    [GlobalSetup]
+    public void Setup()
+    {
+        _text = JsonInputs.Get(Input);
+        _utf8 = Encoding.UTF8.GetBytes(_text);
+    }
 
     [Benchmark]
     public JsonValue Sprache() =>
         SpracheJson.Parse(_text);
+
+    [Benchmark]
+    public JsonValue Superpower() =>
+        SuperpowerJson.Parse(_text);
+
+    [Benchmark(Baseline = true)]
+    public JsonValue SystemTextJson() =>
+        SystemTextJsonBaseline.Parse(_utf8);
 }

@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace Creole.Benchmarks.Inputs;
+namespace Creole.Benchmarks;
 
 public static class ArithmeticInputs
 {

@@ -1,6 +1,6 @@
 namespace Creole.Tests;
 
-internal sealed class SegmentedSource<T>(T[] items, int segmentSize) : ICursorSource<T>
+internal class SegmentedSource<T>(T[] items, int segmentSize) : ICursorSource<T>
 {
     public bool TryGetSegment(long position, out ReadOnlyMemory<T> segment, out long segmentStart)
     {

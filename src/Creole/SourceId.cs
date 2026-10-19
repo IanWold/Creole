@@ -16,20 +16,20 @@ public readonly record struct SourceId
 {
     private readonly int _value;
 
-    internal SourceId(int value)
-    {
-        _value = value;
-    }
+    /// <summary>
+    /// The registry's index for this id, starting at 1. Zero for <see cref="Unnamed"/>.
+    /// </summary>
+    internal int Value => _value;
 
     /// <summary>
     /// The id of a source that has no name. Equal to <see langword="default"/>.
     /// </summary>
     public static SourceId Unnamed => default;
 
-    /// <summary>
-    /// The registry's index for this id, starting at 1. Zero for <see cref="Unnamed"/>.
-    /// </summary>
-    internal int Value => _value;
+    internal SourceId(int value)
+    {
+        _value = value;
+    }
 
     /// <inheritdoc/>
     public override string ToString() =>

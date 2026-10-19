@@ -5,7 +5,7 @@ using Superpower.Parsers;
 using Superpower.Tokenizers;
 using SuperpowerParse = Superpower.Parse;
 
-namespace Creole.Benchmarks.Json;
+namespace Creole.Benchmarks;
 
 public static class SuperpowerJson
 {
@@ -26,17 +26,6 @@ public static class SuperpowerJson
 
     private static readonly TextParser<Superpower.Model.Unit> _digits = Character.Digit.IgnoreThen(Character.Digit.IgnoreMany());
 
-    private static readonly TextParser<Superpower.Model.Unit> _numberToken =
-        Character.EqualTo('-').OptionalOrDefault()
-        .IgnoreThen(_digits)
-        .IgnoreThen(Character.EqualTo('.').IgnoreThen(_digits).OptionalOrDefault())
-        .IgnoreThen(Character.In('e', 'E').IgnoreThen(Character.In('+', '-').OptionalOrDefault()).IgnoreThen(_digits).OptionalOrDefault());
-
-    private static readonly TextParser<Superpower.Model.Unit> _stringToken =
-        Character.EqualTo('"')
-        .IgnoreThen(Character.EqualTo('\\').IgnoreThen(Character.AnyChar).Or(Character.ExceptIn('"', '\\')).IgnoreMany())
-        .IgnoreThen(Character.EqualTo('"').Value(Superpower.Model.Unit.Value));
-
     private static readonly TextParser<char> _escape =
         Character.EqualTo('\\').IgnoreThen(
             Character.EqualTo('"')
@@ -53,10 +42,24 @@ public static class SuperpowerJson
             )
         );
 
+    private static readonly TextParser<Superpower.Model.Unit> _numberToken =
+        Character.EqualTo('-').OptionalOrDefault()
+        .IgnoreThen(_digits)
+        .IgnoreThen(Character.EqualTo('.').IgnoreThen(_digits).OptionalOrDefault())
+        .IgnoreThen(Character.In('e', 'E').IgnoreThen(Character.In('+', '-').OptionalOrDefault()).IgnoreThen(_digits).OptionalOrDefault());
+
     private static readonly TextParser<string> _stringText =
         Character.EqualTo('"')
         .IgnoreThen(_escape.Or(Character.ExceptIn('"', '\\')).Many())
         .Then(static chars => Character.EqualTo('"').Value(new string(chars)));
+
+    private static readonly TextParser<Superpower.Model.Unit> _stringToken =
+        Character.EqualTo('"')
+        .IgnoreThen(Character.EqualTo('\\').IgnoreThen(Character.AnyChar).Or(Character.ExceptIn('"', '\\')).IgnoreMany())
+        .IgnoreThen(Character.EqualTo('"').Value(Superpower.Model.Unit.Value));
+
+    private static readonly TokenListParser<JsonToken, string> _text =
+        Token.EqualTo(JsonToken.String).Apply(_stringText);
 
     private static readonly Tokenizer<JsonToken> _tokenizer =
         new TokenizerBuilder<JsonToken>()
@@ -73,9 +76,6 @@ public static class SuperpowerJson
         .Match(Span.EqualTo("false"), JsonToken.False, requireDelimiters: true)
         .Match(Span.EqualTo("null"), JsonToken.Null, requireDelimiters: true)
         .Build();
-
-    private static readonly TokenListParser<JsonToken, string> _text =
-        Token.EqualTo(JsonToken.String).Apply(_stringText);
 
     private static readonly TokenListParser<JsonToken, JsonValue> _number =
         Token.EqualTo(JsonToken.Number).Select<JsonToken, Token<JsonToken>, JsonValue>(static token =>
@@ -96,6 +96,8 @@ public static class SuperpowerJson
         from items in _value.ManyDelimitedBy(Token.EqualTo(JsonToken.Comma), end: Token.EqualTo(JsonToken.RBracket))
         select (JsonValue)new JsonArray(items);
 
+    private static readonly TokenListParser<JsonToken, JsonValue> _document = _value.AtEnd();
+
     private static readonly TokenListParser<JsonToken, KeyValuePair<string, JsonValue>> _member =
         from name in _text
         from _ in Token.EqualTo(JsonToken.Colon)
@@ -106,8 +108,6 @@ public static class SuperpowerJson
         from _ in Token.EqualTo(JsonToken.LBrace)
         from members in _member.ManyDelimitedBy(Token.EqualTo(JsonToken.Comma), end: Token.EqualTo(JsonToken.RBrace))
         select (JsonValue)new JsonObject(members);
-
-    private static readonly TokenListParser<JsonToken, JsonValue> _document = _value.AtEnd();
 
     public static JsonValue Parse(string text) =>
         _document.Parse(_tokenizer.Tokenize(text));

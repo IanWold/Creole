@@ -11,12 +11,12 @@ namespace Creole;
 /// </remarks>
 public abstract class ExpressionOperator<TIn, T>
 {
-    internal ExpressionOperator() { }
-
     internal abstract Fixity Fixity { get; }
 
     /// <summary>
     /// The parser that matches the operator itself.
     /// </summary>
     internal abstract INode Node { get; }
+
+    internal ExpressionOperator() { }
 }

@@ -1,21 +1,27 @@
 using System.Runtime.CompilerServices;
-using Creole.Nodes;
-using Creole.Plans;
 
 namespace Creole.Tests;
 
 public class PlanCacheTests
 {
-    [Fact]
-    public void RepeatedUseReturnsTheSamePlanWithoutLoweringAgain()
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference CacheAndForget()
     {
-        var grammar = new CountingNode<int>(new ReturnNode<char, int>(1));
+        var grammar = new ReturnNode<char, int>(1);
+        PlanCache.Get(grammar);
+        return new WeakReference(grammar);
+    }
 
-        var first = PlanCache.Get(grammar);
-        var second = PlanCache.Get(grammar);
+    [Fact]
+    public void ACachedPlanDoesNotKeepItsGrammarAlive()
+    {
+        var grammar = CacheAndForget();
 
-        Assert.Same(first, second);
-        Assert.Equal(1, grammar.LowerCount);
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        Assert.False(grammar.IsAlive);
     }
 
     [Fact]
@@ -81,22 +87,14 @@ public class PlanCacheTests
     }
 
     [Fact]
-    public void ACachedPlanDoesNotKeepItsGrammarAlive()
+    public void RepeatedUseReturnsTheSamePlanWithoutLoweringAgain()
     {
-        var grammar = CacheAndForget();
+        var grammar = new CountingNode<int>(new ReturnNode<char, int>(1));
 
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
+        var first = PlanCache.Get(grammar);
+        var second = PlanCache.Get(grammar);
 
-        Assert.False(grammar.IsAlive);
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static WeakReference CacheAndForget()
-    {
-        var grammar = new ReturnNode<char, int>(1);
-        PlanCache.Get(grammar);
-        return new WeakReference(grammar);
+        Assert.Same(first, second);
+        Assert.Equal(1, grammar.LowerCount);
     }
 }

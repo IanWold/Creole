@@ -34,6 +34,16 @@ public sealed record ParseError(
 )
 {
     /// <summary>
+    /// The context lines for the error, innermost first. May be empty.
+    /// </summary>
+    public IReadOnlyList<string> Context { get; init => field = CopyContext(value); } = CopyContext(Context);
+
+    /// <summary>
+    /// What the parse would have accepted at <see cref="Span"/>, in the order it was recorded. May be empty.
+    /// </summary>
+    public IReadOnlyList<Expectation> Expected { get; init => field = CopyExpected(value); } = CopyExpected(Expected);
+
+    /// <summary>
     /// The name of the layer that raised the error, such as <c>lexer</c> or <c>parser</c>.
     /// </summary>
     public string Layer { get; init => field = CheckLayer(value, nameof(Layer)); } = CheckLayer(Layer, nameof(Layer));
@@ -43,15 +53,36 @@ public sealed record ParseError(
     /// </summary>
     public Unexpected Unexpected { get; init => field = CheckUnexpected(value, nameof(Unexpected)); } = CheckUnexpected(Unexpected, nameof(Unexpected));
 
-    /// <summary>
-    /// What the parse would have accepted at <see cref="Span"/>, in the order it was recorded. May be empty.
-    /// </summary>
-    public IReadOnlyList<Expectation> Expected { get; init => field = CopyExpected(value); } = CopyExpected(Expected);
+    private static string CheckLayer(string layer, string name) =>
+        layer ?? throw new ArgumentNullException(name);
 
-    /// <summary>
-    /// The context lines for the error, innermost first. May be empty.
-    /// </summary>
-    public IReadOnlyList<string> Context { get; init => field = CopyContext(value); } = CopyContext(Context);
+    private static Unexpected CheckUnexpected(Unexpected unexpected, string name) =>
+        unexpected.Value is not null
+            ? unexpected
+            : throw new ArgumentException("The unexpected value must hold a case.", name);
+
+    private static ReadOnlyCollection<T> Copy<T>(IReadOnlyList<T> items, string name, Func<T, bool> isValid)
+    {
+        ArgumentNullException.ThrowIfNull(items, name);
+
+        T[] copy = [.. items];
+
+        foreach (var item in copy)
+        {
+            if (!isValid(item))
+            {
+                throw new ArgumentException("The list must not contain a null or a value that holds no case.", name);
+            }
+        }
+
+        return Array.AsReadOnly(copy);
+    }
+
+    private static ReadOnlyCollection<string> CopyContext(IReadOnlyList<string> context) =>
+        Copy(context, nameof(Context), static line => line is not null);
+
+    private static ReadOnlyCollection<Expectation> CopyExpected(IReadOnlyList<Expectation> expected) =>
+        Copy(expected, nameof(Expected), static expectation => expectation.Value is not null);
 
     /// <inheritdoc/>
     public bool Equals(ParseError? other) =>
@@ -119,36 +150,5 @@ public sealed record ParseError(
         }
 
         return builder.ToString();
-    }
-
-    private static string CheckLayer(string layer, string name) =>
-        layer ?? throw new ArgumentNullException(name);
-
-    private static Unexpected CheckUnexpected(Unexpected unexpected, string name) =>
-        unexpected.Value is not null
-            ? unexpected
-            : throw new ArgumentException("The unexpected value must hold a case.", name);
-
-    private static ReadOnlyCollection<Expectation> CopyExpected(IReadOnlyList<Expectation> expected) =>
-        Copy(expected, nameof(Expected), static expectation => expectation.Value is not null);
-
-    private static ReadOnlyCollection<string> CopyContext(IReadOnlyList<string> context) =>
-        Copy(context, nameof(Context), static line => line is not null);
-
-    private static ReadOnlyCollection<T> Copy<T>(IReadOnlyList<T> items, string name, Func<T, bool> isValid)
-    {
-        ArgumentNullException.ThrowIfNull(items, name);
-
-        T[] copy = [.. items];
-
-        foreach (var item in copy)
-        {
-            if (!isValid(item))
-            {
-                throw new ArgumentException("The list must not contain a null or a value that holds no case.", name);
-            }
-        }
-
-        return Array.AsReadOnly(copy);
     }
 }

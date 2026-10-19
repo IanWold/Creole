@@ -5,6 +5,20 @@ public class NodeCompletenessTests
     private const string Friend = "Creole.Tests";
 
     [Fact]
+    public void ANodeMissingAnAbstractMemberDoesNotCompile()
+    {
+        var errors = SnippetCompiler.Compile(Friend, """
+            sealed class Incomplete : Creole.Parser<char, int>
+            {
+                internal override Creole.NodeKind Kind => Creole.NodeKind.Return;
+            }
+            """
+        );
+
+        Assert.Equal(["CS0534"], errors);
+    }
+
+    [Fact]
     public void AnotherAssemblyCannotDeriveANode()
     {
         var errors = SnippetCompiler.Compile("Outsider", """
@@ -18,17 +32,20 @@ public class NodeCompletenessTests
     }
 
     [Fact]
-    public void ANodeMissingAnAbstractMemberDoesNotCompile()
+    public void ASwitchMissingANodeKindFailsTheBuild()
     {
         var errors = SnippetCompiler.Compile(Friend, """
-            sealed class Incomplete : Creole.Parser<char, int>
+            static class Consumer
             {
-                internal override Creole.NodeKind Kind => Creole.NodeKind.Return;
+                static int Arity(Creole.NodeKind kind) => kind switch
+                {
+                    Creole.NodeKind.Return => 0,
+                };
             }
             """
         );
 
-        Assert.Equal(["CS0534"], errors);
+        Assert.Equal(["CS8509"], errors);
     }
 
     [Fact]
@@ -48,22 +65,5 @@ public class NodeCompletenessTests
         );
 
         Assert.Empty(errors);
-    }
-
-    [Fact]
-    public void ASwitchMissingANodeKindFailsTheBuild()
-    {
-        var errors = SnippetCompiler.Compile(Friend, """
-            static class Consumer
-            {
-                static int Arity(Creole.NodeKind kind) => kind switch
-                {
-                    Creole.NodeKind.Return => 0,
-                };
-            }
-            """
-        );
-
-        Assert.Equal(["CS8509"], errors);
     }
 }

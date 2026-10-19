@@ -1,17 +1,11 @@
 using Parlot.Fluent;
 
-namespace Creole.Benchmarks.Arithmetic;
+namespace Creole.Benchmarks;
 
 public static class ParlotArithmetic
 {
-    public static readonly Parser<double> Interpreted = Build();
-
     public static readonly Parser<double> Compiled = Build().Compile();
-
-    public static double Evaluate(Parser<double> parser, string text) =>
-        parser.TryParse(text, out var value)
-        ? value
-        : throw new FormatException("Parlot failed to parse an expression.");
+    public static readonly Parser<double> Interpreted = Build();
 
     private static Parser<double> Build()
     {
@@ -26,4 +20,9 @@ public static class ParlotArithmetic
 
         return expression.Eof();
     }
+
+    public static double Evaluate(Parser<double> parser, string text) =>
+        parser.TryParse(text, out var value)
+        ? value
+        : throw new FormatException("Parlot failed to parse an expression.");
 }

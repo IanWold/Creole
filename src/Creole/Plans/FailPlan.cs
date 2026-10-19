@@ -1,4 +1,4 @@
-namespace Creole.Plans;
+namespace Creole;
 
 /// <summary>
 /// Fails without consuming input. The node's message is reported once the error model exists (ERR-02).

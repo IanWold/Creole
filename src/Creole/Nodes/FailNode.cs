@@ -1,17 +1,15 @@
-using Creole.Plans;
-
-namespace Creole.Nodes;
+namespace Creole;
 
 /// <summary>
 /// Fails without consuming input, reporting a custom message.
 /// </summary>
 internal sealed class FailNode<TIn, TOut>(string message) : Parser<TIn, TOut>
 {
-    public string Message { get; } = Guard.NotNull(message);
+    internal override IReadOnlyList<INode> Children => [];
 
     internal override NodeKind Kind => NodeKind.Fail;
 
-    internal override IReadOnlyList<INode> Children => [];
+    public string Message { get; } = Guard.NotNull(message);
 
     internal override Plan<TIn, TOut> Lower(PlanBuilder builder) => PlanBuilder.Fail<TIn, TOut>();
 }

@@ -1,6 +1,4 @@
-using Creole.Plans;
-
-namespace Creole.Nodes;
+namespace Creole;
 
 /// <summary>
 /// Runs <see cref="Item"/> repeatedly with <see cref="Separator"/> between items and collects the items.
@@ -8,23 +6,23 @@ namespace Creole.Nodes;
 /// </summary>
 internal sealed class SeparatedNode<TIn, T, TSep>(Parser<TIn, T> item, Parser<TIn, TSep> separator, int min, bool allowTrailing) : Parser<TIn, IReadOnlyList<T>>
 {
-    public Parser<TIn, T> Item { get; } = item;
+    internal override IReadOnlyList<INode> Children => [Item, Separator];
 
-    public Parser<TIn, TSep> Separator { get; } = separator;
-
-    /// <summary>
-    /// The fewest items to read: 0 or 1.
-    /// </summary>
-    public int Min { get; } = min;
+    internal override NodeKind Kind => NodeKind.Separated;
 
     /// <summary>
     /// Whether a separator may follow the last item.
     /// </summary>
     public bool AllowTrailing { get; } = allowTrailing;
 
-    internal override NodeKind Kind => NodeKind.Separated;
+    public Parser<TIn, T> Item { get; } = item;
 
-    internal override IReadOnlyList<INode> Children => [Item, Separator];
+    /// <summary>
+    /// The fewest items to read: 0 or 1.
+    /// </summary>
+    public int Min { get; } = min;
+
+    public Parser<TIn, TSep> Separator { get; } = separator;
 
     internal override Plan<TIn, IReadOnlyList<T>> Lower(PlanBuilder builder) =>
         PlanBuilder.NotYetExecutable<TIn, IReadOnlyList<T>>(Kind);

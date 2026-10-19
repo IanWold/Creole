@@ -231,9 +231,16 @@ Package versions are managed centrally in [`Directory.Packages.props`](Directory
 ### Conventions
 
 - `.editorconfig` is the style guide. Do not argue with it in review; change it.
-- One type per file, named after the type. A small internal helper used only by that type may share its file.
-- Folders group files by area. A folder of internal types has its own namespace (`Creole.Nodes`, `Creole.Plans`). A folder of public types keeps the `Creole` namespace (`Errors/`), so callers need no extra `using`.
-- Every public type and member has XML docs ([Documentation](#documentation)).
+- One type per file, named after the type. A helper used only in that file is a `file` type placed after the main type, not a nested type. Nest a type only when a `file` type cannot do the job: it is part of the containing type's API (such as `LineMap.Builder`), it appears in a member signature of the containing type, or it is used from another file.
+- Folders group files by area but do not change the namespace. Every file in a project uses the project's namespace, whatever folder it is in: `Creole` for `src/Creole`, `Creole.Testing` for `src/Creole.Testing`, `Creole.Tests` for `tests/Creole.Tests`, and so on. `.editorconfig` turns off the folder check (IDE0130).
+- `sealed` is optional on private, internal and `file` types. Node and plan classes stay `sealed` ([ADR-0001](work/docs/decisions/0001-grammar-node-encoding-and-engine-dispatch.md), § [Interpreted engine](whitepaper.md#interpreted-engine)).
+- Members of a type are ordered by kind, then accessibility, then name:
+  1. Kind: nested classes, then structs, then records (including record structs), then other nested types (interfaces, enums, delegates); constants; fields; properties and indexers; events; constructors; methods; operators.
+  2. Accessibility: private, private protected, protected, internal, protected internal, public. Explicit interface implementations count as public.
+  3. Name, alphabetically, ignoring case and a leading underscore. Overloads keep their relative order. Static and instance members are not separated.
+
+  One exception: a field or property comes after any member its initializer reads, because initializers run in declaration order and a field read too early is still null (CRL0004). Otherwise the order is alphabetical.
+- Every public type and member has XML docs ([Documentation](#documentation)). Break XML doc lines only at natural breaks, such as the end of a sentence, a colon or a semicolon, never at a column width. A line may hold more than one short sentence.
 - Do not suppress a warning without a comment saying why.
 - The runtime libraries stay Native AOT and trim safe: no runtime IL emission, and no reflection on the hot path (G8).
 - Tests pin semantics the whitepaper states, not implementation details.

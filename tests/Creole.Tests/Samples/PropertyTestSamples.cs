@@ -1,14 +1,10 @@
 using System.Text;
 using CsCheck;
 
-namespace Creole.Tests.Samples;
+namespace Creole.Tests;
 
 public class PropertyTestSamples
 {
-    [Fact]
-    public void Utf8LengthIsSumOfRuneLengths() =>
-        Gen.String.Sample(text => Encoding.UTF8.GetByteCount(text) == text.EnumerateRunes().Sum(rune => rune.Utf8SequenceLength));
-
     [Fact]
     public void StackBehavesLikeListModel() =>
         Gen.Const(() => (new Stack<int>(), new List<int>())).SampleModelBased(
@@ -32,4 +28,8 @@ public class PropertyTestSamples
 
             equal: (stack, model) => stack.SequenceEqual(Enumerable.Reverse(model))
         );
+
+    [Fact]
+    public void Utf8LengthIsSumOfRuneLengths() =>
+        Gen.String.Sample(text => Encoding.UTF8.GetByteCount(text) == text.EnumerateRunes().Sum(rune => rune.Utf8SequenceLength));
 }

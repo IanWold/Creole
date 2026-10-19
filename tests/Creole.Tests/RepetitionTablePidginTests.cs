@@ -10,27 +10,42 @@ public class RepetitionTablePidginTests
 
     public static TheoryData<string> CaseNames => [.. _cases.Keys];
 
-    [Theory]
-    [MemberData(nameof(CaseNames))]
-    public void PidginAgreesWithTheTable(string name)
+    private static IEnumerable<Shape> Flatten(Shape shape)
     {
-        var row = _cases[name];
+        yield return shape;
 
-        Assert.Equal(row.Expected, Run(row.Shape, row.Input));
+        var children = shape switch
+        {
+            Shape.Many s => [s.Item],
+            Shape.AtLeastOnce s => [s.Item],
+            Shape.Repeat s => [s.Item],
+            Shape.RepeatRange s => [s.Item],
+            Shape.SepBy s => [s.Item, s.Separator],
+            Shape.SepBy1 s => [s.Item, s.Separator],
+            Shape.SepEndBy s => [s.Item, s.Separator],
+            Shape.Until s => [s.Item, s.Terminator],
+            Shape.SkipMany s => [s.Item],
+            Shape.SkipAtLeastOnce s => [s.Item],
+            _ => Array.Empty<Shape>(),
+        };
+
+        foreach (var child in children.SelectMany(Flatten))
+        {
+            yield return child;
+        }
     }
 
-    [Fact]
-    public void CaseNamesAreUnique() =>
-        Assert.Equal(RepetitionTable.Cases.Count, _cases.Count);
+    private static Pidgin.Parser<char, IEnumerable<string>> Optional(Pidgin.Parser<char, string> item, int count) =>
+        count == 0
+        ? PidginCharParser.Return(Enumerable.Empty<string>())
+        : PidginParser.Map((first, rest) => rest.Prepend(first), item, Optional(item, count - 1))
+            .Or(PidginCharParser.Return(Enumerable.Empty<string>()));
 
-    [Fact]
-    public void EveryShapeAppearsInTheTable()
-    {
-        var used = RepetitionTable.Cases.SelectMany(c => Flatten(c.Shape)).Select(s => s.GetType()).ToHashSet();
-        var all = typeof(Shape).GetNestedTypes().Where(t => t.IsSubclassOf(typeof(Shape)));
+    private static string Render(IEnumerable<string> items) =>
+        $"[{string.Join(",", items)}]";
 
-        Assert.All(all, type => Assert.Contains(type, used));
-    }
+    private static Pidgin.Parser<char, IEnumerable<string>> RepeatRange(Pidgin.Parser<char, string> item, int min, int max) =>
+        PidginParser.Map((required, optional) => required.Concat(optional), item.Repeat(min), Optional(item, max - min));
 
     private static Outcome Run(Shape shape, string input)
     {
@@ -68,40 +83,25 @@ public class RepetitionTablePidginTests
         _ => throw new ArgumentOutOfRangeException(nameof(shape), shape, null),
     };
 
-    private static Pidgin.Parser<char, IEnumerable<string>> RepeatRange(Pidgin.Parser<char, string> item, int min, int max) =>
-        PidginParser.Map((required, optional) => required.Concat(optional), item.Repeat(min), Optional(item, max - min));
+    [Fact]
+    public void CaseNamesAreUnique() =>
+        Assert.Equal(RepetitionTable.Cases.Count, _cases.Count);
 
-    private static Pidgin.Parser<char, IEnumerable<string>> Optional(Pidgin.Parser<char, string> item, int count) =>
-        count == 0
-        ? PidginCharParser.Return(Enumerable.Empty<string>())
-        : PidginParser.Map((first, rest) => rest.Prepend(first), item, Optional(item, count - 1))
-            .Or(PidginCharParser.Return(Enumerable.Empty<string>()));
-
-    private static string Render(IEnumerable<string> items) =>
-        $"[{string.Join(",", items)}]";
-
-    private static IEnumerable<Shape> Flatten(Shape shape)
+    [Fact]
+    public void EveryShapeAppearsInTheTable()
     {
-        yield return shape;
+        var used = RepetitionTable.Cases.SelectMany(c => Flatten(c.Shape)).Select(s => s.GetType()).ToHashSet();
+        var all = typeof(Shape).GetNestedTypes().Where(t => t.IsSubclassOf(typeof(Shape)));
 
-        var children = shape switch
-        {
-            Shape.Many s => [s.Item],
-            Shape.AtLeastOnce s => [s.Item],
-            Shape.Repeat s => [s.Item],
-            Shape.RepeatRange s => [s.Item],
-            Shape.SepBy s => [s.Item, s.Separator],
-            Shape.SepBy1 s => [s.Item, s.Separator],
-            Shape.SepEndBy s => [s.Item, s.Separator],
-            Shape.Until s => [s.Item, s.Terminator],
-            Shape.SkipMany s => [s.Item],
-            Shape.SkipAtLeastOnce s => [s.Item],
-            _ => Array.Empty<Shape>(),
-        };
+        Assert.All(all, type => Assert.Contains(type, used));
+    }
 
-        foreach (var child in children.SelectMany(Flatten))
-        {
-            yield return child;
-        }
+    [Theory]
+    [MemberData(nameof(CaseNames))]
+    public void PidginAgreesWithTheTable(string name)
+    {
+        var row = _cases[name];
+
+        Assert.Equal(row.Expected, Run(row.Shape, row.Input));
     }
 }

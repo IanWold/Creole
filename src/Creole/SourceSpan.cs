@@ -17,6 +17,36 @@ namespace Creole;
 public readonly record struct SourceSpan
 {
     /// <summary>
+    /// The offset just past the last character in the span, in the decoded text. Equal to <see cref="End"/> for a text source.
+    /// </summary>
+    public long CharEnd { get; }
+
+    /// <summary>
+    /// The offset of the first character in the span, in the decoded text. Equal to <see cref="Start"/> for a text source.
+    /// </summary>
+    public long CharStart { get; }
+
+    /// <summary>
+    /// The offset just past the last unit in the span, in root-layer units.
+    /// </summary>
+    public long End { get; }
+
+    /// <summary>
+    /// The number of root-layer units the span covers.
+    /// </summary>
+    public long Length => End - Start;
+
+    /// <summary>
+    /// The source the span points into.
+    /// </summary>
+    public SourceId Source { get; }
+
+    /// <summary>
+    /// The offset of the first unit in the span, in root-layer units.
+    /// </summary>
+    public long Start { get; }
+
+    /// <summary>
     /// Creates a span over a text source, whose character offsets equal its root offsets.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="start"/> is negative, or <paramref name="end"/> is less than <paramref name="start"/>.</exception>
@@ -39,36 +69,6 @@ public readonly record struct SourceSpan
         CharStart = charStart;
         CharEnd = charEnd;
     }
-
-    /// <summary>
-    /// The source the span points into.
-    /// </summary>
-    public SourceId Source { get; }
-
-    /// <summary>
-    /// The offset of the first unit in the span, in root-layer units.
-    /// </summary>
-    public long Start { get; }
-
-    /// <summary>
-    /// The offset just past the last unit in the span, in root-layer units.
-    /// </summary>
-    public long End { get; }
-
-    /// <summary>
-    /// The offset of the first character in the span, in the decoded text. Equal to <see cref="Start"/> for a text source.
-    /// </summary>
-    public long CharStart { get; }
-
-    /// <summary>
-    /// The offset just past the last character in the span, in the decoded text. Equal to <see cref="End"/> for a text source.
-    /// </summary>
-    public long CharEnd { get; }
-
-    /// <summary>
-    /// The number of root-layer units the span covers.
-    /// </summary>
-    public long Length => End - Start;
 
     /// <summary>
     /// Deconstructs the span into its source and root-layer offsets.

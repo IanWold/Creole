@@ -4,6 +4,121 @@ namespace Creole.Tests;
 
 public class LineMapTests
 {
+    private static LinePosition[] ModelPositions(string text)
+    {
+        var positions = new LinePosition[text.Length + 1];
+
+        long line = 1;
+        long column = 1;
+
+        for (var i = 0; i < text.Length; i++)
+        {
+            positions[i] = new LinePosition(line, column);
+
+            if (char.IsHighSurrogate(text[i]) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
+            {
+                positions[++i] = new LinePosition(line, column);
+                column++;
+            }
+            else if (text[i] == '\r' && i + 1 < text.Length && text[i + 1] == '\n')
+            {
+                positions[++i] = new LinePosition(line, column + 1);
+                line++;
+                column = 1;
+            }
+            else if (text[i] is '\r' or '\n')
+            {
+                line++;
+                column = 1;
+            }
+            else
+            {
+                column++;
+            }
+        }
+
+        positions[text.Length] = new LinePosition(line, column);
+        return positions;
+    }
+
+    [Fact]
+    public void BuilderCanContinueAfterBuild()
+    {
+        var builder = new LineMap.Builder();
+
+        builder.Append("a\r");
+        _ = builder.Build();
+        builder.Append("\nb");
+
+        Assert.Equal(2, builder.Build().LineCount);
+    }
+
+    [Fact]
+    public void ColumnsCountScalarValues()
+    {
+        var map = LineMap.Create("x\U0001F600y");
+
+        Assert.Equal(new LinePosition(1, 2), map.GetPosition(1));
+        Assert.Equal(new LinePosition(1, 2), map.GetPosition(2));
+        Assert.Equal(new LinePosition(1, 3), map.GetPosition(3));
+        Assert.Equal(new LinePosition(1, 4), map.GetPosition(4));
+    }
+
+    [Theory]
+    [InlineData("", 1)]
+    [InlineData("abc", 1)]
+    [InlineData("abc\n", 2)]
+    [InlineData("abc\r\n", 2)]
+    [InlineData("abc\r", 2)]
+    [InlineData("\n\n", 3)]
+    public void CountsLines(string text, long lineCount) =>
+        Assert.Equal(lineCount, LineMap.Create(text).LineCount);
+
+    [Fact]
+    public void CrAtTheEndOfTheLastChunkEndsALine()
+    {
+        var builder = new LineMap.Builder();
+
+        builder.Append("a\r");
+
+        var map = builder.Build();
+
+        Assert.Equal(2, map.LineCount);
+        Assert.Equal(new LinePosition(2, 1), map.GetPosition(2));
+    }
+
+    [Fact]
+    public void CrlfSplitAcrossChunksIsOneBreak()
+    {
+        var builder = new LineMap.Builder();
+
+        builder.Append("a\r");
+        builder.Append("\nb");
+
+        var map = builder.Build();
+
+        Assert.Equal(2, map.LineCount);
+        Assert.Equal(new LinePosition(2, 1), map.GetPosition(3));
+    }
+
+    [Fact]
+    public void DocsSample()
+    {
+        var map = LineMap.Create("{\r\n  \"port\": 8080\r\n}");
+
+        Assert.Equal("2:3", map.GetPosition(5).ToString());
+        Assert.Equal(3, map.LineCount);
+    }
+
+    [Fact]
+    public void EndOfTextIsAPosition()
+    {
+        var map = LineMap.Create("ab\ncd\n");
+
+        Assert.Equal(new LinePosition(3, 1), map.GetPosition(6));
+        Assert.Equal(new LinePosition(1, 1), LineMap.Create("").GetPosition(0));
+    }
+
     [Theory]
     [InlineData("a\nb", 2, 2, 1)]
     [InlineData("a\r\nb", 3, 2, 1)]
@@ -21,15 +136,6 @@ public class LineMapTests
     }
 
     [Fact]
-    public void DocsSample()
-    {
-        var map = LineMap.Create("{\r\n  \"port\": 8080\r\n}");
-
-        Assert.Equal("2:3", map.GetPosition(5).ToString());
-        Assert.Equal(3, map.LineCount);
-    }
-
-    [Fact]
     public void LfOfCrlfIsOnTheCrLine()
     {
         var map = LineMap.Create("ab\r\ncd");
@@ -39,107 +145,12 @@ public class LineMapTests
         Assert.Equal(new LinePosition(2, 1), map.GetPosition(4));
     }
 
-    [Theory]
-    [InlineData("", 1)]
-    [InlineData("abc", 1)]
-    [InlineData("abc\n", 2)]
-    [InlineData("abc\r\n", 2)]
-    [InlineData("abc\r", 2)]
-    [InlineData("\n\n", 3)]
-    public void CountsLines(string text, long lineCount) =>
-        Assert.Equal(lineCount, LineMap.Create(text).LineCount);
-
-    [Fact]
-    public void EndOfTextIsAPosition()
-    {
-        var map = LineMap.Create("ab\ncd\n");
-
-        Assert.Equal(new LinePosition(3, 1), map.GetPosition(6));
-        Assert.Equal(new LinePosition(1, 1), LineMap.Create("").GetPosition(0));
-    }
-
-    [Fact]
-    public void ColumnsCountScalarValues()
-    {
-        var map = LineMap.Create("x\U0001F600y");
-
-        Assert.Equal(new LinePosition(1, 2), map.GetPosition(1));
-        Assert.Equal(new LinePosition(1, 2), map.GetPosition(2));
-        Assert.Equal(new LinePosition(1, 3), map.GetPosition(3));
-        Assert.Equal(new LinePosition(1, 4), map.GetPosition(4));
-    }
-
     [Fact]
     public void LoneSurrogatesCountAsOneColumnEach()
     {
         var map = LineMap.Create("\uD800a\uDC00b");
 
         Assert.Equal(new LinePosition(1, 4), map.GetPosition(3));
-    }
-
-    [Fact]
-    public void OtherUnicodeSeparatorsDoNotEndALine()
-    {
-        var map = LineMap.Create($"a{(char)0x85}b{(char)0x2028}c{(char)0x2029}d");
-
-        Assert.Equal(1, map.LineCount);
-        Assert.Equal(new LinePosition(1, 7), map.GetPosition(6));
-    }
-
-    [Theory]
-    [InlineData(-1)]
-    [InlineData(4)]
-    public void OffsetOutsideTheTextThrows(long offset) =>
-        Assert.Throws<ArgumentOutOfRangeException>(() => LineMap.Create("abc").GetPosition(offset));
-
-    [Fact]
-    public void CrlfSplitAcrossChunksIsOneBreak()
-    {
-        var builder = new LineMap.Builder();
-
-        builder.Append("a\r");
-        builder.Append("\nb");
-
-        var map = builder.Build();
-
-        Assert.Equal(2, map.LineCount);
-        Assert.Equal(new LinePosition(2, 1), map.GetPosition(3));
-    }
-
-    [Fact]
-    public void CrAtTheEndOfTheLastChunkEndsALine()
-    {
-        var builder = new LineMap.Builder();
-
-        builder.Append("a\r");
-
-        var map = builder.Build();
-
-        Assert.Equal(2, map.LineCount);
-        Assert.Equal(new LinePosition(2, 1), map.GetPosition(2));
-    }
-
-    [Fact]
-    public void BuilderCanContinueAfterBuild()
-    {
-        var builder = new LineMap.Builder();
-
-        builder.Append("a\r");
-        _ = builder.Build();
-        builder.Append("\nb");
-
-        Assert.Equal(2, builder.Build().LineCount);
-    }
-
-    [Fact]
-    public void SurrogatePairSplitAcrossChunksIsOneColumn()
-    {
-        var builder = new LineMap.Builder();
-
-        builder.Append("x\uD83D");
-        builder.Append("\uDE00y");
-
-        Assert.Equal(new LinePosition(1, 3), builder.Build().GetPosition(3));
     }
 
     [Fact]
@@ -163,6 +174,12 @@ public class LineMapTests
                 return map.Length == text.Length
                     && Enumerable.Range(0, text.Length + 1).All(offset => map.GetPosition(offset) == expected[offset]);
             });
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(4)]
+    public void OffsetOutsideTheTextThrows(long offset) =>
+        Assert.Throws<ArgumentOutOfRangeException>(() => LineMap.Create("abc").GetPosition(offset));
 
     [Fact]
     public void OffsetsPast2GBAreCorrect()
@@ -202,40 +219,23 @@ public class LineMapTests
         Assert.Equal(new LinePosition(3L * chunkCount + 1, chunkSize - 402 + 100 + 1), map.GetPosition(map.Length));
     }
 
-    private static LinePosition[] ModelPositions(string text)
+    [Fact]
+    public void OtherUnicodeSeparatorsDoNotEndALine()
     {
-        var positions = new LinePosition[text.Length + 1];
+        var map = LineMap.Create($"a{(char)0x85}b{(char)0x2028}c{(char)0x2029}d");
 
-        long line = 1;
-        long column = 1;
+        Assert.Equal(1, map.LineCount);
+        Assert.Equal(new LinePosition(1, 7), map.GetPosition(6));
+    }
 
-        for (var i = 0; i < text.Length; i++)
-        {
-            positions[i] = new LinePosition(line, column);
+    [Fact]
+    public void SurrogatePairSplitAcrossChunksIsOneColumn()
+    {
+        var builder = new LineMap.Builder();
 
-            if (char.IsHighSurrogate(text[i]) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
-            {
-                positions[++i] = new LinePosition(line, column);
-                column++;
-            }
-            else if (text[i] == '\r' && i + 1 < text.Length && text[i + 1] == '\n')
-            {
-                positions[++i] = new LinePosition(line, column + 1);
-                line++;
-                column = 1;
-            }
-            else if (text[i] is '\r' or '\n')
-            {
-                line++;
-                column = 1;
-            }
-            else
-            {
-                column++;
-            }
-        }
+        builder.Append("x\uD83D");
+        builder.Append("\uDE00y");
 
-        positions[text.Length] = new LinePosition(line, column);
-        return positions;
+        Assert.Equal(new LinePosition(1, 3), builder.Build().GetPosition(3));
     }
 }

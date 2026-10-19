@@ -1,34 +1,7 @@
-using Creole.Nodes;
-using Creole.Plans;
-
 namespace Creole.Tests;
 
 public class PlanLoweringTests
 {
-    [Fact]
-    public void ReturnSucceedsWithItsValueAndConsumesNothing()
-    {
-        var plan = new PlanBuilder().Lower(new ReturnNode<char, int>(42));
-        var cursor = new Cursor<char>("abc");
-        var result = 0;
-
-        Assert.True(plan.TryParse(ref cursor, ref result));
-        Assert.Equal(42, result);
-        Assert.Equal(0, cursor.Position);
-    }
-
-    [Fact]
-    public void FailFailsAndConsumesNothing()
-    {
-        var plan = new PlanBuilder().Lower(new FailNode<char, int>("never"));
-        var cursor = new Cursor<char>("abc");
-        var result = 7;
-
-        Assert.False(plan.TryParse(ref cursor, ref result));
-        Assert.Equal(7, result);
-        Assert.Equal(0, cursor.Position);
-    }
-
     [Fact]
     public void ANodeReachedTwiceIsLoweredOnceAndItsPlanShared()
     {
@@ -55,5 +28,29 @@ public class PlanLoweringTests
 
         Assert.Equal(2, node.LowerCount);
         Assert.NotSame(first, second);
+    }
+
+    [Fact]
+    public void FailFailsAndConsumesNothing()
+    {
+        var plan = new PlanBuilder().Lower(new FailNode<char, int>("never"));
+        var cursor = new Cursor<char>("abc");
+        var result = 7;
+
+        Assert.False(plan.TryParse(ref cursor, ref result));
+        Assert.Equal(7, result);
+        Assert.Equal(0, cursor.Position);
+    }
+
+    [Fact]
+    public void ReturnSucceedsWithItsValueAndConsumesNothing()
+    {
+        var plan = new PlanBuilder().Lower(new ReturnNode<char, int>(42));
+        var cursor = new Cursor<char>("abc");
+        var result = 0;
+
+        Assert.True(plan.TryParse(ref cursor, ref result));
+        Assert.Equal(42, result);
+        Assert.Equal(0, cursor.Position);
     }
 }

@@ -2,10 +2,12 @@ using System.Globalization;
 using Sprache;
 using SpracheParse = Sprache.Parse;
 
-namespace Creole.Benchmarks.Json;
+namespace Creole.Benchmarks;
 
 public static class SpracheJson
 {
+    private static readonly Parser<string> _digits = SpracheParse.Digit.AtLeastOnce().Text();
+
     private static readonly Parser<char> _escape =
         from _ in SpracheParse.Char('\\')
         from c in SpracheParse.Char('"')
@@ -22,15 +24,11 @@ public static class SpracheJson
             )
         select c;
 
-    private static readonly Parser<string> _text =
-        (
-            from _ in SpracheParse.Char('"')
-            from chars in _escape.Or(SpracheParse.CharExcept("\"\\")).Many()
-            from __ in SpracheParse.Char('"')
-            select new string([.. chars])
-        ).Token();
-
-    private static readonly Parser<string> _digits = SpracheParse.Digit.AtLeastOnce().Text();
+    private static readonly Parser<JsonValue> _literal =
+        SpracheParse.String("true").Return((JsonValue)JsonBool.True)
+            .Or(SpracheParse.String("false").Return((JsonValue)JsonBool.False))
+            .Or(SpracheParse.String("null").Return((JsonValue)JsonNull.Instance))
+            .Token();
 
     private static readonly Parser<JsonValue> _number =
         (
@@ -49,11 +47,13 @@ public static class SpracheJson
             ))
         ).Token();
 
-    private static readonly Parser<JsonValue> _literal =
-        SpracheParse.String("true").Return((JsonValue)JsonBool.True)
-            .Or(SpracheParse.String("false").Return((JsonValue)JsonBool.False))
-            .Or(SpracheParse.String("null").Return((JsonValue)JsonNull.Instance))
-            .Token();
+    private static readonly Parser<string> _text =
+        (
+            from _ in SpracheParse.Char('"')
+            from chars in _escape.Or(SpracheParse.CharExcept("\"\\")).Many()
+            from __ in SpracheParse.Char('"')
+            select new string([.. chars])
+        ).Token();
 
     private static readonly Parser<JsonValue> _value =
         SpracheParse.Ref(() => _object!)
@@ -68,6 +68,8 @@ public static class SpracheJson
         from __ in SpracheParse.Char(']').Token()
         select (JsonValue)new JsonArray(items.IsDefined ? Lists.AsReadOnlyList(items.Get()) : []);
 
+    private static readonly Parser<JsonValue> _document = _value.End();
+
     private static readonly Parser<KeyValuePair<string, JsonValue>> _member =
         from name in _text
         from _ in SpracheParse.Char(':').Token()
@@ -79,8 +81,6 @@ public static class SpracheJson
         from members in _member.DelimitedBy(SpracheParse.Char(',').Token()).Optional()
         from __ in SpracheParse.Char('}').Token()
         select (JsonValue)new JsonObject(members.IsDefined ? Lists.AsReadOnlyList(members.Get()) : []);
-
-    private static readonly Parser<JsonValue> _document = _value.End();
 
     public static JsonValue Parse(string text) =>
         _document.Parse(text);
