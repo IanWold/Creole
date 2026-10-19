@@ -29,4 +29,10 @@ internal enum NodeKind
     Or,
     Switch,
     Match,
+    Atomic,
+    Lookahead,
+    Not,
+    Cut,
+    Named,
+    Context,
 }

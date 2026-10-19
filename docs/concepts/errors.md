@@ -18,8 +18,8 @@ public sealed record ParseError(
 | `Span` | Where the error is, in the original source (see [Source spans](spans.md)). |
 | `Layer` | The layer that raised it, such as `"lexer"` or `"parser"`. |
 | `Unexpected` | What the parse found there. |
-| `Expected` | What it would have accepted there. May be empty. |
-| `Context` | Lines such as `"in object starting at 2:3"`, innermost first. May be empty. |
+| `Expected` | What it would have accepted there. May be empty. A `p.Named(label)` rule appears here as its label (see [Backtracking and labels](control.md)). |
+| `Context` | Lines such as `"in object starting at 2:3"`, innermost first, from `p.Context(text)` rules. May be empty. |
 
 An error is immutable. It copies `Expected` and `Context`, so changing the lists you passed in afterwards does not change the error. A `with` expression, such as `error with { Expected = merged }`, makes a new error and checks and copies the values it sets in the same way.
 

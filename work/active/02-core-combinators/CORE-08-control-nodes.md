@@ -39,8 +39,10 @@ Nodes that control backtracking and error labelling.
 ## Artifacts
 
 - Decision: [ADR-0008 Control node semantics](../../docs/decisions/0008-control-node-semantics.md)
+- Docs: [Backtracking and labels](../../../docs/concepts/control.md)
 
 ## Progress notes
 
 - 2026-10-19 (Designing): Started at Design with the maintainer's agreement, because INT-03, ERR-02 and LAY-02 depend on the cut, lookahead and label rules. Drafted ADR-0008 after reading Parsec, Megaparsec, Pidgin and FastParse; the maintainer chose that `Named` applies to an empty success. Next: the maintainer accepts, rejects or revises ADR-0008 (cut scope option A, class name for `Named` and `Context`); on acceptance fold it into the whitepaper and cards, then Build.
 - 2026-10-19 (Building): The maintainer accepted ADR-0008 (cut scope option A, class `ErrorReporting`, no Pidgin differential run); folded into the whitepaper, INT-03, ERR-02 and LAY-02. Next: build the nodes, entry points, case table, docs page and tests.
+- 2026-10-19 (Building): Added the six nodes (`NodeKind` group `Atomic` to `Context`), `Atomic`/`Lookahead`/`Not`/`Cut` in `GrammarOfTIn.Control.cs`, `Named`/`Context` in `ErrorReporting`, `Guard.NotNullOrEmpty`, `ControlNodeTests`, the 38-row `ControlTable` with `ControlTableTests` (rows build; no parse is run), and docs/concepts/control.md. Build clean, 578 tests pass, AOT smoke publish clean. The criterion appears met; `Longest` boundary rows wait for CORE-06. Next: maintainer review, then `/complete`.
