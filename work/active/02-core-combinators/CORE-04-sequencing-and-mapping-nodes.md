@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Status | Building |
+| Status | Done |
 
 ## Summary
 
@@ -21,7 +21,7 @@ Sequencing and maps: the shapes that make up most grammar code.
 
 ## Acceptance criteria
 
-- [ ] `Seq(p, q, r).Select((a, b, c) => ...)` builds a single analyzable sequence node.
+- [x] `Seq(p, q, r).Select((a, b, c) => ...)` builds a single analyzable sequence node.
 
 ## Blocked by
 
@@ -55,3 +55,22 @@ Sequencing and maps: the shapes that make up most grammar code.
 - 2026-10-19 (Building): ADR-0007 accepted by the maintainer (option C). Whitepaper § Using C# 15 unions and § Where unions are not used updated; FND-09 and REL-03 scopes updated. Next: rebuild `Maybe<T>` as the `[Union]` record struct with a public `Nothing` case, drop `HasValue`, the typed `Value` and the factories, and update `MaybeTests`, the docs page and the AOT smoke app.
 - 2026-10-19 (Build): Increment 3 done: `Maybe<T>` rebuilt per ADR-0007 as a `[Union] readonly record struct` with cases `T` and `Nothing` (new `Nothing.cs`); `HasValue`, the typed `Value` and the `Maybe.Just`/`Maybe.Nothing` factories removed. `Nothing` suppresses CA1716 (a Visual Basic keyword), by the maintainer's choice, to keep the ADR's name. Found while building: `maybe.TryGetValue(out var v)` is ambiguous (CS0121) between the two overloads, so callers write the type; documented on the docs page. `MaybeTests` pins conversions, `default` as `Nothing`, equality, CS8509 for a missing `Nothing` arm, and zero allocation per create and match (adding one boxing `Value` read fails it). The docs sample compiles against the built library. `dotnet build` with 0 warnings; `dotnet test` with 288 passed; the AOT smoke publish, which now matches a `Maybe<int>`, with 0 IL warnings. Every scoped item is built and the criterion appears met. Next: `/complete`.
 - 2026-10-19 (Build): By the maintainer's direction, callers match on `Maybe<T>` rather than call `TryGetValue`. RC 2: an `internal` `TryGetValue` still matches but falls back to the boxing `Value` (24 bytes per match), so both overloads stay public with `[EditorBrowsable(Never)]`, and the docs and XML docs steer to a switch or `GetValueOrDefault`. This also removes the CS0121 `out var` problem from the documented API. A switch over `Maybe<string?>` needs a `null` arm (CS8655), and a maybe holding null matches the `string` arm, pinned in `MaybeTests`. `dotnet build` with 0 warnings; `dotnet test` with 288 passed. Next: `/complete`.
+
+## Outcome
+
+- **Nodes** in `src/Creole/Nodes/`: `SequenceNode` (one class per arity from 2 to 8, all in `SequenceNode.cs`), `MapNode`, `OptionalNode`, `SliceNode` and `TextNode`. Their `NodeKind` members are `Sequence`, `Map`, `Optional`, `Slice` and `Text`. Each lowers to `PlanBuilder.NotYetExecutable` until INT-03.
+- **API:**
+  - `Seq` overloads for 2 to 8 parsers in [GrammarOfTIn.Sequence.cs](../../../src/Creole/GrammarOfTIn.Sequence.cs), producing a value tuple.
+  - N-ary `Select` in [Sequencing.cs](../../../src/Creole/Sequencing.cs): an extension member on tuple-valued parsers. On a `Seq` result it replaces the tuple selector, so the result is one sequence node; on any other tuple-valued parser it builds a map.
+  - `Select`, `As` and `Ignore` ([Parser.Mapping.cs](../../../src/Creole/Parser.Mapping.cs)) and `Before`, `Then` and `Between` ([Parser.Sequencing.cs](../../../src/Creole/Parser.Sequencing.cs)) as instance methods. `Parser<TIn, TOut>` is now `partial`. `Before`, `Then` and `Between` build sequence nodes.
+  - `Optional` in [Maybe.cs](../../../src/Creole/Maybe.cs), producing `Maybe<T>`, and `Slice` and `Text` in [TextCapture.cs](../../../src/Creole/TextCapture.cs), as extension members. All three guard their receiver.
+- **Settled for CORE-10:** a sequence node holds typed operands and a `Func<T1, …, Tn, TOut>` selector; CORE-10 can extend one with an internal generic virtual (ADR-0001 allows this for construction-time rewrites).
+- **Evidence, 2026-10-19, after merging main (commit 7285990):** `dotnet build` with 0 warnings; `dotnet test` with 428 total, 427 passed and 1 skipped (`TokenPrimitiveTests.CaseOverloadsOnTokenGrammarAndGrammarBothResolve`, from main, waiting for CORE-05); the criterion's tests (`SeqThenSelectBuildsOneSequenceNode` and its every-arity variant) pass and fail when the `Select` fusion is turned off; the AOT smoke publish, which uses every new combinator, with 0 IL warnings.
+- **Tests:** [SequencingNodeTests.cs](../../../tests/Creole.Tests/SequencingNodeTests.cs), [MaybeTests.cs](../../../tests/Creole.Tests/MaybeTests.cs), [TextCaptureNodeTests.cs](../../../tests/Creole.Tests/TextCaptureNodeTests.cs). `NodeModelTests` allows one sequence node type per arity.
+- **Docs:** [docs/concepts/sequencing.md](../../../docs/concepts/sequencing.md), indexed in docs/README.md. Pidgin names on it were checked against Pidgin 3.5.1 by reflection.
+- **Deviations and decisions:**
+  - [ADR-0007](../../docs/decisions/0007-maybe-as-a-non-boxing-union.md): `Maybe<T>` is a hand-written non-boxing union of `T` and `Nothing`, not a Pidgin-shaped struct. The whitepaper's § Using C# 15 unions reflects it. `Option<T>` was rejected for CA1716; `Nothing` suppresses CA1716 by the maintainer's choice. The `TryGetValue` overloads are public, because matching without boxing needs them, but hidden from IntelliSense; callers match on the union.
+  - N-ary `Select` cannot take an explicit result type (CS1593 on RC 2); union targets cast in the lambda. Pinned by `NaryResultTypeCannotBeGivenExplicitly`.
+  - CONTRIBUTING.md § Code and `.claude/rules/dotnet.md` now allow generic types that differ only in arity in one file.
+  - `Slice` and `Text` apply to any `Parser<char, TOut>`, not only inside a `CharGrammar` as § Authoring ergonomics words it.
+- **Follow-up cards:** [CORE-13](CORE-13-extension-members-guard-their-receiver.md) (`Repetition` guards its receiver; reflection test for every extension member) and [FND-09](../01-foundations/FND-09-move-to-the-net-11-ga-sdk.md) (re-check CS1593, receiver naming and the `[Union]` pattern on the GA compiler).
