@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| Status | Accepted |
+| Status | Superseded by 0006 |
 | Date | 2026-10-19 |
 | Cards | [CORE-05](../../active/02-core-combinators/CORE-05-choice-nodes.md), [CORE-03](../../active/02-core-combinators/CORE-03-primitive-nodes.md), [ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md) |
 | Whitepaper | [§ Using C# 15 unions](../../../whitepaper.md#using-c-15-unions), [§ Selective choice](../../../whitepaper.md#selective-choice) |

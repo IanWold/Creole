@@ -14,4 +14,5 @@ internal enum NodeKind
     Until,
     Expression,
     Or,
+    Switch,
 }

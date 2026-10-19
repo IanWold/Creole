@@ -213,7 +213,7 @@ static readonly Parser<byte, Record> Record =
 // Dropping a case is analyzer error CRL0105, not a runtime surprise.
 ```
 
-Each case is a branch parser and a function that combines the union's case with the branch's result. The lambda's parameter types name the case, so every type is inferred. C# cannot infer the rest from one explicit type argument, which is why the case is not written `Case<V1Header>(...)` ([ADR-0005](work/docs/decisions/0005-match-cases-infer-every-type-from-a-typed-lambda.md)). `Match` accepts any type implementing `IUnion`, which declared unions do. Cases are tried in order; if none applies, `Match` fails.
+Each case is a branch parser and a function that combines the union's case with the branch's result. The lambda's parameter types name the case, so every type is inferred. C# cannot infer the rest from one explicit type argument, which is why the case is not written `Case<V1Header>(...)` ([ADR-0005](work/docs/decisions/0005-match-cases-infer-every-type-from-a-typed-lambda.md), restated in [ADR-0006](work/docs/decisions/0006-switch-and-match-take-a-collection-beyond-eight-cases.md)). `Match` accepts any type implementing `IUnion`, which declared unions do. Cases are tried in order; if none applies, `Match` fails.
 
 ### Where unions are not used
 
@@ -268,7 +268,9 @@ Parser<byte, Record> record =
         @default: Fail<Record>("unsupported version"));
 ```
 
-Every branch is visible to analysis, unlike `Bind`. `Match` is the same idea over a union's cases (§ Using C# 15 unions). `Bind` remains for grammars that are genuinely data-dependent, such as a length prefix followed by that many items.
+Every branch is visible to analysis, unlike `Bind`. `Match` is the same idea over a union's cases (§ Using C# 15 unions).
+
+Both take up to eight cases as separate arguments, so a null branch is reported by its expression. Beyond that, they take the cases as a collection, such as `Opcode.Switch([(0x01, Nop), /* … */ (0x2A, Halt)], @default: …)` or a table built in code. Nesting is no substitute: a nested `Switch` would parse the scrutinee again ([ADR-0006](work/docs/decisions/0006-switch-and-match-take-a-collection-beyond-eight-cases.md)). `Bind` remains for grammars that are genuinely data-dependent, such as a length prefix followed by that many items.
 
 ### Repetition and structure
 
