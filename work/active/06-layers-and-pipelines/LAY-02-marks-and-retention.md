@@ -12,7 +12,7 @@ Pinning bookmarks keep what may be rewound; light marks pin nothing, so `Or` and
 
 ## Scope
 
-- Pinning bookmarks taken by `Atomic`, `Lookahead`, `Not` and `Longest` over non-regular alternatives; reference-counted.
+- Pinning bookmarks taken by `Atomic`, `Lookahead`, `Not` and `Longest` over non-regular alternatives; reference-counted. An `Atomic` releases its bookmark once a cut is in force inside it ([ADR-0008](../../docs/decisions/0008-control-node-semantics.md)).
 - Light marks taken by `Or`, repetition and `Recover`: cursor position, mode log length, diagnostic count, layer-state reference.
 - Horizon is the minimum of the cursor and the oldest pin; each layer pins its own input at the `stepStart` of its oldest retained output.
 

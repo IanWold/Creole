@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -12,8 +12,9 @@ Nodes that control backtracking and error labelling.
 
 ## Scope
 
-- `Atomic`, `Lookahead`, `Not`, `Cut`.
-- `Named(label)` and `Context(text)`.
+- `Atomic(p)`, `Lookahead(p)`, `Not(p)` and the shared leaf `Cut`, as static members of `Grammar<TIn>` in `GrammarOfTIn.Control.cs` ([ADR-0008](../../docs/decisions/0008-control-node-semantics.md)).
+- `p.Named(label)` and `p.Context(text)`, as extension members in `ErrorReporting`, each guarding its receiver with its own `[CallerArgumentExpression]` parameter. A null or empty label or text throws `GrammarException`.
+- XML docs and a `docs/` page stating ADR-0008's points 2 to 6, and a shared table of cases (grammar, input, expected outcome) covering every row of point 2 and the cut rules of point 3, for INT-03 to run.
 - Each public combinator null-checks its parser arguments by taking its own `[CallerArgumentExpression]` parameter per parser argument and passing it to `Guard.NotNull`, so the `GrammarException` names the caller's expression (see `Grammar.Deterministic`, CORE-02).
 
 ## Acceptance criteria
@@ -34,3 +35,12 @@ Nodes that control backtracking and error labelling.
 
 - [§ Choice and backtracking](../../../whitepaper.md#choice-and-backtracking)
 - [§ The error model](../../../whitepaper.md#the-error-model)
+
+## Artifacts
+
+- Decision: [ADR-0008 Control node semantics](../../docs/decisions/0008-control-node-semantics.md)
+
+## Progress notes
+
+- 2026-10-19 (Designing): Started at Design with the maintainer's agreement, because INT-03, ERR-02 and LAY-02 depend on the cut, lookahead and label rules. Drafted ADR-0008 after reading Parsec, Megaparsec, Pidgin and FastParse; the maintainer chose that `Named` applies to an empty success. Next: the maintainer accepts, rejects or revises ADR-0008 (cut scope option A, class name for `Named` and `Context`); on acceptance fold it into the whitepaper and cards, then Build.
+- 2026-10-19 (Building): The maintainer accepted ADR-0008 (cut scope option A, class `ErrorReporting`, no Pidgin differential run); folded into the whitepaper, INT-03, ERR-02 and LAY-02. Next: build the nodes, entry points, case table, docs page and tests.

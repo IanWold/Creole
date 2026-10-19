@@ -128,7 +128,7 @@ public sealed partial class Identifiers : CharGrammar          // CharGrammar : 
 }
 ```
 
-- `Grammar<TIn>` provides `Any`, `Token`, `Satisfy`, `End`, `Seq`, `OneOf`, `Longest`, `Rec`, `Return` and `Fail`.
+- `Grammar<TIn>` provides `Any`, `Token`, `Satisfy`, `End`, `Seq`, `OneOf`, `Longest`, `Atomic`, `Lookahead`, `Not`, `Cut`, `Rec`, `Return` and `Fail`.
 - `TokenGrammar<TToken, TKind>` adds `Kind(k)` for tokens implementing `IKinded<TKind>`.
 - `CharGrammar` adds character classes (`Char`, `Range`, `Digit`, `Letter`, `Whitespace`, `String`, `CIString`) and `Text()` / `Slice()` for capturing source text.
 
@@ -249,8 +249,11 @@ A fifth outcome, **Starved**, exists only in streaming mode and is never visible
 
 - `Or` / `OneOf`: ordered choice with commit semantics.
 - `Atomic(p)`: if `p` fails, rewind to the start so the failure counts as empty. Equivalent to Parsec's `try`.
-- `Lookahead(p)`: run `p`, then rewind on success. `Not(p)`: succeed without consuming if `p` fails.
+- `Lookahead(p)`: run `p`, then rewind on success. If `p` fails after consuming, the failure stays committed, as in Parsec.
+- `Not(p)`: succeed without consuming if `p` fails, whether or not `p` consumed; if `p` succeeds, rewind and fail without consuming. `Not` never consumes.
 - `Cut`: from this point, failure stays committed even inside an enclosing `Atomic`. After `if` and `(` are seen, a failure is reported here instead of being retried elsewhere, which improves messages and lets buffers release earlier.
+
+A cut stays in force until the parse leaves the nearest enclosing `Lookahead`, `Not` or `Longest` alternative, which must rewind by definition, or until the parse ends. While it is in force, no `Atomic` inside that boundary rewinds, even if the alternative or repetition step that held the cut has since failed without consuming and the parse has moved on. A cut never turns an empty failure into a committed one: `Or` and repetition still decide by whether the cursor moved. Engines can keep the cut as one flag on the parse state, saved and cleared by `Atomic` and the three boundaries, so `Or` and repetition pay nothing ([ADR-0008](work/docs/decisions/0008-control-node-semantics.md)).
 - Literal primitives (`String("<=")`, `Kind(k)`) are atomic by construction: they fail without consuming.
 
 ### Longest match
@@ -404,7 +407,7 @@ The downstream parser holds a cursor, which is just an index. Reading past the f
 
 Two kinds of mark remember a position:
 
-- **Pinning bookmarks**, taken by `Atomic`, `Lookahead`, `Not` and `Longest` over non-regular alternatives. These may rewind the cursor, so they keep their slots alive until they exit.
+- **Pinning bookmarks**, taken by `Atomic`, `Lookahead`, `Not` and `Longest` over non-regular alternatives. These may rewind the cursor, so they keep their slots alive until they exit. An `Atomic` can release its bookmark as soon as a cut is in force inside it, because it can no longer rewind (§ Choice and backtracking).
 - **Light marks**, taken by `Or`, repetition and `Recover`. They record the cursor position, the mode log's length, the diagnostic count and the layer-state reference, but pin nothing. Under commit semantics `Or` never rewinds consumed input: once an alternative consumes, any failure is committed. Its mark only undoes zero-width effects, such as a `SetMode`, when an alternative fails without consuming.
 
 The buffer may discard every slot below the minimum of the cursor and the oldest pinning bookmark, returning segments to the pool. Each layer in turn pins its own input at the `stepStart` of the oldest output slot it still holds, so any retained item can be produced again. Every mark also snapshots layer-local state and the mode log length (§ Feedback).
@@ -530,7 +533,7 @@ public union Expectation(Label, ExpectedItem, EndOfInput);
 ```
 
 - **Furthest failure wins.** At equal positions, expected sets are merged.
-- **Labels.** `p.Named("value")` replaces `p`'s expected set with one label, but only when `p` fails without consuming. A committed failure inside it keeps its precise expectations.
+- **Labels.** `p.Named("value")` replaces `p`'s expected set with one label, but only when `p` consumes nothing, whether it fails or succeeds. The label replaces the expectations `p` recorded at its start position, and adds none if there were none. A committed failure inside it keeps its precise expectations, as do deeper failures that an `Atomic` rewound past ([ADR-0008](work/docs/decisions/0008-control-node-semantics.md)).
 - **Context.** `p.Context("in object")` pushes a line onto the context stack for failures inside `p`.
 - **Display.** `TokenGrammar` has an overridable `Describe(TKind)`, so expectations read `','` or `'}'` rather than `Comma` or `RBrace`.
 

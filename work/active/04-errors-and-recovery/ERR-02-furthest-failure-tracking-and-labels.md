@@ -14,8 +14,8 @@ Report the furthest failure with merged expectations, without allocating until a
 
 - Per-layer furthest failure stored as a buffer index plus an interned expectation-set handle.
 - Merge expected sets at equal positions; build `ParseError` lazily.
-- `Named` replaces the expected set only when `p` fails without consuming.
-- `Context` stack.
+- `Named` replaces the expectations `p` recorded at its start position whenever `p` consumes nothing, on failure or success, and adds none if there were none ([ADR-0008](../../docs/decisions/0008-control-node-semantics.md) point 4).
+- `Context` stack. Decide whether an engine appends the start position to a context line: the whitepaper's rendered example shows "in object starting at 2:1" from `Context("in object")`, but `ParseError.Context` holds finished strings.
 - `Describe(TKind)` on `TokenGrammar` for display (moved from CORE-02). Run `/decide` first on how the renderer reaches it: grammar classes hold static fields and are never instantiated, so an instance `virtual` has no caller, and a class cannot declare static virtual members. Options include passing a grammar instance to the pipeline, a self-typed `TokenGrammar<TSelf, TToken, TKind>`, or a static abstract interface member on the token or kind type.
 
 ## Acceptance criteria
