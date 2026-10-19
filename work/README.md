@@ -198,13 +198,12 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- None yet.
+- [CORE-03](active/02-core-combinators/CORE-03-primitive-nodes.md) Primitive nodes — Build
 
 ### Can start now
 
 These items have all their blockers done:
 
-- [CORE-03](active/02-core-combinators/CORE-03-primitive-nodes.md) Primitive nodes
 - [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) Sequencing and mapping nodes
 - [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md) Choice nodes
 - [CORE-06](active/02-core-combinators/CORE-06-longest.md) Longest
