@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -12,9 +12,9 @@ Ordered choice with commit semantics, plus the selective forms that keep every b
 
 ## Scope
 
-- `Or` and `OneOf`.
-- `Switch` over a scrutinee with statically known branches and `@default`.
-- `Match(Case<A>(...), Case<B>(...))` over a union-valued parser.
+- `Or` and `OneOf`, with 2 to 16 alternatives.
+- `Switch` over a scrutinee with 1 to 8 statically known branches and `@default`.
+- `Match(Case(branch, (A a, B b) => …), …)` with 1 to 8 cases over a parser whose value implements `IUnion` ([ADR-0005](../../docs/decisions/0005-match-cases-infer-every-type-from-a-typed-lambda.md)).
 - Each public combinator null-checks its parser arguments by taking its own `[CallerArgumentExpression]` parameter per parser argument and passing it to `Guard.NotNull`, so the `GrammarException` names the caller's expression (see `Grammar.Deterministic`, CORE-02). A `params` array cannot capture each element's expression, so `OneOf` and `Match` take fixed-arity overloads, each with one expression parameter per operand, rather than `params`.
 
 ## Acceptance criteria
@@ -36,3 +36,12 @@ Ordered choice with commit semantics, plus the selective forms that keep every b
 - [§ Choice and backtracking](../../../whitepaper.md#choice-and-backtracking)
 - [§ Selective choice](../../../whitepaper.md#selective-choice)
 - [§ Using C# 15 unions](../../../whitepaper.md#using-c-15-unions)
+
+## Artifacts
+
+- [ADR-0005: `Match` cases infer every type from a typed lambda](../../docs/decisions/0005-match-cases-infer-every-type-from-a-typed-lambda.md) (Accepted)
+
+## Progress notes
+
+- 2026-10-19 (Designing): Started. Blocker CORE-02 is done. Spike on SDK 11.0.100-rc.2.26504.105 (scratchpad, not checked in): the whitepaper's `Case<V1Header>(BodyV1, static (h, body) => …)` does not compile, because C# needs all type arguments or none; from a `TokenGrammar` class declaring `Case<T>()` it fails with CS1501. `Case(BodyV1, static (V1Header h, Body body) => …)` compiles there. Declared unions implement `System.Runtime.CompilerServices.IUnion`. `[CallerArgumentExpression]` can name an extension-block receiver. `Version.Switch((1, RecordV1), …)` fails inference (CS0411) when `Version` produces `byte`; it works when the key type matches. Maintainer chose the typed-lambda form and caps of 16 for `OneOf` and 8 for `Switch` and `Match`; drafted ADR-0005. Plan approved: increment 1 `Or`/`OneOf`, 2 `Switch`, 3 `Match`/`Case`. Next: maintainer accepts ADR-0005, then whitepaper sample update and Build.
+- 2026-10-19 (Designing): ADR-0005 accepted by the maintainer. Whitepaper § Using C# 15 unions and § Selective choice updated; scope updated. Card moves to Building. Next: increment 1, `Or` and `OneOf`.
