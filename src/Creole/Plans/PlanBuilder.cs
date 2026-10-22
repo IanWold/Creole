@@ -14,10 +14,14 @@ namespace Creole;
 /// When lowering reaches a node that is still being lowered, it returns a <see cref="ForwardPlan{TIn, TOut}"/>, filled in when that node's plan is built.
 /// A <c>Rec</c> lowers to its target's plan, so the forward plan on the edge that closes a cycle is the only indirection a cycle costs.
 /// </para>
+/// <para>
+/// Lowering also applies the rewrites in <see cref="LoweringOptions"/> that the builder was given, all of them by default.
+/// </para>
 /// </remarks>
-internal sealed partial class PlanBuilder
+internal sealed partial class PlanBuilder(LoweringOptions options = LoweringOptions.All)
 {
     private readonly Dictionary<INode, object?> _inProgress = new(ReferenceEqualityComparer.Instance);
+    private readonly LoweringOptions _options = options;
     private readonly List<(INode Node, string? Name)> _path = [];
     private readonly Dictionary<INode, object> _plans = [with(ReferenceEqualityComparer.Instance)];
 
