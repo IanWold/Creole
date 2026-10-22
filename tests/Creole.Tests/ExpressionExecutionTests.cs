@@ -184,6 +184,15 @@ public class ExpressionExecutionTests
     }
 
     [Fact]
+    public void APrefixAtTheSameLevelAsAnInfixOperatorAppliesFirst()
+    {
+        var expression = Expression.Build(_letter, op => [[op.Prefix(Char('-'), (_, x) => $"(-{x})"), op.InfixL(Char('*'), (l, _, r) => $"({l}*{r})")]]);
+
+        Assert.Equal(Ok("((-a)*b)", 4), Execution.Outcome(expression, "-a*b"));
+        Assert.Equal(Ok("(a*(-b))", 4), Execution.Outcome(expression, "a*-b"));
+    }
+
+    [Fact]
     public void APrefixAtTheSameLevelAsAPostfixAppliesFirst()
     {
         var expression = Expression.Build(_letter, op => [[op.Prefix(Char('-'), (_, x) => $"(-{x})"), op.Postfix(Char('!'), (x, _) => $"({x}!)")]]);

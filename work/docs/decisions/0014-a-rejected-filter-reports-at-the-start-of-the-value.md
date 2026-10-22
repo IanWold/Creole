@@ -91,7 +91,7 @@ A rejection rewinds to `p`'s start and fails without consuming, as Sprache, Supe
 There is no new API. The error shows the rejected input as unexpected. Authors label it with `Atomic(...).Named(...)` or report a message with `Bind` + `Fail`.
 
 - **Pros:**
-  - Simplest, and either overload below can be added later without breaking anything.
+  - Simplest, and either option below can be added later without breaking anything.
 - **Cons:**
   - A committed rejection cannot carry any text.
 
@@ -114,7 +114,7 @@ There is no new API. The error shows the rejected input as unexpected. Authors l
   - What Pidgin and Superpower offer, and what Superpower's users asked for.
   - No new error-model concept: a `CustomMessage` exists for `Fail`.
 - **Cons:**
-  - One more overload.
+  - One more parameter on `Where`.
   - The message replaces the "unexpected …" text, as it does for `Fail`.
 
 ### 2D. A fixed default text
@@ -162,14 +162,15 @@ Options **1B**, **2C** and **3A**, chosen by the maintainer in conversation and 
    - Failures recorded before `p` started are kept. A failure further on, such as one an earlier `Atomic` rewound past, still wins.
    - Expectations at the start position merge as usual: in `Or(Kind(Keyword), Identifier.Where(isNotKeyword))`, the rejection is reported together with the first alternative's expectation.
    - When the predicate accepts, nothing is dropped.
-4. **Message.** A new overload, `Where(Func<TOut, bool> predicate, string message)`, joins the existing one.
+4. **Message.** `Where` gains an optional parameter, `Where(Func<TOut, bool> predicate, string? message = null)`, before its `[CallerArgumentExpression]` parameter.
+   - It is not a second overload. C# prefers a candidate that needs no default arguments, so with an overload `p.Where(pred, "msg")` would bind `"msg"` to the existing overload's caller-expression parameter and lose the message. A compile check on the .NET 11 RC 2 SDK during INT-04's build confirmed this.
    - With a message, a rejection records what `Fail(message)` records, at the position in point 2.
-   - Without one, it records no expectation, and its unexpected item is the first item of the rejected input, as for any failure at that position.
-   - `Where` throws `GrammarException` for a null predicate (naming the caller's expression, as now) and for a null or empty message.
+   - Without one (null, the default), it records no expectation, and its unexpected item is the first item of the rejected input, as for any failure at that position.
+   - `Where` throws `GrammarException` for a null predicate (naming the caller's expression, as now) and for a message that is empty or white space.
 5. **Labels.** For ADR-0008 point 4, a rejection counts as a failure recorded at `p`'s start position even when it has no expectations. So `Atomic(Identifier.Where(isNotKeyword)).Named("identifier")` reports "expected identifier" at the keyword. ERR-02 decides how `Named` treats a custom message, and that rule applies to `Fail` and to a filter's message alike.
 6. **Captured by value.** A streamed layer may release `p`'s items before the error is built, so the engine must be able to build the rejection's error without them. It must do so without allocating on the failure path and without a pinning bookmark. The expected way is for the filter to copy its start item and that item's source position before `p` runs. ERR-02 designs the record. The non-associative chain error of ADR-0004 point 4 is reported at the span of an operator already consumed, so it is behind the cursor too and follows the same rule.
 7. **Split.**
-   - **INT-04** executes `Bind`, the filter (with the new overload), `Expression.Build` and `Custom`. Its tests check outcomes and cursor positions. The arithmetic criterion's "non-associative chain error" is tested as a committed failure at the second operator.
+   - **INT-04** executes `Bind`, the filter (with its optional message), `Expression.Build` and `Custom`. Its tests check outcomes and cursor positions. The arithmetic criterion's "non-associative chain error" is tested as a committed failure at the second operator.
    - **ERR-02** records the filter's report (points 2 to 6), the chain message (ADR-0004 point 4), `Custom`'s expectations (ADR-0012 point 4) and `Named` on any node, expressions included (ADR-0008 point 4).
    - **GEN-06** emits the same behaviour for the filter, and the GEN-08 differential tests compare reports (G7).
 
@@ -203,12 +204,12 @@ What would change this:
 ## Changes made
 
 - **Whitepaper:**
-  - [§ LINQ query syntax](../../../whitepaper.md#linq-query-syntax): the `where` bullet says where a rejection is reported and names the message overload. It links this record.
+  - [§ LINQ query syntax](../../../whitepaper.md#linq-query-syntax): the `where` bullet says where a rejection is reported and names the optional message. It links this record.
   - [§ The error model](../../../whitepaper.md#the-error-model): a new **Filters** bullet gives points 2 to 5.
   - [§ Failure positions](../../../whitepaper.md#failure-positions): a failure reported behind the cursor captures what its error needs by value (point 6).
 - **Cards:**
   - [INT-04](../../active/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md): moves to Building.
-    - The filter line cites this record and adds the overload.
+    - The filter line cites this record and adds the optional message.
     - The `Custom`, chain-message and `Named` lines say that ERR-02 records them (point 7).
     - The docs line adds the sequencing page.
     - The arithmetic criterion checks the chain error as a committed outcome.
