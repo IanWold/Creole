@@ -7,8 +7,13 @@ internal sealed partial class PlanBuilder
 
     public Plan<TIn, T> Filter<TIn, T>(Parser<TIn, T> source, Func<T, bool> predicate) => new FilterPlan<TIn, T>(Lower(source), predicate);
 
+    /// <summary>
+    /// Lowers a <c>Select</c>, composed with its source's function when the source is also a <c>Select</c> and <see cref="LoweringOptions.CollapseSelect"/> is on.
+    /// </summary>
     public Plan<TIn, TResult> Map<TIn, TSource, TResult>(Parser<TIn, TSource> source, Func<TSource, TResult> selector) =>
-        new MapPlan<TIn, TSource, TResult>(Lower(source), selector);
+        _options.HasFlag(LoweringOptions.CollapseSelect)
+            ? Lower(source).Select(selector)
+            : new MapPlan<TIn, TSource, TResult>(Lower(source), selector);
 
     public Plan<TIn, Maybe<T>> Optional<TIn, T>(Parser<TIn, T> item) => new OptionalPlan<TIn, T>(Lower(item));
 

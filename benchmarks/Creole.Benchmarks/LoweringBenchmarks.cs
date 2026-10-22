@@ -17,8 +17,12 @@ namespace Creole.Benchmarks;
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
 public class LoweringBenchmarks
 {
+    private const string CollapseSelect = "CollapseSelect";
     private const string ScanLongRuns = "ScanLongRuns";
     private const string ScanShortRuns = "ScanShortRuns";
+
+    private static readonly Parser<char, Unit> _digitChain =
+        Digit.Select(static c => c - '0').Select(static d => d * 10).SkipMany();
 
     private static readonly Parser<char, Unit> _quotedStrings =
         Char('"').Then(NoneOf('"', '\\').SkipMany()).Before(Char('"')).SkipMany();
@@ -26,6 +30,9 @@ public class LoweringBenchmarks
     private static readonly Parser<char, Unit> _words =
         Letter.SkipAtLeastOnce().Before(Whitespace.SkipAtLeastOnce()).SkipMany();
 
+    private readonly Plan<char, Unit> _digitChainWithCollapse = Lower(_digitChain, LoweringOptions.All);
+    private readonly Plan<char, Unit> _digitChainWithoutCollapse = Lower(_digitChain, LoweringOptions.All & ~LoweringOptions.CollapseSelect);
+    private readonly string _digitInput = LoweringInputs.Digits;
     private readonly Plan<char, Unit> _quotedStringsWithoutScan = Lower(_quotedStrings, LoweringOptions.All & ~LoweringOptions.Scan);
     private readonly Plan<char, Unit> _quotedStringsWithScan = Lower(_quotedStrings, LoweringOptions.All);
     private readonly string _stringInput = LoweringInputs.Strings;
@@ -43,6 +50,14 @@ public class LoweringBenchmarks
 
         return plan.TryParse(ref cursor, ref result) ? cursor.Position : -1;
     }
+
+    [Benchmark, BenchmarkCategory(CollapseSelect)]
+    public long ChainWithCollapse() =>
+        Run(_digitChainWithCollapse, _digitInput);
+
+    [Benchmark(Baseline = true), BenchmarkCategory(CollapseSelect)]
+    public long ChainWithoutCollapse() =>
+        Run(_digitChainWithoutCollapse, _digitInput);
 
     [Benchmark(Baseline = true), BenchmarkCategory(ScanLongRuns)]
     public long LongRunsWithoutScan() =>

@@ -33,7 +33,7 @@ Single runs on this machine vary by up to 1.3× per benchmark, so one run decide
 | --- | --- | --- | --- | --- |
 | `JsonBenchmarks` | JSON documents, small to large | System.Text.Json (ratio baseline, the ceiling), Parlot, Parlot compiled, Pidgin, Superpower, Sprache | `small` (1.3 KB), `medium` (104 KB), `large` (1.03 MB) | Mean per document, MB/s of UTF-8 input, allocation |
 | `ArithmeticBenchmarks` | Arithmetic expressions | Hand-written recursive descent (ratio baseline), Parlot, Parlot compiled, Pidgin with `ExpressionParser`, Pidgin with hand-built folds | 1,000 expressions | Mean per expression, allocation |
-| `LoweringBenchmarks` | None: [INT-05](../work/active/03-interpreter/INT-05-interpreter-lowering-rewrites.md)'s evidence for each lowering rewrite | The same grammar lowered without the rewrite (ratio baseline, one per category) | `Strings` (100 KB of quoted strings, long runs), `Words` (100 KB of words and spaces, short runs) | Mean per input, allocation |
+| `LoweringBenchmarks` | None: [INT-05](../work/active/03-interpreter/INT-05-interpreter-lowering-rewrites.md)'s evidence for each lowering rewrite | The same grammar lowered without the rewrite (ratio baseline, one per category) | `Digits` (100 KB of digits), `Strings` (100 KB of quoted strings, long runs), `Words` (100 KB of words and spaces, short runs) | Mean per input, allocation |
 
 Every run uses the memory diagnoser.
 

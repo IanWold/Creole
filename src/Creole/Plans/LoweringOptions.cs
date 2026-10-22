@@ -21,7 +21,12 @@ internal enum LoweringOptions
     Scan = 1,
 
     /// <summary>
+    /// A <c>Select</c> over a <c>Select</c> becomes one plan that applies both functions (<see cref="Plan{TIn, TOut}.Select{TResult}"/>).
+    /// </summary>
+    CollapseSelect = 2,
+
+    /// <summary>
     /// Every rewrite.
     /// </summary>
-    All = Scan,
+    All = Scan | CollapseSelect,
 }

@@ -84,6 +84,8 @@ public class BaselineAgreementTests
     {
         var benchmarks = new LoweringBenchmarks();
 
+        Assert.Equal(LoweringInputs.Digits.Length, benchmarks.ChainWithCollapse());
+        Assert.Equal(LoweringInputs.Digits.Length, benchmarks.ChainWithoutCollapse());
         Assert.Equal(LoweringInputs.Strings.Length, benchmarks.LongRunsWithoutScan());
         Assert.Equal(LoweringInputs.Strings.Length, benchmarks.LongRunsWithScan());
         Assert.Equal(LoweringInputs.Words.Length, benchmarks.ShortRunsWithoutScan());
@@ -93,6 +95,7 @@ public class BaselineAgreementTests
     [Fact]
     public void LoweringInputsAreUnchanged()
     {
+        Assert.Equal("a8fb129f7735743206a732a48c2b3af2ebae5f39a0651a9ec7167849c87a1a94", Hash(LoweringInputs.Digits));
         Assert.Equal("79c77be60dfefb3a044db6107627f2ae5263f376ff68088b3f8de519538677d5", Hash(LoweringInputs.Strings));
         Assert.Equal("d29b9143e3a07268e520c71c5e69baf916b2f3a23b7dfd90df6f0d34ba003584", Hash(LoweringInputs.Words));
     }
