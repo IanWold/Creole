@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Status | Building |
+| Status | Done |
 
 ## Summary
 
@@ -22,8 +22,8 @@ A hand-written scanner escape hatch for tokens no regular expression can describ
 
 ## Acceptance criteria
 
-- [ ] A raw-string scanner sample compiles and is usable inside `Longest`.
-- [ ] Tests cover each `GrammarException` in ADR-0012 point 2, and the FIRST set, nullability and opacity analysis reads from a `Custom` with and without `First`.
+- [x] A raw-string scanner sample compiles and is usable inside `Longest`.
+- [x] Tests cover each `GrammarException` in ADR-0012 point 2, and the FIRST set, nullability and opacity analysis reads from a `Custom` with and without `First`.
 
 ## Blocked by
 
@@ -53,3 +53,26 @@ A hand-written scanner escape hatch for tokens no regular expression can describ
 - 2026-10-22 (Build): ADR-0012 accepted; whitepaper and the INT-04, ANA-01, ANA-08, ERR-02 and FUS-03 cards updated, and a criterion added for the construction checks and analysis properties. Next: `/build` to plan the code.
 - 2026-10-22 (Build): Increment 1 done. `CharSet` is public; `Format` stays internal; XML docs on every public member; `Union` null-checks its argument. Tests: `CharSetTests` gains equality, null `Union`, and a compile check from another assembly that sees the public members but not `Format` or `Keys`. Docs: a "Character sets" section in docs/concepts/primitives.md. Next: increment 2, `IScanner`, `ScannerInfo`, `Custom` and the raw-string sample.
 - 2026-10-22 (Build): Increment 2 done. `IScanner<TIn, TOut>`, `ScannerInfo`, `Grammar<TIn>.Custom` and `CustomNode` (`NodeKind.Custom`), with the construction checks of ADR-0012 point 2 and `Guard.ScannerNotNull`. Tests: `CustomNodeTests` (10) for the checks, FIRST, nullability, opacity and reading `Info` once; `RawStringSampleTests` (18) run a Rust-style raw-string scanner on cursors, across segments, and build it inside `Longest` with an unterminated check bound after the `Longest`. Docs: new docs/concepts/custom-scanners.md, a line in grammars-as-data.md. Found while writing the sample: `Longest` gives back the input of a failed alternative, so the ADR-0012 error pattern must bind after the `Longest`, not inside it; documented. Both criteria appear met; next: `/complete`.
+- 2026-10-22 (Done): Both criteria verified: 982 tests pass after merging INT-03; `CustomNodeTests` and `RawStringSampleTests` cover them. Completed.
+
+## Outcome
+
+Delivered:
+
+- **`CharSet` is public** ([CharSet.cs](../../../src/Creole/Analysis/CharSet.cs)). `Format` and `Keys` stay internal, every public member has XML docs, and `Union` null-checks its argument. Its docs are a "Character sets" section in [docs/concepts/primitives.md](../../../docs/concepts/primitives.md#character-sets), beside the classes it backs, rather than a page of its own.
+- **Custom scanners**, as [ADR-0012](../../docs/decisions/0012-custom-scanner-metadata.md) decided:
+  - [IScanner.cs](../../../src/Creole/IScanner.cs) and [ScannerInfo.cs](../../../src/Creole/ScannerInfo.cs) are the public types.
+  - `Grammar<TIn>.Custom` is in [GrammarOfTIn.Primitives.cs](../../../src/Creole/GrammarOfTIn.Primitives.cs). It builds a [CustomNode](../../../src/Creole/Nodes/CustomNode.cs) (`NodeKind.Custom`) that reads `Info` once and makes the four construction checks.
+  - `Guard.ScannerNotNull` gives the null-scanner message, which says to declare the scanner earlier, not to use `Rec`.
+  - `CustomNode` lowers to `NotYetExecutable` until [INT-04](../03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md), whose scope lists it.
+- **Tests:**
+  - [CustomNodeTests](../../../tests/Creole.Tests/CustomNodeTests.cs) (10) cover each construction error and its message; the FIRST set, nullability and opacity with and without `First`, for `char` and `byte` input; reading `Info` once; and `Custom` as an alternative of `Longest`.
+  - [RawStringSampleTests](../../../tests/Creole.Tests/Samples/RawStringSampleTests.cs) (18) run a Rust-style raw-string scanner on cursors: successful scans, malformed openers that fail without consuming, an unterminated string, and input split into segments. They also check the sample lexer's structure: the `Custom` node inside `Longest`, and the unterminated check bound after it.
+  - [CharSetTests](../../../tests/Creole.Tests/CharSetTests.cs) gains equality, null `Union`, and a compile check from another assembly.
+  - The suite has 982 tests, all passing.
+- **Docs:** a new [docs/concepts/custom-scanners.md](../../../docs/concepts/custom-scanners.md), whose code is the test sample. [grammars-as-data.md](../../../docs/concepts/grammars-as-data.md) gains a line on the null-scanner message.
+
+Calls made during the build (no decision record needed):
+
+- The sample produces a `RawStringLiteral(Text, IsTerminated)` rather than the whitepaper sketch's `ReadOnlyMemory<char>`, so it can show the error pattern. It copies the text, because a token can cross a segment boundary and no public slicing API exists. ADR-0013's `Cursor<T>.Since` is internal, and this card adds no public equivalent.
+- `Longest` gives back the input of an alternative that fails, even a committed failure. So the ADR-0012 error pattern must check the value after the `Longest`, not inside its alternative. The docs say so.
