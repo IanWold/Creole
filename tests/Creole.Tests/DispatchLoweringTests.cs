@@ -116,16 +116,15 @@ public class DispatchLoweringTests
     }
 
     [Fact]
-    public void AChoiceWithFewerThanTwoKeyedAlternativesStaysInOrder() =>
-        Assert.IsType<OrPlan<char, char>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(Char('a').Or(Return('r'))));
-
-    [Fact]
-    public void AChoiceWithTwoKeyedAlternativesLowersToDispatch()
+    public void AChoiceDispatchesFromFourKeyedAlternatives()
     {
-        var parser = Char('a').Select(static _ => 1).Or(String("bc").Select(static _ => 2));
+        var three = OneOf(Char('a').As(1), String("bc").As(2), Digit.As(3), Return(0));
+        var four = OneOf(Char('a').As(1), String("bc").As(2), Digit.As(3), Char('x').As(4), Return(0));
 
-        Assert.IsType<DispatchPlan<char, int>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(parser));
-        Assert.IsType<OrPlan<char, int>>(new PlanBuilder(LoweringOptions.None).Lower(parser));
+        Assert.Equal(4, PlanBuilder.DispatchThreshold);
+        Assert.IsType<OrPlan<char, int>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(three));
+        Assert.IsType<DispatchPlan<char, int>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(four));
+        Assert.IsType<OrPlan<char, int>>(new PlanBuilder(LoweringOptions.None).Lower(four));
     }
 
     [Fact]
@@ -134,8 +133,8 @@ public class DispatchLoweringTests
         var mixed = TokenGrammar<TwoKinds, Letter>.Kind(Letter.A).Or(TokenGrammar<TwoKinds, Shade>.Kind(Shade.Dark));
         var same = TokenGrammar<TwoKinds, Letter>.Kind(Letter.A).Or(TokenGrammar<TwoKinds, Letter>.Kind(Letter.B));
 
-        Assert.IsType<OrPlan<TwoKinds, TwoKinds>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(mixed));
-        Assert.IsType<DispatchPlan<TwoKinds, TwoKinds>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(same));
+        Assert.IsType<OrPlan<TwoKinds, TwoKinds>>(new PlanBuilder(LoweringOptions.Dispatch, dispatchThreshold: 1).Lower(mixed));
+        Assert.IsType<DispatchPlan<TwoKinds, TwoKinds>>(new PlanBuilder(LoweringOptions.Dispatch, dispatchThreshold: 1).Lower(same));
         AssertAgrees(same, [new TwoKinds(Letter.B, Shade.Dark)]);
     }
 }

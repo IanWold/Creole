@@ -15,7 +15,7 @@ internal sealed partial class PlanBuilder
         new TypedMatchCasePlan<TIn, TCase, TBranch, TOut>(Lower(branch), combine);
 
     /// <summary>
-    /// Lowers an <c>Or</c>, as a <see cref="DispatchPlan{TIn, T}"/> when <see cref="LoweringOptions.Dispatch"/> is on and at least two alternatives have keys.
+    /// Lowers an <c>Or</c>, as a <see cref="DispatchPlan{TIn, T}"/> when <see cref="LoweringOptions.Dispatch"/> is on and enough alternatives have keys (<see cref="DispatchThreshold"/>).
     /// </summary>
     public Plan<TIn, T> Or<TIn, T>(IReadOnlyList<Parser<TIn, T>> alternatives)
     {

@@ -7,6 +7,8 @@ file enum Symbol
 {
     Number,
     Plus,
+    Minus,
+    Times,
 }
 
 file readonly record struct SymbolToken(Symbol Kind) : IKinded<Symbol>;
@@ -26,7 +28,9 @@ file sealed class Arithmetic : CharGrammar
     public static readonly Parser<SymbolToken, Unit> Tokens =
         Grammar<SymbolToken>.OneOf(
             TokenGrammar<SymbolToken, Symbol>.Kind(Symbol.Number).As(1),
-            TokenGrammar<SymbolToken, Symbol>.Kind(Symbol.Plus).As(2))
+            TokenGrammar<SymbolToken, Symbol>.Kind(Symbol.Plus).As(2),
+            TokenGrammar<SymbolToken, Symbol>.Kind(Symbol.Minus).As(3),
+            TokenGrammar<SymbolToken, Symbol>.Kind(Symbol.Times).As(4))
         .SkipMany();
 }
 
@@ -38,7 +42,7 @@ public class AllocationTests
         ["a chain of Select"] = () => Allocated(Digit.Select(static c => c - '0').Select(static d => d * 2), "7"),
         ["Optional"] = () => Allocated(Char('-').Optional().Then(Digit), "-1"),
         ["skipped runs, scanned and item by item"] = () => Allocated(Whitespace.SkipMany().Then(Satisfy(char.IsLetter).SkipAtLeastOnce()), "   abc"),
-        ["a dispatched choice"] = () => Allocated(OneOf(Char('a').As(1), Char('b').As(2), Return(3)), "b"),
+        ["a dispatched choice"] = () => Allocated(OneOf(Char('a').As(1), Char('b').As(2), Char('c').As(3), Char('d').As(4), Return(5)), "b"),
         ["a choice in order"] = () => Allocated(Char('a').Or(Return('r')), ""),
         ["Atomic, Lookahead, Not and Cut"] = () => Allocated(Seq(Lookahead(Char('a')), Atomic(Seq(Char('a'), Cut, Char('b'))), Not(Char('c'))), "ab"),
         ["Longest"] = () => Allocated(Longest(String("<"), String("<=")), "<="),

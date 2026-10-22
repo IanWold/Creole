@@ -39,6 +39,8 @@ Every run uses the memory diagnoser.
 
 `LoweringBenchmarks` decides no gate. It runs interpreter plans directly, through `InternalsVisibleTo`, until INT-08 adds the public `Parse`. Each category compares one rewrite on and off, with every other rewrite on in both. A rewrite stays if the median of three runs is at least 5% faster on its target and no other category is more than 5% slower.
 
+`FourKeysSkipped` and `FourKeysLast` measure dispatch at its threshold of four keyed alternatives ([INT-05](../work/active/03-interpreter/INT-05-interpreter-lowering-rewrites.md)). In the first, the keyed alternatives come first and never match, which is dispatch's best case. In the second, they come after the alternatives that match, so dispatch skips nothing and only adds its cost. The second is slower by design; re-measure both after changing `DispatchPlan`.
+
 ## Keeping the baselines comparable
 
 - **Same result.** Every JSON baseline builds the same `JsonValue` tree, and every arithmetic baseline evaluates to the same `double`. `tests/Creole.Benchmarks.Tests` checks each one against the reference on every input, so a baseline that skips work fails the build.

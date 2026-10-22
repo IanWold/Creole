@@ -3,6 +3,9 @@ namespace Creole.Tests;
 /// <summary>
 /// Runs a parser lowered with and without a rewrite, so tests can check that the rewrite changes nothing a parse can observe.
 /// </summary>
+/// <remarks>
+/// The rewritten plan dispatches every <c>Or</c> with a keyed alternative, whatever <see cref="PlanBuilder.DispatchThreshold"/> is: the threshold only tunes speed, and dispatch must be exact wherever it applies.
+/// </remarks>
 internal static class Rewrites
 {
     /// <summary>
@@ -42,6 +45,6 @@ internal static class Rewrites
     public static (Observed Without, Observed With) Compare<TIn, T>(Parser<TIn, T> parser, LoweringOptions rewrite, TIn[] input, int? segmentSize = null, bool cut = false) =>
     (
         Observe(new PlanBuilder(LoweringOptions.None).Lower(parser), input, segmentSize, cut),
-        Observe(new PlanBuilder(rewrite).Lower(parser), input, segmentSize, cut)
+        Observe(new PlanBuilder(rewrite, dispatchThreshold: 1).Lower(parser), input, segmentSize, cut)
     );
 }

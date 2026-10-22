@@ -23,7 +23,7 @@ For each alternative, lowering looks for the first thing it reads. It looks thro
 - `Kind(k)`, by token kind, and `Token(x)` when the items are characters or an enum;
 - a `Custom` scanner that declares `First` and is not `Nullable`.
 
-Any other alternative is tried for every item. That includes a choice inside a choice, so `OneOf(a, b, c)` can skip more alternatives than `a.Or(b).Or(c)`. The alternatives that are tried keep their order, so an alternative that overlaps a later one still wins: `OneOf(String("if"), identifier)` tries `String("if")` first on `i`. A choice works this way when at least two of its alternatives start with a literal; otherwise it tries every alternative in order.
+Any other alternative is tried for every item. That includes a choice inside a choice, so `OneOf(a, b, c, d)` can skip alternatives where `a.Or(b).Or(c).Or(d)` cannot. The alternatives that are tried keep their order, so an alternative that overlaps a later one still wins: `OneOf(String("if"), identifier)` tries `String("if")` first on `i`. A choice works this way when at least four of its alternatives start with a literal, because with fewer, checking the next item costs more than skipping saves; otherwise it tries every alternative in order. For the same reason, put the alternatives that start with a literal before those that do not: when they come last, the choice pays for the check and skips nothing that would have been tried.
 
 | Alternative | Tried when the next character is |
 | --- | --- |

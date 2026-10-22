@@ -88,6 +88,10 @@ public class BaselineAgreementTests
         Assert.Equal(LoweringInputs.Digits.Length, benchmarks.ChainWithoutCollapse());
         Assert.Equal(LoweringInputs.Json.Length, benchmarks.CharsWithDispatch());
         Assert.Equal(LoweringInputs.Json.Length, benchmarks.CharsWithoutDispatch());
+        Assert.Equal(LoweringInputs.Words.Length, benchmarks.FourKeysLastWithDispatch());
+        Assert.Equal(LoweringInputs.Words.Length, benchmarks.FourKeysLastWithoutDispatch());
+        Assert.Equal(LoweringInputs.Words.Length, benchmarks.FourKeysSkippedWithDispatch());
+        Assert.Equal(LoweringInputs.Words.Length, benchmarks.FourKeysSkippedWithoutDispatch());
         Assert.Equal(LoweringInputs.JsonTokens.Length, benchmarks.KindsWithDispatch());
         Assert.Equal(LoweringInputs.JsonTokens.Length, benchmarks.KindsWithoutDispatch());
         Assert.Equal(LoweringInputs.Strings.Length, benchmarks.LongRunsWithoutScan());

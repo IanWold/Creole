@@ -3,6 +3,28 @@ namespace Creole;
 internal sealed partial class PlanBuilder
 {
     /// <summary>
+    /// The fewest alternatives with keys for which an <c>Or</c> dispatches.
+    /// </summary>
+    /// <remarks>
+    /// A dispatch costs about as much as trying two or three alternatives that fail at once.
+    /// INT-05 measured choices whose keyed alternatives come first and never match: dispatch was 1.21× slower with one, 1.10× slower with two, 1.03× faster with three and 1.17× faster with four.
+    /// </remarks>
+    public const int DispatchThreshold = 4;
+
+    /// <summary>
+    /// A dispatch plan for an <c>Or</c> when at least the builder's dispatch threshold of its alternatives have keys and they are all read the same way; otherwise null.
+    /// </summary>
+    private DispatchPlan<TIn, T>? Dispatch<TIn, T>(IReadOnlyList<Parser<TIn, T>> alternatives, Plan<TIn, T>[] plans)
+    {
+        var keyed = alternatives.Select(KeyedPrimitive).ToArray();
+        var primitives = keyed.OfType<IPrimitiveNode>().ToArray();
+
+        return primitives.Length >= _dispatchThreshold && KeyReader<TIn>(primitives) is { } read
+            ? new DispatchPlan<TIn, T>(plans, [.. keyed.Select(primitive => primitive?.First.Keys)], read)
+            : null;
+    }
+
+    /// <summary>
     /// The primitive whose keys an alternative takes, or null when it has no keys (ADR-0016 point 1).
     /// </summary>
     /// <remarks>
@@ -44,19 +66,6 @@ internal sealed partial class PlanBuilder
 
         return kinds.All(kind => kind is not null) && kinds.Select(kind => kind!.KindType).Distinct().Count() == 1
             ? kinds[0]!.ReadKey
-            : null;
-    }
-
-    /// <summary>
-    /// A dispatch plan for an <c>Or</c> when at least two of its alternatives have keys and they are all read the same way; otherwise null.
-    /// </summary>
-    private static DispatchPlan<TIn, T>? Dispatch<TIn, T>(IReadOnlyList<Parser<TIn, T>> alternatives, Plan<TIn, T>[] plans)
-    {
-        var keyed = alternatives.Select(KeyedPrimitive).ToArray();
-        var primitives = keyed.OfType<IPrimitiveNode>().ToArray();
-
-        return primitives.Length >= 2 && KeyReader<TIn>(primitives) is { } read
-            ? new DispatchPlan<TIn, T>(plans, [.. keyed.Select(primitive => primitive?.First.Keys)], read)
             : null;
     }
 }

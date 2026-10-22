@@ -21,6 +21,8 @@ public class LoweringBenchmarks
     private const string CollapseSelect = "CollapseSelect";
     private const string DispatchChars = "DispatchChars";
     private const string DispatchKinds = "DispatchKinds";
+    private const string FourKeysLast = "FourKeysLast";
+    private const string FourKeysSkipped = "FourKeysSkipped";
     private const string ScanLongRuns = "ScanLongRuns";
     private const string ScanShortRuns = "ScanShortRuns";
 
@@ -53,6 +55,12 @@ public class LoweringBenchmarks
     private static readonly Parser<char, Unit> _digitChain =
         Digit.Select(static c => c - '0').Select(static d => d * 10).SkipMany();
 
+    private static readonly Parser<char, Unit> _fourKeysLast =
+        OneOf(Whitespace.SkipAtLeastOnce().As(2), Letter.SkipAtLeastOnce().As(1), Char('#').As(0), Char('@').As(3), Char('$').As(4), Char('%').As(5)).SkipMany();
+
+    private static readonly Parser<char, Unit> _fourKeysSkipped =
+        OneOf(Char('#').As(0), Char('@').As(3), Char('$').As(4), Char('%').As(5), Letter.SkipAtLeastOnce().As(1), Whitespace.SkipAtLeastOnce().As(2)).SkipMany();
+
     private static readonly Parser<char, Unit> _quotedStrings =
         Char('"').Then(NoneOf('"', '\\').SkipMany()).Before(Char('"')).SkipMany();
 
@@ -64,6 +72,10 @@ public class LoweringBenchmarks
     private readonly Plan<char, Unit> _digitChainWithCollapse = Lower(_digitChain, LoweringOptions.All);
     private readonly Plan<char, Unit> _digitChainWithoutCollapse = Lower(_digitChain, LoweringOptions.All & ~LoweringOptions.CollapseSelect);
     private readonly string _digitInput = LoweringInputs.Digits;
+    private readonly Plan<char, Unit> _fourKeysLastWithDispatch = Lower(_fourKeysLast, LoweringOptions.All);
+    private readonly Plan<char, Unit> _fourKeysLastWithoutDispatch = Lower(_fourKeysLast, LoweringOptions.All & ~LoweringOptions.Dispatch);
+    private readonly Plan<char, Unit> _fourKeysSkippedWithDispatch = Lower(_fourKeysSkipped, LoweringOptions.All);
+    private readonly Plan<char, Unit> _fourKeysSkippedWithoutDispatch = Lower(_fourKeysSkipped, LoweringOptions.All & ~LoweringOptions.Dispatch);
     private readonly string _jsonInput = LoweringInputs.Json;
     private readonly JsonToken[] _jsonTokens = LoweringInputs.JsonTokens;
     private readonly Plan<char, Unit> _quotedStringsWithoutScan = Lower(_quotedStrings, LoweringOptions.All & ~LoweringOptions.Scan);
@@ -109,6 +121,22 @@ public class LoweringBenchmarks
     [Benchmark(Baseline = true), BenchmarkCategory(DispatchChars)]
     public long CharsWithoutDispatch() =>
         Run(_charJsonWithoutDispatch, _jsonInput);
+
+    [Benchmark, BenchmarkCategory(FourKeysLast)]
+    public long FourKeysLastWithDispatch() =>
+        Run(_fourKeysLastWithDispatch, _wordInput);
+
+    [Benchmark(Baseline = true), BenchmarkCategory(FourKeysLast)]
+    public long FourKeysLastWithoutDispatch() =>
+        Run(_fourKeysLastWithoutDispatch, _wordInput);
+
+    [Benchmark, BenchmarkCategory(FourKeysSkipped)]
+    public long FourKeysSkippedWithDispatch() =>
+        Run(_fourKeysSkippedWithDispatch, _wordInput);
+
+    [Benchmark(Baseline = true), BenchmarkCategory(FourKeysSkipped)]
+    public long FourKeysSkippedWithoutDispatch() =>
+        Run(_fourKeysSkippedWithoutDispatch, _wordInput);
 
     [Benchmark, BenchmarkCategory(DispatchKinds)]
     public long KindsWithDispatch() =>
