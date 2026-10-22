@@ -87,7 +87,7 @@ internal sealed partial class PlanBuilder
     }
 
     /// <summary>
-    /// Stands in for the lowering of a node kind the interpreter cannot run yet. INT-03 replaces every call.
+    /// Stands in for the lowering of a node kind the interpreter cannot run yet. Only <c>Expression.Build</c> still uses it; INT-04 replaces that call and removes this method.
     /// </summary>
     public static Plan<TIn, TOut> NotYetExecutable<TIn, TOut>(NodeKind kind) =>
         throw new NotSupportedException($"The interpreter cannot run {kind} nodes yet.");
