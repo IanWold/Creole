@@ -97,4 +97,6 @@ Combinators reject a null parser argument with a `GrammarException` that names t
 'document' is null. If it refers to a rule declared later in the class, wrap the reference in Rec(() => document).
 ```
 
+`Custom` rejects a null scanner the same way. `Rec` cannot defer a scanner, so the message says to declare the scanner before the rules that use it ([Custom scanners](custom-scanners.md)).
+
 A combinator that is an instance method of `Parser<TIn, TOut>`, such as `Then` or `Select`, cannot check the parser it is called on. Calling one on a null parser throws a `NullReferenceException` before the combinator runs. The cause and the fix are the same.

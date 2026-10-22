@@ -17,6 +17,7 @@ internal enum NodeKind
     End,
     Token,
     Satisfy,
+    Custom,
     CharClass,
     String,
     Kind,

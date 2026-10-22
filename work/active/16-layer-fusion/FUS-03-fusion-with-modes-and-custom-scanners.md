@@ -13,7 +13,7 @@ Extend fusion to finite mode channels and lexers with `Custom` tokens.
 ## Scope
 
 - One DFA per mode, selected by the current mode.
-- Run a `Custom` scanner alongside the DFA when the next character is in its FIRST set.
+- Run a `Custom` scanner alongside the DFA when the next character is in its FIRST set. A character scanner with no `First` runs at every position ([ADR-0012](../../docs/decisions/0012-custom-scanner-metadata.md)).
 
 ## Acceptance criteria
 

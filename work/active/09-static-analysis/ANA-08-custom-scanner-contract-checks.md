@@ -12,7 +12,7 @@ Analysis trusts `ScannerInfo`, so Debug builds verify it.
 
 ## Scope
 
-- Debug builds and the tracing interpreter check declared nullability and FIRST on every call.
+- Debug builds and the tracing interpreter check declared nullability and FIRST on every call. A scanner with no `First` declares any item, so only its nullability and no-consumption-on-failure are checked ([ADR-0012](../../docs/decisions/0012-custom-scanner-metadata.md)).
 - Report CRL0206 when a scanner breaks its declaration or consumes on failure.
 
 ## Acceptance criteria

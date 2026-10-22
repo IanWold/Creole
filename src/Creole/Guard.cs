@@ -37,4 +37,11 @@ internal static class Guard
         NotNull(value, expression) is { Length: > 0 } text
         ? text
         : throw new GrammarException($"'{expression}' is empty.");
+
+    /// <summary>
+    /// Returns <paramref name="scanner"/>, or throws a <see cref="GrammarException"/> naming the argument expression if it is null.
+    /// A null scanner is usually a field declared later in the class than the rule that uses it, so the message says to move the declaration; <c>Rec</c> cannot defer a scanner.
+    /// </summary>
+    public static IScanner<TIn, TOut> ScannerNotNull<TIn, TOut>([NotNull] IScanner<TIn, TOut>? scanner, [CallerArgumentExpression(nameof(scanner))] string expression = "") =>
+        scanner ?? throw new GrammarException($"'{expression}' is null. If it refers to a scanner declared later in the class, declare the scanner before the rules that use it.");
 }

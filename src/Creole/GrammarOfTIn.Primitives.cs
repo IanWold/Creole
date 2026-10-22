@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Creole;
 
 public abstract partial class Grammar<TIn>
@@ -19,6 +21,29 @@ public abstract partial class Grammar<TIn>
     /// Every use refers to the same parser.
     /// </remarks>
     public static Parser<TIn, Unit> End { get; } = new EndNode<TIn>();
+
+    /// <summary>
+    /// A parser that runs a hand-written scanner, for tokens no combinator can describe.
+    /// </summary>
+    /// <typeparam name="TOut">The type of value the scanner produces.</typeparam>
+    /// <param name="scanner">The scanner. Its <see cref="IScanner{TIn, TOut}.Info"/> is read once, now.</param>
+    /// <param name="scannerExpression">Filled in by the compiler with the expression passed as <paramref name="scanner"/>.</param>
+    /// <returns>A parser that succeeds where the scanner does, and fails without consuming input where it fails.</returns>
+    /// <exception cref="GrammarException">
+    /// <paramref name="scanner"/> or its <c>Info</c> is null;
+    /// <c>Info.First</c> is given but <typeparamref name="TIn"/> is not <see cref="char"/>;
+    /// or <c>Info.Name</c> is empty or white space.
+    /// </exception>
+    /// <remarks>
+    /// <para>
+    /// Analysis trusts the scanner's declaration. Without a declared <c>First</c>, analysis treats the parser as matching any item, as it does <see cref="Satisfy"/>.
+    /// </para>
+    /// <para>
+    /// When it fails, the parser expects the scanner's <c>Name</c>, or the characters of its <c>First</c> if it has no name.
+    /// </para>
+    /// </remarks>
+    public static Parser<TIn, TOut> Custom<TOut>(IScanner<TIn, TOut> scanner, [CallerArgumentExpression(nameof(scanner))] string scannerExpression = "") =>
+        new CustomNode<TIn, TOut>(scanner, scannerExpression);
 
     /// <summary>
     /// A parser that consumes one item for which <paramref name="predicate"/> returns <see langword="true"/>, and produces it.

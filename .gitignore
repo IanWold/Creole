@@ -17,3 +17,6 @@ BenchmarkDotNet.Artifacts/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Python bytecode
+__pycache__/

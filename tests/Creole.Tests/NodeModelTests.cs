@@ -33,7 +33,7 @@ public class NodeModelTests
     [Fact]
     public void EveryPrimitiveNodeExposesItsFirstSet() =>
         Assert.Equal(
-            [typeof(AnyNode<>), typeof(CaseNode<,>), typeof(CharClassNode), typeof(EndNode<>), typeof(KindNode<,>), typeof(SatisfyNode<>), typeof(StringNode), typeof(TokenNode<>)],
+            [typeof(AnyNode<>), typeof(CaseNode<,>), typeof(CharClassNode), typeof(CustomNode<,>), typeof(EndNode<>), typeof(KindNode<,>), typeof(SatisfyNode<>), typeof(StringNode), typeof(TokenNode<>)],
             _nodeTypes.Where(type => type.IsAssignableTo(typeof(IPrimitiveNode))).OrderBy(type => type.Name, StringComparer.Ordinal)
         );
 

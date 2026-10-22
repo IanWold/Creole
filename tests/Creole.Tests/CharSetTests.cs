@@ -38,6 +38,20 @@ public class CharSetTests
         Assert.False(CharSet.Digit.Contains('x'));
     }
 
+    [Fact]
+    public void EqualityDependsOnlyOnTheCharacters()
+    {
+        var built = CharSet.Range('a', 'c');
+        var listed = CharSet.Of('b', 'c', 'a');
+
+        Assert.True(built.Equals(listed));
+        Assert.True(built.Equals((object)listed));
+        Assert.Equal(built.GetHashCode(), listed.GetHashCode());
+        Assert.False(built.Equals(CharSet.Of('a', 'b')));
+        Assert.False(built.Equals(null));
+        Assert.False(built.Equals("abc"));
+    }
+
     [Theory]
     [MemberData(nameof(NamedSets))]
     public void NamedSetsMatchTheirCharPredicateOnEveryCodeUnit(string name)
@@ -53,6 +67,23 @@ public class CharSetTests
     [Fact]
     public void OfIgnoresOrderAndRepeats() =>
         Assert.Equal(CharSet.Range('a', 'c'), CharSet.Of('c', 'a', 'b', 'a'));
+
+    [Fact]
+    public void OtherAssembliesSeeOnlyThePublicSurface()
+    {
+        Assert.Empty(SnippetCompiler.Compile("Outsider", """
+            static class User
+            {
+                static bool Use() =>
+                    Creole.CharSet.Of('x').Union(Creole.CharSet.Range('a', 'f')).Complement().Contains('b')
+                    || Creole.CharSet.Digit.Equals(Creole.CharSet.Empty)
+                    || Creole.CharSet.All.IsEmpty;
+            }
+            """
+        ));
+        Assert.Equal(["CS0117"], SnippetCompiler.Compile("Outsider", "static class User { static string Use() => Creole.CharSet.Format('x'); }"));
+        Assert.Equal(["CS1061"], SnippetCompiler.Compile("Outsider", "static class User { static object Use() => Creole.CharSet.Digit.Keys; }"));
+    }
 
     [Fact]
     public void RangeIsInclusive()
@@ -84,4 +115,8 @@ public class CharSetTests
     [Fact]
     public void UnionMergesAdjacentRanges() =>
         Assert.Equal([('a', 'z')], CharSet.Range('a', 'm').Union(CharSet.Range('n', 'z')).Keys.Ranges.ToArray().Select(range => ((char)range.First, (char)range.Last)));
+
+    [Fact]
+    public void UnionRejectsNull() =>
+        Assert.Equal("'other' is null.", Assert.Throws<GrammarException>(() => CharSet.Digit.Union(null!)).Message);
 }
