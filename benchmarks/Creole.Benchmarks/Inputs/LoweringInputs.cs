@@ -8,6 +8,7 @@ namespace Creole.Benchmarks;
 public static class LoweringInputs
 {
     private static readonly Lazy<string> _lazyDigits = new(() => GenerateDigits(seed: 7, length: 100_000));
+    private static readonly Lazy<JsonToken[]> _lazyJsonTokens = new(() => JsonTokenLexer.Lex(Json));
     private static readonly Lazy<string> _lazyStrings = new(() => GenerateStrings(seed: 6, targetLength: 100_000));
     private static readonly Lazy<string> _lazyWords = new(() => GenerateWords(seed: 5, targetLength: 100_000));
 
@@ -16,6 +17,18 @@ public static class LoweringInputs
     /// </summary>
     public static string Digits =>
         _lazyDigits.Value;
+
+    /// <summary>
+    /// The medium JSON document (<see cref="JsonInputs.Medium"/>, 104 KB).
+    /// </summary>
+    public static string Json =>
+        JsonInputs.Get(JsonInputs.Medium);
+
+    /// <summary>
+    /// <see cref="Json"/> lexed to tokens.
+    /// </summary>
+    public static JsonToken[] JsonTokens =>
+        _lazyJsonTokens.Value;
 
     /// <summary>
     /// Quoted strings whose bodies are 20 to 2,000 printable ASCII characters other than <c>"</c> and <c>\</c>: long runs.

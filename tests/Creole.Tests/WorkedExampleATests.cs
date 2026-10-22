@@ -171,4 +171,19 @@ public class WorkedExampleATests
     [InlineData("")]
     public void TheParserRejectsInvalidDocuments(string json) =>
         Assert.Null(JsonExample.Parse(json));
+
+    [Theory]
+    [InlineData("""{ "a": [1, true, null, "x", {}], "b": false }""")]
+    [InlineData("[1,]")]
+    [InlineData("{\"a\" 1}")]
+    [InlineData("[[[]]")]
+    public void TheValueRuleDispatchesOnTokenKinds(string json)
+    {
+        var chars = Cursor<char>.FromMemory(json.AsMemory());
+        var (_, tokens) = Execution.Run(JsonExample.Tokens, ref chars);
+        var (without, with) = Rewrites.Compare(JsonGrammar.Document, LoweringOptions.Dispatch, [.. tokens]);
+
+        Assert.IsType<DispatchPlan<JTok, JsonValue>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(JsonGrammar.Value));
+        Assert.Equal(without, with);
+    }
 }

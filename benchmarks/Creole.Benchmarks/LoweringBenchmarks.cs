@@ -1,6 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Configs;
 using static Creole.CharGrammar;
+using static Creole.Grammar<char>;
 
 namespace Creole.Benchmarks;
 
@@ -18,8 +19,36 @@ namespace Creole.Benchmarks;
 public class LoweringBenchmarks
 {
     private const string CollapseSelect = "CollapseSelect";
+    private const string DispatchChars = "DispatchChars";
+    private const string DispatchKinds = "DispatchKinds";
     private const string ScanLongRuns = "ScanLongRuns";
     private const string ScanShortRuns = "ScanShortRuns";
+
+    private static readonly Parser<char, Unit> _charJsonNumber =
+        Char('-').Optional()
+            .Then(Digit.SkipAtLeastOnce())
+            .Then(Char('.').Then(Digit.SkipAtLeastOnce()).Optional())
+            .Then(OneOf(Char('e'), Char('E')).Then(OneOf(Char('+'), Char('-')).Optional()).Then(Digit.SkipAtLeastOnce()).Optional())
+            .Ignore();
+
+    private static readonly Parser<char, Unit> _charJsonString =
+        Char('"').Then(OneOf(Char('\\').Then(Any).Ignore(), NoneOf('"', '\\').SkipAtLeastOnce()).SkipMany()).Before(Char('"'));
+
+    private static readonly Parser<char, int> _charJsonToken = OneOf(
+        Char('{').As(1),
+        Char('}').As(2),
+        Char('[').As(3),
+        Char(']').As(4),
+        Char(':').As(5),
+        Char(',').As(6),
+        _charJsonString.As(7),
+        _charJsonNumber.As(8),
+        String("true").As(9),
+        String("false").As(10),
+        String("null").As(11));
+
+    private static readonly Parser<char, Unit> _charJsonTokens =
+        Whitespace.SkipMany().Then(_charJsonToken.Before(Whitespace.SkipMany()).SkipMany());
 
     private static readonly Parser<char, Unit> _digitChain =
         Digit.Select(static c => c - '0').Select(static d => d * 10).SkipMany();
@@ -30,22 +59,36 @@ public class LoweringBenchmarks
     private static readonly Parser<char, Unit> _words =
         Letter.SkipAtLeastOnce().Before(Whitespace.SkipAtLeastOnce()).SkipMany();
 
+    private readonly Plan<char, Unit> _charJsonWithDispatch = Lower(_charJsonTokens, LoweringOptions.All);
+    private readonly Plan<char, Unit> _charJsonWithoutDispatch = Lower(_charJsonTokens, LoweringOptions.All & ~LoweringOptions.Dispatch);
     private readonly Plan<char, Unit> _digitChainWithCollapse = Lower(_digitChain, LoweringOptions.All);
     private readonly Plan<char, Unit> _digitChainWithoutCollapse = Lower(_digitChain, LoweringOptions.All & ~LoweringOptions.CollapseSelect);
     private readonly string _digitInput = LoweringInputs.Digits;
+    private readonly string _jsonInput = LoweringInputs.Json;
+    private readonly JsonToken[] _jsonTokens = LoweringInputs.JsonTokens;
     private readonly Plan<char, Unit> _quotedStringsWithoutScan = Lower(_quotedStrings, LoweringOptions.All & ~LoweringOptions.Scan);
     private readonly Plan<char, Unit> _quotedStringsWithScan = Lower(_quotedStrings, LoweringOptions.All);
     private readonly string _stringInput = LoweringInputs.Strings;
+    private readonly Plan<JsonToken, Unit> _tokenJsonWithDispatch = Lower(CreoleTokenJson.Document, LoweringOptions.All);
+    private readonly Plan<JsonToken, Unit> _tokenJsonWithoutDispatch = Lower(CreoleTokenJson.Document, LoweringOptions.All & ~LoweringOptions.Dispatch);
     private readonly string _wordInput = LoweringInputs.Words;
     private readonly Plan<char, Unit> _wordsWithoutScan = Lower(_words, LoweringOptions.All & ~LoweringOptions.Scan);
     private readonly Plan<char, Unit> _wordsWithScan = Lower(_words, LoweringOptions.All);
 
-    private static Plan<char, T> Lower<T>(Parser<char, T> parser, LoweringOptions options) =>
+    private static Plan<TIn, T> Lower<TIn, T>(Parser<TIn, T> parser, LoweringOptions options) =>
         new PlanBuilder(options).Lower(parser);
 
     private static long Run<T>(Plan<char, T> plan, string input)
     {
         var cursor = new Cursor<char>(input);
+        T result = default!;
+
+        return plan.TryParse(ref cursor, ref result) ? cursor.Position : -1;
+    }
+
+    private static long Run<TIn, T>(Plan<TIn, T> plan, TIn[] input)
+    {
+        var cursor = new Cursor<TIn>(input);
         T result = default!;
 
         return plan.TryParse(ref cursor, ref result) ? cursor.Position : -1;
@@ -58,6 +101,22 @@ public class LoweringBenchmarks
     [Benchmark(Baseline = true), BenchmarkCategory(CollapseSelect)]
     public long ChainWithoutCollapse() =>
         Run(_digitChainWithoutCollapse, _digitInput);
+
+    [Benchmark, BenchmarkCategory(DispatchChars)]
+    public long CharsWithDispatch() =>
+        Run(_charJsonWithDispatch, _jsonInput);
+
+    [Benchmark(Baseline = true), BenchmarkCategory(DispatchChars)]
+    public long CharsWithoutDispatch() =>
+        Run(_charJsonWithoutDispatch, _jsonInput);
+
+    [Benchmark, BenchmarkCategory(DispatchKinds)]
+    public long KindsWithDispatch() =>
+        Run(_tokenJsonWithDispatch, _jsonTokens);
+
+    [Benchmark(Baseline = true), BenchmarkCategory(DispatchKinds)]
+    public long KindsWithoutDispatch() =>
+        Run(_tokenJsonWithoutDispatch, _jsonTokens);
 
     [Benchmark(Baseline = true), BenchmarkCategory(ScanLongRuns)]
     public long LongRunsWithoutScan() =>

@@ -11,11 +11,11 @@ internal static class Rewrites
     /// </summary>
     public readonly record struct Observed(bool Ok, string? Value, long Position, bool Cut, bool Threw);
 
-    private static Observed Observe<T>(Plan<char, T> plan, string input, int? segmentSize, bool cut)
+    private static Observed Observe<TIn, T>(Plan<TIn, T> plan, TIn[] input, int? segmentSize, bool cut)
     {
         var cursor = segmentSize is { } size
-            ? new Cursor<char>(new SegmentedSource<char>(input.ToCharArray(), size))
-            : new Cursor<char>(input);
+            ? new Cursor<TIn>(new SegmentedSource<TIn>(input, size))
+            : new Cursor<TIn>(input);
         cursor.Cut = cut;
         T value = default!;
 
@@ -34,6 +34,12 @@ internal static class Rewrites
     /// Runs <paramref name="parser"/> on <paramref name="input"/> lowered with no rewrites and with <paramref name="rewrite"/>, from the same cut flag, in one segment or in segments of <paramref name="segmentSize"/>.
     /// </summary>
     public static (Observed Without, Observed With) Compare<T>(Parser<char, T> parser, LoweringOptions rewrite, string input, int? segmentSize = null, bool cut = false) =>
+        Compare(parser, rewrite, input.ToCharArray(), segmentSize, cut);
+
+    /// <summary>
+    /// Runs <paramref name="parser"/> on <paramref name="input"/> lowered with no rewrites and with <paramref name="rewrite"/>, from the same cut flag, in one segment or in segments of <paramref name="segmentSize"/>.
+    /// </summary>
+    public static (Observed Without, Observed With) Compare<TIn, T>(Parser<TIn, T> parser, LoweringOptions rewrite, TIn[] input, int? segmentSize = null, bool cut = false) =>
     (
         Observe(new PlanBuilder(LoweringOptions.None).Lower(parser), input, segmentSize, cut),
         Observe(new PlanBuilder(rewrite).Lower(parser), input, segmentSize, cut)
