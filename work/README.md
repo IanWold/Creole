@@ -200,13 +200,12 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- None yet.
+- [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md) Bind and LINQ query syntax — Build
 
 ### Can start now
 
 These items have all their blockers done:
 
-- [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md) Bind and LINQ query syntax
 - [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md) Custom primitives
 - [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md) Execute the core combinators
 - [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) StreamBuffer and pulling cursor

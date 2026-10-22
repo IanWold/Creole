@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -41,3 +41,8 @@ Query syntax stays first-class. Each `from` clause is classified as an analyzabl
 ## Whitepaper references
 
 - [§ LINQ query syntax](../../../whitepaper.md#linq-query-syntax)
+
+## Progress notes
+
+- 2026-10-22 (Build): Started. `Bind` node plus expression-taking `SelectMany`, classifying each clause once at construction into `SequenceNode` or `Bind`; `where` and `let` on top.
+- 2026-10-22 (Build): Increment 1 done. `BindNode` and `FilterNode` (new `NodeKind.Bind` and `NodeKind.Filter`); `Parser.SelectMany` taking `Expression<Func<…>>`, classified once with an `ExpressionVisitor`; fluent `Bind(Func)` and `Where`; `let` uses `Select`. Queries of three or more clauses build nested two-step sequences, not flattened. `QueryNodeTests` (13) cover criteria 1 and 2; 731 tests pass. Docs: query syntax section in docs/concepts/sequencing.md. Whitepaper gained one cost bullet (AOT bind clauses run interpreted); INT-04 scope gained the filter node. Next: increment 2, a query grammar in the AOT smoke app (criterion 3).
