@@ -17,6 +17,8 @@ Choice uses commit semantics: the next alternative is tried only if the one befo
 
 `a.Or(b).Or(c)` matches the same input as `OneOf(a, b, c)`, but the grammar tree keeps the nesting you wrote: a choice inside a choice.
 
+The interpreter skips alternatives that cannot start with the next character or token kind, with the same result as trying them in order. [The interpreter](../engines/interpreter.md#how-a-choice-picks-its-alternatives) says which alternatives it can skip.
+
 For more than 16 alternatives, nest `OneOf` calls. Each overload takes its alternatives as separate parameters rather than a `params` array, so a null alternative is reported by the expression you passed (see [Grammars as data](grammars-as-data.md)). `Or` also names a null receiver, such as `Later.Or(x)` where `Later` is declared further down the class.
 
 ## Longest match

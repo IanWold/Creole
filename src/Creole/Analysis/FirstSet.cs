@@ -75,14 +75,6 @@ internal sealed class FirstSet : IEquatable<FirstSet>
         MatchesEnd = matchesEnd;
     }
 
-    private static long EnumKey<T>(T value) => Unsafe.SizeOf<T>() switch
-    {
-        1 => Unsafe.As<T, byte>(ref value),
-        2 => Unsafe.As<T, ushort>(ref value),
-        4 => Unsafe.As<T, uint>(ref value),
-        _ => unchecked((long)Unsafe.As<T, ulong>(ref value)),
-    };
-
     private static bool Related(Type a, Type b) => a.IsAssignableFrom(b) || b.IsAssignableFrom(a);
 
     private static bool SetEquals<T>(T[] a, T[] b) =>
@@ -92,6 +84,20 @@ internal sealed class FirstSet : IEquatable<FirstSet>
         b.Length == 0 ? a
         : a.Length == 0 ? b
         : [.. a.Union(b)];
+
+    /// <summary>
+    /// The integer key of an enum value, as <see cref="Keys"/> holds it.
+    /// </summary>
+    /// <remarks>
+    /// Reads the value's bits without boxing, so dispatch can also call it on every token it peeks.
+    /// </remarks>
+    public static long EnumKey<T>(T value) => Unsafe.SizeOf<T>() switch
+    {
+        1 => Unsafe.As<T, byte>(ref value),
+        2 => Unsafe.As<T, ushort>(ref value),
+        4 => Unsafe.As<T, uint>(ref value),
+        _ => unchecked((long)Unsafe.As<T, ulong>(ref value)),
+    };
 
     public bool Equals(FirstSet? other) =>
         other is not null

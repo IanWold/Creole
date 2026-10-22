@@ -32,7 +32,10 @@ public class ControlModelExecutionTests
 
         try
         {
-            var (ok, value) = Execution.Run(ControlTable.Build(shape), ref cursor);
+            var plan = new PlanBuilder(LoweringOptions.All, dispatchThreshold: 1).Lower(ControlTable.Build(shape));
+            var value = "";
+            var ok = plan.TryParse(ref cursor, ref value);
+
             Outcome outcome = ok ? new Outcome.Ok(value, (int)cursor.Position)
                 : cursor.Position > 0 ? new Outcome.FailConsumed()
                 : new Outcome.FailEmpty();

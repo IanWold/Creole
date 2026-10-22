@@ -700,8 +700,8 @@ If the generator ever covered every grammar, the interpreter could shrink to a t
 
 On first use, a grammar is lowered to an execution plan and cached in a `ConditionalWeakTable` keyed by node. Each node lowers itself through an internal abstract method (§ Types), so lowering sees every node's types without casts. Plans are immutable and thread-safe; parse state lives in the call. Lowering performs these rewrites:
 
-- Chains of `Select` collapse into one composed function.
-- An `Or` over primitives with disjoint FIRST sets becomes a `switch` on token kind or character.
+- Chains of `Select` collapse into one plan step that applies each function in turn.
+- An `Or` dispatches on the next character or token kind. Each alternative takes the keys of the primitive at its leading position, found through wrappers such as `Select`, `Named`, `Atomic` and a sequence's first item. The `Or` runs only the alternatives that can start with the next item, and those with no known leading item, in their original order ([ADR-0016](work/docs/decisions/0016-or-dispatches-on-each-alternatives-leading-item.md)).
 - Regular character subtrees compile to DFA tables.
 - Runs of a character class (`Letter.SkipMany()`, identifiers, whitespace) become a `SearchValues<char>` scan with `IndexOfAnyExcept`, which the runtime vectorizes.
 

@@ -11,6 +11,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Creole.Tests" />
+    <!-- Lowering benchmarks run plans with each rewrite on and off, before the public Parse API exists (INT-05). -->
+    <InternalsVisibleTo Include="Creole.Benchmarks" />
   </ItemGroup>
 
   <!-- Run the analyzers and generator on this project's consumers, and ship them inside the Creole package. -->

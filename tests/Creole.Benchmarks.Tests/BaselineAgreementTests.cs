@@ -78,4 +78,33 @@ public class BaselineAgreementTests
     [InlineData(JsonInputs.Large, "a70aa2d0928838b84808be699f09109e0a2106978f0c3ee80db76b2374f314ef")]
     public void JsonInputIsUnchanged(string input, string sha256) =>
         Assert.Equal(sha256, Hash(JsonInputs.Get(input)));
+
+    [Fact]
+    public void LoweringBenchmarksReadTheWholeInputWithAndWithoutEachRewrite()
+    {
+        var benchmarks = new LoweringBenchmarks();
+
+        Assert.Equal(LoweringInputs.Digits.Length, benchmarks.ChainWithCollapse());
+        Assert.Equal(LoweringInputs.Digits.Length, benchmarks.ChainWithoutCollapse());
+        Assert.Equal(LoweringInputs.Json.Length, benchmarks.CharsWithDispatch());
+        Assert.Equal(LoweringInputs.Json.Length, benchmarks.CharsWithoutDispatch());
+        Assert.Equal(LoweringInputs.Words.Length, benchmarks.FourKeysLastWithDispatch());
+        Assert.Equal(LoweringInputs.Words.Length, benchmarks.FourKeysLastWithoutDispatch());
+        Assert.Equal(LoweringInputs.Words.Length, benchmarks.FourKeysSkippedWithDispatch());
+        Assert.Equal(LoweringInputs.Words.Length, benchmarks.FourKeysSkippedWithoutDispatch());
+        Assert.Equal(LoweringInputs.JsonTokens.Length, benchmarks.KindsWithDispatch());
+        Assert.Equal(LoweringInputs.JsonTokens.Length, benchmarks.KindsWithoutDispatch());
+        Assert.Equal(LoweringInputs.Strings.Length, benchmarks.LongRunsWithoutScan());
+        Assert.Equal(LoweringInputs.Strings.Length, benchmarks.LongRunsWithScan());
+        Assert.Equal(LoweringInputs.Words.Length, benchmarks.ShortRunsWithoutScan());
+        Assert.Equal(LoweringInputs.Words.Length, benchmarks.ShortRunsWithScan());
+    }
+
+    [Fact]
+    public void LoweringInputsAreUnchanged()
+    {
+        Assert.Equal("a8fb129f7735743206a732a48c2b3af2ebae5f39a0651a9ec7167849c87a1a94", Hash(LoweringInputs.Digits));
+        Assert.Equal("79c77be60dfefb3a044db6107627f2ae5263f376ff68088b3f8de519538677d5", Hash(LoweringInputs.Strings));
+        Assert.Equal("d29b9143e3a07268e520c71c5e69baf916b2f3a23b7dfd90df6f0d34ba003584", Hash(LoweringInputs.Words));
+    }
 }

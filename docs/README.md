@@ -29,3 +29,4 @@ The layout follows the scope of [REL-02](../work/active/14-release/REL-02-docume
 | [Errors](concepts/errors.md) | `ParseError`, the `Unexpected` and `Expectation` unions, `ParseResult<T>` and its cases, and `Diagnostics`: what a parse reports, and how to render it against the source with `SourceText`. |
 | [Source spans](concepts/spans.md) | `SourceSpan`, `SourceId`, `SourceRegistry` and `LineMap`: where items came from in the original source, as offsets or as lines and columns. |
 | [The cursor](engines/cursor.md) | `Cursor<T>`: absolute positions, reading without allocation, bulk scans over segmented input. |
+| [The interpreter](engines/interpreter.md) | How grammars are lowered and cached, the rewrites that make some shapes faster and how to write grammars in those shapes, and what allocates. |
