@@ -6,25 +6,39 @@ namespace Creole.Tests;
 internal static class Execution
 {
     /// <summary>
-    /// Runs <paramref name="parser"/> on <paramref name="input"/> and reports the outcome, rendering a value with <paramref name="render"/> or <see cref="object.ToString"/>.
+    /// Runs <paramref name="parser"/> on <paramref name="input"/> and reports the outcome, or <see cref="Outcome.Throws"/> for a <see cref="GrammarException"/>, rendering a value with <paramref name="render"/> or <see cref="object.ToString"/>.
     /// </summary>
     public static Outcome Outcome<TOut>(Parser<char, TOut> parser, string input, Func<TOut, string>? render = null)
     {
         var cursor = new Cursor<char>(input);
-        var (ok, value) = Run(parser, ref cursor);
 
-        return Describe(ok, value, cursor.Position, render);
+        try
+        {
+            var (ok, value) = Run(parser, ref cursor);
+            return Describe(ok, value, cursor.Position, render);
+        }
+        catch (GrammarException)
+        {
+            return new Outcome.Throws();
+        }
     }
 
     /// <summary>
-    /// Runs <paramref name="parser"/> on <paramref name="input"/> and reports the outcome, rendering a value with <paramref name="render"/> or <see cref="object.ToString"/>.
+    /// Runs <paramref name="parser"/> on <paramref name="input"/> and reports the outcome, or <see cref="Outcome.Throws"/> for a <see cref="GrammarException"/>, rendering a value with <paramref name="render"/> or <see cref="object.ToString"/>.
     /// </summary>
     public static Outcome Outcome<TIn, TOut>(Parser<TIn, TOut> parser, TIn[] input, Func<TOut, string>? render = null)
     {
         var cursor = new Cursor<TIn>(input);
-        var (ok, value) = Run(parser, ref cursor);
 
-        return Describe(ok, value, cursor.Position, render);
+        try
+        {
+            var (ok, value) = Run(parser, ref cursor);
+            return Describe(ok, value, cursor.Position, render);
+        }
+        catch (GrammarException)
+        {
+            return new Outcome.Throws();
+        }
     }
 
     /// <summary>

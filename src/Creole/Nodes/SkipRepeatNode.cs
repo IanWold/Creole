@@ -20,5 +20,5 @@ internal sealed class SkipRepeatNode<TIn, T>(Parser<TIn, T> item, int min, int? 
     public int Min { get; } = min;
 
     internal override Plan<TIn, Unit> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, Unit>(Kind);
+        builder.SkipRepeat(Item, Min, Max);
 }
