@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Designing |
 
 ## Summary
 
@@ -38,3 +38,12 @@ A hand-written scanner escape hatch for tokens no regular expression can describ
 ## Whitepaper references
 
 - [§ Custom primitives](../../../whitepaper.md#custom-primitives)
+
+## Artifacts
+
+- [ADR-0012: Custom scanner metadata](../../docs/decisions/0012-custom-scanner-metadata.md) (Proposed)
+
+## Progress notes
+
+- 2026-10-22 (Design): Started. `ScannerInfo.First` is a `CharSet`, but `IScanner<TIn, TOut>` is generic over its input, so the whitepaper does not say how a token-layer scanner declares its FIRST set. Settle that, and how a failed `Custom` names what it expected, in a decision record before building.
+- 2026-10-22 (Design): Drafted ADR-0012 with the maintainer's choices: `First` is a `CharSet` or null for any item, an optional `Name`, and `Scan` stays `bool` with an error-token pattern documented. Next: maintainer accepts the record, then fold it into the whitepaper and cards and move to Build.
