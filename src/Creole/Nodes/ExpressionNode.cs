@@ -28,8 +28,7 @@ internal sealed class ExpressionNode<TIn, T>(Parser<TIn, T> atom, ExpressionOper
 
     IReadOnlyList<IReadOnlyList<OperatorInfo>> IExpressionNode.Levels => _view;
 
-    internal override Plan<TIn, T> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, T>(Kind);
+    internal override Plan<TIn, T> Lower(PlanBuilder builder) => builder.Expression(Atom, Levels);
 
     /// <summary>
     /// Copies <paramref name="table"/> and applies the construction-time checks of ADR-0004.

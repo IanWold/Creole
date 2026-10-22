@@ -117,7 +117,8 @@ public sealed class OperatorFactory<TIn, T>
     /// <exception cref="GrammarException"><paramref name="op"/> or <paramref name="combine"/> is null.</exception>
     /// <remarks>
     /// Prefix operators repeat: <c>- -x</c> applies the operator twice.
-    /// The operand is parsed at this operator's level, so an operator from a looser level cannot be its operand without parentheses.
+    /// The operand is parsed with only the tighter levels, so an operator from this level or a looser one cannot be its operand without parentheses.
+    /// A postfix operator at this level therefore applies after it: <c>-x!</c> is <c>(-x)!</c>.
     /// </remarks>
     public ExpressionOperator<TIn, T> Prefix<TOp>(
         Parser<TIn, TOp> op,

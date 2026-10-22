@@ -107,7 +107,7 @@ public sealed class Calc : CharGrammar
 **5. Errors and commit.** These follow § Combinator semantics with no special cases.
 
 - An operator that fails without consuming ends the operator loop. Its expectations merge with others at the same position under "furthest failure wins".
-- An operator that consumed input commits. If its operand then fails, the failure is committed and the expression does not fall back to the shorter parse. An author who wants `a -` to stop before the `-` wraps that operator in `Atomic`.
+- An operator that consumed input commits. If its operand then fails, the failure is committed and the expression does not fall back to the shorter parse. An author who wants `a -` to stop before the `-` makes the operator look ahead for an operand without consuming it, as in `Atomic(Char('-').Before(Lookahead(Atom)))`. Wrapping the operator alone in `Atomic` does not help: the operator succeeds, and the failure of its operand comes after the `Atomic`.
 - `Named` on the whole expression replaces its expected set only for empty failures, as for any node.
 - Operand recursion, and the right recursion of InfixR, count against `ParseOptions.MaxDepth` ([§ Limits for untrusted input](../../../whitepaper.md#limits-for-untrusted-input)).
 - An operator that succeeds without consuming input would loop forever. Engines treat it as `Many` treats a body that does. That rule is not decided yet: CORE-07 left it to [INT-03](../../active/03-interpreter/INT-03-execute-the-core-combinators.md), whose criterion covers the rows where Pidgin throws. The expression node follows whatever INT-03 decides, and ANA-01 reports such operators statically.
