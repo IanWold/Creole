@@ -16,6 +16,7 @@ A fixpoint over the grammar graph computes the properties every check builds on.
 - `Custom` uses its declared `ScannerInfo`; a null `First` is ⊤ and makes the node opaque ([ADR-0012](../../docs/decisions/0012-custom-scanner-metadata.md)). Union token case types count as kinds.
 - `Expression.Build`, `Switch`, `Match` and layers handled precisely. `Expression.Build` is read through its table view; operators that succeed without consuming input are reported ([ADR-0004](../../docs/decisions/0004-expression-build-operator-table-and-semantics.md)).
 - Write the analysis so it can be shared with the Roslyn component (RSLN-02).
+- Interpreter lowering may take `Or` dispatch keys from these properties instead of its leading-item walk ([ADR-0016](../../docs/decisions/0016-or-dispatches-on-each-alternatives-leading-item.md) point 5).
 
 ## Acceptance criteria
 
