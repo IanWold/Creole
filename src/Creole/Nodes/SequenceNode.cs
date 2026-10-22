@@ -25,7 +25,7 @@ internal sealed class SequenceNode<TIn, T1, T2, TOut>(Parser<TIn, T1> first, Par
     public Func<T1, T2, TOut> Selector { get; } = selector;
 
     internal override Plan<TIn, TOut> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, TOut>(Kind);
+        builder.Sequence(First, Second, Selector);
 }
 
 /// <summary>
@@ -55,7 +55,7 @@ internal sealed class SequenceNode<TIn, T1, T2, T3, TOut>(Parser<TIn, T1> first,
     public Parser<TIn, T3> Third { get; } = third;
 
     internal override Plan<TIn, TOut> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, TOut>(Kind);
+        builder.Sequence(First, Second, Third, Selector);
 }
 
 /// <summary>
@@ -87,7 +87,7 @@ internal sealed class SequenceNode<TIn, T1, T2, T3, T4, TOut>(Parser<TIn, T1> fi
     public Parser<TIn, T3> Third { get; } = third;
 
     internal override Plan<TIn, TOut> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, TOut>(Kind);
+        builder.Sequence(First, Second, Third, Fourth, Selector);
 }
 
 /// <summary>
@@ -121,7 +121,7 @@ internal sealed class SequenceNode<TIn, T1, T2, T3, T4, T5, TOut>(Parser<TIn, T1
     public Parser<TIn, T3> Third { get; } = third;
 
     internal override Plan<TIn, TOut> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, TOut>(Kind);
+        builder.Sequence(First, Second, Third, Fourth, Fifth, Selector);
 }
 
 /// <summary>
@@ -157,7 +157,7 @@ internal sealed class SequenceNode<TIn, T1, T2, T3, T4, T5, T6, TOut>(Parser<TIn
     public Parser<TIn, T3> Third { get; } = third;
 
     internal override Plan<TIn, TOut> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, TOut>(Kind);
+        builder.Sequence(First, Second, Third, Fourth, Fifth, Sixth, Selector);
 }
 
 /// <summary>
@@ -195,7 +195,7 @@ internal sealed class SequenceNode<TIn, T1, T2, T3, T4, T5, T6, T7, TOut>(Parser
     public Parser<TIn, T3> Third { get; } = third;
 
     internal override Plan<TIn, TOut> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, TOut>(Kind);
+        builder.Sequence(First, Second, Third, Fourth, Fifth, Sixth, Seventh, Selector);
 }
 
 /// <summary>
@@ -235,5 +235,5 @@ internal sealed class SequenceNode<TIn, T1, T2, T3, T4, T5, T6, T7, T8, TOut>(Pa
     public Parser<TIn, T3> Third { get; } = third;
 
     internal override Plan<TIn, TOut> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, TOut>(Kind);
+        builder.Sequence(First, Second, Third, Fourth, Fifth, Sixth, Seventh, Eighth, Selector);
 }

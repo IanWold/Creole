@@ -15,5 +15,5 @@ internal sealed class MapNode<TIn, TSource, TResult>(Parser<TIn, TSource> source
     public Parser<TIn, TSource> Source { get; } = source;
 
     internal override Plan<TIn, TResult> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, TResult>(Kind);
+        builder.Map(Source, Selector);
 }

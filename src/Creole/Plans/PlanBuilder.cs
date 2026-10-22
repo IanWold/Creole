@@ -15,7 +15,7 @@ namespace Creole;
 /// A <c>Rec</c> lowers to its target's plan, so the forward plan on the edge that closes a cycle is the only indirection a cycle costs.
 /// </para>
 /// </remarks>
-internal sealed class PlanBuilder
+internal sealed partial class PlanBuilder
 {
     private readonly Dictionary<INode, object?> _inProgress = new(ReferenceEqualityComparer.Instance);
     private readonly List<(INode Node, string? Name)> _path = [];

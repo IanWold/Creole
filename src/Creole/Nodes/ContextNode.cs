@@ -15,5 +15,5 @@ internal sealed class ContextNode<TIn, T>(Parser<TIn, T> item, string text) : Pa
     public string Text { get; } = text;
 
     internal override Plan<TIn, T> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, T>(Kind);
+        builder.Context(Item);
 }

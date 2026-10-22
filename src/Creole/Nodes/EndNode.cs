@@ -15,5 +15,6 @@ internal sealed class EndNode<TIn> : Parser<TIn, Unit>, IPrimitiveNode
 
     public bool Opaque => false;
 
-    internal override Plan<TIn, Unit> Lower(PlanBuilder builder) => PlanBuilder.NotYetExecutable<TIn, Unit>(Kind);
+    internal override Plan<TIn, Unit> Lower(PlanBuilder builder) =>
+        PlanBuilder.End<TIn>();
 }

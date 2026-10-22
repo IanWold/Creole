@@ -13,5 +13,5 @@ internal sealed class SliceNode<T>(Parser<char, T> item) : Parser<char, ReadOnly
     public Parser<char, T> Item { get; } = item;
 
     internal override Plan<char, ReadOnlyMemory<char>> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<char, ReadOnlyMemory<char>>(Kind);
+        builder.Slice(Item);
 }

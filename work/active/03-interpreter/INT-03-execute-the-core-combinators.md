@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Interpreted engine](../../README.md#int--interpreted-engine) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -58,3 +58,9 @@ The interpreter runs every analyzable node family with Parsec-style commit seman
 - [§ Combinator semantics](../../../whitepaper.md#combinator-semantics)
 - [§ Results](../../../whitepaper.md#results)
 - [§ Choice and backtracking](../../../whitepaper.md#choice-and-backtracking)
+
+## Progress notes
+
+- 2026-10-22 (Build): Started. Replace every `PlanBuilder.NotYetExecutable` stub with a real plan node, node family by node family, and test each against the CORE-06, CORE-07 and CORE-08 tables and the four-outcome model.
+- 2026-10-22 (Build): Plan agreed with the maintainer: four increments (primitives and sequencing; repetition; choice and control; `Rec`, Worked Example A and cleanup). Calls agreed: the cut flag is an internal `Cursor<T>.Cut`; the nullable-repetition guard throws `GrammarException` at parse time for unbounded repetition only; `Slice` is a view inside one memory-backed segment and a copy otherwise; `Named` and `Context` lower to their item's plan until ERR-02; `Switch` scans keys linearly; `MatchCase` gains an internal lowering member. `Expression.Build` stays a stub for INT-04, so the scope line "replace every stub" is corrected in increment 4.
+- 2026-10-22 (Build): Increment 1 of 4 done. `Cursor<T>` gained internal `Cut`, `FromMemory` and `Since(start)`. New plans in `src/Creole/Plans/`: `ItemPlan` (`Any`, `Token`, `Satisfy`, character classes, `Kind`), `CasePlan`, `EndPlan`, `StringPlan` (atomic; `CIString` by `ToLowerInvariant`), `MapPlan`, `SequencePlan` (2 to 8), `OptionalPlan`, `SlicePlan`, `TextPlan`, and `LightMark`, which restores the cut flag on an attempt's empty failure. `PlanBuilder` is partial, with `.Primitives`, `.Sequencing` and `.Control` files. Tests: `Execution` helper, `PrimitiveExecutionTests` (with CsCheck properties for `String`, `CIString` and single-item primitives), `SequencingExecutionTests`, test-only `CutThenNode`. Mutants that drop `StringPlan`'s rewind or `LightMark`'s cut restore failed 7 tests. Verified: build clean, `dotnet test` 783 passed, AOT smoke publish clean. Docs: primitives.md and sequencing.md banners and the slice copy rule. Open: a slice that views a pooled stream-buffer segment would dangle once LAY-01 releases it, raised with the maintainer. Next: increment 2, repetition.

@@ -30,5 +30,6 @@ internal sealed class CaseNode<TToken, TCase> : Parser<TToken, TCase>, IPrimitiv
         }
     }
 
-    internal override Plan<TToken, TCase> Lower(PlanBuilder builder) => PlanBuilder.NotYetExecutable<TToken, TCase>(Kind);
+    internal override Plan<TToken, TCase> Lower(PlanBuilder builder) =>
+        PlanBuilder.Case<TToken, TCase>();
 }

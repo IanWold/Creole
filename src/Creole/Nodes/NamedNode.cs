@@ -15,5 +15,5 @@ internal sealed class NamedNode<TIn, T>(Parser<TIn, T> item, Label label) : Pars
     public Label Label { get; } = label;
 
     internal override Plan<TIn, T> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, T>(Kind);
+        builder.Named(Item);
 }

@@ -2,7 +2,7 @@
 
 Most grammar code runs parsers one after another and turns their results into a value. `Seq` runs parsers in order, and `Select` combines what they produced. This page also covers `Optional` and text capture. The design is in the [whitepaper's § Authoring ergonomics](../../whitepaper.md#authoring-ergonomics) and [§ Small API consequences](../../whitepaper.md#small-api-consequences).
 
-> Nothing runs these combinators yet. They build grammar nodes, and the interpreter that executes them arrives with INT-03. Each method's XML documentation states the behaviour engines must implement; this page will describe it once it runs.
+> The interpreter runs these combinators as this page describes. The public method that runs a parser on your input arrives with INT-08.
 
 ## `Seq` and `Select`
 
@@ -67,7 +67,9 @@ Two maybes are equal if both are `Nothing` or both hold equal values. When `T` i
 
 ## Text capture
 
-At character layers, `p.Slice()` produces the characters `p` consumed as a `ReadOnlyMemory<char>` without copying them, and `p.Text()` produces them as a new `string`. Both discard `p`'s own result. Tokens should normally carry slices. The design is in the [whitepaper's § Text capture](../../whitepaper.md#text-capture).
+At character layers, `p.Slice()` produces the characters `p` consumed as a `ReadOnlyMemory<char>` without copying them, and `p.Text()` produces them as a new `string`. Both discard `p`'s own result. Tokens should normally carry slices. If `p` fails, both fail the same way.
+
+A slice is a view of the input when the input is held in memory as one piece, as a string is. When the input arrives in pieces and `p` read across a boundary between them, the slice is a copy, because no single piece holds all the characters. The design is in the [whitepaper's § Text capture](../../whitepaper.md#text-capture).
 
 `Slice` and `Text` are extension members in the `TextCapture` class, so they apply to any `Parser<char, TOut>`, not only inside a `CharGrammar`.
 
