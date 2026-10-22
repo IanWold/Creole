@@ -12,7 +12,7 @@ Interpreter support for the dependent, operator-precedence and user-scanner node
 
 ## Scope
 
-- `Bind` with the once-compiled continuation.
+- `Bind` with the once-compiled continuation, and the filter node behind `Where` and query `where` clauses (CORE-10): it fails committed if its source consumed input. What a rejected filter reports is decided here.
 - Precedence climbing for `Expression.Build`, with the semantics of [ADR-0004](../../docs/decisions/0004-expression-build-operator-table-and-semantics.md) points 3 to 5.
 - `Named` on an expression follows [ADR-0008](../../docs/decisions/0008-control-node-semantics.md) point 4: it also applies when the expression succeeds without consuming. ADR-0004 point 5 states the earlier rule. Each operator attempt and each atom takes a light mark, so a cut in one that fails without consuming is dropped ([ADR-0011](../../docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md)).
 - docs/concepts/expressions.md gains the parsing rules and the behavioural differences from Pidgin (repeated prefix and postfix, `2 ^ -x`, non-associative chains), which CORE-11 left out because nothing ran them.

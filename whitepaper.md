@@ -160,6 +160,7 @@ The costs, stated plainly:
 
 - A `from` clause must be an expression lambda that is valid in an expression tree. Clauses are nearly always a parser reference or call, so this rarely bites.
 - Queries with three or more clauses make C# allocate a transparent-identifier object per extra clause per match. The generator removes these; interpreted hot paths may prefer `Seq`.
+- Under Native AOT, a dependent clause's compiled continuation runs on the expression interpreter at every match. The generator removes this too; an interpreted grammar can use `Bind` with a plain delegate instead.
 - `where` becomes a filter that fails committed if it rejects after consuming input, and `let` becomes a map.
 
 **Recursion and names.** `Rec(() => Value)` defers a reference so fields can refer to each other. Run-time tools (rule paths in `GrammarException`, traces, grammar export) name rules without extra ceremony; the names come from, in order ([ADR-0009](work/docs/decisions/0009-where-rule-names-come-from.md)):
