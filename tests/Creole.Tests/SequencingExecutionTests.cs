@@ -117,6 +117,20 @@ public class SequencingExecutionTests
     }
 
     [Fact]
+    public void SliceOverASourceKeepsItsTextWhenTheSourceMemoryIsReused()
+    {
+        var segments = "xabcdx".ToCharArray();
+        var cursor = new Cursor<char>(new SegmentedSource<char>(segments, 6));
+        cursor.Advance(1);
+
+        var (ok, slice) = Execution.Run(String("abcd").Slice(), ref cursor);
+        segments.AsSpan().Fill('z');
+
+        Assert.True(ok);
+        Assert.Equal("abcd", slice.ToString());
+    }
+
+    [Fact]
     public void SliceFromASpanCopiesTheConsumedCharacters() =>
         Assert.Equal(Ok("abc", 4), Execution.Outcome(Seq(Char('x'), String("abc").Slice()).Select((_, s) => s), "xabcx", s => s.ToString()));
 

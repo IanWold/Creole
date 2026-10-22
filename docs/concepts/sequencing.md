@@ -2,7 +2,7 @@
 
 Most grammar code runs parsers one after another and turns their results into a value. `Seq` runs parsers in order, and `Select` combines what they produced. This page also covers `Optional`, text capture and query syntax. The design is in the [whitepaper's § Authoring ergonomics](../../whitepaper.md#authoring-ergonomics), [§ LINQ query syntax](../../whitepaper.md#linq-query-syntax) and [§ Small API consequences](../../whitepaper.md#small-api-consequences).
 
-> The interpreter runs these combinators as this page describes. The public method that runs a parser on your input arrives with INT-08.
+> The interpreter runs these combinators as this page describes, except `Bind` and `where` clauses, which it runs from INT-04. The public method that runs a parser on your input arrives with INT-08.
 
 ## `Seq` and `Select`
 
@@ -67,9 +67,9 @@ Two maybes are equal if both are `Nothing` or both hold equal values. When `T` i
 
 ## Text capture
 
-At character layers, `p.Slice()` produces the characters `p` consumed as a `ReadOnlyMemory<char>` without copying them, and `p.Text()` produces them as a new `string`. Both discard `p`'s own result. Tokens should normally carry slices. If `p` fails, both fail the same way.
+At character layers, `p.Slice()` produces the characters `p` consumed as a `ReadOnlyMemory<char>`, and `p.Text()` produces them as a new `string`. Both discard `p`'s own result. Tokens should normally carry slices. If `p` fails, both fail the same way.
 
-A slice is a view of the input when the input is held in memory as one piece, as a string is. When the input arrives in pieces and `p` read across a boundary between them, the slice is a copy, because no single piece holds all the characters. The design is in the [whitepaper's § Text capture](../../whitepaper.md#text-capture).
+When the input is held whole in memory, as a `string` is, a slice is a view of it and copies nothing. When the input is streamed, a slice is a copy, because the buffer that held those characters is reused once the parse moves on. Either way, a slice keeps its text for as long as you hold it. The design is in the [whitepaper's § Text capture](../../whitepaper.md#text-capture) and [ADR-0013](../../work/docs/decisions/0013-slices-view-in-memory-input-and-copy-streamed-input.md).
 
 `Slice` and `Text` are extension members in the `TextCapture` class, so they apply to any `Parser<char, TOut>`, not only inside a `CharGrammar`.
 

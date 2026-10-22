@@ -32,6 +32,8 @@ public static class Repetition
         /// <remarks>
         /// Repetition stops at the first attempt that fails without consuming input.
         /// An attempt that fails after consuming input fails the whole repetition.
+        /// If this parser succeeds without consuming input, the parse throws a <see cref="GrammarException"/> when it reaches that point, because the repetition would never end.
+        /// <c>Repeat(min, max)</c> is bounded, so it does not throw.
         /// </remarks>
         public Parser<TIn, IReadOnlyList<TOut>> Many([CallerArgumentExpression(nameof(parser))] string parserExpression = "") =>
             new RepeatNode<TIn, TOut>(Guard.NotNull(parser, parserExpression), 0, null);
@@ -47,6 +49,8 @@ public static class Repetition
         /// <exception cref="GrammarException">This parser is null.</exception>
         /// <remarks>
         /// Like <see cref="Many"/>, but fails if this parser does not match at least once.
+        /// If this parser succeeds without consuming input, the parse throws a <see cref="GrammarException"/> when it reaches that point, because the repetition would never end.
+        /// <c>Repeat(min, max)</c> is bounded, so it does not throw.
         /// </remarks>
         public Parser<TIn, IReadOnlyList<TOut>> AtLeastOnce([CallerArgumentExpression(nameof(parser))] string parserExpression = "") =>
             new RepeatNode<TIn, TOut>(Guard.NotNull(parser, parserExpression), 1, null);
@@ -111,6 +115,7 @@ public static class Repetition
         /// A separator that fails without consuming input ends the list.
         /// A separator must be followed by an item, so <c>a,</c> fails if the separator consumed the comma.
         /// A trailing separator is accepted by <c>SepEndBy</c>.
+        /// If a separator and the item after it both succeed without consuming input, the parse throws a <see cref="GrammarException"/> when it reaches that point, because the list would never end.
         /// </remarks>
         public Parser<TIn, IReadOnlyList<TOut>> SepBy<TSep>(
             Parser<TIn, TSep> separator,
@@ -136,6 +141,7 @@ public static class Repetition
         /// <exception cref="GrammarException">This parser or <paramref name="separator"/> is null.</exception>
         /// <remarks>
         /// Like <c>SepBy</c>, but fails if there is not at least one item.
+        /// If a separator and the item after it both succeed without consuming input, the parse throws a <see cref="GrammarException"/> when it reaches that point, because the list would never end.
         /// </remarks>
         public Parser<TIn, IReadOnlyList<TOut>> SepBy1<TSep>(
             Parser<TIn, TSep> separator,
@@ -162,6 +168,7 @@ public static class Repetition
         /// <remarks>
         /// Like <c>SepBy</c>, but a separator may also follow the last item, so both <c>a,b</c> and <c>a,b,</c> match.
         /// An item that fails without consuming input after a separator ends the list.
+        /// If a separator and the item after it both succeed without consuming input, the parse throws a <see cref="GrammarException"/> when it reaches that point, because the list would never end.
         /// </remarks>
         public Parser<TIn, IReadOnlyList<TOut>> SepEndBy<TSep>(
             Parser<TIn, TSep> separator,
@@ -190,6 +197,7 @@ public static class Repetition
         /// If it matches, it is consumed and the repetition succeeds.
         /// If it fails without consuming input, this parser must match an item, or the whole repetition fails.
         /// A terminator that fails after consuming input also fails the whole repetition.
+        /// If this parser succeeds without consuming input, the parse throws a <see cref="GrammarException"/> when it reaches that point, because the repetition would never end.
         /// </remarks>
         public Parser<TIn, IReadOnlyList<TOut>> Until<TTerm>(
             Parser<TIn, TTerm> terminator,
@@ -209,6 +217,8 @@ public static class Repetition
         /// <exception cref="GrammarException">This parser is null.</exception>
         /// <remarks>
         /// Matches the same input as <see cref="Many"/>.
+        /// If this parser succeeds without consuming input, the parse throws a <see cref="GrammarException"/> when it reaches that point, because the repetition would never end.
+        /// <c>Repeat(min, max)</c> is bounded, so it does not throw.
         /// </remarks>
         public Parser<TIn, Unit> SkipMany([CallerArgumentExpression(nameof(parser))] string parserExpression = "") =>
             new SkipRepeatNode<TIn, TOut>(Guard.NotNull(parser, parserExpression), 0, null);
@@ -224,6 +234,8 @@ public static class Repetition
         /// <exception cref="GrammarException">This parser is null.</exception>
         /// <remarks>
         /// Matches the same input as <see cref="AtLeastOnce"/>.
+        /// If this parser succeeds without consuming input, the parse throws a <see cref="GrammarException"/> when it reaches that point, because the repetition would never end.
+        /// <c>Repeat(min, max)</c> is bounded, so it does not throw.
         /// </remarks>
         public Parser<TIn, Unit> SkipAtLeastOnce([CallerArgumentExpression(nameof(parser))] string parserExpression = "") =>
             new SkipRepeatNode<TIn, TOut>(Guard.NotNull(parser, parserExpression), 1, null);
