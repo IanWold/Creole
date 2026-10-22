@@ -25,5 +25,5 @@ internal sealed class SeparatedNode<TIn, T, TSep>(Parser<TIn, T> item, Parser<TI
     public Parser<TIn, TSep> Separator { get; } = separator;
 
     internal override Plan<TIn, IReadOnlyList<T>> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, IReadOnlyList<T>>(Kind);
+        builder.Separated(Item, Separator, Min, AllowTrailing);
 }

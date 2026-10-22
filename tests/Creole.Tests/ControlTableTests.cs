@@ -18,6 +18,15 @@ public class ControlTableTests
         Assert.NotNull(parser);
     }
 
+    [Theory]
+    [MemberData(nameof(CaseNames))]
+    public void TheInterpreterGivesEachRowItsOutcome(string name)
+    {
+        var row = _cases[name];
+
+        Assert.Equal(row.Expected, Execution.Outcome(ControlTable.Build(row.Shape), row.Input));
+    }
+
     [Fact]
     public void TheTableCoversEveryControlNode()
     {

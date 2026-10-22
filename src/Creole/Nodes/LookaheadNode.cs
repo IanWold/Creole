@@ -13,5 +13,5 @@ internal sealed class LookaheadNode<TIn, T>(Parser<TIn, T> item) : Parser<TIn, T
     public Parser<TIn, T> Item { get; } = item;
 
     internal override Plan<TIn, T> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, T>(Kind);
+        builder.Lookahead(Item);
 }

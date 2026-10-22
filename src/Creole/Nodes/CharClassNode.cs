@@ -23,5 +23,6 @@ internal sealed class CharClassNode(CharSet set, string? name) : Parser<char, ch
 
     public CharSet Set { get; } = set;
 
-    internal override Plan<char, char> Lower(PlanBuilder builder) => PlanBuilder.NotYetExecutable<char, char>(Kind);
+    internal override Plan<char, char> Lower(PlanBuilder builder) =>
+        PlanBuilder.CharClass(Set);
 }

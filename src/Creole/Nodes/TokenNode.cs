@@ -18,5 +18,6 @@ internal sealed class TokenNode<TIn>(TIn value) : Parser<TIn, TIn>, IPrimitiveNo
 
     public TIn Value { get; } = value;
 
-    internal override Plan<TIn, TIn> Lower(PlanBuilder builder) => PlanBuilder.NotYetExecutable<TIn, TIn>(Kind);
+    internal override Plan<TIn, TIn> Lower(PlanBuilder builder) =>
+        PlanBuilder.Token(Value);
 }

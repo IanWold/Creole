@@ -20,5 +20,5 @@ internal sealed class RepeatNode<TIn, T>(Parser<TIn, T> item, int min, int? max)
     public int Min { get; } = min;
 
     internal override Plan<TIn, IReadOnlyList<T>> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, IReadOnlyList<T>>(Kind);
+        builder.Repeat(Item, Min, Max);
 }

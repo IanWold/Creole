@@ -13,5 +13,5 @@ internal sealed class OptionalNode<TIn, T>(Parser<TIn, T> item) : Parser<TIn, Ma
     public Parser<TIn, T> Item { get; } = item;
 
     internal override Plan<TIn, Maybe<T>> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, Maybe<T>>(Kind);
+        builder.Optional(Item);
 }

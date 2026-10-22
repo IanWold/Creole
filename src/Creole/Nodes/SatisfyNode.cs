@@ -21,5 +21,6 @@ internal sealed class SatisfyNode<TIn>(Func<TIn, bool> predicate) : Parser<TIn, 
 
     public Func<TIn, bool> Predicate { get; } = Guard.NotNull(predicate);
 
-    internal override Plan<TIn, TIn> Lower(PlanBuilder builder) => PlanBuilder.NotYetExecutable<TIn, TIn>(Kind);
+    internal override Plan<TIn, TIn> Lower(PlanBuilder builder) =>
+        PlanBuilder.Satisfy(Predicate);
 }

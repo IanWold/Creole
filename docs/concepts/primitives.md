@@ -2,7 +2,7 @@
 
 Primitives are the leaves of a grammar: the parsers that read input directly. Every other combinator is built from them. The design is in the [whitepaper's § Types](../../whitepaper.md#types) and [§ Choice and backtracking](../../whitepaper.md#choice-and-backtracking).
 
-> Nothing runs these parsers yet. They build grammar nodes, and the interpreter that executes them arrives with INT-03. Each member's XML documentation states the behaviour engines must implement; this page will describe it once it runs.
+> The interpreter runs these parsers as this page describes. The public method that runs a parser on your input arrives with INT-08.
 
 ## Items
 

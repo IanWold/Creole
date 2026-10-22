@@ -22,9 +22,19 @@ namespace Creole;
 public ref struct Cursor<T>
 {
     private int _index;
+    private ReadOnlyMemory<T> _segment;
     private long _segmentStart;
     private readonly ICursorSource<T>? _source;
     private ReadOnlySpan<T> _span;
+
+    /// <summary>
+    /// Whether a cut is in force in this layer's parse.
+    /// </summary>
+    /// <remarks>
+    /// Each layer has its own cursor, so this is the one cut flag per layer that the cut rule needs.
+    /// <c>Atomic</c>, <c>Lookahead</c>, <c>Not</c>, <c>Longest</c> alternatives and every <see cref="LightMark"/> save and restore it.
+    /// </remarks>
+    internal bool Cut { get; set; }
 
     /// <summary>
     /// The items from the cursor to the end of the current segment. Empty only at the end of the input.
@@ -101,13 +111,14 @@ public ref struct Cursor<T>
 
         if (_source is not null && _source.TryGetSegment(position, out var segment, out var start))
         {
-            SetSegment(segment.Span, start, position);
+            SetSegment(segment, start, position);
         }
     }
 
-    private void SetSegment(ReadOnlySpan<T> segment, long start, long position)
+    private void SetSegment(ReadOnlyMemory<T> segment, long start, long position)
     {
-        _span = segment;
+        _segment = segment;
+        _span = segment.Span;
         _segmentStart = start;
         _index = (int)(position - start);
     }
@@ -127,6 +138,11 @@ public ref struct Cursor<T>
     }
 
     /// <summary>
+    /// Creates a cursor at the start of an input held entirely in memory, whose items <see cref="Since"/> can return without copying.
+    /// </summary>
+    internal static Cursor<T> FromMemory(ReadOnlyMemory<T> input) => new(input.Span) { _segment = input };
+
+    /// <summary>
     /// Moves the cursor to <paramref name="position"/>, which must be a position this cursor has already reached and the input still holds.
     /// </summary>
     internal void Reset(long position)
@@ -144,7 +160,46 @@ public ref struct Cursor<T>
             throw new ArgumentOutOfRangeException(nameof(position), position, "The input does not hold this position.");
         }
 
-        SetSegment(segment.Span, start, position);
+        SetSegment(segment, start, position);
+    }
+
+    /// <summary>
+    /// The items from <paramref name="start"/> up to the cursor, which must be a position this cursor has already reached and the input still holds.
+    /// </summary>
+    /// <remarks>
+    /// The result is a view of the input only for a cursor created by <see cref="FromMemory"/>, whose memory belongs to the caller.
+    /// Otherwise it is a copy: a span has no memory to view, and a source's segments may be pooled and refilled once released (ADR-0013).
+    /// </remarks>
+    internal readonly ReadOnlyMemory<T> Since(long start)
+    {
+        var length = checked((int)(Position - start));
+        var offset = start - _segmentStart;
+
+        if (offset >= 0)
+        {
+            // Only FromMemory sets _segment without a source. A cursor created from a span leaves it empty.
+            return _source is null && _segment.Length == _span.Length
+                ? _segment.Slice((int)offset, length)
+                : _span.Slice((int)offset, length).ToArray();
+        }
+
+        var items = new T[length];
+
+        for (var copied = 0; copied < length;)
+        {
+            if (_source is null || !_source.TryGetSegment(start + copied, out var segment, out var segmentStart))
+            {
+                throw new ArgumentOutOfRangeException(nameof(start), start, "The input does not hold this position.");
+            }
+
+            var from = (int)(start + copied - segmentStart);
+            var count = Math.Min(length - copied, segment.Length - from);
+
+            segment.Span.Slice(from, count).CopyTo(items.AsSpan(copied));
+            copied += count;
+        }
+
+        return items;
     }
 
     /// <summary>

@@ -20,5 +20,6 @@ internal sealed class KindNode<TToken, TKind>(TKind kind) : Parser<TToken, TToke
 
     public TKind TokenKind { get; } = kind;
 
-    internal override Plan<TToken, TToken> Lower(PlanBuilder builder) => PlanBuilder.NotYetExecutable<TToken, TToken>(Kind);
+    internal override Plan<TToken, TToken> Lower(PlanBuilder builder) =>
+        PlanBuilder.Kind<TToken, TKind>(TokenKind);
 }

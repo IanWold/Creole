@@ -15,5 +15,6 @@ internal sealed class AnyNode<TIn> : Parser<TIn, TIn>, IPrimitiveNode
 
     public bool Opaque => false;
 
-    internal override Plan<TIn, TIn> Lower(PlanBuilder builder) => PlanBuilder.NotYetExecutable<TIn, TIn>(Kind);
+    internal override Plan<TIn, TIn> Lower(PlanBuilder builder) =>
+        PlanBuilder.Any<TIn>();
 }

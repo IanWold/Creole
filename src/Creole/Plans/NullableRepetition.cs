@@ -1,0 +1,18 @@
+namespace Creole;
+
+/// <summary>
+/// The run-time guard against a repetition that would loop forever because a round consumed nothing.
+/// </summary>
+/// <remarks>
+/// Only unbounded repetitions check: <c>Many</c>, <c>AtLeastOnce</c>, <c>SkipMany</c>, <c>SkipAtLeastOnce</c>, the separated lists and <c>Until</c>.
+/// A bounded <c>Repeat</c> ends after its maximum, so it runs an item that consumes nothing that many times.
+/// Grammar analysis will report these grammars before they run; until then, this guard turns a hang into an exception.
+/// </remarks>
+internal static class NullableRepetition
+{
+    public static GrammarException Item() =>
+        new("A repeated parser succeeded without consuming input, so the repetition would never end. Make the item consume input, or bound the repetition with Repeat(min, max).");
+
+    public static GrammarException ItemAndSeparator() =>
+        new("A separator and the item after it succeeded without consuming input, so the list would never end. Make the item or the separator consume input.");
+}

@@ -48,37 +48,20 @@ internal class PairPlan<TA, TB>(Plan<char, TA> first, Plan<char, TB> second) : P
     }
 }
 
-internal class AltNode<T>(params Parser<char, T>[] alternatives) : Parser<char, T>
+internal class CutThenNode<T>(Parser<char, T> inner) : Parser<char, T>
 {
-    private int _lowerCount;
+    internal override IReadOnlyList<INode> Children => [inner];
 
-    internal override IReadOnlyList<INode> Children => alternatives;
+    internal override NodeKind Kind => NodeKind.Cut;
 
-    internal override NodeKind Kind => NodeKind.Or;
-
-    public int LowerCount => Volatile.Read(ref _lowerCount);
-
-    internal override Plan<char, T> Lower(PlanBuilder builder)
-    {
-        Interlocked.Increment(ref _lowerCount);
-        return new AltPlan<T>([.. alternatives.Select(alternative => builder.Lower(alternative))]);
-    }
+    internal override Plan<char, T> Lower(PlanBuilder builder) => new CutThenPlan<T>(builder.Lower(inner));
 }
 
-internal class AltPlan<T>(Plan<char, T>[] alternatives) : Plan<char, T>
+internal class CutThenPlan<T>(Plan<char, T> inner) : Plan<char, T>
 {
-    public IReadOnlyList<Plan<char, T>> Alternatives { get; } = alternatives;
-
     public override bool TryParse(ref Cursor<char> cursor, ref T result)
     {
-        foreach (var alternative in Alternatives)
-        {
-            if (alternative.TryParse(ref cursor, ref result))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        cursor.Cut = true;
+        return inner.TryParse(ref cursor, ref result);
     }
 }

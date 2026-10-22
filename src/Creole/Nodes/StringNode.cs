@@ -44,7 +44,8 @@ internal sealed class StringNode : Parser<char, string>, IPrimitiveNode
         First = FirstSet.OfChars(ignoreCase ? CaseVariants.Of(text[0]) : CharSet.Of(text[0]));
     }
 
-    internal override Plan<char, string> Lower(PlanBuilder builder) => PlanBuilder.NotYetExecutable<char, string>(Kind);
+    internal override Plan<char, string> Lower(PlanBuilder builder) =>
+        PlanBuilder.String(Text, IgnoreCase);
 }
 
 /// <summary>

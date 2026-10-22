@@ -19,5 +19,5 @@ internal sealed class OrNode<TIn, T>(Parser<TIn, T>[] alternatives) : Parser<TIn
     public IReadOnlyList<Parser<TIn, T>> Alternatives { get; } = alternatives;
 
     internal override Plan<TIn, T> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, T>(Kind);
+        builder.Or(Alternatives);
 }

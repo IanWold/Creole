@@ -15,5 +15,5 @@ internal sealed class UntilNode<TIn, T, TTerm>(Parser<TIn, T> item, Parser<TIn, 
     public Parser<TIn, TTerm> Terminator { get; } = terminator;
 
     internal override Plan<TIn, IReadOnlyList<T>> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, IReadOnlyList<T>>(Kind);
+        builder.Until(Item, Terminator);
 }

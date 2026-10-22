@@ -11,5 +11,5 @@ internal sealed class CutNode<TIn> : Parser<TIn, Unit>
     internal override NodeKind Kind => NodeKind.Cut;
 
     internal override Plan<TIn, Unit> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, Unit>(Kind);
+        PlanBuilder.Cut<TIn>();
 }
