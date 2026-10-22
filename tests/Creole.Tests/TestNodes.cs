@@ -82,3 +82,21 @@ internal class AltPlan<T>(Plan<char, T>[] alternatives) : Plan<char, T>
         return false;
     }
 }
+
+internal class CutThenNode<T>(Parser<char, T> inner) : Parser<char, T>
+{
+    internal override IReadOnlyList<INode> Children => [inner];
+
+    internal override NodeKind Kind => NodeKind.Cut;
+
+    internal override Plan<char, T> Lower(PlanBuilder builder) => new CutThenPlan<T>(builder.Lower(inner));
+}
+
+internal class CutThenPlan<T>(Plan<char, T> inner) : Plan<char, T>
+{
+    public override bool TryParse(ref Cursor<char> cursor, ref T result)
+    {
+        cursor.Cut = true;
+        return inner.TryParse(ref cursor, ref result);
+    }
+}

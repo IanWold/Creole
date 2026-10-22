@@ -22,5 +22,5 @@ internal sealed class LongestNode<TIn, T>(Parser<TIn, T>[] alternatives) : Parse
     public IReadOnlyList<Parser<TIn, T>> Alternatives { get; } = alternatives;
 
     internal override Plan<TIn, T> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, T>(Kind);
+        builder.Longest(Alternatives);
 }

@@ -2,7 +2,7 @@
 
 Choice combinators pick one of several parsers. `p.Or(q)`, `p.Switch(...)` and `p.Match(...)` are extension members of `Parser<TIn, TOut>` in the `Choice` class. `OneOf`, `Longest` and `Case` are members of `Grammar<TIn>`, so a grammar class calls them unqualified. The design is in the [whitepaper's § Choice and backtracking](../../whitepaper.md#choice-and-backtracking), [§ Longest match](../../whitepaper.md#longest-match) and [§ Selective choice](../../whitepaper.md#selective-choice).
 
-> Nothing runs these combinators yet. They build grammar nodes, and the interpreter that executes them arrives with INT-03. Each method's XML documentation states the behaviour engines must implement; this page will describe it once it runs.
+> The interpreter runs these combinators as this page describes. The public method that runs a parser on your input arrives with INT-08.
 
 ## Ordered choice
 
@@ -34,9 +34,9 @@ Unlike `OneOf`, every alternative runs atomically. An alternative that fails, ev
 
 `Longest` takes 2 to 16 alternatives, each as a separate parameter so a null one is reported by its expression. For more, nest calls: `Longest(a, Longest(b, c))` matches the same input as `Longest(a, b, c)` and picks the same winner. The grammar tree keeps the nesting you wrote.
 
-`Longest` works on any input type, so a token layer can use it too. When every alternative is regular, engines are meant to compile it to a single DFA rather than run the alternatives one by one; that arrives with INT-06.
+`Longest` works on any input type, so a token layer can use it too. When every alternative is regular, engines are meant to compile it to a single DFA rather than run the alternatives one by one. That arrives with INT-06; until then the interpreter runs each alternative in turn.
 
-The examples on this page are rows of `LongestTable` in the tests, which INT-03 runs against the interpreter.
+The examples on this page are rows of `LongestTable` in the tests, and the interpreter passes every row.
 
 ## Selective choice with `Switch`
 

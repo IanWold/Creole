@@ -59,13 +59,19 @@ file sealed class Forward : CharGrammar
     public static readonly Parser<char, int> Second = Return(2);
 }
 
-/// <summary>
 file sealed class Lists : CharGrammar
 {
     private static readonly Parser<char, int> _item = Rec(() => List);
 
     public static readonly Parser<char, int> List =
         _item.SepBy(Char(',')).Between(Char('['), Char(']')).Select(static items => items.Count);
+}
+
+file sealed class Parens : CharGrammar
+{
+    public static readonly Parser<char, int> Group = Rec(() => Inner).Between(Char('('), Char(')')).Select(static depth => depth + 1);
+
+    public static readonly Parser<char, int> Inner = OneOf(Group, Char('x').As(0));
 }
 
 file sealed class Names : CharGrammar
@@ -186,6 +192,39 @@ public class RecTests
 
         Assert.Equal("List", item.Name);
         Assert.Same(Lists.List, item.Target);
+    }
+
+    [Fact]
+    public void APlanWithACycleParsesRecursiveInput()
+    {
+        Assert.Equal(new Outcome.Ok("3", 12), Execution.Outcome(Lists.List, "[[],[[]],[]]"));
+        Assert.Equal(new Outcome.FailConsumed(), Execution.Outcome(Lists.List, "[[],[]"));
+    }
+
+    [Fact]
+    public void APlanWithACycleBetweenTwoRulesParsesRecursiveInput()
+    {
+        Assert.Equal(new Outcome.Ok("3", 7), Execution.Outcome(Parens.Group, "(((x)))"));
+        Assert.Equal(new Outcome.Ok("0", 1), Execution.Outcome(Parens.Inner, "x"));
+        Assert.Equal(new Outcome.FailConsumed(), Execution.Outcome(Parens.Group, "((x)"));
+    }
+
+    [Fact]
+    public void APlanWithACycleParsesDeeplyNestedInput() =>
+        Assert.Equal(new Outcome.Ok("500", 1001), Execution.Outcome(Parens.Group, new string('(', 500) + "x" + new string(')', 500)));
+
+    [Fact]
+    public void ExampleAParsesNestedTokens()
+    {
+        JTok[] tokens =
+        [
+            new(J.LBrace, "{"), new(J.String, "a"), new(J.Colon, ":"),
+            new(J.LBracket, "["), new(J.Number, "1"), new(J.Comma, ","), new(J.LBracket, "["), new(J.RBracket, "]"), new(J.RBracket, "]"),
+            new(J.RBrace, "}"),
+        ];
+
+        Assert.Equal(new Outcome.Ok("a:2", 10), Execution.Outcome(JsonGrammar.Document, tokens, static v =>
+            v is JsonObject { Members: [var member] } && member.Value is JsonArray array ? $"{member.Key}:{array.Items.Count}" : "?"));
     }
 
     [Fact]

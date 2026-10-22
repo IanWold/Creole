@@ -15,7 +15,7 @@ namespace Creole;
 /// A <c>Rec</c> lowers to its target's plan, so the forward plan on the edge that closes a cycle is the only indirection a cycle costs.
 /// </para>
 /// </remarks>
-internal sealed class PlanBuilder
+internal sealed partial class PlanBuilder
 {
     private readonly Dictionary<INode, object?> _inProgress = new(ReferenceEqualityComparer.Instance);
     private readonly List<(INode Node, string? Name)> _path = [];
@@ -87,7 +87,7 @@ internal sealed class PlanBuilder
     }
 
     /// <summary>
-    /// Stands in for the lowering of a node kind the interpreter cannot run yet. INT-03 replaces every call.
+    /// Stands in for the lowering of a node kind the interpreter cannot run yet. Only <c>Expression.Build</c> still uses it; INT-04 replaces that call and removes this method.
     /// </summary>
     public static Plan<TIn, TOut> NotYetExecutable<TIn, TOut>(NodeKind kind) =>
         throw new NotSupportedException($"The interpreter cannot run {kind} nodes yet.");

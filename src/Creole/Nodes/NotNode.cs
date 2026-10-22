@@ -13,5 +13,5 @@ internal sealed class NotNode<TIn, T>(Parser<TIn, T> item) : Parser<TIn, Unit>
     public Parser<TIn, T> Item { get; } = item;
 
     internal override Plan<TIn, Unit> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, Unit>(Kind);
+        builder.Not(Item);
 }

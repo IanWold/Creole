@@ -224,6 +224,27 @@ internal sealed class ControlModel(bool dispatch)
         _ => throw new ArgumentOutOfRangeException(nameof(shape), shape, null),
     };
 
+    /// <summary>
+    /// Whether <paramref name="shape"/> repeats something that can loop without consuming. <see cref="AllShapes"/> leaves these out.
+    /// </summary>
+    internal static bool RepeatsNullable(ControlShape shape) => shape switch
+    {
+        ControlShape.Many s => Nullable(s.Item) || RepeatsNullable(s.Item),
+        ControlShape.AtLeastOnce s => Nullable(s.Item) || RepeatsNullable(s.Item),
+        ControlShape.SepBy s => (Nullable(s.Item) && Nullable(s.Separator)) || RepeatsNullable(s.Item) || RepeatsNullable(s.Separator),
+        ControlShape.Until s => Nullable(s.Item) || RepeatsNullable(s.Item) || RepeatsNullable(s.Terminator),
+        ControlShape.Seq s => s.Steps.Any(RepeatsNullable),
+        ControlShape.Or s => RepeatsNullable(s.First) || RepeatsNullable(s.Second),
+        ControlShape.Longest s => RepeatsNullable(s.First) || RepeatsNullable(s.Second),
+        ControlShape.Atomic s => RepeatsNullable(s.Item),
+        ControlShape.Lookahead s => RepeatsNullable(s.Item),
+        ControlShape.Not s => RepeatsNullable(s.Item),
+        ControlShape.Optional s => RepeatsNullable(s.Item),
+        ControlShape.Named s => RepeatsNullable(s.Item),
+        ControlShape.Context s => RepeatsNullable(s.Item),
+        _ => false,
+    };
+
     private static bool FirstOfSteps(IEnumerable<ControlShape> steps, char c)
     {
         foreach (var step in steps)
@@ -241,24 +262,6 @@ internal sealed class ControlModel(bool dispatch)
 
         return false;
     }
-
-    private static bool RepeatsNullable(ControlShape shape) => shape switch
-    {
-        ControlShape.Many s => Nullable(s.Item) || RepeatsNullable(s.Item),
-        ControlShape.AtLeastOnce s => Nullable(s.Item) || RepeatsNullable(s.Item),
-        ControlShape.SepBy s => (Nullable(s.Item) && Nullable(s.Separator)) || RepeatsNullable(s.Item) || RepeatsNullable(s.Separator),
-        ControlShape.Until s => Nullable(s.Item) || RepeatsNullable(s.Item) || RepeatsNullable(s.Terminator),
-        ControlShape.Seq s => s.Steps.Any(RepeatsNullable),
-        ControlShape.Or s => RepeatsNullable(s.First) || RepeatsNullable(s.Second),
-        ControlShape.Longest s => RepeatsNullable(s.First) || RepeatsNullable(s.Second),
-        ControlShape.Atomic s => RepeatsNullable(s.Item),
-        ControlShape.Lookahead s => RepeatsNullable(s.Item),
-        ControlShape.Not s => RepeatsNullable(s.Item),
-        ControlShape.Optional s => RepeatsNullable(s.Item),
-        ControlShape.Named s => RepeatsNullable(s.Item),
-        ControlShape.Context s => RepeatsNullable(s.Item),
-        _ => false,
-    };
 }
 
 file sealed class NullableRepetitionException : Exception;

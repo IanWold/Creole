@@ -13,5 +13,5 @@ internal sealed class TextNode<T>(Parser<char, T> item) : Parser<char, string>
     public Parser<char, T> Item { get; } = item;
 
     internal override Plan<char, string> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<char, string>(Kind);
+        builder.Text(Item);
 }

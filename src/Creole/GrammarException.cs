@@ -4,8 +4,13 @@ namespace Creole;
 /// The exception thrown when a grammar is built incorrectly, for example when a combinator receives a null parser.
 /// </summary>
 /// <remarks>
+/// <para>
 /// A null parser argument usually means a field initializer refers to a rule declared later in the class, which is still null when the initializer runs.
 /// Wrap the reference in <c>Rec(() =&gt; Rule)</c>.
+/// </para>
+/// <para>
+/// Some faults show only later: a <c>Rec</c> whose rule is still null throws when the grammar is first used, and a repetition whose item succeeds without consuming input throws when the parse reaches it, because it would otherwise loop forever.
+/// </para>
 /// </remarks>
 public sealed class GrammarException : Exception
 {
