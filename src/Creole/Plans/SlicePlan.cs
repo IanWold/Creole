@@ -1,7 +1,7 @@
 namespace Creole;
 
 /// <summary>
-/// Runs its item and produces the characters it consumed, as a view of the input where the cursor can give one (<see cref="Cursor{T}.Since"/>).
+/// Runs its item and produces the characters it consumed: a view of in-memory input, and a copy of streamed input (<see cref="Cursor{T}.Since"/>, ADR-0013).
 /// </summary>
 internal sealed class SlicePlan<T>(Plan<char, T> item) : Plan<char, ReadOnlyMemory<char>>
 {

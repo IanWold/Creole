@@ -314,7 +314,9 @@ This differs from Pidgin's `ExpressionParser` in three ways: Pidgin applies pref
 
 ### Text capture
 
-At character layers, `Slice()` returns a `ReadOnlyMemory<char>` view of the consumed source without copying; `Text()` allocates a `string`. Tokens should normally carry slices.
+At character layers, `Slice()` returns the consumed characters as a `ReadOnlyMemory<char>`, and `Text()` allocates a `string`. Tokens should normally carry slices.
+
+When the input is held whole in memory (`string`, `ReadOnlyMemory<char>`), a slice is a view of it and never copies. When the input is streamed, its characters live in pooled segments that are refilled once released (§ Bookmarks and retention), so a slice is a copy made when it is taken. A slice never refers to pooled memory. The rule holds in every engine, fused code included, and for slices taken by custom scanners ([ADR-0013](work/docs/decisions/0013-slices-view-in-memory-input-and-copy-streamed-input.md)).
 
 ### Custom primitives
 
@@ -409,6 +411,8 @@ Each boundary holds a `StreamBuffer<T>`, a segmented, `ArrayPool`-backed buffer 
 These three step fields let any retained item be produced again: re-run its step from `stepStart` with `stateBefore`, and skip the first `groupIndex` outputs.
 
 The downstream parser holds a cursor, which is just an index. Reading past the filled region pulls the upstream layer for one more item, and that layer may in turn pull from its own upstream.
+
+Segments go back to the pool once released and are then refilled, so no value the parse hands out may view one. A slice of streamed input is therefore a copy (§ Text capture).
 
 ### Bookmarks and retention
 
@@ -870,7 +874,7 @@ The interpreted engine must be at least as fast as Pidgin and within 1.5× of Pa
 - **Pooled, segmented buffers** released at the bookmark horizon.
 - **Lazy errors**: failures record a position and an interned expectation-set handle; a `ParseError` object exists only for the reported failure.
 - **Vectorized character classes** through `SearchValues<char>`.
-- **Slices, not strings**: `Slice()` returns `ReadOnlyMemory<char>`; `Text()` is opt-in.
+- **Slices, not strings**: `Slice()` returns `ReadOnlyMemory<char>`; `Text()` is opt-in. Over in-memory input a slice is a view and allocates nothing; over streamed input it is a copy and costs about as much as `Text()` (§ Text capture).
 - **Value-type results** flow through generic plan nodes without boxing; skipped results use `Unit`.
 - **No delegates on the hot path** in generated code.
 

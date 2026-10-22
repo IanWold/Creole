@@ -6,11 +6,14 @@ namespace Creole;
 /// </summary>
 internal sealed class OrPlan<TIn, T>(Plan<TIn, T>[] alternatives) : Plan<TIn, T>
 {
-    private readonly Plan<TIn, T>[] _alternatives = alternatives;
+    /// <summary>
+    /// The alternatives, in order.
+    /// </summary>
+    public IReadOnlyList<Plan<TIn, T>> Alternatives => alternatives;
 
     public override bool TryParse(ref Cursor<TIn> cursor, ref T result)
     {
-        foreach (var alternative in _alternatives)
+        foreach (var alternative in alternatives)
         {
             var mark = LightMark.Take(ref cursor);
 

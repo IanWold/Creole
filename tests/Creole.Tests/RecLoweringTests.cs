@@ -10,30 +10,24 @@ file sealed class RecOnly : CharGrammar
 
     public static readonly Parser<char, int> Itself = Rec(() => Itself);
 
-    public static readonly AltNode<int> Through = new(Return(1), Itself);
+    public static readonly Parser<char, int> Through = Return(1).Or(Itself);
 }
 
 public class RecLoweringTests
 {
-    /// <summary>
-    /// A = 1 | B and B = 2 | A, built fresh so lowering counts belong to one test.
-    /// </summary>
-    private static (AltNode<int> A, AltNode<int> B) Mutual()
+    private static (CountingNode<int> A, CountingNode<int> B) Mutual()
     {
-        AltNode<int>? b = null;
-        var a = new AltNode<int>(Return(1), Rec(() => b));
-        b = new AltNode<int>(Return(2), a);
+        CountingNode<int>? b = null;
+        var a = new CountingNode<int>(Return(1).Or(Rec(() => b)));
+        b = new CountingNode<int>(Return(2).Or(a));
 
         return (a, b);
     }
 
-    /// <summary>
-    /// S = 1 | S, built fresh so lowering counts belong to one test.
-    /// </summary>
-    private static AltNode<int> Self()
+    private static CountingNode<int> Self()
     {
-        AltNode<int>? s = null;
-        s = new AltNode<int>(Return(1), Rec(() => s));
+        CountingNode<int>? s = null;
+        s = new CountingNode<int>(Return(1).Or(Rec(() => s)));
 
         return s;
     }
@@ -43,8 +37,8 @@ public class RecLoweringTests
     {
         var (_, rootB) = Mutual();
 
-        var b = Assert.IsType<AltPlan<int>>(new PlanBuilder().Lower(rootB));
-        var a = Assert.IsType<AltPlan<int>>(b.Alternatives[1]);
+        var b = Assert.IsType<OrPlan<char, int>>(new PlanBuilder().Lower(rootB));
+        var a = Assert.IsType<OrPlan<char, int>>(b.Alternatives[1]);
 
         Assert.Same(b, Assert.IsType<ForwardPlan<char, int>>(a.Alternatives[1]).Target);
     }
@@ -92,8 +86,8 @@ public class RecLoweringTests
     {
         var (nodeA, nodeB) = Mutual();
 
-        var a = Assert.IsType<AltPlan<int>>(new PlanBuilder().Lower(nodeA));
-        var b = Assert.IsType<AltPlan<int>>(a.Alternatives[1]);
+        var a = Assert.IsType<OrPlan<char, int>>(new PlanBuilder().Lower(nodeA));
+        var b = Assert.IsType<OrPlan<char, int>>(a.Alternatives[1]);
         var back = Assert.IsType<ForwardPlan<char, int>>(b.Alternatives[1]);
 
         Assert.Equal(1, nodeA.LowerCount);
@@ -107,7 +101,7 @@ public class RecLoweringTests
         var node = Self();
         var builder = new PlanBuilder();
 
-        var s = Assert.IsType<AltPlan<int>>(builder.Lower(node));
+        var s = Assert.IsType<OrPlan<char, int>>(builder.Lower(node));
         var back = Assert.IsType<ForwardPlan<char, int>>(s.Alternatives[1]);
 
         Assert.Equal(1, node.LowerCount);

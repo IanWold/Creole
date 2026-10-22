@@ -19,7 +19,7 @@ The most common bug in Sprache and Pidgin grammars: a field initializer reads a 
 ## Acceptance criteria
 
 - [ ] The whitepaper's `Value` and `ArrayValue` example is flagged and fixed.
-- [ ] Example A, as written in the whitepaper, builds with nullable enabled and warnings as errors, and the same later-field reference outside `Rec` still warns. CORE-09's `RecTests` pins Example A with a `#pragma warning disable CS8604`; remove it once the suppressor ships.
+- [ ] Example A, as written in the whitepaper, builds with nullable enabled and warnings as errors, and the same later-field reference outside `Rec` still warns. CORE-09's `RecTests` pins Example A with a `#pragma warning disable CS8604`, and INT-03's `WorkedExampleATests` writes `_arrayValue!` and `_objectValue!` for the same reason; remove both once the suppressor ships.
 
 ## Blocked by
 

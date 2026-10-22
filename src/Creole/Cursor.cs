@@ -167,8 +167,8 @@ public ref struct Cursor<T>
     /// The items from <paramref name="start"/> up to the cursor, which must be a position this cursor has already reached and the input still holds.
     /// </summary>
     /// <remarks>
-    /// The result is a view of the input when the items lie in one segment held as memory.
-    /// It is a copy when they span several segments, or when the cursor was created from a span, which has no memory to view.
+    /// The result is a view of the input only for a cursor created by <see cref="FromMemory"/>, whose memory belongs to the caller.
+    /// Otherwise it is a copy: a span has no memory to view, and a source's segments may be pooled and refilled once released (ADR-0013).
     /// </remarks>
     internal readonly ReadOnlyMemory<T> Since(long start)
     {
@@ -177,13 +177,13 @@ public ref struct Cursor<T>
 
         if (offset >= 0)
         {
-            // A cursor created from a span leaves _segment empty, so the lengths differ unless the input is empty.
-            return _segment.Length == _span.Length
+            // Only FromMemory sets _segment without a source. A cursor created from a span leaves it empty.
+            return _source is null && _segment.Length == _span.Length
                 ? _segment.Slice((int)offset, length)
                 : _span.Slice((int)offset, length).ToArray();
         }
 
-        T[]? items = null;
+        var items = new T[length];
 
         for (var copied = 0; copied < length;)
         {
@@ -195,12 +195,6 @@ public ref struct Cursor<T>
             var from = (int)(start + copied - segmentStart);
             var count = Math.Min(length - copied, segment.Length - from);
 
-            if (count == length)
-            {
-                return segment.Slice(from, count);
-            }
-
-            items ??= new T[length];
             segment.Span.Slice(from, count).CopyTo(items.AsSpan(copied));
             copied += count;
         }
