@@ -2,7 +2,7 @@ namespace Creole;
 
 /// <summary>
 /// One member per node type.
-/// Switch on it with a switch expression and no discard arm, so that adding a kind fails the build until every consumer handles it (ADR-0001).
+/// Switch on it with a switch expression and no discard arm, so that adding a kind fails the build until every consumer handles it.
 /// </summary>
 internal enum NodeKind
 {
@@ -23,6 +23,7 @@ internal enum NodeKind
     Case,
     Sequence,
     Map,
+    Filter,
     Optional,
     Slice,
     Text,
@@ -37,4 +38,5 @@ internal enum NodeKind
     Named,
     Context,
     Rec,
+    Bind,
 }

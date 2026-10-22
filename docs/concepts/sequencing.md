@@ -1,6 +1,6 @@
 # Sequencing and mapping
 
-Most grammar code runs parsers one after another and turns their results into a value. `Seq` runs parsers in order, and `Select` combines what they produced. This page also covers `Optional` and text capture. The design is in the [whitepaper's § Authoring ergonomics](../../whitepaper.md#authoring-ergonomics) and [§ Small API consequences](../../whitepaper.md#small-api-consequences).
+Most grammar code runs parsers one after another and turns their results into a value. `Seq` runs parsers in order, and `Select` combines what they produced. This page also covers `Optional`, text capture and query syntax. The design is in the [whitepaper's § Authoring ergonomics](../../whitepaper.md#authoring-ergonomics), [§ LINQ query syntax](../../whitepaper.md#linq-query-syntax) and [§ Small API consequences](../../whitepaper.md#small-api-consequences).
 
 > The interpreter runs these combinators as this page describes. The public method that runs a parser on your input arrives with INT-08.
 
@@ -73,9 +73,53 @@ A slice is a view of the input when the input is held in memory as one piece, as
 
 `Slice` and `Text` are extension members in the `TextCapture` class, so they apply to any `Parser<char, TOut>`, not only inside a `CharGrammar`.
 
+## Query syntax
+
+C# query syntax works on parsers. Each `from` clause runs a parser and names its result, and `select` builds the value:
+
+```csharp
+static readonly Parser<JTok, KeyValuePair<string, JsonValue>> Member =
+    from key   in Kind(J.String)
+    from colon in Kind(J.Colon)
+    from value in Value
+    select KeyValuePair.Create(key.Text, value);
+```
+
+Each `from` clause after the first is classified once, when the grammar is built:
+
+- **A clause that does not use an earlier range variable** is evaluated once, and its parser becomes the next step of a sequence. `Member` builds the same kind of node as `Seq`, so analysis sees every step.
+- **A clause that uses an earlier range variable** is a bind: the parser to run depends on a parsed value, so it is chosen once per match. Analysis cannot see past a bind.
+
+```csharp
+static readonly Parser<byte, byte[]> Blob =
+    from length in UInt16
+    from bytes  in Any.Repeat(length)   // uses length: a bind
+    select bytes.ToArray();
+```
+
+A clause that only chooses between known parsers is better written with `Switch` or `Match`, which keep every branch visible (see [Choice](choice.md)).
+
+The clause's lambda is compiled once when the grammar is built, so parsing never touches an expression tree. Things to know:
+
+- A `from` clause must be valid in an expression tree. A parser reference or a combinator call always is.
+- A query with three or more clauses builds nested two-step sequences, not one flat `Seq`. Analysis treats them the same. At run time, C# allocates an object per extra clause per match to carry the earlier range variables, so a hot rule may prefer `Seq(...).Select(...)`.
+- Under Native AOT, expressions are interpreted rather than compiled. A clause evaluated once costs nothing extra, but a bind clause runs on the expression interpreter at every match. `p.Bind(...)` takes a plain delegate and avoids this.
+
+### `Bind`, `where` and `let`
+
+| Combinator | Runs | Produces |
+| --- | --- | --- |
+| `p.Bind(f)` | `p`, then the parser `f` returns for `p`'s result | that parser's result |
+| `p.Where(pred)`, or a `where` clause | `p`, then fails if `pred` rejects its result | `p`'s result |
+| a `let` clause | nothing more | a map, as `Select` builds |
+
+`Bind` is the fluent form of a dependent clause. It always builds a bind node.
+
+If `p` consumed input before `Where`'s predicate rejects its result, the failure is committed, so an enclosing choice does not try its next alternative. Wrap it in `Atomic` to let the choice backtrack.
+
 ## Null arguments
 
-Every parser and selector argument is checked for null, and the `GrammarException` names the expression you passed (see [Grammars as data](grammars-as-data.md)). The parser that `Optional`, `Slice`, `Text` and the many-parameter `Select` are called on is checked too. For the instance methods, a null receiver such as `later.Before(end)` throws `NullReferenceException` before Creole can check it.
+Every parser and selector argument is checked for null, and the `GrammarException` names the expression you passed (see [Grammars as data](grammars-as-data.md)). In a query, a clause that gives a null parser is named by its own text, such as `'Value' is null`. The parser that `Optional`, `Slice`, `Text` and the many-parameter `Select` are called on is checked too. For the instance methods, a null receiver such as `later.Before(end)` throws `NullReferenceException` before Creole can check it.
 
 ## Coming from Pidgin
 
@@ -89,5 +133,8 @@ Every parser and selector argument is checked for null, and the `GrammarExceptio
 | `p.Before(q)`, `p.Then(q)`, `p.Between(open, close)` | Same names |
 | `p.Optional()`, producing the union `Maybe<T>` | `p.Optional()`, producing Pidgin's `Maybe<T>` |
 | `p.Slice()`, `p.Text()` | `p.Slice((span, _) => ...)`, which passes the consumed span to a function |
+| `p.Bind(f)` | `p.Bind(f)` |
+| `p.Where(pred)` | `p.Where(pred)` or `p.Assert(pred)` |
+| Query syntax, with independent clauses analyzed as a sequence | Query syntax, where every clause is a bind |
 
 Creole's `Maybe<T>` is a union, so it has no `HasValue` or typed `Value`: replace `m.HasValue ? m.Value : x` with a switch over `T` and `Nothing`, or with `m.GetValueOrDefault(x)`. It has none of the LINQ-style members of Pidgin's (`Select`, `Where`, `Match` and others), and no `Maybe.Just` or `Maybe.Nothing` factories.
