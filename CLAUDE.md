@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Creole is a proposed parser-combinator library for .NET 11 and C# 15: layered streaming pipelines with feedback, grammars as inspectable data with build-time analysis, and staged compilation through a Roslyn source generator. Phase 0 is under way: the node model, primitives, sequencing, choice, repetition, `Longest`, control nodes, `Rec` with cycle lowering, `Expression.Build`, plan lowering and the error model are built; the interpreter (INT-03) is not.
+Creole is a proposed parser-combinator library for .NET 11 and C# 15: layered streaming pipelines with feedback, grammars as inspectable data with build-time analysis, and staged compilation through a Roslyn source generator. Phase 0 is under way: the node model, primitives, sequencing, choice, repetition, `Longest`, control nodes, `Rec` with cycle lowering, `Expression.Build`, `Bind` and query syntax, plan lowering, the error model and the interpreter's core combinators (INT-03) are built; executing `Bind`, `Expression.Build` and `Custom` (INT-04) and the public `Parse` API (INT-08) are not.
 
 ## How you work here
 
