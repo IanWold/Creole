@@ -55,6 +55,27 @@ public sealed class Lexer : CharGrammar
 - `Range` throws a `GrammarException` if `last` comes before `first`. `NoneOf()` with no characters matches any character.
 - Inside a grammar class, `Char` and `String` name these combinators, not the `System.Char` and `System.String` types. Use the keywords `char` and `string` for the types.
 
+### Character sets
+
+`CharSet` is an immutable set of UTF-16 code units. Every character class above holds one, and analysis reads it to learn which characters a rule can start with.
+
+| Member | Gives |
+| --- | --- |
+| `CharSet.Of(c1, c2, ...)` | the listed characters; order and repeats do not matter |
+| `CharSet.Range(first, last)` | the characters from `first` to `last`, inclusive; throws a `GrammarException` if `last` comes before `first` |
+| `CharSet.Digit`, `Letter`, `LetterOrDigit`, `Whitespace` | the same characters as the class of that name |
+| `CharSet.All`, `CharSet.Empty` | every code unit, and none |
+| `a.Union(b)`, `a.Complement()` | the characters in either set, and the characters not in `a` |
+| `a.Contains(c)`, `a.IsEmpty` | whether `c` is in `a`, and whether `a` has no characters |
+
+```csharp
+var hexDigit = CharSet.Range('0', '9').Union(CharSet.Range('a', 'f')).Union(CharSet.Range('A', 'F'));
+
+hexDigit.ToString();   // "[0-9A-Fa-f]"
+```
+
+Two sets are equal when they hold the same characters, however they were built: `CharSet.Of('b', 'c', 'a')` equals `CharSet.Range('a', 'c')`. `ToString` writes the set in character-class notation, with characters outside printable ASCII as `\u` escapes.
+
 ## Strings
 
 | Parser | Matches | Produces |
