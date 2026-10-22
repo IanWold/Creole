@@ -21,10 +21,11 @@ public abstract partial class Parser<TIn, TOut>
     /// </para>
     /// <para>
     /// A failure after this parser consumed input is committed, as in a sequence.
+    /// If <paramref name="next"/> returns null, the parse throws a <see cref="GrammarException"/> naming it.
     /// </para>
     /// </remarks>
     public Parser<TIn, TNext> Bind<TNext>(Func<TOut, Parser<TIn, TNext>> next, [CallerArgumentExpression(nameof(next))] string nextExpression = "") =>
-        new BindNode<TIn, TOut, TNext, TNext>(this, Guard.NotNull(next, nextExpression), static (_, value) => value);
+        new BindNode<TIn, TOut, TNext, TNext>(this, Guard.NotNull(next, nextExpression), static (_, value) => value, nextExpression);
 
     /// <summary>
     /// Runs this parser, then the parser <paramref name="selector"/> gives, and combines their results with <paramref name="resultSelector"/>.
@@ -67,7 +68,7 @@ public abstract partial class Parser<TIn, TOut>
 
         if (ParameterFinder.Uses(selector.Body, selector.Parameters[0]))
         {
-            return new BindNode<TIn, TOut, TNext, TResult>(this, selector.Compile(), resultSelector);
+            return new BindNode<TIn, TOut, TNext, TResult>(this, selector.Compile(), resultSelector, selectorExpression);
         }
 
         var next = selector.Compile(preferInterpretation: true)(default!);
@@ -80,15 +81,28 @@ public abstract partial class Parser<TIn, TOut>
     /// C# calls it for the <c>where</c> clause of a query.
     /// </summary>
     /// <param name="predicate">Accepts or rejects this parser's result. It runs once per match and should not have side effects.</param>
+    /// <param name="message">What a rejection reports, such as <c>"number out of range"</c>. Leave it out to report the rejected input as unexpected.</param>
     /// <param name="predicateExpression">Filled in by the compiler with the expression passed as <paramref name="predicate"/>.</param>
     /// <returns>A parser that matches the same input as this parser when <paramref name="predicate"/> accepts the result.</returns>
-    /// <exception cref="GrammarException"><paramref name="predicate"/> is null.</exception>
+    /// <exception cref="GrammarException"><paramref name="predicate"/> is null, or <paramref name="message"/> is empty or white space.</exception>
     /// <remarks>
+    /// <para>
     /// If this parser consumed input before <paramref name="predicate"/> rejects its result, the failure is committed, so an enclosing choice does not try its next alternative.
     /// Wrap the filtered parser in <c>Atomic</c> to let the choice backtrack instead.
+    /// </para>
+    /// <para>
+    /// A rejection is reported where this parser started, with a span over the input it consumed, so the error points at the rejected value.
+    /// Failures recorded while this parser ran are dropped, so they cannot outrank the rejection.
+    /// </para>
     /// </remarks>
-    public Parser<TIn, TOut> Where(Func<TOut, bool> predicate, [CallerArgumentExpression(nameof(predicate))] string predicateExpression = "") =>
-        new FilterNode<TIn, TOut>(this, Guard.NotNull(predicate, predicateExpression));
+    public Parser<TIn, TOut> Where(Func<TOut, bool> predicate, string? message = null, [CallerArgumentExpression(nameof(predicate))] string predicateExpression = "") =>
+        new FilterNode<TIn, TOut>(
+            this,
+            Guard.NotNull(predicate, predicateExpression),
+            message is null || !string.IsNullOrWhiteSpace(message)
+                ? message
+                : throw new GrammarException($"The message for '{predicateExpression}' is empty. Give the rejection a message for error messages, or leave it out.")
+        );
 }
 
 file sealed class ParameterFinder(ParameterExpression parameter) : ExpressionVisitor
