@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Interpreted engine](../../README.md#int--interpreted-engine) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -12,17 +12,17 @@ Interpreter support for the dependent, operator-precedence and user-scanner node
 
 ## Scope
 
-- `Bind` with the once-compiled continuation, and the filter node behind `Where` and query `where` clauses (CORE-10): it fails committed if its source consumed input. What a rejected filter reports is decided here.
-- Precedence climbing for `Expression.Build`, with the semantics of [ADR-0004](../../docs/decisions/0004-expression-build-operator-table-and-semantics.md) points 3 to 5.
-- `Named` on an expression follows [ADR-0008](../../docs/decisions/0008-control-node-semantics.md) point 4: it also applies when the expression succeeds without consuming. ADR-0004 point 5 states the earlier rule. Each operator attempt and each atom takes a light mark, so a cut in one that fails without consuming is dropped ([ADR-0011](../../docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md)).
-- docs/concepts/expressions.md gains the parsing rules and the behavioural differences from Pidgin (repeated prefix and postfix, `2 ^ -x`, non-associative chains), which CORE-11 left out because nothing ran them.
-- `Custom` scanners invoked through `IScanner`. A failed `Custom` records `Label(Name)` at its start position, or the characters of `First` when it has no name, or nothing when it has neither ([ADR-0012](../../docs/decisions/0012-custom-scanner-metadata.md) point 4).
+- `Bind` with the once-compiled continuation, and the filter node behind `Where` and query `where` clauses (CORE-10): it fails committed if its source consumed input, and the cursor stays where its source left it ([ADR-0014](../../docs/decisions/0014-a-rejected-filter-reports-at-the-start-of-the-value.md) point 1). Add the overload `Where(predicate, message)`, which throws `GrammarException` for a null or empty message (point 4). ERR-02 records what a rejection reports and where (point 7).
+- Precedence climbing for `Expression.Build`, with the semantics of [ADR-0004](../../docs/decisions/0004-expression-build-operator-table-and-semantics.md) points 3 to 5. A chained non-associative operator fails committed here; ERR-02 records its message (ADR-0014 point 7).
+- Each operator attempt and each atom takes a light mark, so a cut in one that fails without consuming is dropped ([ADR-0011](../../docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md)). `Named` on an expression needs nothing here: ERR-02 applies [ADR-0008](../../docs/decisions/0008-control-node-semantics.md) point 4 to every node, which replaces the earlier rule in ADR-0004 point 5.
+- docs/concepts/expressions.md gains the parsing rules and the behavioural differences from Pidgin (repeated prefix and postfix, `2 ^ -x`, non-associative chains), which CORE-11 left out because nothing ran them. docs/concepts/sequencing.md gains where a rejected filter is reported, the message overload, and when to prefer `Bind` + `Fail` (ADR-0014).
+- `Custom` scanners invoked through `IScanner`. What a failed `Custom` records ([ADR-0012](../../docs/decisions/0012-custom-scanner-metadata.md) point 4) is ERR-02's (ADR-0014 point 7).
 - Replace the remaining `PlanBuilder.NotYetExecutable` stubs, in `ExpressionNode`, `BindNode`, `FilterNode` and `CustomNode` (CORE-12), and remove `NotYetExecutable`. INT-03 left them, since these nodes are this card's.
 
 ## Acceptance criteria
 
 - [ ] Example grammars using all three run and pass their tests.
-- [ ] Arithmetic grammar tests cover left and right associativity, `-` as both prefix and infix (`a - -b`), `2 ^ -x` with `-` looser than `^`, repeated prefix and postfix operators, the non-associative chain error, and a committed failure after an operator. Moved here from [CORE-11](../02-core-combinators/CORE-11-expressionbuild.md).
+- [ ] Arithmetic grammar tests cover left and right associativity, `-` as both prefix and infix (`a - -b`), `2 ^ -x` with `-` looser than `^`, repeated prefix and postfix operators, the non-associative chain error (as a committed failure at the second operator; ERR-02 checks its message), and a committed failure after an operator. Moved here from [CORE-11](../02-core-combinators/CORE-11-expressionbuild.md).
 
 ## Blocked by
 
@@ -42,3 +42,16 @@ Interpreter support for the dependent, operator-precedence and user-scanner node
 - [§ Expressions](../../../whitepaper.md#expressions)
 - [§ Custom primitives](../../../whitepaper.md#custom-primitives)
 - [§ LINQ query syntax](../../../whitepaper.md#linq-query-syntax)
+- [§ The error model](../../../whitepaper.md#the-error-model)
+
+## Artifacts
+
+- [ADR-0014](../../docs/decisions/0014-a-rejected-filter-reports-at-the-start-of-the-value.md) A rejected filter reports at the start of the rejected value, stays committed, and may carry a message (Accepted)
+
+## Progress notes
+
+- 2026-10-22 (Design): Started. Everything but the filter is pinned by ADR-0004, ADR-0008, ADR-0011, ADR-0012 and INT-03's nullable-repetition rule; the card says what a rejected filter reports is decided here, so `/decide` that first. Also settle how the reporting parts (filter, `Custom` expectations, the chain message, `Named` on an expression) relate to ERR-02, since the interpreter records no expectations yet. Then Build.
+- 2026-10-22 (Design): Drafted [ADR-0014](../../docs/decisions/0014-a-rejected-filter-reports-at-the-start-of-the-value.md) as Proposed from a prior-art survey (Pidgin, Sprache, Superpower, Parlot, FParsec, Megaparsec, FastParse) and the maintainer's answers: report at the start of the rejected value, committed, with `p`'s own failures dropped; an optional `Where(predicate, message)`; INT-04 runs the nodes and ERR-02 records what they report. Next: the maintainer accepts, rejects or revises; on acceptance, fold it into the whitepaper and the INT-04, ERR-02, ERR-05 and GEN-06 cards, then `/build`.
+- 2026-10-22 (Build): The maintainer accepted [ADR-0014](../../docs/decisions/0014-a-rejected-filter-reports-at-the-start-of-the-value.md). Folded into the whitepaper (§ LINQ query syntax, § The error model, § Failure positions) and cards (this card's scope and criterion 2, ERR-02, ERR-05, GEN-06). Moved to Build. Next: `/build`, which plans the increments (`Bind` and the filter with its message overload; `Expression.Build`; `Custom`; removing `NotYetExecutable`) before coding.
+- 2026-10-22 (Build): Plan agreed with the maintainer: three increments (`Bind` and the filter; `Expression.Build`; `Custom` and removing `NotYetExecutable`). Criterion 1 is the whitepaper's own examples run end to end: `Blob`, `Calc` and the raw-string lexer. Calls agreed: a prefix operator's operand takes strictly tighter levels; an infix operator and its right operand are one attempt; operators that consume nothing throw `GrammarException` at parse time; `Bind` gets the chosen parser's plan from `PlanCache`.
+- 2026-10-22 (Build): Increment 1 of 3 done. New `BindPlan` (the chosen parser's plan comes from `PlanCache`, so a rule field is lowered once; a null parser throws `GrammarException` naming the continuation, whose text `BindNode` now keeps) and `FilterPlan` (a rejection leaves the cursor where its source stopped). `Where` takes an optional `message`, stored on `FilterNode` for ERR-02. Deviation from ADR-0014 point 4, agreed in the plan: the message is an optional parameter, not a second overload, because a compile check showed C# binds `p.Where(pred, "msg")` to the existing overload's `[CallerArgumentExpression]` parameter. So an explicit null means no message; empty or white space throws. Tests: `QueryExecutionTests` (18), covering both nodes' outcomes, `Atomic` around a rejection, `where` clauses, `Blob` over bytes and plan reuse; `QueryNodeTests` gains the message checks. Mutants that rewind on a rejection, or lower the chosen parser without the cache, failed 6 tests and 1 test. Docs: the sequencing.md notice names the ERR-02 gap; the page covers where a rejection is reported, the message, `Where` versus `Bind` + `Fail`, and the Pidgin difference. Verified: build 0 warnings, `dotnet test` 1003 passed, AOT smoke publish clean and the binary prints OK. Next: increment 2, `Expression.Build`.
