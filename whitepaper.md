@@ -102,7 +102,7 @@ Nodes fall into seven families:
 
 | Family | Nodes | Analyzable? |
 | --- | --- | --- |
-| Primitives | `Token(x)`, `Kind(k)`, char classes, `Any`, `End`, `Satisfy(pred)` | Yes, except `Satisfy`, which is treated as matching anything |
+| Primitives | `Token(x)`, `Kind(k)`, char classes, `Any`, `End`, `Satisfy(pred)`, `Custom(scanner)` | Yes, except `Satisfy` and a `Custom` with no declared FIRST set, which are treated as matching anything |
 | Sequence and map | `Seq(...)`, `Select`, `Before`, `Then`, `Between` | Yes |
 | Choice | `Or`, `OneOf`, `Longest`, `Switch` | Yes |
 | Repetition | `Many`, `AtLeastOnce`, `Repeat`, `SepBy`, `SkipMany` | Yes |
@@ -317,12 +317,14 @@ At character layers, `Slice()` returns a `ReadOnlyMemory<char>` view of the cons
 
 ### Custom primitives
 
-Some tokens need hand-written code. C# raw string literals and Rust's `r#"…"#` strings count their delimiters, which no regular expression can do. `Custom(scanner)` wraps an `IScanner<TIn, TOut>` whose author declares whether it can match empty input and which items it can start with:
+Some tokens need hand-written code. C# raw string literals and Rust's `r#"…"#` strings count their delimiters, which no regular expression can do. `Custom(scanner)` wraps an `IScanner<TIn, TOut>` whose author declares whether it can match empty input, which characters it can start with, and a name for error messages:
 
 ```csharp
+public sealed record ScannerInfo(bool Nullable, CharSet? First = null, string? Name = null);
+
 sealed class RawString : IScanner<char, ReadOnlyMemory<char>>
 {
-    public ScannerInfo Info => new(Nullable: false, First: CharSet.Of('r'));
+    public ScannerInfo Info => new(Nullable: false, First: CharSet.Of('r'), Name: "raw string");
 
     // Must fail without consuming input.
     public bool Scan(ref Cursor<char> c, out ReadOnlyMemory<char> value) { /* hand-written */ }
@@ -330,6 +332,10 @@ sealed class RawString : IScanner<char, ReadOnlyMemory<char>>
 
 static readonly Parser<char, ReadOnlyMemory<char>> RawStringToken = Custom(new RawString());
 ```
+
+`Custom` reads `Info` once, when the node is built ([ADR-0012](work/docs/decisions/0012-custom-scanner-metadata.md)). It throws `GrammarException` if `First` is given for an input type other than `char`, or if `Name` is empty. A scanner over tokens leaves `First` null. So does a character scanner that can start with anything. Analysis then treats it like `Satisfy`: it can start with any item, and CRL0201 reports it as opaque.
+
+A failed `Custom` expects its `Name`, or failing that the characters in `First`. `Scan` only says yes or no, so it cannot explain a failure such as an unterminated raw string. A scanner that wants to succeeds instead: it consumes the malformed text and returns a value that marks it. The grammar then binds that value and calls `Fail(message)`, which is committed because input was consumed.
 
 Analysis trusts the declaration. Debug builds and the tracing interpreter check it on every call and report CRL0206 when a scanner breaks it. Inside a `Longest`, engines run the scanner alongside the DFA whenever the next character is in its declared FIRST set, so a lexer with one custom token can still be fused. `Custom` is a single node kind like any other, so every engine still handles every node (§ Types).
 
@@ -607,7 +613,7 @@ A fixpoint over the grammar graph (through `Rec` cycles) computes, per node:
 | CRL0103 | Two `Longest` alternatives match the same string; the earlier wins | Info | Keyword vs identifier rule |
 | CRL0105 | `Match` over a union leaves a case without a branch | Error | `V2Header` unhandled in `Header.Match(...)` |
 | CRL0106 | A `Longest` DFA can back up over unbounded input, making lexing quadratic | Warning | Tokens `a` and `a*b` on input `aaaa…` |
-| CRL0201 | Opaque node limits analysis | Info | `Bind`, `Satisfy` |
+| CRL0201 | Opaque node limits analysis | Info | `Bind`, `Satisfy`, `Custom` with no `First` |
 | CRL0202 | Dependent query clause makes the rest of the rule opaque | Info | `from n in UInt16 from xs in Any.Repeat(n)` |
 | CRL0204 | Mutable type used as layer state | Warning | `List<int>` as indentation stack |
 | CRL0205 | A `Reusable` rule's result type stores a `SourceSpan`, which goes stale on reuse | Warning | `record Stmt(SourceSpan Span, ...)` |

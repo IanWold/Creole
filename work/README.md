@@ -200,7 +200,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md) Custom primitives — Design
+- [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md) Custom primitives — Build
 
 ### Can start now
 

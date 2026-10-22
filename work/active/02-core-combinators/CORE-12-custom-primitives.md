@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Core combinators](../../README.md#core--core-combinators) |
 | Phase | Phase 0 — Core |
-| Status | Designing |
+| Status | Building |
 
 ## Summary
 
@@ -12,15 +12,17 @@ A hand-written scanner escape hatch for tokens no regular expression can describ
 
 ## Scope
 
-- `IScanner<TIn, TOut>`, `ScannerInfo(Nullable, First)`.
+- `IScanner<TIn, TOut>` and `ScannerInfo(bool Nullable, CharSet? First = null, string? Name = null)` ([ADR-0012](../../docs/decisions/0012-custom-scanner-metadata.md)). A null `First` means any item; the node is then opaque, like `Satisfy`.
 - Make `CharSet` public. [CORE-03](CORE-03-primitive-nodes.md) built it as an internal type with the API `ScannerInfo` needs; this card changes its visibility, reviews the public surface, and adds its `docs/` page.
 - `Custom(scanner)` as the single node case for user code.
-- Document the contract: the scanner must fail without consuming input.
+- `Custom` reads `Info` once, when the node is built, and throws `GrammarException` if `Info` is null, if `First` is given and `TIn` is not `char`, or if `Name` is empty or white space.
+- Document the contract: the scanner must fail without consuming input. Document the pattern for detailed errors: the scanner succeeds with a value marking malformed text, and the grammar binds it and calls `Fail(message)` (ADR-0012 point 5). Document that a token crossing a segment boundary must be copied, since `Cursor<T>` exposes spans.
 - `Custom` null-checks its scanner with its own `[CallerArgumentExpression]` parameter, passed on to `Guard`, so the `GrammarException` names the caller's expression (see `Grammar.Deterministic`, CORE-02). Scanners usually live in `static readonly` fields, so a null one is likely a field declared later in the class. The message should say to declare the scanner before the rules that use it, not suggest `Rec`.
 
 ## Acceptance criteria
 
 - [ ] A raw-string scanner sample compiles and is usable inside `Longest`.
+- [ ] Tests cover each `GrammarException` in ADR-0012 point 2, and the FIRST set, nullability and opacity analysis reads from a `Custom` with and without `First`.
 
 ## Blocked by
 
@@ -41,9 +43,10 @@ A hand-written scanner escape hatch for tokens no regular expression can describ
 
 ## Artifacts
 
-- [ADR-0012: Custom scanner metadata](../../docs/decisions/0012-custom-scanner-metadata.md) (Proposed)
+- [ADR-0012: Custom scanner metadata](../../docs/decisions/0012-custom-scanner-metadata.md) (Accepted)
 
 ## Progress notes
 
 - 2026-10-22 (Design): Started. `ScannerInfo.First` is a `CharSet`, but `IScanner<TIn, TOut>` is generic over its input, so the whitepaper does not say how a token-layer scanner declares its FIRST set. Settle that, and how a failed `Custom` names what it expected, in a decision record before building.
 - 2026-10-22 (Design): Drafted ADR-0012 with the maintainer's choices: `First` is a `CharSet` or null for any item, an optional `Name`, and `Scan` stays `bool` with an error-token pattern documented. Next: maintainer accepts the record, then fold it into the whitepaper and cards and move to Build.
+- 2026-10-22 (Build): ADR-0012 accepted; whitepaper and the INT-04, ANA-01, ANA-08, ERR-02 and FUS-03 cards updated, and a criterion added for the construction checks and analysis properties. Next: `/build` to plan the code.
