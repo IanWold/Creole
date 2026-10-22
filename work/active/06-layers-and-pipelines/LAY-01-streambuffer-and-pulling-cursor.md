@@ -17,10 +17,12 @@ Each layer boundary is a memoizing buffer, so a rewind is an index reset and ups
 - Reading past the filled region pulls the upstream layer for one more item.
 - Release segments below the retention horizon back to the pool.
 - Back `Cursor<TIn>` with the buffer, keeping the in-segment fast path.
+- A slice taken over the buffer is a copy, never a view of a pooled segment ([ADR-0013](../../docs/decisions/0013-slices-view-in-memory-input-and-copy-streamed-input.md)).
 
 ## Acceptance criteria
 
 - [ ] Each upstream item is produced exactly once per parse in tests without mode changes (guarantee 1).
+- [ ] A slice taken over the buffer keeps its text after its segment is released to the pool and reused (ADR-0013).
 
 ## Blocked by
 
