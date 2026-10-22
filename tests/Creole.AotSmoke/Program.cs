@@ -1,6 +1,6 @@
 using Creole;
 
-if (Calc.Expr is null || Sequences.Pair is null || Sequences.Captured is null)
+if (Calc.Expr is null || Sequences.Pair is null || Sequences.Captured is null || Queries.Independent is null || Queries.Dependent is null)
 {
     return 1;
 }
@@ -42,4 +42,23 @@ internal class Sequences : CharGrammar
 
     public static readonly Parser<char, string> Captured =
         Seq(_one.Optional(), _one.Slice(), _one.Text()).Select(static (sign, slice, text) => $"{sign}{slice}{text}");
+}
+
+internal class Queries : CharGrammar
+{
+    private static readonly Parser<char, int> _one = Return(1);
+    private static readonly Parser<char, string> _word = Return("x");
+
+    public static readonly Parser<char, string> Independent =
+        from a in _one
+        from b in _word
+        where b.Length == a
+        let c = b + a
+        select c;
+
+    public static readonly Parser<char, int> Dependent =
+        from a in _one
+        from b in _word
+        from c in _word.Repeat(a)
+        select c.Count + b.Length;
 }
