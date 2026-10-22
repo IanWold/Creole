@@ -12,4 +12,6 @@ internal sealed class TypedMatchCase<TIn, TCase, TBranch, TOut>(Parser<TIn, TBra
     public Parser<TIn, TBranch> Branch { get; } = branch;
 
     public Func<TCase, TBranch, TOut> Combine { get; } = combine;
+
+    internal override MatchCasePlan<TIn, TOut> Lower(PlanBuilder builder) => builder.MatchCase(Branch, Combine);
 }

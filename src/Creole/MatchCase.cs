@@ -22,4 +22,9 @@ public abstract class MatchCase<TIn, TOut>
     internal abstract Type CaseType { get; }
 
     internal MatchCase() { }
+
+    /// <summary>
+    /// Lowers this case to the interpreter's plan for it.
+    /// </summary>
+    internal abstract MatchCasePlan<TIn, TOut> Lower(PlanBuilder builder);
 }

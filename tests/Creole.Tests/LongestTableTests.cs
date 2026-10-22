@@ -15,4 +15,13 @@ public class LongestTableTests
 
         Assert.Equal(row.Alternatives.Count, node.Alternatives.Count);
     }
+
+    [Theory]
+    [MemberData(nameof(CaseNames))]
+    public void TheInterpreterGivesEachRowItsOutcome(string name)
+    {
+        var row = _cases[name];
+
+        Assert.Equal(row.Expected, Execution.Outcome(LongestTable.ToParser(row), row.Input));
+    }
 }

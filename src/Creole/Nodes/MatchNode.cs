@@ -34,5 +34,5 @@ internal sealed class MatchNode<TIn, TUnion, TOut>(Parser<TIn, TUnion> scrutinee
     Type IMatchNode.UnionType => typeof(TUnion);
 
     internal override Plan<TIn, TOut> Lower(PlanBuilder builder) =>
-        PlanBuilder.NotYetExecutable<TIn, TOut>(Kind);
+        builder.Match(Scrutinee, Cases);
 }
