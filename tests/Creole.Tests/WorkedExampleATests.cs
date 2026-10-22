@@ -75,15 +75,15 @@ file sealed partial class JsonGrammar : TokenGrammar<JTok, J>
         Kind(J.True).As<JsonValue>(JsonBool.True),
         Kind(J.False).As<JsonValue>(JsonBool.False),
         Kind(J.Null).As<JsonValue>(JsonNull.Instance),
-        ArrayValue!,
-        ObjectValue!)).Named("value");
+        _arrayValue!,
+        _objectValue!)).Named("value");
 
-    private static readonly Parser<JTok, JsonValue> ArrayValue =
+    private static readonly Parser<JTok, JsonValue> _arrayValue =
         Value.SepBy(Kind(J.Comma))
              .Between(Kind(J.LBracket), Kind(J.RBracket))
              .Select<JsonValue>(static items => new JsonArray(items));
 
-    private static readonly Parser<JTok, JsonValue> ObjectValue =
+    private static readonly Parser<JTok, JsonValue> _objectValue =
         Seq(Kind(J.String), Kind(J.Colon), Value)
             .Select(static (k, _, v) => KeyValuePair.Create(Unescape(k.Text), v))
             .SepBy(Kind(J.Comma))
