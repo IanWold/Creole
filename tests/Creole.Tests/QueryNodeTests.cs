@@ -5,7 +5,8 @@ using static Creole.Grammar<char>;
 
 namespace Creole.Tests;
 
-file enum J {
+file enum J
+{
     String,
     Colon,
     Number
@@ -213,5 +214,24 @@ public class QueryNodeTests
         Assert.Equal([_int], ((INode)node).Children);
         Assert.True(node.Predicate(1));
         Assert.False(node.Predicate(0));
+        Assert.Null(node.Message);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void WhereRejectsAnEmptyMessage(string message)
+    {
+        var exception = Assert.Throws<GrammarException>(() => _int.Where(a => a > 0, message));
+
+        Assert.Equal("The message for 'a => a > 0' is empty. Give the rejection a message for error messages, or leave it out.", exception.Message);
+    }
+
+    [Fact]
+    public void WhereTakesAStringArgumentAsItsMessage()
+    {
+        var node = Assert.IsType<FilterNode<char, int>>(_int.Where(a => a > 0, "must be positive"));
+
+        Assert.Equal("must be positive", node.Message);
     }
 }

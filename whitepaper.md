@@ -161,7 +161,7 @@ The costs, stated plainly:
 - A `from` clause must be an expression lambda that is valid in an expression tree. Clauses are nearly always a parser reference or call, so this rarely bites.
 - Queries with three or more clauses make C# allocate a transparent-identifier object per extra clause per match. The generator removes these; interpreted hot paths may prefer `Seq`.
 - Under Native AOT, a dependent clause's compiled continuation runs on the expression interpreter at every match. The generator removes this too; an interpreted grammar can use `Bind` with a plain delegate instead.
-- `where` becomes a filter that fails committed if it rejects after consuming input, and `let` becomes a map.
+- `where` becomes a filter that fails committed if it rejects after consuming input, and `let` becomes a map. A rejection is reported at the start of the rejected value, and `Where(predicate, message)` gives it a message (§ The error model, [ADR-0014](work/docs/decisions/0014-a-rejected-filter-reports-at-the-start-of-the-value.md)).
 
 **Recursion and names.** `Rec(() => Value)` defers a reference so fields can refer to each other. Run-time tools (rule paths in `GrammarException`, traces, grammar export) name rules without extra ceremony; the names come from, in order ([ADR-0009](work/docs/decisions/0009-where-rule-names-come-from.md)):
 
@@ -305,7 +305,7 @@ static readonly Parser<char, double> Expr = Expression.Build(Atom, op =>
 
 - **Table.** Levels are listed tightest first, and every level produces the atom's type. Each operator is a parser of any type plus a combine function that receives the operator's value, so an AST node can record the operator's span. The lambda's `op` fixes the result type, so the combine functions need no annotations.
 - **Checks.** `Build` throws a `GrammarException` for an empty table or level, or a level that mixes infix associativities. Prefix and postfix operators may share a level with infix ones.
-- **Operands.** Wherever an operand is expected, prefix operators are tried first, and a prefix operator's operand is parsed at its own level. So `2 ^ -x` is `2 ^ (-x)` and `-x ^ 2` is `-(x ^ 2)`. Prefix and postfix operators repeat: `- -x`, `f()()`. At one level, prefix applies before postfix.
+- **Operands.** Wherever an operand is expected, prefix operators are tried first, and a prefix operator's operand is parsed with only the levels tighter than its own. So `2 ^ -x` is `2 ^ (-x)` and `-x ^ 2` is `-(x ^ 2)`. Prefix and postfix operators repeat: `- -x`, `f()()`. At one level, a prefix operator applies before the postfix and infix operators: `-x!` is `(-x)!` ([ADR-0015](work/docs/decisions/0015-a-prefix-operand-takes-only-tighter-levels.md)).
 - **Operators.** After an operand, postfix and infix operators are tried, tighter levels first. Prefix operators are never tried there, so `-` can be both prefix and infix. A token used as both postfix and infix goes to whichever is tried first, which analysis reports as an ambiguity.
 - **Non-associative chains.** In `a < b < c`, the second `<` fails committed with "'<' cannot be chained; add parentheses". `a < b + 1` is unaffected.
 - **Errors.** Ordinary commit semantics apply. An operator that fails without consuming ends the expression; one that consumed input commits, so a missing right operand is an error at that point. Operand recursion counts against `ParseOptions.MaxDepth`.
@@ -440,7 +440,7 @@ Two-pass designs that tokenize everything first hold the whole token list in mem
 
 ### Failure positions
 
-Each layer records its furthest failure as a buffer index plus an expectation-set handle, without allocating. A `ParseError` is built only for the failure that is finally reported.
+Each layer records its furthest failure as a buffer index plus an expectation-set handle, without allocating. A `ParseError` is built only for the failure that is finally reported. A failure reported behind the cursor, such as a rejected filter or a chained non-associative operator, captures the item and source position its error needs by value, because a streamed layer may have released them by then.
 
 ## Feedback between layers
 
@@ -551,6 +551,7 @@ public union Expectation(Label, ExpectedItem, EndOfInput);
 
 - **Furthest failure wins.** At equal positions, expected sets are merged.
 - **Labels.** `p.Named("value")` replaces `p`'s expected set with one label, but only when `p` consumes nothing, whether it fails or succeeds. The label replaces the expectations `p` recorded at its start position, and adds none if there were none. A committed failure inside it keeps its precise expectations, as do deeper failures that an `Atomic` rewound past ([ADR-0008](work/docs/decisions/0008-control-node-semantics.md)).
+- **Filters.** A rejected `p.Where(predicate)` is reported at the position where `p` started, with a span over the value it rejected, even when the failure is committed. The failures recorded while `p` ran are dropped first, so `p`'s own trailing expectations cannot outrank the rejection. Without a message the rejected input is unexpected; `Where(predicate, message)` reports the message, as `Fail(message)` does. A rejection counts as a failure at `p`'s start, so `Atomic(Identifier.Where(isNotKeyword)).Named("identifier")` reads "expected identifier" ([ADR-0014](work/docs/decisions/0014-a-rejected-filter-reports-at-the-start-of-the-value.md)).
 - **Context.** `p.Context("in object")` pushes a line onto the context stack for failures inside `p`.
 - **Display.** `TokenGrammar` has an overridable `Describe(TKind)`, so expectations read `','` or `'}'` rather than `Comma` or `RBrace`.
 

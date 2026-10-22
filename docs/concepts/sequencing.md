@@ -2,7 +2,7 @@
 
 Most grammar code runs parsers one after another and turns their results into a value. `Seq` runs parsers in order, and `Select` combines what they produced. This page also covers `Optional`, text capture and query syntax. The design is in the [whitepaper's § Authoring ergonomics](../../whitepaper.md#authoring-ergonomics), [§ LINQ query syntax](../../whitepaper.md#linq-query-syntax) and [§ Small API consequences](../../whitepaper.md#small-api-consequences).
 
-> The interpreter runs these combinators as this page describes, except `Bind` and `where` clauses, which it runs from INT-04. The public method that runs a parser on your input arrives with INT-08.
+> The interpreter runs these combinators as this page describes, with one gap: a rejected `Where` does not yet report its position or message, which arrive with the error model's failure tracking (ERR-02). The public method that runs a parser on your input arrives with INT-08.
 
 ## `Seq` and `Select`
 
@@ -110,12 +110,27 @@ The clause's lambda is compiled once when the grammar is built, so parsing never
 | Combinator | Runs | Produces |
 | --- | --- | --- |
 | `p.Bind(f)` | `p`, then the parser `f` returns for `p`'s result | that parser's result |
-| `p.Where(pred)`, or a `where` clause | `p`, then fails if `pred` rejects its result | `p`'s result |
+| `p.Where(pred)`, `p.Where(pred, message)`, or a `where` clause | `p`, then fails if `pred` rejects its result | `p`'s result |
 | a `let` clause | nothing more | a map, as `Select` builds |
 
-`Bind` is the fluent form of a dependent clause. It always builds a bind node.
+`Bind` is the fluent form of a dependent clause. It always builds a bind node. The parser `f` returns is prepared on first use and reused whenever `f` returns it again, as it does for a rule field. A parser that `f` builds afresh at each match, like `Any.Repeat(length)` above, is prepared at each match. If `f` returns null, the parse throws `GrammarException` naming `f`.
 
-If `p` consumed input before `Where`'s predicate rejects its result, the failure is committed, so an enclosing choice does not try its next alternative. Wrap it in `Atomic` to let the choice backtrack.
+If `p` consumed input before `Where`'s predicate rejects its result, the failure is committed: an enclosing choice does not try its next alternative, and the input stays consumed. Wrap it in `Atomic` to let the choice backtrack.
+
+A rejection is reported at the start of the value it rejected, with that value underlined, not at the item after it. Failures recorded while `p` ran are dropped first, so `p`'s own expectations, such as "expected digit" where a number ends, cannot outrank the rejection. Pass a message to say what is wrong:
+
+```csharp
+static readonly Parser<char, int> Byte = Number.Where(n => n <= 255, "number out of range");
+```
+
+Without a message, the error shows the rejected input as unexpected. A `where` clause cannot take a message, so call `.Where(pred, message)` on the query instead. Under `Atomic`, `Named` labels a rejection like any other failure at its start:
+
+```csharp
+// Reports "expected identifier" at a keyword, and lets an enclosing choice try its next alternative.
+static readonly Parser<char, string> Name = Atomic(Identifier.Where(name => !Keywords.Contains(name))).Named("identifier");
+```
+
+`Where` judges a value, so its error points at the value. `Bind` with `Fail(message)` fails where `p` stopped, which suits a construct that goes wrong at its end, such as an unterminated string (see [Custom scanners](custom-scanners.md#reporting-errors-from-a-scanner)). The reasons are in [ADR-0014](../../work/docs/decisions/0014-a-rejected-filter-reports-at-the-start-of-the-value.md).
 
 ## Null arguments
 
@@ -134,7 +149,7 @@ Every parser and selector argument is checked for null, and the `GrammarExceptio
 | `p.Optional()`, producing the union `Maybe<T>` | `p.Optional()`, producing Pidgin's `Maybe<T>` |
 | `p.Slice()`, `p.Text()` | `p.Slice((span, _) => ...)`, which passes the consumed span to a function |
 | `p.Bind(f)` | `p.Bind(f)` |
-| `p.Where(pred)` | `p.Where(pred)` or `p.Assert(pred)` |
+| `p.Where(pred)`, `p.Where(pred, message)` | `p.Where(pred)` or `p.Assert(pred)`, `p.Assert(pred, message)`. Pidgin reports a failed assertion where `p` ended; Creole reports it where `p` started. |
 | Query syntax, with independent clauses analyzed as a sequence | Query syntax, where every clause is a bind |
 
 Creole's `Maybe<T>` is a union, so it has no `HasValue` or typed `Value`: replace `m.HasValue ? m.Value : x` with a switch over `T` and `Nothing`, or with `m.GetValueOrDefault(x)`. It has none of the LINQ-style members of Pidgin's (`Select`, `Where`, `Match` and others), and no `Maybe.Just` or `Maybe.Nothing` factories.

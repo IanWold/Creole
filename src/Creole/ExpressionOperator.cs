@@ -19,4 +19,9 @@ public abstract class ExpressionOperator<TIn, T>
     internal abstract INode Node { get; }
 
     internal ExpressionOperator() { }
+
+    /// <summary>
+    /// Lowers this operator to the interpreter's plan for it, at <paramref name="level"/> in the table (0 is the tightest).
+    /// </summary>
+    internal abstract OperatorPlan<TIn, T> Lower(PlanBuilder builder, int level);
 }

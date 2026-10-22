@@ -38,7 +38,8 @@ public abstract partial class Grammar<TIn>
         /// </exception>
         /// <remarks>
         /// Prefix operators are tried where an operand is expected; postfix and infix operators are tried after one, tighter levels first.
-        /// Prefix and postfix operators repeat. An operator that consumed input commits, so a  missing operand after it is an error.
+        /// Prefix and postfix operators repeat. An operator that consumed input commits, so a missing operand after it is an error.
+        /// An operator that succeeds without consuming input, so that the expression would repeat it forever, makes the parse throw a <see cref="GrammarException"/>.
         /// The full rules are in the whitepaper's § Expressions.
         /// </remarks>
         public static Parser<TIn, T> Build<T>(

@@ -15,7 +15,7 @@ Full feature parity: everything the interpreter supports must run in generated c
 - Layers, layer state and marks over stream buffers.
 - Mode channels, invalidation, rollback and cascades.
 - `Recover`, `OrInsert`, lexer recovery, Starved propagation, depth limits.
-- `Bind`, `Expression.Build` and `Custom` nodes.
+- `Bind`, the filter behind `Where` ([ADR-0014](../../docs/decisions/0014-a-rejected-filter-reports-at-the-start-of-the-value.md)), `Expression.Build` ([ADR-0015](../../docs/decisions/0015-a-prefix-operand-takes-only-tighter-levels.md)) and `Custom` nodes.
 
 ## Acceptance criteria
 

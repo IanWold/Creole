@@ -15,6 +15,7 @@ One parse produces many diagnostics without cascades.
 - `p.Recover(strategy, fallback)`: records a diagnostic, repairs position, returns `fallback`, never re-runs `p`.
 - Restore the mode stack and layer state from `p`'s start as an ordinary mode change.
 - Strategies `SkipUntil(sync)` and `SkipNested(open, close)`.
+- Repair from the cursor, not from the reported position: a committed failure may be reported before the cursor, as a rejected filter is ([ADR-0014](../../docs/decisions/0014-a-rejected-filter-reports-at-the-start-of-the-value.md)).
 - Starved propagates through `Recover` unchanged.
 - `Recover` takes a light mark before running `p`: if `p` fails without consuming, the cut flag is restored ([ADR-0011](../../docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md)). `Recover` is not a cut boundary.
 
