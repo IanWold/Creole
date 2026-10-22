@@ -87,13 +87,6 @@ internal sealed partial class PlanBuilder
     }
 
     /// <summary>
-    /// Stands in for the lowering of a node kind the interpreter cannot run yet: <c>Custom</c>.
-    /// INT-04 replaces those calls and removes this method.
-    /// </summary>
-    public static Plan<TIn, TOut> NotYetExecutable<TIn, TOut>(NodeKind kind) =>
-        throw new NotSupportedException($"The interpreter cannot run {kind} nodes yet.");
-
-    /// <summary>
     /// Lowers a <c>Rec</c> to its target's plan.
     /// </summary>
     /// <exception cref="GrammarException">The reference returned null, or building its target failed. The message gains the rule path.</exception>

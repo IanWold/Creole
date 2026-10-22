@@ -50,5 +50,6 @@ internal sealed class CustomNode<TIn, TOut> : Parser<TIn, TOut>, IPrimitiveNode
         First = Info.First is null ? FirstSet.AnyItem : FirstSet.OfChars(Info.First);
     }
 
-    internal override Plan<TIn, TOut> Lower(PlanBuilder builder) => PlanBuilder.NotYetExecutable<TIn, TOut>(Kind);
+    internal override Plan<TIn, TOut> Lower(PlanBuilder builder) =>
+        PlanBuilder.Custom(Scanner);
 }

@@ -8,6 +8,8 @@ internal sealed partial class PlanBuilder
 
     public static Plan<char, char> CharClass(CharSet set) => new ItemPlan<char>(set.Contains);
 
+    public static Plan<TIn, TOut> Custom<TIn, TOut>(IScanner<TIn, TOut> scanner) => new CustomPlan<TIn, TOut>(scanner);
+
     public static Plan<TIn, Unit> End<TIn>() => new EndPlan<TIn>();
 
     public static Plan<TToken, TToken> Kind<TToken, TKind>(TKind kind)

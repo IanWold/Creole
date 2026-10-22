@@ -124,6 +124,32 @@ public class RawStringSampleTests
     }
 
     [Fact]
+    public void TheLexerFailsCommittedAtAnUnterminatedString() =>
+        Assert.Equal(new Outcome.FailConsumed(), Execution.Outcome(RawStringLexer.CheckedToken, "r\"abc", t => $"{t.Kind}:{t.Text}"));
+
+    [Theory]
+    [InlineData("r#\"a\"b\"#", "RawString:a\"b", 8)]
+    [InlineData("r\"\"", "RawString:", 3)]
+    [InlineData("rabc", "Identifier:rabc", 4)]
+    [InlineData("r#abc", "Identifier:r", 1)]
+    public void TheLexerReadsATokenOnTheInterpreter(string input, string token, int consumed) =>
+        Assert.Equal(new Outcome.Ok(token, consumed), Execution.Outcome(RawStringLexer.CheckedToken, input, t => $"{t.Kind}:{t.Text}"));
+
+    [Theory]
+    [MemberData(nameof(SegmentSizes))]
+    public void TheLexerRunsAcrossSegments(int segmentSize)
+    {
+        var input = "r##\"x\"#y\"##tail";
+        var cursor = new Cursor<char>(new SegmentedSource<char>(input.ToCharArray(), segmentSize));
+
+        var (ok, token) = Execution.Run(RawStringLexer.CheckedToken, ref cursor);
+
+        Assert.True(ok);
+        Assert.Equal(new Token(TokenKind.RawString, "x\"#y"), token);
+        Assert.Equal(11, cursor.Position);
+    }
+
+    [Fact]
     public void TheScannerIsAnAlternativeInsideLongest()
     {
         INode token = Assert.IsType<LongestNode<char, Token>>(RawStringLexer.AnyToken);
