@@ -158,8 +158,9 @@ WAVE_ROW_RE = re.compile(r"^\| (\d+) \| (?:✅ )?\[([A-Z]+-\d+)\]")
 
 
 def check_waves(rtext: str, cards: dict[str, Card]) -> list[str]:
-    """Each card sits in its phase's table, at its dependency depth across all phases,
-    counted so that the phase's shallowest card is wave 1 (CONTRIBUTING.md § Epics, phases, waves and gates)."""
+    """Each card sits in its phase's table, no earlier than its dependency depth across all phases (counted so that
+    the phase's shallowest card is wave 1) and after each blocker in the same phase. A card may sit later than its
+    depth, so a new card need not land in a finished wave (CONTRIBUTING.md § Epics, phases, waves and gates)."""
     errors: list[str] = []
     roadmap = rtext.split("\n## Epics", 1)[0]
     placed: dict[str, tuple[str, int]] = {}
@@ -190,9 +191,12 @@ def check_waves(rtext: str, cards: dict[str, Card]) -> list[str]:
             continue
         if cards[cid].fields.get("Phase") != phase:
             errors.append(f"work/README.md: {cid} is in the '{phase}' table, but its card says '{cards[cid].fields.get('Phase')}'")
-        expected = depth_of(cid) - shallowest[phase] + 1
-        if wave != expected:
-            errors.append(f"work/README.md: {cid} is in wave {wave} of '{phase}', expected wave {expected}")
+        earliest = depth_of(cid) - shallowest[phase] + 1
+        if wave < earliest:
+            errors.append(f"work/README.md: {cid} is in wave {wave} of '{phase}', but its blockers put it in wave {earliest} or later")
+        for b in cards[cid].blocked_by:
+            if b in placed and placed[b][0] == phase and placed[b][1] >= wave:
+                errors.append(f"work/README.md: {cid} is in wave {wave} of '{phase}', not after its blocker {b} in wave {placed[b][1]}")
     for c in cards.values():
         if c.location != "backburner" and c.id not in placed:
             errors.append(f"work/README.md: {c.id} is in no phase table")

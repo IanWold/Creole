@@ -12,9 +12,9 @@ Warn about alternatives that can never succeed or never be tried.
 
 ## Scope
 
-- CRL0101: shadowed alternative, exact via DFA product when both are regular, otherwise from FIRST sets.
+- CRL0101: shadowed alternative, exact via a product of INT-06's commit-aware automata when both are regular, otherwise from FIRST sets ([ADR-0017](../../docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md)). Regex automata would be wrong here: the regex reading of a regular rule can disagree with the interpreter ([prototype note](../../docs/research/2026-10-23-commit-aware-automaton-prototypes.md), finding 4).
 - CRL0102: overlapping FIRST in `Or` without `Atomic`.
-- CRL0103: two `Longest` alternatives match the same string.
+- CRL0103: two `Longest` alternatives match the same string, decided on the same automata.
 - CRL0105: `Match` leaves a union case without a branch.
 
 ## Acceptance criteria
@@ -33,3 +33,8 @@ Warn about alternatives that can never succeed or never be tried.
 ## Whitepaper references
 
 - [§ Diagnostics](../../../whitepaper.md#diagnostics)
+
+## Artifacts
+
+- [Research: DFA compilation under commit semantics](../../docs/research/2026-10-23-dfa-compilation-under-commit-semantics.md) How regular subtrees can compile to DFAs that agree with commit semantics; construction, errors, alphabet, backup and prior art
+- [Research: commit-aware automaton prototypes](../../docs/research/2026-10-23-commit-aware-automaton-prototypes.md) Differential prototypes: the commit rule, lexer sizes, speed, proof sketches, Option B's condition, backup, blow-ups and a wider eager fragment
