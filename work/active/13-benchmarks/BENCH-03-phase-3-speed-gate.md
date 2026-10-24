@@ -34,3 +34,11 @@ The Phase 3 speed gate: the generated engine is as fast as Parlot.
 
 - [§ Performance design and benchmark plan](../../../whitepaper.md#performance-design-and-benchmark-plan)
 - [§ Roadmap](../../../whitepaper.md#roadmap)
+
+## Artifacts
+
+- [Research: Parlot 2.0 baselines and generator](../../docs/research/2026-10-24-parlot-2-0-baselines-and-generator.md) `Parlot.SourceGenerator` 2.0.0 is stable; how its generator works, what generated parsers support, and how the harness can carry them
+
+## Progress notes
+
+- 2026-10-24 (Not started): FND-10 research found `Parlot.SourceGenerator` 2.0.0 stable. Generated parsers need `.parlot.cs` factories and a `partial` entry point, and have no Parlot runtime dependency (note, findings 13–19). Next: unchanged; waits on BENCH-02.

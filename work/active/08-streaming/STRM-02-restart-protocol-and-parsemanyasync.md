@@ -37,3 +37,11 @@ Async record streams parse one top-level item at a time and restart that item wh
 
 - [§ The restart protocol](../../../whitepaper.md#the-restart-protocol)
 - [§ Sources](../../../whitepaper.md#sources)
+
+## Artifacts
+
+- [Research: Parlot 2.0 baselines and generator](../../docs/research/2026-10-24-parlot-2-0-baselines-and-generator.md) Prior art: Parlot 2.0.0's `ParseManyAsync` retries a value on a sticky `HitEnd` and doubles its window (finding 23)
+
+## Progress notes
+
+- 2026-10-24 (Not started): FND-10 research found Parlot 2.0.0's `ParseManyAsync` uses a restart protocol close to Creole's Starved retry (note, finding 23). Read it before designing. Next: unchanged.

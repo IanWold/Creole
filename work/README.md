@@ -202,13 +202,12 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- None yet.
+- [FND-10](active/01-foundations/FND-10-move-the-parlot-baselines-to-200.md) Move the Parlot baselines to 2.0.0 — Build
 
 ### Can start now
 
 These items have all their blockers done:
 
-- [FND-10](active/01-foundations/FND-10-move-the-parlot-baselines-to-200.md) Move the Parlot baselines to 2.0.0
 - [INT-07](active/03-interpreter/INT-07-recursion-depth-limit.md) Recursion depth limit
 - [INT-09](active/03-interpreter/INT-09-cheaper-automaton-construction.md) Cheaper automaton construction
 - [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) Furthest-failure tracking and labels

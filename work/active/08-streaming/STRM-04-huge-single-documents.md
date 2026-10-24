@@ -30,3 +30,11 @@ Nothing directly.
 ## Whitepaper references
 
 - [§ Why not async combinators](../../../whitepaper.md#why-not-async-combinators)
+
+## Artifacts
+
+- [Research: Parlot 2.0 baselines and generator](../../docs/research/2026-10-24-parlot-2-0-baselines-and-generator.md) Prior art: Parlot 2.0.0 parses large `TextReader` input synchronously on a pool thread over a compacting buffer (finding 23)
+
+## Progress notes
+
+- 2026-10-24 (Not started): FND-10 research found Parlot 2.0.0 runs large `TextReader` parses synchronously on a pool thread, as Creole plans (note, finding 23). Next: unchanged.
