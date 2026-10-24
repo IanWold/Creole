@@ -25,4 +25,7 @@ internal sealed class CharClassNode(CharSet set, string? name) : Parser<char, ch
 
     internal override Plan<char, char> Lower(PlanBuilder builder) =>
         PlanBuilder.CharClass(Set);
+
+    internal override MatchValue<char> ValueOfMatch() =>
+        static (ref cursor, start) => cursor.ItemAt(start);
 }

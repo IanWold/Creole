@@ -16,4 +16,7 @@ internal sealed class NamedNode<TIn, T>(Parser<TIn, T> item, Label label) : Pars
 
     internal override Plan<TIn, T> Lower(PlanBuilder builder) =>
         builder.Named(Item);
+
+    internal override MatchValue<T>? ValueOfMatch() =>
+        Item.ValueOfMatch();
 }

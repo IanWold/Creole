@@ -14,4 +14,7 @@ internal sealed class SliceNode<T>(Parser<char, T> item) : Parser<char, ReadOnly
 
     internal override Plan<char, ReadOnlyMemory<char>> Lower(PlanBuilder builder) =>
         builder.Slice(Item);
+
+    internal override MatchValue<ReadOnlyMemory<char>> ValueOfMatch() =>
+        static (ref cursor, start) => cursor.Since(start);
 }

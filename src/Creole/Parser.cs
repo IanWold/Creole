@@ -39,4 +39,10 @@ public abstract partial class Parser<TIn, TOut> : INode
     /// Call <see cref="PlanBuilder.Lower{TIn, TOut}"/> instead, which shares plans for nodes reached more than once.
     /// </summary>
     internal abstract Plan<TIn, TOut> Lower(PlanBuilder builder);
+
+    /// <summary>
+    /// A function that computes this parser's value from the input it matched, or <see langword="null"/> when the value depends on how that input was parsed.
+    /// A compiled automaton uses it to produce a value without running the parser again.
+    /// </summary>
+    internal virtual MatchValue<TOut>? ValueOfMatch() => null;
 }

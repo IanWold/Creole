@@ -200,6 +200,16 @@ public class CursorTests
     }
 
     [Fact]
+    public void ItemAtReadsAnEarlierItemWithoutMoving()
+    {
+        var cursor = new Cursor<char>(new SegmentedSource<char>("abcde".ToCharArray(), 2));
+        cursor.Advance(4);
+
+        Assert.Equal('b', cursor.ItemAt(1));
+        Assert.Equal(4, cursor.Position);
+    }
+
+    [Fact]
     public void ResetAcrossSegmentsReloadsTheEarlierSegment()
     {
         var cursor = new Cursor<char>(new SegmentedSource<char>("abcdefg".ToCharArray(), 3));
@@ -230,6 +240,28 @@ public class CursorTests
         Assert.Equal(1, cursor.Position);
         Assert.True(cursor.TryPeek(out var item));
         Assert.Equal('b', item);
+    }
+
+    [Fact]
+    public void ResetPastTheEndOfSegmentedInputThrows()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+        {
+            var c = new Cursor<char>(new SegmentedSource<char>("abc".ToCharArray(), 2));
+            c.Reset(4);
+        });
+    }
+
+    [Fact]
+    public void ResetToTheEndOfSegmentedInputFromAnEarlierSegmentIsAllowed()
+    {
+        var cursor = new Cursor<char>(new SegmentedSource<char>("abcde".ToCharArray(), 2));
+
+        cursor.Advance(1);
+        cursor.Reset(5);
+
+        Assert.Equal(5, cursor.Position);
+        Assert.True(cursor.IsAtEnd);
     }
 
     [Fact]

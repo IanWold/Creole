@@ -11,14 +11,14 @@ public abstract partial class Parser<TIn, TOut>
     /// <param name="value">The value to produce.</param>
     /// <returns>A parser that matches the same input as this parser.</returns>
     public Parser<TIn, TResult> As<TResult>(TResult value) =>
-        new MapNode<TIn, TOut, TResult>(this, _ => value);
+        new MapNode<TIn, TOut, TResult>(this, _ => value, ignoresSource: true);
 
     /// <summary>
     /// A parser that runs this parser and discards its result.
     /// </summary>
     /// <returns>A parser that matches the same input as this parser and produces <see cref="Unit"/>.</returns>
     public Parser<TIn, Unit> Ignore() =>
-        new MapNode<TIn, TOut, Unit>(this, static _ => default);
+        new MapNode<TIn, TOut, Unit>(this, static _ => default, ignoresSource: true);
 
     /// <summary>
     /// A parser that runs this parser and transforms its result with <paramref name="selector"/>.

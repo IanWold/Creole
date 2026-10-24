@@ -143,8 +143,23 @@ public ref struct Cursor<T>
     internal static Cursor<T> FromMemory(ReadOnlyMemory<T> input) => new(input.Span) { _segment = input };
 
     /// <summary>
+    /// The item at <paramref name="position"/>, which must be a position this cursor has already passed and the input still holds. The cursor does not move.
+    /// </summary>
+    internal readonly T ItemAt(long position)
+    {
+        var at = this;
+        at.Reset(position);
+        at.TryPeek(out var item);
+
+        return item;
+    }
+
+    /// <summary>
     /// Moves the cursor to <paramref name="position"/>, which must be a position this cursor has already reached and the input still holds.
     /// </summary>
+    /// <remarks>
+    /// The end of the input holds no item, so no segment holds it; the cursor then stands at the end of the segment that holds the last item.
+    /// </remarks>
     internal void Reset(long position)
     {
         var offset = position - _segmentStart;
@@ -155,12 +170,19 @@ public ref struct Cursor<T>
             return;
         }
 
-        if (_source is null || position < 0 || !_source.TryGetSegment(position, out var segment, out var start))
+        if (_source is not null && position >= 0 && _source.TryGetSegment(position, out var segment, out var start))
         {
-            throw new ArgumentOutOfRangeException(nameof(position), position, "The input does not hold this position.");
+            SetSegment(segment, start, position);
+            return;
         }
 
-        SetSegment(segment, start, position);
+        if (_source is not null && position > 0 && _source.TryGetSegment(position - 1, out segment, out start) && start + segment.Length == position)
+        {
+            SetSegment(segment, start, position);
+            return;
+        }
+
+        throw new ArgumentOutOfRangeException(nameof(position), position, "The input does not hold this position.");
     }
 
     /// <summary>

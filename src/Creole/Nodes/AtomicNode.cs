@@ -14,4 +14,7 @@ internal sealed class AtomicNode<TIn, T>(Parser<TIn, T> item) : Parser<TIn, T>
 
     internal override Plan<TIn, T> Lower(PlanBuilder builder) =>
         builder.Atomic(Item);
+
+    internal override MatchValue<T>? ValueOfMatch() =>
+        Item.ValueOfMatch();
 }

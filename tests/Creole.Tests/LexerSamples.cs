@@ -10,6 +10,23 @@ namespace Creole.Tests;
 /// </summary>
 internal static class LexerSamples
 {
+    /// <summary>
+    /// C#-like text for the C#-like lexer, with comments, literals, operators, an identifier that starts with a keyword, and characters no rule matches.
+    /// </summary>
+    public const string CSharpText = """
+        /* header ** comment */ /**/ /***/ namespace Creole.Tests; // a line comment
+        public static class iffy { int x = 0x1F + 12.5e-3f * 'c' - '\n' / 7.; string s = "a\"b\\";
+        x <<= 2; y ??= z => q?.r; if (a <= b && c != d || !e) return @x #y $z; é 1e 1.e5 /* never closed
+        """;
+
+    /// <summary>
+    /// JSON-like text for the JSON lexer, including numbers and escapes that fail part-way.
+    /// </summary>
+    public const string JsonText = """
+        {"name": "Creole", "version": -1.25e+3, "tags": ["a\"b", "\u00e9\n", true, false, null],
+         "nested": {"x": 0, "y": [1, 2.5, 3E-2]}, "bad": 01, "frac": 1., "exp": 1e, "neg": -, "u": "\u12G4"}
+        """;
+
     private static readonly string[] _keywords =
     [
         "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked", "class", "const", "continue",
@@ -33,6 +50,26 @@ internal static class LexerSamples
     private static Parser<char, char> Hex => Of(CharSet.Range('0', '9').Union(CharSet.Range('a', 'f')).Union(CharSet.Range('A', 'F')));
 
     private static Parser<char, char> AnyOf(string chars) => Of(CharSet.Of(chars));
+
+    private static Parser<char, T> Flat<T>(Parser<char, T>[] p) => p.Length switch
+    {
+        1 => p[0],
+        2 => Grammar<char>.Longest(p[0], p[1]),
+        3 => Grammar<char>.Longest(p[0], p[1], p[2]),
+        4 => Grammar<char>.Longest(p[0], p[1], p[2], p[3]),
+        5 => Grammar<char>.Longest(p[0], p[1], p[2], p[3], p[4]),
+        6 => Grammar<char>.Longest(p[0], p[1], p[2], p[3], p[4], p[5]),
+        7 => Grammar<char>.Longest(p[0], p[1], p[2], p[3], p[4], p[5], p[6]),
+        8 => Grammar<char>.Longest(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]),
+        9 => Grammar<char>.Longest(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8]),
+        10 => Grammar<char>.Longest(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9]),
+        11 => Grammar<char>.Longest(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10]),
+        12 => Grammar<char>.Longest(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11]),
+        13 => Grammar<char>.Longest(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12]),
+        14 => Grammar<char>.Longest(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13]),
+        15 => Grammar<char>.Longest(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14]),
+        _ => Grammar<char>.Longest(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15]),
+    };
 
     private static Parser<char, char> Of(CharSet set) => new CharClassNode(set, null);
 
@@ -91,5 +128,16 @@ internal static class LexerSamples
             String("true").Ignore(), String("false").Ignore(), String("null").Ignore(),
             number, text,
         ];
+    }
+
+    /// <summary>
+    /// <c>Longest</c> over any number of alternatives, nested 16 to a level as the docs advise beyond 16.
+    /// </summary>
+    public static Parser<char, T> Longest<T>(Parser<char, T>[] alternatives)
+    {
+        Parser<char, T> Level(int from) =>
+            alternatives.Length - from <= 16 ? Flat(alternatives[from..]) : Flat([.. alternatives[from..(from + 15)], Level(from + 15)]);
+
+        return Level(0);
     }
 }

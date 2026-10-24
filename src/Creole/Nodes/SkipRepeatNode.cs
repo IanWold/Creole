@@ -21,4 +21,7 @@ internal sealed class SkipRepeatNode<TIn, T>(Parser<TIn, T> item, int min, int? 
 
     internal override Plan<TIn, Unit> Lower(PlanBuilder builder) =>
         builder.SkipRepeat(Item, Min, Max);
+
+    internal override MatchValue<Unit> ValueOfMatch() =>
+        static (ref _, _) => default;
 }

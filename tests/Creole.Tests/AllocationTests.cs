@@ -46,6 +46,8 @@ public class AllocationTests
         ["a choice in order"] = () => Allocated(Char('a').Or(Return('r')), ""),
         ["Atomic, Lookahead, Not and Cut"] = () => Allocated(Seq(Lookahead(Char('a')), Atomic(Seq(Char('a'), Cut, Char('b'))), Not(Char('c'))), "ab"),
         ["Longest"] = () => Allocated(Longest(String("<"), String("<=")), "<="),
+        ["a compiled Longest with values from the match"] = () => Allocated(Longest(Range('a', 'z').Select(static c => (int)c), String("<=").As(1), Digit.SkipAtLeastOnce().Slice().Select(static digits => digits.Length)), "123"),
+        ["a compiled Longest whose winner runs again"] = () => Allocated(Longest(Seq(Digit, Digit).Select(static (a, b) => a + b), Char('x').As(0)), "12"),
         ["Named and Context"] = () => Allocated(Digit.Named("digit").Context("in a number"), "5"),
         ["a slice of in-memory input"] = () => Allocated(Digit.SkipAtLeastOnce().Slice(), "123"),
         ["Where"] = () => Allocated(Digit.Where(static c => c != '0'), "5"),

@@ -47,6 +47,15 @@ internal sealed class StringNode : Parser<char, string>, IPrimitiveNode
     internal override Plan<char, string> Lower(PlanBuilder builder) =>
         PlanBuilder.String(Text, IgnoreCase);
 
+    internal override MatchValue<string> ValueOfMatch()
+    {
+        var text = Text;
+
+        return IgnoreCase
+            ? static (ref Cursor<char> cursor, long start) => cursor.Since(start).ToString()
+            : (ref Cursor<char> _, long _) => text;
+    }
+
     /// <summary>
     /// The input characters that match the text's character at <paramref name="index"/>.
     /// </summary>

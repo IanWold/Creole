@@ -26,12 +26,17 @@ internal enum LoweringOptions
     CollapseSelect = 2,
 
     /// <summary>
-    /// An <c>Or</c> runs only the alternatives that can start with the next item (<see cref="DispatchPlan{TIn, T}"/>, ADR-0016).
+    /// An <c>Or</c> runs only the alternatives that can start with the next item (<see cref="DispatchPlan{TIn, T}"/>).
     /// </summary>
     Dispatch = 4,
 
     /// <summary>
+    /// A <c>Longest</c> whose alternatives are all Regular runs as one commit-aware automaton (<see cref="DfaLongestPlan{T}"/>).
+    /// </summary>
+    Dfa = 8,
+
+    /// <summary>
     /// Every rewrite.
     /// </summary>
-    All = Scan | CollapseSelect | Dispatch,
+    All = Scan | CollapseSelect | Dispatch | Dfa,
 }

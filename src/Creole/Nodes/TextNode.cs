@@ -14,4 +14,7 @@ internal sealed class TextNode<T>(Parser<char, T> item) : Parser<char, string>
 
     internal override Plan<char, string> Lower(PlanBuilder builder) =>
         builder.Text(Item);
+
+    internal override MatchValue<string> ValueOfMatch() =>
+        static (ref cursor, start) => cursor.Since(start).ToString();
 }
