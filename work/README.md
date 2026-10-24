@@ -61,9 +61,9 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 6 | ✅ [INT-04](active/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md) Execute Bind, Expression.Build and Custom | [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md), [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md), [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md), [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md) |
 | 6 | ✅ [INT-05](active/03-interpreter/INT-05-interpreter-lowering-rewrites.md) Interpreter lowering rewrites | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md) |
 | 6 | ✅ [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md) DFA compiler for regular subtrees | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md) |
-| 6 | [INT-07](active/03-interpreter/INT-07-recursion-depth-limit.md) Recursion depth limit | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) |
+| 6 | ✅ [INT-07](active/03-interpreter/INT-07-recursion-depth-limit.md) Recursion depth limit | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) |
 | 6 | [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) Furthest-failure tracking and labels | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) |
-| 7 | [INT-08](active/03-interpreter/INT-08-single-layer-parse-api.md) Single-layer Parse API | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) |
+| 7 | [INT-08](active/03-interpreter/INT-08-single-layer-parse-api.md) Single-layer Parse API | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [INT-07](active/03-interpreter/INT-07-recursion-depth-limit.md), [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) |
 | 7 | [INT-09](active/03-interpreter/INT-09-cheaper-automaton-construction.md) Cheaper automaton construction | [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md) |
 | 8 | [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) Phase 0 speed gate **(Phase 0 gate)** | [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md), [FND-10](active/01-foundations/FND-10-move-the-parlot-baselines-to-200.md), [INT-05](active/03-interpreter/INT-05-interpreter-lowering-rewrites.md), [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [INT-08](active/03-interpreter/INT-08-single-layer-parse-api.md), [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) |
 
@@ -208,7 +208,6 @@ Cards whose Status is Researching, Designing or Building:
 
 These items have all their blockers done:
 
-- [INT-07](active/03-interpreter/INT-07-recursion-depth-limit.md) Recursion depth limit
 - [INT-09](active/03-interpreter/INT-09-cheaper-automaton-construction.md) Cheaper automaton construction
 - [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) Furthest-failure tracking and labels
 - [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) StreamBuffer and pulling cursor
@@ -265,8 +264,8 @@ Lowering grammar trees to cached execution plans and running them; the reference
 | ✅ [INT-04](active/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md) Execute Bind, Expression.Build and Custom | 0 | [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md), [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md), [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md), [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md) |
 | ✅ [INT-05](active/03-interpreter/INT-05-interpreter-lowering-rewrites.md) Interpreter lowering rewrites | 0 | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md) |
 | ✅ [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md) DFA compiler for regular subtrees | 0 | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md) |
-| [INT-07](active/03-interpreter/INT-07-recursion-depth-limit.md) Recursion depth limit | 0 | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) |
-| [INT-08](active/03-interpreter/INT-08-single-layer-parse-api.md) Single-layer Parse API | 0 | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) |
+| ✅ [INT-07](active/03-interpreter/INT-07-recursion-depth-limit.md) Recursion depth limit | 0 | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) |
+| [INT-08](active/03-interpreter/INT-08-single-layer-parse-api.md) Single-layer Parse API | 0 | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [INT-07](active/03-interpreter/INT-07-recursion-depth-limit.md), [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) |
 | [INT-09](active/03-interpreter/INT-09-cheaper-automaton-construction.md) Cheaper automaton construction | 0 | [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md) |
 
 ### ERR — Errors, diagnostics and recovery

@@ -15,6 +15,7 @@ Full feature parity: everything the interpreter supports must run in generated c
 - Layers, layer state and marks over stream buffers.
 - Mode channels, invalidation, rollback and cascades.
 - `Recover`, `OrInsert`, lexer recovery, Starved propagation, depth limits.
+- Count depth and probe the stack at the same points as the interpreter, sharing the cursor's counter with interpreted subtrees ([ADR-0020](../../docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md)).
 - `Bind`, the filter behind `Where` ([ADR-0014](../../docs/decisions/0014-a-rejected-filter-reports-at-the-start-of-the-value.md)), `Expression.Build` ([ADR-0015](../../docs/decisions/0015-a-prefix-operand-takes-only-tighter-levels.md)) and `Custom` nodes.
 
 ## Acceptance criteria

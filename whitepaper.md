@@ -310,7 +310,7 @@ static readonly Parser<char, double> Expr = Expression.Build(Atom, op =>
 - **Operands.** Wherever an operand is expected, prefix operators are tried first, and a prefix operator's operand is parsed with only the levels tighter than its own. So `2 ^ -x` is `2 ^ (-x)` and `-x ^ 2` is `-(x ^ 2)`. Prefix and postfix operators repeat: `- -x`, `f()()`. At one level, a prefix operator applies before the postfix and infix operators: `-x!` is `(-x)!` ([ADR-0015](work/docs/decisions/0015-a-prefix-operand-takes-only-tighter-levels.md)).
 - **Operators.** After an operand, postfix and infix operators are tried, tighter levels first. Prefix operators are never tried there, so `-` can be both prefix and infix. A token used as both postfix and infix goes to whichever is tried first, which analysis reports as an ambiguity.
 - **Non-associative chains.** In `a < b < c`, the second `<` fails committed with "'<' cannot be chained; add parentheses". `a < b + 1` is unaffected.
-- **Errors.** Ordinary commit semantics apply. An operator that fails without consuming ends the expression; one that consumed input commits, so a missing right operand is an error at that point. Operand recursion counts against `ParseOptions.MaxDepth`.
+- **Errors.** Ordinary commit semantics apply. An operator that fails without consuming ends the expression; one that consumed input commits, so a missing right operand is an error at that point. A prefix operator's operand and an `InfixR` right operand each count one level against `ParseOptions.MaxDepth` (§ Limits for untrusted input).
 
 This differs from Pidgin's `ExpressionParser` in three ways: Pidgin applies prefix and postfix operators once unless they are marked chainable, it cannot parse `2 ^ -x` when `-` is looser than `^`, and it leaves `< c` unparsed instead of reporting the chain.
 
@@ -570,7 +570,7 @@ error[parser]: expected ',' or '}'
 
 ### Recovery
 
-`p.Recover(strategy, fallback)` catches any failure of `p`, records a diagnostic, repairs the input position and returns `fallback`, often an explicit error node. It never re-runs `p`. Before skipping, it restores the mode stack and layer state that held when `p` started, because a half-parsed construct's mode changes no longer apply. The restore is an ordinary mode change at the current position, so any lookahead lexed under the abandoned mode is invalidated. Strategies follow chumsky's catalogue:
+`p.Recover(strategy, fallback)` catches any failure of `p`, records a diagnostic, repairs the input position and returns `fallback`, often an explicit error node. It never re-runs `p`. A depth limit is not a failure it can catch (§ Limits for untrusted input). Before skipping, it restores the mode stack and layer state that held when `p` started, because a half-parsed construct's mode changes no longer apply. The restore is an ordinary mode change at the current position, so any lookahead lexed under the abandoned mode is invalidated. Strategies follow chumsky's catalogue:
 
 | Strategy | Behavior | Typical use |
 | --- | --- | --- |
@@ -591,7 +591,14 @@ Lexer layers recover the same way. `Layer.Tokens(..., onError: Recover.SkipChar(
 
 ### Limits for untrusted input
 
-`ParseOptions.MaxDepth` bounds recursion depth and `ParseOptions.MaxBufferedItems` bounds each layer's buffer. Exceeding either produces an ordinary diagnostic at the offending span, never a stack overflow; Parlot's recursion limit is the model.
+`ParseOptions.MaxDepth` bounds recursion depth and `ParseOptions.MaxBufferedItems` bounds each layer's buffer. Exceeding either produces an ordinary diagnostic at the offending span, never a stack overflow. Parlot's recursion limit is the model for depth ([ADR-0020](work/docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md)):
+
+- **What counts.** One level is counted while each of these runs: a `Rec`, the parser a `Bind` continuation returned, a prefix operator's operand, and an `InfixR` right operand. Only at these points can a parse recurse beyond a bound set by the grammar's size. The depth therefore depends only on the grammar and the input, and both engines count it alike. Each layer counts its own depth.
+- **Default.** `MaxDepth` defaults to 1,000 levels. `int.MaxValue` leaves only the stack check.
+- **The stack.** A count alone cannot promise that the stack never overflows, because the stack used per level depends on the grammar, the JIT tier and the thread. Past depth 20, each counted entry also calls `RuntimeHelpers.TryEnsureSufficientExecutionStack()`, as Roslyn's `StackGuard` does.
+- **Ending the parse.** Exceeding the depth or the stack ends the whole parse. No combinator inside it catches that, including `Not`, `Atomic` and `Recover`, so the limit never changes what a grammar accepts. The result is `Failed`. The depth diagnostic covers the item where the level would have started and names the cause: `MaxDepth` and its value, or the thread's stack.
+
+Recursion in user code is not counted. That includes `Select` and `Where` functions, custom scanners and code that builds grammars.
 
 ## Static analysis
 
@@ -757,7 +764,7 @@ private static bool Parse_Value(ref Cursor<JTok> c, out JsonValue result) { /* s
 
 ### Equivalence
 
-Both engines must agree on the value, the consumed position, every diagnostic's span and every expected set. The library's CI runs property-based differential tests over randomly generated grammars and inputs. Users get the same check as `Creole.Testing.EngineAgreement.Check(grammar, inputs)`.
+Both engines must agree on the value, the consumed position, every diagnostic's span and every expected set. They count depth at the same points, so they agree on a parse that `MaxDepth` ends. Where the stack check ends a parse depends on the thread and on each engine's frame sizes, so those parses are not compared (§ Limits for untrusted input). The library's CI runs property-based differential tests over randomly generated grammars and inputs. Users get the same check as `Creole.Testing.EngineAgreement.Check(grammar, inputs)`.
 
 ### Considered and deferred
 

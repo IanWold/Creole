@@ -6,6 +6,7 @@ namespace Creole;
 /// <remarks>
 /// The chosen parser's plan comes from <see cref="PlanCache"/>, so a parser the continuation returns again, such as a rule field, is lowered once.
 /// A parser the continuation builds afresh at each match is lowered at each match.
+/// The chosen parser runs one level of recursion deeper, because it can lead back to this <c>Bind</c> without a <c>Rec</c>.
 /// </remarks>
 internal sealed class BindPlan<TIn, TSource, TNext, TResult>(Plan<TIn, TSource> source, Func<TSource, Parser<TIn, TNext>> next, Func<TSource, TNext, TResult> selector, string nextExpression) : Plan<TIn, TResult>
 {
@@ -15,6 +16,7 @@ internal sealed class BindPlan<TIn, TSource, TNext, TResult>(Plan<TIn, TSource> 
     private readonly Plan<TIn, TSource> _source = source;
 
     /// <exception cref="GrammarException">The continuation returned null, or lowering the parser it returned failed.</exception>
+    /// <exception cref="DepthExceededException">The parse is too deep to run the chosen parser.</exception>
     public override bool TryParse(ref Cursor<TIn> cursor, ref TResult result)
     {
         TSource value = default!;
@@ -25,9 +27,14 @@ internal sealed class BindPlan<TIn, TSource, TNext, TResult>(Plan<TIn, TSource> 
         }
 
         var parser = _next(value) ?? throw new GrammarException($"'{_nextExpression}' returned null instead of a parser.");
+        var plan = PlanCache.Get(parser);
         TNext nextValue = default!;
 
-        if (!PlanCache.Get(parser).TryParse(ref cursor, ref nextValue))
+        cursor.EnterLevel();
+        var ok = plan.TryParse(ref cursor, ref nextValue);
+        cursor.LeaveLevel();
+
+        if (!ok)
         {
             return false;
         }

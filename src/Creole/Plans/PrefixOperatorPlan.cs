@@ -6,6 +6,7 @@ namespace Creole;
 /// <remarks>
 /// The operand excludes the operator's own level, so a postfix operator at that level applies after the prefix: <c>-x!</c> is <c>(-x)!</c>.
 /// The operand position tries every prefix operator again, so prefix operators repeat: <c>- -x</c>.
+/// The operand runs one level of recursion deeper, because the input alone bounds how many prefixes repeat.
 /// </remarks>
 internal sealed class PrefixOperatorPlan<TIn, TOp, T>(Plan<TIn, TOp> op, Func<TOp, T, T> combine, int level) : OperatorPlan<TIn, T>(Fixity.Prefix, level)
 {
@@ -13,6 +14,7 @@ internal sealed class PrefixOperatorPlan<TIn, TOp, T>(Plan<TIn, TOp> op, Func<TO
     private readonly Plan<TIn, TOp> _op = op;
 
     /// <exception cref="GrammarException">The operator succeeded without consuming input, so parsing its operand would try it again forever.</exception>
+    /// <exception cref="DepthExceededException">The parse is too deep to parse the operand.</exception>
     public override bool TryApply(ref Cursor<TIn> cursor, ExpressionPlan<TIn, T> expression, ref T value)
     {
         var start = cursor.Position;
@@ -30,7 +32,11 @@ internal sealed class PrefixOperatorPlan<TIn, TOp, T>(Plan<TIn, TOp> op, Func<TO
 
         T operand = default!;
 
-        if (!expression.Parse(ref cursor, Level - 1, ref operand))
+        cursor.EnterLevel();
+        var ok = expression.Parse(ref cursor, Level - 1, ref operand);
+        cursor.LeaveLevel();
+
+        if (!ok)
         {
             return false;
         }
