@@ -202,13 +202,12 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- None yet.
+- [INT-07](active/03-interpreter/INT-07-recursion-depth-limit.md) Recursion depth limit — Designing
 
 ### Can start now
 
 These items have all their blockers done:
 
-- [INT-07](active/03-interpreter/INT-07-recursion-depth-limit.md) Recursion depth limit
 - [INT-09](active/03-interpreter/INT-09-cheaper-automaton-construction.md) Cheaper automaton construction
 - [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) Furthest-failure tracking and labels
 - [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) StreamBuffer and pulling cursor

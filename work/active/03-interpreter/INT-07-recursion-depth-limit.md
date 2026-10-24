@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Interpreted engine](../../README.md#int--interpreted-engine) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Designing |
 
 ## Summary
 
@@ -31,3 +31,12 @@ Untrusted input must never cause a stack overflow.
 ## Whitepaper references
 
 - [§ Limits for untrusted input](../../../whitepaper.md#limits-for-untrusted-input)
+
+## Artifacts
+
+- [ADR-0020](../../docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md) Depth counts each `Rec`, `Bind` continuation and recursive operand, and exceeding it or the stack ends the parse (Proposed)
+
+## Progress notes
+
+- 2026-10-24 (Designing): Started. The whitepaper fixes the feature but not what counts as a level, how exceeding the limit stops the parse, the default, whether a stack probe backs the limit, or how the card divides work with INT-08, which owns `ParseOptions` and the `Parse` API that returns `Failed`. Parlot (the stated model) counts `Deferred` and `Unary` entries, is off by default and throws `ParseException`. Next: a decision record via `/decide`.
+- 2026-10-24 (Designing): Drafted ADR-0020 (Proposed). It is based on measurements of stack use per level, probe cost and unwinding cost on the current interpreter, plus prior art (Parlot, Roslyn `StackGuard`, System.Text.Json, Pidgin, Superpower). The maintainer chose a default of 1,000, and that INT-07 builds the mechanism while INT-08 exposes `ParseOptions.MaxDepth` and returns `Failed`. Next: the maintainer accepts, rejects or revises ADR-0020; on acceptance, update the whitepaper and the INT-07, INT-08, BENCH-01, ERR-05 and GEN-06 cards, then move to Building.
