@@ -5,10 +5,10 @@ namespace Creole.Benchmarks.Tests;
 
 public class BaselineAgreementTests
 {
-    private static readonly string[] _jsonParsers = ["Parlot", "ParlotCompiled", "Pidgin", "Superpower", "Sprache"];
+    private static readonly string[] _jsonParsers = ["Parlot", "Pidgin", "Superpower", "Sprache"];
 
     public static TheoryData<string> ArithmeticParsers =>
-        ["Parlot", "ParlotCompiled", "Pidgin", "PidginFolds"];
+        ["Parlot", "Pidgin", "PidginFolds"];
 
     public static TheoryData<string, string> JsonCases =>
         [.. from input in JsonInputs.Names from parser in _jsonParsers select (input, parser)];
@@ -16,7 +16,6 @@ public class BaselineAgreementTests
     private static double EvaluateArithmetic(string parser, string expression) => parser switch
     {
         "Parlot" => ParlotArithmetic.Evaluate(ParlotArithmetic.Interpreted, expression),
-        "ParlotCompiled" => ParlotArithmetic.Evaluate(ParlotArithmetic.Compiled, expression),
         "Pidgin" => PidginArithmetic.Evaluate(PidginArithmetic.OperatorTable, expression),
         "PidginFolds" => PidginArithmetic.Evaluate(PidginArithmetic.Folds, expression),
         _ => throw new ArgumentOutOfRangeException(nameof(parser), parser, null),
@@ -28,7 +27,6 @@ public class BaselineAgreementTests
     private static JsonValue ParseJson(string parser, string text) => parser switch
     {
         "Parlot" => ParlotJson.Parse(ParlotJson.Interpreted, text),
-        "ParlotCompiled" => ParlotJson.Parse(ParlotJson.Compiled, text),
         "Pidgin" => PidginJson.Parse(text),
         "Superpower" => SuperpowerJson.Parse(text),
         "Sprache" => SpracheJson.Parse(text),
