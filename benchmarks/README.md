@@ -54,7 +54,7 @@ Known differences:
 | System.Text.Json | Reads UTF-8 bytes; the combinator baselines read a `string`. |
 | Parlot | Its string literal rejects the JSON `\/` escape, so the inputs leave that escape out. `Separated` fails on an empty list unless given a minimum of zero, so the grammar passes `min: 0`. |
 | Pidgin | Arithmetic has two Pidgin baselines. `Pidgin` uses `ExpressionParser`, the idiomatic choice; `PidginFolds` folds `Many` by hand and is faster. The Phase 0 gate uses the faster one. |
-| Parlot | The harness pins Parlot 2.0.0 and measures its interpreted (Fluent) parsers, which the Phase 0 gate uses ([ADR-0003](../work/docs/decisions/0003-numeric-gate-thresholds.md)). 2.0.0 was the fastest stable release measured: about 8% faster than 1.5.12, and level with 1.6.0 within noise ([research note](../work/docs/research/2026-10-24-parlot-2-0-baselines-and-generator.md)). Parlot 2.0 removes `Compile()`. Its generated parsers, which the Phase 3 gate uses, join with [BENCH-03](../work/active/13-benchmarks/BENCH-03-phase-3-speed-gate.md). |
+| Parlot | The harness pins Parlot 2.0.0 and measures its interpreted (Fluent) parsers, which the Phase 0 gate uses ([ADR-0003](../work/docs/decisions/0003-numeric-gate-thresholds.md)). 2.0.0 was the fastest stable release measured: faster than 1.5.12 on medium and large JSON (0.86–0.88×) and level elsewhere, and level with 1.6.0 within noise ([research note](../work/docs/research/2026-10-24-parlot-2-0-baselines-and-generator.md)). Parlot 2.0 removes `Compile()`. Its generated parsers, which the Phase 3 gate uses, join with [BENCH-03](../work/active/13-benchmarks/BENCH-03-phase-3-speed-gate.md). |
 
 ## Adding a benchmark
 

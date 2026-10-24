@@ -16,6 +16,7 @@ Parlot 2.0.0 parses `TextReader` input with bounded memory ([research note](../r
 - **One value.** The parse runs once, synchronously, over a buffer that "only retains the text a parser can still move back to". When the input outgrows the first block, the parse moves to a thread-pool thread that blocks on the reads.
 - **Successive values.** `ParseManyAsync` parses each value from a window. If the parse reached the end of the window, it reads more, at least doubling the window, and parses the value again.
 - **Cuts.** `Commit()` is a cut that releases buffered text.
+- **Bytes.** "A `Stream` is parsed through a `StreamReader`, which decodes it."
 - **Limits.** Offsets are `int`. Generated parsers support only the single-value mode.
 
 These are the choices [§ Streaming and async input](../../../whitepaper.md#streaming-and-async-input) makes: synchronous parsing over buffered data, restarting an item that runs out of data with at least double the data, and a blocking thread for huge documents. The whitepaper does not mention Parlot there. [§ Comparison](../../../whitepaper.md#comparison-with-existing-net-libraries) has no row for streaming input. [§ Background](../../../whitepaper.md#background-and-motivation) and [§ Risks](../../../whitepaper.md#risks) describe Parlot's strengths as speed and build-time generation only.
@@ -33,7 +34,7 @@ G2 is "Streaming n-layer pipelines: lazy, pull-based, bounded memory". G3 and G4
 
 ### B. Record Parlot's streaming as prior art, and rest the case on layers (recommended)
 
-G2 does not change. The whitepaper states which streaming choices Parlot already made, and what Creole adds: streaming at every layer boundary, cross-layer backtracking and feedback over the buffers, byte sources through a decoding layer, and offsets beyond 2 GB.
+G2 does not change. The whitepaper states which streaming choices Parlot already made, and what Creole adds: streaming at every layer boundary, cross-layer backtracking and feedback over the buffers, decoding as a layer, so spans keep byte offsets, and offsets beyond 2 GB.
 
 - Pros: accurate and checkable. It also points the streaming cards at a working design.
 - Cons: concedes that single-layer streaming of text does not differentiate Creole.
@@ -55,15 +56,15 @@ Adopting Parlot's mechanisms is not an option here. A compacting buffer, pins, a
 
 **B.** The whitepaper changes as follows:
 
-- **§ Comparison** gets a row after "Input type":
+- **§ Comparison** gets a row after "Input type", and its opening paragraph gains, after the sentence on Parlot's generator: "Parlot 2.0 also streams text, one layer at a time, so streaming differs only through Creole's layers." The row:
 
   | Capability | Sprache | Superpower | Pidgin | Parlot | Creole (proposed) |
   | --- | --- | --- | --- | --- | --- |
   | Streaming input | None; `string` only | None; `string` only | `TextReader`, byte `Stream` or `IEnumerator<T>` | `TextReader`, buffering only what can be re-read; `ParseManyAsync` for successive values | Any source at the root of a pipeline, with every layer streaming; `ParseManyAsync` with restart |
 
-- **§ Streaming and async input** gets a second sentence in its opening paragraph: "Parlot 2.0 makes the same choices for one layer of text: a synchronous parse over a buffer that keeps only what can still be re-read, and a driver that re-parses a value that reached the end of the data. Creole applies them at every layer boundary, to byte sources, and to offsets beyond 2 GB."
+- **§ Streaming and async input** gets two sentences at the end of its opening paragraph: "Parlot 2.0 makes the same choices for one layer of text: a synchronous parse over a buffer that keeps only what can still be re-read, and a driver that re-parses a value that reached the end of the data. Creole applies them at every layer boundary, keeps byte offsets through decoding, and allows offsets beyond 2 GB."
 - **§ Background and motivation:** Parlot's "What it added" cell gains "bounded-memory parsing of `TextReader` input". The sentence "so Creole's case cannot rest on speed alone" becomes "so Creole's case cannot rest on speed, build-time generation or single-layer streaming".
-- **§ Risks:** the Parlot row's risk becomes "Parlot already offers fast, build-time-generated combinators that stream text", and its impact becomes "Speed and single-layer streaming do not differentiate Creole". The mitigation is unchanged.
+- **§ Risks:** the opening sentence becomes "The largest strategic risk is that Parlot already covers speed, build-time generation and single-layer streaming." The Parlot row's risk becomes "Parlot already offers fast, build-time-generated combinators that stream text", and its impact becomes "Speed and single-layer streaming do not differentiate Creole". The mitigation is unchanged.
 - **§ References:** Parlot's entry gains a link to its streaming guide.
 
 Deciding reason: these are facts a reader can check. G2 is about n layers, and Parlot changes what Creole can claim, not what it must build.
@@ -78,10 +79,12 @@ What would change this: if Parlot adds staged pipelines, such as a parser over a
 
 ## Changes made
 
+This record was edited in place before its branch merged. An independent review found that the § Streaming sentence wrongly implied Parlot cannot stream bytes, since it decodes a `Stream` through a `StreamReader`. It also found that the Decision gave no text for the § Comparison and § Risks opening sentences. Both are corrected above.
+
 - **Whitepaper.**
   - [§ Comparison](../../../whitepaper.md#comparison-with-existing-net-libraries): the "Streaming input" row after "Input type", and a sentence in the opening paragraph that links this record.
   - [§ Streaming and async input](../../../whitepaper.md#streaming-and-async-input): the opening paragraph gains the sentences under Decision and links this record.
   - [§ Background and motivation](../../../whitepaper.md#background-and-motivation): Parlot's "What it added" cell, and the sentence on what Creole's case cannot rest on.
-  - [§ Risks](../../../whitepaper.md#risks): the Parlot row's risk and impact.
+  - [§ Risks](../../../whitepaper.md#risks): the opening sentence, and the Parlot row's risk and impact.
   - [§ References](../../../whitepaper.md#references): Parlot's entry lists streaming and links its streaming guide.
 - **Cards.** None changed. LAY-02, STRM-02 and STRM-04 already link the research note.

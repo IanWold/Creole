@@ -17,7 +17,7 @@ Parlot 2.0.0 is the first stable release of Parlot's generator. The [research no
 
 - **It still executes user code.** It emits the project's compilation together with build-only `.parlot.cs` grammar files, loads the result and calls the factory (finding 13). The contrast holds.
 - **It does not execute in the IDE.** "IDE/design-time analysis does not execute grammar factories". At design time the generator emits stubs that throw (finding 18). So the IDE half of the first reason no longer separates Creole from Parlot.
-- **It depends on the whole compilation.** Its output step combines with `CompilationProvider` (finding 19). Inference: it runs again after any edit.
+- **It executes in every build.** At design time the generator emits stubs instead of executing (Parlot's `StandaloneParserGeneration.cs`:239–241). In a real build it compiles the project's code again, loads it and calls the factory (findings 13 and 19).
 - **It has no fallback.** "There is no runtime fallback for unsupported standalone code" (finding 17).
 - **It runs with the build's permissions.** Parlot's docs say factories "run inside the compiler host with the build process's permissions" (finding 13).
 
@@ -34,12 +34,11 @@ Change only the `[IncludeFiles]` fact.
 
 ### B. Keep reading syntax only, and restate the reasons (recommended)
 
-The design does not change. The paragraph credits Parlot's route for what it gains, grammars assembled by loops and helpers, and gives four reasons that hold against Parlot 2.0:
+The design does not change. The paragraph credits Parlot's route for what it gains, grammars assembled by loops and helpers, and gives three reasons that hold against Parlot 2.0:
 
-1. **The IDE and the build agree.** A generator that reads syntax produces the same code in the editor as on the command line, and it reports CRL0301 for each fallback while the grammar is being written. Parlot's IDE sees stubs that throw until a real build runs (finding 18).
-2. **Caching.** Reading syntax depends only on the grammar's own code. Executing grammar code means compiling and loading the project, so it runs again after any edit (finding 19, inference).
-3. **No user code runs inside the compiler.** Parlot's docs treat factories as build code that needs the same review as build scripts (finding 13).
-4. **There is a fallback.** Whatever the generator cannot read runs on the interpreter. Parlot fails the build instead (finding 17).
+1. **The IDE and the build agree, without executing anything.** A generator that reads syntax produces the same code in the editor as on the command line, and it reports CRL0301 for each fallback while the grammar is being written. An executing generator must either run user code in the IDE after every edit or show something else there. Parlot shows stubs that throw until a real build runs, and every build then compiles the project a second time, loads it and runs the factory (findings 18 and 19).
+2. **No user code runs inside the compiler.** Parlot's docs treat factories as build code that needs the same review as build scripts (finding 13).
+3. **There is a fallback.** Whatever the generator cannot read runs on the interpreter. Parlot fails the build instead (finding 17).
 
 - Pros: the argument rests on differences a reader can check.
 - Cons: reason 1 holds only if the GEN cards make CRL0301 and the generated code available at design time. That is already the design, but nothing has built it yet.
@@ -51,7 +50,7 @@ Execute grammar construction at build time, as Parlot does, but only for subtree
 
 - Pros: grammars built in loops, by helpers or from other assemblies would get generated code. Parlot 2.0 shows the approach works and ships it as stable.
 - Cons:
-  - The generator would emit, load and run the project's compilation, with reasons 1 to 3's costs for the subtrees that use the tier.
+  - The generator would emit, load and run the project's compilation, with the costs in reasons 1 and 2 for the subtrees that use the tier.
   - The generator would have two paths. Both would need the differential tests behind G7.
   - Creole already falls back correctly to the interpreter, so the tier buys speed only on fallback subtrees. Nobody has measured how often real grammars fall back; [§ Risks](../../../whitepaper.md#risks) asks for that measurement.
 - Effect on goals: G7 gets harder. G8 is unaffected, since execution happens at build time only.
@@ -60,11 +59,11 @@ Execute grammar construction at build time, as Parlot does, but only for subtree
 
 **B.** The generator keeps reading syntax only. The Parlot paragraph in § Considered and deferred is replaced with:
 
-> Parlot takes a different route to staging. Its generator compiles the project together with build-only grammar files, loads the result and runs `[GenerateParser]` methods to build the grammar graph, then emits code for it. That handles grammars assembled by loops and helpers. Creole reads syntax only, by design. The generator then produces the same code in the IDE as in a build, and CRL0301 marks each fallback as the grammar is written; Parlot's IDE sees stubs that throw until a real build. Reading syntax needs only the grammar's own code, while executing it needs the whole project compiled and loaded after every edit. No user code runs inside the compiler. And anything the generator cannot read still runs on the interpreter, where Parlot fails the build.
+> Parlot takes a different route to staging. Its generator compiles the project together with build-only grammar files, loads the result and runs `[GenerateParser]` methods to build the grammar graph, then emits code for it. That handles grammars assembled by loops and helpers. Creole reads syntax only, by design. The generator then produces the same code in the IDE as in a build, without running anything, and CRL0301 marks each fallback as the grammar is written. Parlot avoids running user code in the IDE, so its IDE sees stubs that throw until a real build, and every build compiles the project a second time, loads it and runs the factory to obtain the grammar. No user code runs inside the compiler. And anything the generator cannot read still runs on the interpreter, where Parlot fails the build.
 
 The build-time execution item in § Questions raised in review keeps its answer and adds that Parlot's stable generator did not change it, with a link to this record.
 
-Deciding reason: Creole already has a correct fallback, so build-time execution would buy only speed on the subtrees that fall back. It would cost a second generator path that the engine-agreement gate must also cover. The four reasons above are the ones that still hold now that Parlot's generator is stable.
+Deciding reason: Creole already has a correct fallback, so build-time execution would buy only speed on the subtrees that fall back. It would cost a second generator path that the engine-agreement gate must also cover. The three reasons above are the ones that still hold now that Parlot's generator is stable.
 
 What would change this: if the fallback rate measured on real grammars ([§ Risks](../../../whitepaper.md#risks), "Generator authoring rules feel restrictive") shows that common idioms fall back with a large speed gap, option C should be reconsidered in a new record.
 
@@ -75,6 +74,8 @@ What would change this: if the fallback rate measured on real grammars ([§ Risk
 - Option C remains possible later. Nothing in the plan representation rules it out.
 
 ## Changes made
+
+This record was edited in place before its branch merged. An independent review found that the old reason 2, that executing needs the project "compiled and loaded after every edit", was wrong for Parlot, which does not execute at design time. That reason is merged into reason 1, and the Context and the whitepaper text are corrected.
 
 - **Whitepaper.**
   - [§ Considered and deferred](../../../whitepaper.md#considered-and-deferred): the Parlot paragraph is replaced with the text under Decision and links this record. The replacement also drops the stale `[IncludeFiles]` clause.

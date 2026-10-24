@@ -763,7 +763,7 @@ Both engines must agree on the value, the consumed position, every diagnostic's 
 
 Runtime compilation with `System.Linq.Expressions` or `DynamicMethod` would accelerate grammars built at run time. It is deferred because it conflicts with Native AOT and adds startup cost, but the plan representation leaves room for it as a third engine.
 
-Parlot takes a different route to staging. Its generator compiles the project together with build-only grammar files, loads the result and runs `[GenerateParser]` methods to build the grammar graph, then emits code for it. That handles grammars assembled by loops and helpers. Creole reads syntax only, by design ([ADR-0018](work/docs/decisions/0018-the-generator-keeps-reading-syntax-only.md)). The generator then produces the same code in the IDE as in a build, and CRL0301 marks each fallback as the grammar is written; Parlot's IDE sees stubs that throw until a real build. Reading syntax needs only the grammar's own code, while executing it needs the whole project compiled and loaded after every edit. No user code runs inside the compiler. And anything the generator cannot read still runs on the interpreter, where Parlot fails the build.
+Parlot takes a different route to staging. Its generator compiles the project together with build-only grammar files, loads the result and runs `[GenerateParser]` methods to build the grammar graph, then emits code for it. That handles grammars assembled by loops and helpers. Creole reads syntax only, by design ([ADR-0018](work/docs/decisions/0018-the-generator-keeps-reading-syntax-only.md)). The generator then produces the same code in the IDE as in a build, without running anything, and CRL0301 marks each fallback as the grammar is written. Parlot avoids running user code in the IDE, so its IDE sees stubs that throw until a real build, and every build compiles the project a second time, loads it and runs the factory to obtain the grammar. No user code runs inside the compiler. And anything the generator cannot read still runs on the interpreter, where Parlot fails the build.
 
 ## Layer fusion
 
@@ -822,7 +822,7 @@ Layering helps. The lexer stays deterministic, with maximal munch, and only the 
 
 ## Streaming and async input
 
-Parsing is synchronous over buffered data; asynchrony lives only at the source. An async driver parses one top-level item at a time and restarts that item if it runs out of data mid-parse. Parlot 2.0 makes the same choices for one layer of text: a synchronous parse over a buffer that keeps only what can still be re-read, and a driver that re-parses a value that reached the end of the data. Creole applies them at every layer boundary, to byte sources, and to offsets beyond 2 GB ([ADR-0019](work/docs/decisions/0019-parlot-streaming-is-prior-art-and-creoles-case-rests-on-layers.md)).
+Parsing is synchronous over buffered data; asynchrony lives only at the source. An async driver parses one top-level item at a time and restarts that item if it runs out of data mid-parse. Parlot 2.0 makes the same choices for one layer of text: a synchronous parse over a buffer that keeps only what can still be re-read, and a driver that re-parses a value that reached the end of the data. Creole applies them at every layer boundary, keeps byte offsets through decoding, and allows offsets beyond 2 GB ([ADR-0019](work/docs/decisions/0019-parlot-streaming-is-prior-art-and-creoles-case-rests-on-layers.md)).
 
 ### Sources
 
