@@ -21,6 +21,8 @@ namespace Creole;
 /// </remarks>
 public ref struct Cursor<T>
 {
+    private const int UncheckedDepth = 20;
+
     private int _index;
     private ReadOnlyMemory<T> _segment;
     private long _segmentStart;
@@ -35,6 +37,20 @@ public ref struct Cursor<T>
     /// <c>Atomic</c>, <c>Lookahead</c>, <c>Not</c>, <c>Longest</c> alternatives and every <see cref="LightMark"/> save and restore it.
     /// </remarks>
     internal bool Cut { get; set; }
+
+    /// <summary>
+    /// The levels of recursion this layer's parse is inside.
+    /// </summary>
+    /// <remarks>
+    /// A level is counted while a <c>Rec</c>, the parser a <c>Bind</c> continuation returned, a prefix operator's operand or an <c>InfixR</c> right operand runs.
+    /// Each layer has its own cursor, so each layer counts its own depth.
+    /// </remarks>
+    internal int Depth { get; private set; }
+
+    /// <summary>
+    /// The most levels this layer's parse may be inside at once. <see cref="int.MaxValue"/> leaves only the stack check.
+    /// </summary>
+    internal int MaxDepth { get; init; } = int.MaxValue;
 
     /// <summary>
     /// The items from the cursor to the end of the current segment. Empty only at the end of the input.
@@ -105,6 +121,21 @@ public ref struct Cursor<T>
         }
     }
 
+    private void EnterLevelSlow()
+    {
+        if (Depth >= MaxDepth)
+        {
+            throw new DepthExceededException(Position, Depth, DepthCause.MaxDepth);
+        }
+
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        {
+            throw new DepthExceededException(Position, Depth, DepthCause.Stack);
+        }
+
+        Depth++;
+    }
+
     private void LoadSegment()
     {
         var position = Position;
@@ -138,6 +169,25 @@ public ref struct Cursor<T>
     }
 
     /// <summary>
+    /// Enters one level of recursion at the cursor's position. Call <see cref="LeaveLevel"/> when the level returns, whether it succeeded or failed.
+    /// </summary>
+    /// <remarks>
+    /// Deeper than 20 levels, it also checks that the thread has enough stack left to go on.
+    /// </remarks>
+    /// <exception cref="DepthExceededException">The parse is already <see cref="MaxDepth"/> levels deep, or the thread is short of stack.</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void EnterLevel()
+    {
+        if (Depth < UncheckedDepth && Depth < MaxDepth)
+        {
+            Depth++;
+            return;
+        }
+
+        EnterLevelSlow();
+    }
+
+    /// <summary>
     /// Creates a cursor at the start of an input held entirely in memory, whose items <see cref="Since"/> can return without copying.
     /// </summary>
     internal static Cursor<T> FromMemory(ReadOnlyMemory<T> input) => new(input.Span) { _segment = input };
@@ -153,6 +203,11 @@ public ref struct Cursor<T>
 
         return item;
     }
+
+    /// <summary>
+    /// Leaves the level the matching <see cref="EnterLevel"/> entered.
+    /// </summary>
+    internal void LeaveLevel() => Depth--;
 
     /// <summary>
     /// Moves the cursor to <paramref name="position"/>, which must be a position this cursor has already reached and the input still holds.

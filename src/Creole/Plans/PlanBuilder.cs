@@ -12,7 +12,7 @@ namespace Creole;
 /// <para>
 /// A grammar can be cyclic through <c>Rec</c>.
 /// When lowering reaches a node that is still being lowered, it returns a <see cref="ForwardPlan{TIn, TOut}"/>, filled in when that node's plan is built.
-/// A <c>Rec</c> lowers to its target's plan, so the forward plan on the edge that closes a cycle is the only indirection a cycle costs.
+/// A <c>Rec</c> lowers to a <see cref="RecPlan{TIn, TOut}"/>, which runs its target's plan one level of recursion deeper.
 /// </para>
 /// <para>
 /// Lowering also applies the rewrites in <see cref="LoweringOptions"/> that the builder was given, all of them by default.
@@ -95,7 +95,7 @@ internal sealed partial class PlanBuilder(LoweringOptions options = LoweringOpti
     }
 
     /// <summary>
-    /// Lowers a <c>Rec</c> to its target's plan.
+    /// Lowers a <c>Rec</c> to a step that runs its target's plan one level of recursion deeper.
     /// </summary>
     /// <exception cref="GrammarException">The reference returned null, or building its target failed. The message gains the rule path.</exception>
     public Plan<TIn, TOut> Rec<TIn, TOut>(RecNode<TIn, TOut> rec)
@@ -111,7 +111,7 @@ internal sealed partial class PlanBuilder(LoweringOptions options = LoweringOpti
             throw new GrammarException($"{exception.Message} Rule path: {path}.", exception);
         }
 
-        return Lower(target);
+        return new RecPlan<TIn, TOut>(Lower(target));
     }
 
     public static Plan<TIn, TOut> Return<TIn, TOut>(TOut value) => new ReturnPlan<TIn, TOut>(value);

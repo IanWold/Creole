@@ -68,3 +68,18 @@ Results that are value types flow through the plan without boxing, so a parse wh
 | `Case<T>()` over union tokens that are structs, and `Match` over a union that is a struct, such as `Maybe<T>` | the case value, boxed to read it |
 
 Struct tokens that implement `IKinded<TKind>`, matched with `Kind(k)`, never box.
+
+## Deep input
+
+A parse counts how deep it recurses, so deeply nested input cannot overflow the stack and crash the process. One level is counted while each of these runs:
+
+- a `Rec`;
+- the parser a `Bind` continuation returned, including a query whose later `from` uses an earlier value;
+- a prefix operator's operand in `Expression.Build`;
+- an `InfixR` right operand.
+
+Nothing else counts, so how deep a parse goes depends only on the grammar and the input. With the JSON grammar of [Worked Example A](../../whitepaper.md#a-json-in-two-layers), whose `Value` is a `Rec`, each nested array or object is one level deeper.
+
+Deeper than 20 levels, each counted level also checks that the thread has enough stack left. A parse that goes too deep for its limit, or for the thread's stack, ends there. No combinator inside the parse catches that, including `Or`, `Optional`, repetitions, `Not`, `Lookahead` and `Atomic`, so the limit never changes what a grammar accepts. On a thread with a small stack, the stack check can end a parse before the limit does. Recursion in your own code is not counted: `Select` and `Where` functions, custom scanners, and code that builds grammars. The reasons are in [ADR-0020](../../work/docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md).
+
+> Setting the limit, and the result a too-deep parse returns, arrive with INT-08.
