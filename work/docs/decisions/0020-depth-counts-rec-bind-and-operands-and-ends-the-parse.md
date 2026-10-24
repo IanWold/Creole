@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| Status | Proposed |
+| Status | Accepted |
 | Date | 2026-10-24 |
 | Cards | [INT-07](../../active/03-interpreter/INT-07-recursion-depth-limit.md), [INT-08](../../active/03-interpreter/INT-08-single-layer-parse-api.md), [BENCH-01](../../active/13-benchmarks/BENCH-01-phase-0-speed-gate.md), [ERR-05](../../active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md), [GEN-06](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md) |
 | Whitepaper | [§ Limits for untrusted input](../../../whitepaper.md#limits-for-untrusted-input), [§ Expressions](../../../whitepaper.md#expressions), [§ Equivalence](../../../whitepaper.md#equivalence) |
@@ -202,7 +202,7 @@ Exceeding the limit is not a failure that combinators see. The parse unwinds to 
    Nothing else counts, so the depth a parse reaches depends only on the grammar and the input. Each layer's cursor holds its own count, as it holds its own cut flag.
 2. **The limit.** `ParseOptions.MaxDepth` is a positive `int` and defaults to 1,000. `int.MaxValue` leaves only the stack probe. Entering a level when the count is already `MaxDepth` ends the parse.
 3. **The stack probe.** Each counted entry deeper than 20 also calls `RuntimeHelpers.TryEnsureSufficientExecutionStack()`. If the call returns false, the parse ends the same way.
-4. **How the parse ends.** It unwinds past every combinator, `Recover` included, to the parse entry point. That returns `Failed`, whose diagnostics are any already recorded (by `Recover`, ERR-05) followed by one depth diagnostic:
+4. **How the parse ends.** It unwinds past every combinator, `Recover` included, to the parse entry point. That returns `Failed`, with one depth diagnostic added to any already recorded (by `Recover`, ERR-05):
    - **Span:** the item at the position where the level would have been entered, zero-width at the end of input.
    - **Layer:** the layer being parsed.
    - **Unexpected:** a `CustomMessage` that names the cause. That is either `MaxDepth` and its value, so the reader knows which setting to raise, or the thread's stack.
@@ -210,8 +210,8 @@ Exceeding the limit is not a failure that combinators see. The parse unwinds to 
    - **Context:** the context lines in force at that position, once ERR-02 records context.
 5. **Cards.**
    - INT-07 builds points 1, 3 and 4 in the interpreter. Its abort carries the position, the depth and the cause.
-   - INT-08 adds `MaxDepth` to `ParseOptions` and turns the abort into the diagnostic.
-   - BENCH-01 waits on INT-07.
+   - INT-08 adds `MaxDepth` to `ParseOptions` and turns the abort into the diagnostic, so it waits on INT-07.
+   - BENCH-01 waits on INT-07, through INT-08.
    - GEN-06 counts and probes at the same points.
 
 Deciding reasons:
@@ -254,15 +254,15 @@ What would change this record:
 
 ## Changes made
 
-Planned on acceptance:
-
 - Whitepaper:
-  - [§ Limits for untrusted input](../../../whitepaper.md#limits-for-untrusted-input): what counts, the default, the probe, and the fact that the parse ends past every combinator. Links this record.
-  - [§ Expressions](../../../whitepaper.md#expressions): only prefix operands and `InfixR` right operands count.
-  - [§ Equivalence](../../../whitepaper.md#equivalence): probe failures are not compared.
+  - [§ Limits for untrusted input](../../../whitepaper.md#limits-for-untrusted-input): what counts, the default, the stack probe, and the fact that the parse ends past every combinator. Links this record.
+  - [§ Expressions](../../../whitepaper.md#expressions): only a prefix operator's operand and an `InfixR` right operand count.
+  - [§ Recovery](../../../whitepaper.md#recovery): `Recover` cannot catch a depth limit.
+  - [§ Equivalence](../../../whitepaper.md#equivalence): engines agree on parses `MaxDepth` ends; parses the stack probe ends are not compared.
+- Decision index: a note that this record pins [ADR-0004](0004-expression-build-operator-table-and-semantics.md) point 5's "operand recursion".
 - Cards:
-  - [INT-07](../../active/03-interpreter/INT-07-recursion-depth-limit.md): scope and criterion restated for the mechanism.
-  - [INT-08](../../active/03-interpreter/INT-08-single-layer-parse-api.md): adds `MaxDepth`, and a criterion that a parse exceeding it returns `Failed` with the depth diagnostic.
-  - [BENCH-01](../../active/13-benchmarks/BENCH-01-phase-0-speed-gate.md): blocked by INT-07 (INT-07 unblocks it), and the known-differences note in its scope.
-  - [ERR-05](../../active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md): `Recover` does not catch a depth abort.
-  - [GEN-06](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md): counts and probes at the same points.
+  - [INT-07](../../active/03-interpreter/INT-07-recursion-depth-limit.md): scope and criteria restated for the mechanism; it now unblocks INT-08.
+  - [INT-08](../../active/03-interpreter/INT-08-single-layer-parse-api.md): scope adds `ParseOptions.MaxDepth` and the depth diagnostic, with a criterion that a parse exceeding it returns `Failed`; it is now blocked by INT-07.
+  - [BENCH-01](../../active/13-benchmarks/BENCH-01-phase-0-speed-gate.md): waits on INT-07 through INT-08, so no direct edge was added. Its scope adds the known-differences note on Parlot's limit.
+  - [ERR-05](../../active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md): scope says `Recover` does not catch a depth abort.
+  - [GEN-06](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md): scope says it counts and probes at the same points.

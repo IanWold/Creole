@@ -15,6 +15,7 @@ The Phase 0 gate: core tests green, and the interpreter at least as fast as Pidg
 
 - Character-level JSON and arithmetic grammars on the interpreter.
 - Compare against the FND-05 Pidgin (`PidginFolds` for arithmetic) and stable Parlot baselines in the same run; median of three runs on the gate machine ([ADR-0003](../../docs/decisions/0003-numeric-gate-thresholds.md)).
+- Creole runs with its depth limit on (the default, 1,000), and Parlot with its limit off (its default). benchmarks/README.md's known differences say so ([ADR-0020](../../docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md)).
 
 ## Acceptance criteria
 

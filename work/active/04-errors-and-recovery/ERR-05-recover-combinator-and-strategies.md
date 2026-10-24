@@ -17,6 +17,7 @@ One parse produces many diagnostics without cascades.
 - Strategies `SkipUntil(sync)` and `SkipNested(open, close)`.
 - Repair from the cursor, not from the reported position: a committed failure may be reported before the cursor, as a rejected filter is ([ADR-0014](../../docs/decisions/0014-a-rejected-filter-reports-at-the-start-of-the-value.md)).
 - Starved propagates through `Recover` unchanged.
+- `Recover` does not catch a depth abort. It passes through, and the parse ends ([ADR-0020](../../docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md)).
 - `Recover` takes a light mark before running `p`: if `p` fails without consuming, the cut flag is restored ([ADR-0011](../../docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md)). `Recover` is not a cut boundary.
 
 ## Acceptance criteria
