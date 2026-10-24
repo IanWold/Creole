@@ -10,8 +10,14 @@ namespace Creole.Benchmarks;
 /// The rewrite stays if it is at least 5% faster on its target and no other target is more than 5% slower.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Each category compares one rewrite: the plan without it is the baseline, and every other rewrite is on in both.
 /// Plans are run directly, without the public <c>Parse</c> API.
+/// </para>
+/// <para>
+/// <c>DfaCharTokens</c> is a trial, not a rewrite. It compiles the character-level JSON token choice by hand, as a one-alternative <see cref="DfaLongestPlan{T}"/>,
+/// to show whether compiling a regular subtree other than <c>Longest</c> pays against dispatch and scans.
+/// </para>
 /// </remarks>
 [BenchmarkCategory("Lowering")]
 [CategoriesColumn]
@@ -19,6 +25,7 @@ namespace Creole.Benchmarks;
 public class LoweringBenchmarks
 {
     private const string CollapseSelect = "CollapseSelect";
+    private const string DfaCharTokens = "DfaCharTokens";
     private const string DfaCSharpLexer = "DfaCSharpLexer";
     private const string DfaJsonLexer = "DfaJsonLexer";
     private const string DfaLowerCSharp = "DfaLowerCSharp";
@@ -71,6 +78,8 @@ public class LoweringBenchmarks
     private static readonly Parser<char, Unit> _words =
         Letter.SkipAtLeastOnce().Before(Whitespace.SkipAtLeastOnce()).SkipMany();
 
+    private readonly Plan<char, int> _charJsonTokenCompiled = CompileTerm(_charJsonToken);
+    private readonly Plan<char, int> _charJsonTokenInterpreted = Lower(_charJsonToken, LoweringOptions.All);
     private readonly Plan<char, Unit> _charJsonWithDispatch = Lower(_charJsonTokens, LoweringOptions.All);
     private readonly Plan<char, Unit> _charJsonWithoutDispatch = Lower(_charJsonTokens, LoweringOptions.All & ~LoweringOptions.Dispatch);
     private readonly string _csharpInput = LoweringInputs.CSharp;
@@ -96,7 +105,19 @@ public class LoweringBenchmarks
     private readonly Plan<JsonToken, Unit> _tokenJsonWithoutDispatch = Lower(CreoleTokenJson.Document, LoweringOptions.All & ~LoweringOptions.Dispatch);
     private readonly string _wordInput = LoweringInputs.Words;
     private readonly Plan<char, Unit> _wordsWithoutScan = Lower(_words, LoweringOptions.All & ~LoweringOptions.Scan);
+    private readonly Plan<char, Unit> _whitespace = Lower(Whitespace.SkipMany(), LoweringOptions.All);
     private readonly Plan<char, Unit> _wordsWithScan = Lower(_words, LoweringOptions.All);
+
+    /// <summary>
+    /// <paramref name="parser"/> as one automaton. Its fallback is a one-alternative <c>Longest</c>, which fails without consuming where <paramref name="parser"/> might fail after consuming,
+    /// so the plan is fit only for timing input on which every attempt matches.
+    /// </summary>
+    private static Plan<char, T> CompileTerm<T>(Parser<char, T> parser)
+    {
+        var automaton = CommitAutomaton.Build([Regular.Of(parser)!], PlanBuilder.DfaStateCap)!;
+
+        return new DfaLongestPlan<T>(automaton, [Lower(parser, LoweringOptions.All)], [parser.ValueOfMatch()]);
+    }
 
     private static Plan<TIn, T> Lower<TIn, T>(Parser<TIn, T> parser, LoweringOptions options) =>
         new PlanBuilder(options).Lower(parser);
@@ -115,6 +136,26 @@ public class LoweringBenchmarks
         T result = default!;
 
         return plan.TryParse(ref cursor, ref result) ? cursor.Position : -1;
+    }
+
+    private static long Tokenize<T>(Plan<char, T> token, Plan<char, Unit> whitespace, string input)
+    {
+        var cursor = new Cursor<char>(input);
+        T result = default!;
+        var skipped = default(Unit);
+        _ = whitespace.TryParse(ref cursor, ref skipped);
+
+        while (!cursor.IsAtEnd)
+        {
+            if (!token.TryParse(ref cursor, ref result))
+            {
+                return -1;
+            }
+
+            _ = whitespace.TryParse(ref cursor, ref skipped);
+        }
+
+        return cursor.Position;
     }
 
     private static long Tokenize<T>(Plan<char, T> lexer, string input)
@@ -140,6 +181,14 @@ public class LoweringBenchmarks
     [Benchmark(Baseline = true), BenchmarkCategory(CollapseSelect)]
     public long ChainWithoutCollapse() =>
         Run(_digitChainWithoutCollapse, _digitInput);
+
+    [Benchmark, BenchmarkCategory(DfaCharTokens)]
+    public long CharTokensCompiled() =>
+        Tokenize(_charJsonTokenCompiled, _whitespace, _jsonInput);
+
+    [Benchmark(Baseline = true), BenchmarkCategory(DfaCharTokens)]
+    public long CharTokensInterpreted() =>
+        Tokenize(_charJsonTokenInterpreted, _whitespace, _jsonInput);
 
     [Benchmark, BenchmarkCategory(DispatchChars)]
     public long CharsWithDispatch() =>

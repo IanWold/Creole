@@ -86,6 +86,8 @@ public class BaselineAgreementTests
 
         Assert.Equal(LoweringInputs.Digits.Length, benchmarks.ChainWithCollapse());
         Assert.Equal(LoweringInputs.Digits.Length, benchmarks.ChainWithoutCollapse());
+        Assert.Equal(LoweringInputs.Json.Length, benchmarks.CharTokensCompiled());
+        Assert.Equal(LoweringInputs.Json.Length, benchmarks.CharTokensInterpreted());
         Assert.Equal(LoweringInputs.Json.Length, benchmarks.CharsWithDispatch());
         Assert.Equal(LoweringInputs.Json.Length, benchmarks.CharsWithoutDispatch());
         Assert.Equal(LoweringInputs.CSharp.Length, benchmarks.CSharpLexerWithDfa());

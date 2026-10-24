@@ -56,7 +56,8 @@ Build the automata for analysis with the ANA cards in Phase 2, and compile only 
 
 1. **Regular.** A node is Regular when it meets all of the following.
    - **Input.** It reads characters. Token-level input is left for later.
-   - **Node kinds.** It is built only from the node kinds the prototypes tested: character classes (including `Any`), `String`, `Sequence`, `Or`, `Optional`, `Repeat` and `SkipRepeat` with a minimum of 0 or 1 and no maximum, `Atomic` and `Longest`.
+   - **Node kinds.** It is built only from the node kinds the prototypes tested: character classes (including `Any`), `String`, `Sequence`, `Or`, `Optional`, `Repeat` and `SkipRepeat` with a minimum of 0 or 1, no maximum and an item that cannot match empty, and `Atomic`. An item that can match empty would make the interpreter throw (CRL0001), so the automaton does not model it.
+   - **`Longest`.** A `Longest` compiles when every alternative is Regular. One written directly as an alternative of another joins it, as nesting beyond 16 alternatives requires. One nested anywhere else is not Regular, because the prototypes tested `Longest` only at the top.
    - **Value-only wrappers.** These change no match and are also allowed: `Map`, `Slice`, `Text`, `Named` and `Context`.
    - **E′.** Every choice inside an explicit `Atomic` meets finding 19's condition. A choice is an `Or`, an `Optional` or a repetition.
 
@@ -67,7 +68,7 @@ Build the automata for analysis with the ANA cards in Phase 2, and compile only 
    - **From the span.** When the value of the winning alternative is a function of its span, the plan computes it directly from the span. That covers a constant (`As`), `Unit` from a skip form, `Slice`, `Text`, and a `Map` over one of those.
    - **Otherwise.** The plan re-runs the winning alternative's interpreter plan from the start of its span.
 5. **Failures.** When the automaton finds no match, the plan re-runs the subtree on the interpreter, and the interpreter's result is returned: committed or empty, its position, and what it records. The automaton never reports an error of its own.
-6. **Expected sets on success.** A compiled subtree that succeeds must contribute the same expectations as the interpreter, which records them from the alternatives and loop exits it tried (G7). ERR-02 decides how, and INT-06 exposes how far each scan read. The candidates:
+6. **Expected sets on success.** A compiled subtree that succeeds must contribute the same expectations as the interpreter, which records them from the alternatives and loop exits it tried (G7). ERR-02 decides how, and exposes how far each scan read in the form its choice needs. The candidates:
    - a lazy re-run of the subtree when its stop position becomes the reported failure;
    - expectation labels on states (earlier note, finding 31).
 7. **Ownership.** INT-06 implements the Regular predicate in `src/Creole/Analysis/`. ANA-01 reuses it rather than computing its own.
@@ -92,6 +93,7 @@ What would change this decision:
   - The value paths and the failure re-run add code to every compiled plan.
   - ERR-02 must cover compiled subtrees.
   - Lowering does real work for large lexers.
+  - A compiled `Longest` still rewinds. It reads past the match before backing up to its end, runs the winner again from the token's start when the value needs a parse, and runs the interpreter from that start when nothing matches. So, like any `Longest`, it takes a pinning bookmark.
 - **Ruled out for now.**
   - Compiling `Lookahead`, `Not` or `Cut`.
   - Compiling choices inside `Atomic` outside E′.
@@ -104,11 +106,13 @@ What would change this decision:
 
 ## Changes made
 
+This record was edited in place before its branch merged, to reflect what INT-06's build found: the item rule and nested `Longest` in point 1, the scan extent moving to ERR-02 in point 6, and the compiled `Longest`'s bookmark under Consequences.
+
 - **Whitepaper.**
-  - [§ Properties](../../../whitepaper.md#properties): Regular is redefined as in point 1, with the condition for choices inside `Atomic`, and this record is linked.
+  - [§ Properties](../../../whitepaper.md#properties): Regular is redefined as in point 1, with the condition for choices inside `Atomic` and the rule for `Longest`, and this record is linked.
   - [§ Longest match](../../../whitepaper.md#longest-match): it now says the DFA agrees with the interpreter rather than with a regex. It gives the `1.x` example, and the `Atomic` fraction that restores the regex behaviour.
   - [§ Interpreted engine](../../../whitepaper.md#interpreted-engine): the DFA bullet now covers how choices resolve, `Longest` with a register per alternative, the state cap and fallback, values and failures. It links this record.
-  - [§ Bookmarks and retention](../../../whitepaper.md#bookmarks-and-retention): a pinning bookmark is now taken by "a `Longest` that does not run as a DFA", because a regular `Longest` over the cap runs on the interpreter.
+  - [§ Bookmarks and retention](../../../whitepaper.md#bookmarks-and-retention): `Longest` takes a pinning bookmark whether or not it runs as a DFA, and guarantee 3 now says a compiled `Longest` keeps its token's start pinned.
   - **Checked, unchanged.**
     - § Deterministic mode: rule 5 and the CRL0106 paragraph read correctly under the new definition.
     - § Diagnostics (CRL0101).
@@ -116,5 +120,5 @@ What would change this decision:
     - § Layer fusion.
 - **[INT-06](../../active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md).** Summary, Scope and acceptance criteria are rewritten from points 1–8. The claim that `Longest` "is unaffected" is gone. INT-06 now unblocks ANA-01 and is Building.
 - **[ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md).** Regular comes from INT-06's predicate (point 7). ANA-01 is now blocked by INT-06; no wave changed.
-- **[ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md).** A scope item covers expectations from compiled subtrees (point 6).
+- **[ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md).** A scope item covers expectations from compiled subtrees, and exposing how far each scan read (point 6).
 - **[ANA-04](../../active/09-static-analysis/ANA-04-choice-checks.md), [ANA-07](../../active/09-static-analysis/ANA-07-linear-maximal-munch.md), [GEN-05](../../active/11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md).** Their scopes point at this record and at the commit-aware automata.
