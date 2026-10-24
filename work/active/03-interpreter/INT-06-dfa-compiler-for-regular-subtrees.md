@@ -53,6 +53,7 @@ Regular character subtrees and `Longest` over regular alternatives compile to DF
 
 ## Unblocks
 
+- [INT-09 Cheaper automaton construction](../03-interpreter/INT-09-cheaper-automaton-construction.md)
 - [ANA-01 Grammar property analysis](../09-static-analysis/ANA-01-grammar-property-analysis.md)
 - [ANA-04 Choice checks](../09-static-analysis/ANA-04-choice-checks.md)
 - [ANA-07 Linear maximal munch](../09-static-analysis/ANA-07-linear-maximal-munch.md)
