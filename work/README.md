@@ -57,7 +57,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 5 | ✅ [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md) Bind and LINQ query syntax | [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md) |
 | 5 | ✅ [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md) Custom primitives | [CORE-02](active/02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md), [CORE-03](active/02-core-combinators/CORE-03-primitive-nodes.md), [CORE-06](active/02-core-combinators/CORE-06-longest.md) |
 | 5 | ✅ [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md) Execute the core combinators | [CORE-03](active/02-core-combinators/CORE-03-primitive-nodes.md), [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md), [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md), [CORE-06](active/02-core-combinators/CORE-06-longest.md), [CORE-07](active/02-core-combinators/CORE-07-repetition-nodes.md), [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md), [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md), [INT-02](active/03-interpreter/INT-02-plan-lowering-and-cache.md) |
-| 6 | [FND-10](active/01-foundations/FND-10-move-the-parlot-baselines-to-200.md) Move the Parlot baselines to 2.0.0 | [FND-05](active/01-foundations/FND-05-benchmark-harness.md) |
+| 6 | ✅ [FND-10](active/01-foundations/FND-10-move-the-parlot-baselines-to-200.md) Move the Parlot baselines to 2.0.0 | [FND-05](active/01-foundations/FND-05-benchmark-harness.md) |
 | 6 | ✅ [INT-04](active/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md) Execute Bind, Expression.Build and Custom | [CORE-10](active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md), [CORE-11](active/02-core-combinators/CORE-11-expressionbuild.md), [CORE-12](active/02-core-combinators/CORE-12-custom-primitives.md), [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md) |
 | 6 | ✅ [INT-05](active/03-interpreter/INT-05-interpreter-lowering-rewrites.md) Interpreter lowering rewrites | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md) |
 | 6 | ✅ [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md) DFA compiler for regular subtrees | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md) |
@@ -208,7 +208,6 @@ Cards whose Status is Researching, Designing or Building:
 
 These items have all their blockers done:
 
-- [FND-10](active/01-foundations/FND-10-move-the-parlot-baselines-to-200.md) Move the Parlot baselines to 2.0.0
 - [INT-07](active/03-interpreter/INT-07-recursion-depth-limit.md) Recursion depth limit
 - [INT-09](active/03-interpreter/INT-09-cheaper-automaton-construction.md) Cheaper automaton construction
 - [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) Furthest-failure tracking and labels
@@ -232,7 +231,7 @@ Repository, CI, test and benchmark infrastructure, and the decisions code will d
 | ✅ [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md) Validate C# 15 features and decide `ParseResult<T>` | 0 | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md); .NET 11 / C# 15 GA (expected November 2026) |
 | ✅ [FND-08](active/01-foundations/FND-08-whitepaper-editorial-cleanup.md) Whitepaper editorial cleanup | 0 | — |
 | [FND-09](active/01-foundations/FND-09-move-to-the-net-11-ga-sdk.md) Move to the .NET 11 GA SDK | 1 | [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md); .NET 11 / C# 15 GA (expected November 2026) |
-| [FND-10](active/01-foundations/FND-10-move-the-parlot-baselines-to-200.md) Move the Parlot baselines to 2.0.0 | 0 | [FND-05](active/01-foundations/FND-05-benchmark-harness.md) |
+| ✅ [FND-10](active/01-foundations/FND-10-move-the-parlot-baselines-to-200.md) Move the Parlot baselines to 2.0.0 | 0 | [FND-05](active/01-foundations/FND-05-benchmark-harness.md) |
 
 ### CORE — Core combinators
 

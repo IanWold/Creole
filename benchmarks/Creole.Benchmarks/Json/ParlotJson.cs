@@ -4,7 +4,6 @@ namespace Creole.Benchmarks;
 
 public static class ParlotJson
 {
-    public static readonly Parser<JsonValue> Compiled = Build().Compile();
     public static readonly Parser<JsonValue> Interpreted = Build();
 
     private static Parser<JsonValue> Build()
@@ -25,13 +24,13 @@ public static class ParlotJson
             .Or(Terms.Text("false").Then<JsonValue>(JsonBool.False))
             .Or(Terms.Text("null").Then<JsonValue>(JsonNull.Instance));
 
-        var array = Between(lBracket, ZeroOrOne(Separated(comma, json)), rBracket)
-            .Then<JsonValue>(static items => new JsonArray(items ?? []));
+        var array = Between(lBracket, Separated(comma, json, min: 0), rBracket)
+            .Then<JsonValue>(static items => new JsonArray(items));
 
         var member = text.AndSkip(colon).And(json)
             .Then(static m => new KeyValuePair<string, JsonValue>(m.Item1, m.Item2));
-        var obj = Between(lBrace, ZeroOrOne(Separated(comma, member)), rBrace)
-            .Then<JsonValue>(static members => new JsonObject(members ?? []));
+        var obj = Between(lBrace, Separated(comma, member, min: 0), rBrace)
+            .Then<JsonValue>(static members => new JsonObject(members));
 
         json.Parser = obj.Or(array).Or(jsonString).Or(number).Or(literal);
 

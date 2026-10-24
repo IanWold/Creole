@@ -4,7 +4,6 @@ namespace Creole.Benchmarks;
 
 public static class ParlotArithmetic
 {
-    public static readonly Parser<double> Compiled = Build().Compile();
     public static readonly Parser<double> Interpreted = Build();
 
     private static Parser<double> Build()

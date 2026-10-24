@@ -24,10 +24,6 @@ public class JsonBenchmarks
         ParlotJson.Parse(ParlotJson.Interpreted, _text);
 
     [Benchmark]
-    public JsonValue ParlotCompiled() =>
-        ParlotJson.Parse(ParlotJson.Compiled, _text);
-
-    [Benchmark]
     public JsonValue Pidgin() =>
         PidginJson.Parse(_text);
 

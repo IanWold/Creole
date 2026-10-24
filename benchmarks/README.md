@@ -31,8 +31,8 @@ Single runs on this machine vary by up to 1.3× per benchmark, so one run decide
 
 | Class | Plan row | Baselines | Inputs | Reported |
 | --- | --- | --- | --- | --- |
-| `JsonBenchmarks` | JSON documents, small to large | System.Text.Json (ratio baseline, the ceiling), Parlot, Parlot compiled, Pidgin, Superpower, Sprache | `small` (1.3 KB), `medium` (104 KB), `large` (1.03 MB) | Mean per document, MB/s of UTF-8 input, allocation |
-| `ArithmeticBenchmarks` | Arithmetic expressions | Hand-written recursive descent (ratio baseline), Parlot, Parlot compiled, Pidgin with `ExpressionParser`, Pidgin with hand-built folds | 1,000 expressions | Mean per expression, allocation |
+| `JsonBenchmarks` | JSON documents, small to large | System.Text.Json (ratio baseline, the ceiling), Parlot, Pidgin, Superpower, Sprache | `small` (1.3 KB), `medium` (104 KB), `large` (1.03 MB) | Mean per document, MB/s of UTF-8 input, allocation |
+| `ArithmeticBenchmarks` | Arithmetic expressions | Hand-written recursive descent (ratio baseline), Parlot, Pidgin with `ExpressionParser`, Pidgin with hand-built folds | 1,000 expressions | Mean per expression, allocation |
 | `LoweringBenchmarks` | None: [INT-05](../work/active/03-interpreter/INT-05-interpreter-lowering-rewrites.md)'s and [INT-06](../work/active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md)'s evidence for each lowering rewrite | The same grammar lowered without the rewrite (ratio baseline, one per category) | `CSharp` (100 KB of generated C#-like text, for the 138-rule `Longest` lexer in `LongestLexers`), `Digits` (100 KB of digits), `Json` (the medium JSON document, 104 KB, also tokenized by the 12-rule `Longest` lexer) and `JsonTokens` (it lexed to kinds by a hand-written lexer), `Strings` (100 KB of quoted strings, long runs), `Words` (100 KB of words and spaces, short runs) | Mean per input, allocation; the `DfaLower…` categories time lowering itself |
 
 Every run uses the memory diagnoser.
@@ -52,9 +52,9 @@ Known differences:
 | Baseline | Difference |
 | --- | --- |
 | System.Text.Json | Reads UTF-8 bytes; the combinator baselines read a `string`. |
-| Parlot | Its string literal rejects the JSON `\/` escape, so the inputs leave that escape out. `Separated` fails on an empty list, so the grammar wraps it in `ZeroOrOne`. |
+| Parlot | Its string literal rejects the JSON `\/` escape, so the inputs leave that escape out. `Separated` fails on an empty list unless given a minimum of zero, so the grammar passes `min: 0`. |
 | Pidgin | Arithmetic has two Pidgin baselines. `Pidgin` uses `ExpressionParser`, the idiomatic choice; `PidginFolds` folds `Many` by hand and is faster. The Phase 0 gate uses the faster one. |
-| Parlot | Parlot's build-time generator ships only as preview packages (`Parlot.SourceGenerator` 1.6.0 and 2.0.0 previews), so only stable Parlot 1.5.12, interpreted and with `Compile()`, is measured. Gates use the interpreted parsers until the generator is stable ([ADR-0003](../work/docs/decisions/0003-numeric-gate-thresholds.md)); Parlot 2.0 removes `Compile()`. |
+| Parlot | The harness pins Parlot 2.0.0 and measures its interpreted (Fluent) parsers, which the Phase 0 gate uses ([ADR-0003](../work/docs/decisions/0003-numeric-gate-thresholds.md)). 2.0.0 was the fastest stable release measured: faster than 1.5.12 on medium and large JSON (0.86–0.88×) and level elsewhere, and level with 1.6.0 within noise ([research note](../work/docs/research/2026-10-24-parlot-2-0-baselines-and-generator.md)). Parlot 2.0 removes `Compile()`. Its generated parsers, which the Phase 3 gate uses, join with [BENCH-03](../work/active/13-benchmarks/BENCH-03-phase-3-speed-gate.md). |
 
 ## Adding a benchmark
 

@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Foundations](../../README.md#fnd--foundations) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Done |
 
 ## Summary
 
@@ -12,9 +12,9 @@ Parlot 2.0.0 is a stable release, published 2026-10-20, and so is `Parlot.Source
 
 ## Scope
 
-- **Measure.** Run Parlot 1.5.12's and 2.0.0's interpreted parsers on the FND-05 JSON and arithmetic corpora. Pin the faster in `Directory.Packages.props`: [ADR-0003](../../docs/decisions/0003-numeric-gate-thresholds.md) sets the baseline as the fastest stable release's interpreted parser.
+- **Measure.** Run Parlot 1.5.12's, 1.6.0's and 2.0.0's interpreted parsers on the FND-05 JSON and arithmetic corpora. 1.6.0 is a stable 1.x release, published the same day as 2.0.0. Pin the fastest in `Directory.Packages.props`: [ADR-0003](../../docs/decisions/0003-numeric-gate-thresholds.md) sets the baseline as the fastest stable release's interpreted parser.
   - If 2.0.0 is pinned, remove the `ParlotCompiled` baselines.
-  - If 1.5.12 is faster, record that, and propose how the harness can also carry 2.0.0, which BENCH-03 needs for Parlot's generated parsers.
+  - If a 1.x release is faster, record that, and propose how the harness can also carry 2.0.0, which BENCH-03 needs for Parlot's generated parsers.
 - **Re-check FND-05's Parlot findings on 2.0.0** and record the results: the string literal rejects `\/`, and `Separated` fails on empty lists. The corpora stay as they are.
 - **Update the facts.**
   - The whitepaper's statements about Parlot's versions, its generator and `Compile()`. They are in § Background and motivation, § Source-generated engine (including Considered and deferred), § Comparison with existing .NET libraries, § Roadmap, § Risks, and the build-time execution question under Questions raised in review.
@@ -26,10 +26,10 @@ Parlot 2.0.0 is a stable release, published 2026-10-20, and so is `Parlot.Source
 
 ## Acceptance criteria
 
-- [ ] Parlot 1.5.12's and 2.0.0's interpreted parsers are measured on the FND-05 corpora, median of three runs, with results on this card, and `Directory.Packages.props` pins the faster.
-- [ ] On the pinned version, the benchmarks build with 0 warnings and `tests/Creole.Benchmarks.Tests` passes. `ParlotCompiled` is gone if 2.0.0 is pinned.
-- [ ] Every statement about Parlot's versions, generator or `Compile()` in the whitepaper and benchmarks/README.md matches Parlot 2.0.0's release notes or source, checked with `/check-sources`.
-- [ ] The whitepaper's comparisons with Parlot's generator (§ Source-generated engine, § Risks) are re-checked against 2.0.0. Any change to their argument has a decision record.
+- [x] Parlot 1.5.12's, 1.6.0's and 2.0.0's interpreted parsers are measured on the FND-05 corpora, median of three runs, with results on this card, and `Directory.Packages.props` pins the fastest.
+- [x] On the pinned version, the benchmarks build with 0 warnings and `tests/Creole.Benchmarks.Tests` passes. `ParlotCompiled` is gone if 2.0.0 is pinned.
+- [x] Every statement about Parlot's versions, generator or `Compile()` in the whitepaper and benchmarks/README.md matches Parlot 2.0.0's release notes or source, checked with `/check-sources`.
+- [x] The whitepaper's comparisons with Parlot's generator (§ Source-generated engine, § Risks) are re-checked against 2.0.0. Any change to their argument has a decision record.
 
 ## Blocked by
 
@@ -47,3 +47,44 @@ Parlot 2.0.0 is a stable release, published 2026-10-20, and so is `Parlot.Source
 - [§ Comparison with existing .NET libraries](../../../whitepaper.md#comparison-with-existing-net-libraries)
 - [§ Roadmap](../../../whitepaper.md#roadmap)
 - [§ Risks](../../../whitepaper.md#risks)
+
+## Artifacts
+
+- [Research: Parlot 2.0 baselines and generator](../../docs/research/2026-10-24-parlot-2-0-baselines-and-generator.md) Speed of 1.5.12, 1.6.0 and 2.0.0, harness changes, FND-05's findings, how the generator reads a grammar, Parlot's streaming, and the stale statements
+- [ADR-0018](../../docs/decisions/0018-the-generator-keeps-reading-syntax-only.md) The generator keeps reading syntax only; § Considered and deferred restates why (Accepted)
+- [ADR-0019](../../docs/decisions/0019-parlot-streaming-is-prior-art-and-creoles-case-rests-on-layers.md) Parlot 2.0's streaming is prior art; a § Comparison streaming row and § Streaming citation (Accepted)
+
+## Progress notes
+
+- 2026-10-24 (Research): Started. Approach: benchmark Parlot 1.5.12 and 2.0.0 interpreted on the FND-05 corpora, re-check FND-05's two Parlot findings, and read 2.0.0's generator source and docs to see how it reads `.parlot.cs` grammars. Next: `/research`.
+- 2026-10-24 (Research): Research note written. Parlot 1.6.0 is also stable (2026-10-20), so it was measured too. Medians over two interleaved loops of three runs: 2.0.0 / 1.5.12 = 0.92 (JSON 0.86–0.93, arithmetic 1.02); 2.0.0 / 1.6.0 = 0.99, within noise. 2.0.0 needs `Separated(comma, x, 0, 0)` because `ZeroOrOne` now returns a list; it then builds with 0 warnings and passes 22/22 agreement tests. `\/` and empty `Separated` still fail on all three versions. The generator still executes factories, so the contrast holds, but the `[IncludeFiles]` clause and "preview packages" are stale; Parlot 2.0.0 also streams `TextReader` input. Next: maintainer to agree the scope change (1.6.0) and the pin (2.0.0); then `/decide` on line 766's IDE argument and a § Comparison streaming row, or go straight to Build for the fact edits.
+- 2026-10-24 (Design): Maintainer agreed to add 1.6.0 to the scope (Measure bullet and first criterion edited) and to pin 2.0.0. Drafted ADR-0018 (restate why the generator reads syntax only; options: keep text, restate, add a build-time execution tier) and ADR-0019 (record Parlot's streaming as prior art; options: leave silent, record, narrow G2). Next: maintainer accepts, rejects or revises both; on acceptance edit the whitepaper, then Build (pin 2.0.0, remove `ParlotCompiled`, fact edits, `/check-sources`).
+- 2026-10-24 (Design): Maintainer accepted ADR-0018 and ADR-0019 with the recommended options; whitepaper edited per both (§ Background, § Considered and deferred, § Streaming and async input, § Comparison, § Risks, § Questions raised in review, § References). Moved to Build. Next: `/build` — pin Parlot 2.0.0, port `ParlotJson` to `Separated(comma, x, 0, 0)`, remove `ParlotCompiled`, update benchmarks/README.md, fix the remaining stale facts (whitepaper lines 24, 1072, 1082, 1117), then `/check-sources`.
+- 2026-10-24 (Build): Increment 1. `Directory.Packages.props` pins Parlot 2.0.0. `ParlotJson` uses `Separated(comma, x, min: 0)` in place of `ZeroOrOne(Separated(...))`; the `ParlotCompiled` benchmarks, parser fields and agreement cases are removed; benchmarks/README.md's measured-baselines rows and Parlot notes are updated. `dotnet build`: 0 warnings, 0 errors. `tests/Creole.Benchmarks.Tests`: 22/22 passed. `--job dry` over `JsonBenchmarks` and `ArithmeticBenchmarks` ran all 19 benchmarks with no issues. Next: increment 2, the remaining whitepaper facts (lines 24, 1072, 1084, 1118), then `/check-sources`.
+- 2026-10-24 (Build): Increment 2. Whitepaper facts brought up to Parlot 2.0.0: "preview packages" dropped from § Background, § Comparison's opening paragraph and its build-time generation row; § Roadmap's baseline rule restated in the present tense; § Risks' opening sentence adds single-layer streaming, in line with ADR-0019; Parlot's References entry links its source generation guide. `/check-sources` over every Parlot statement in the whitepaper and benchmarks/README.md, first-hand against 2a34f3d, the v2.0.0 release notes, the v1.6.0 README and NuGet: all supported after these edits. PR #427 confirms that 2.0's "left recursion is detected" is a run-time check, so § Background's "none of the four analyzes a grammar" holds. Next: every criterion appears met; the maintainer runs `/complete`.
+- 2026-10-24 (Build): `/complete` paused. Fresh checks pass (pin 2.0.0, no `ParlotCompiled`, build 0 warnings, 22/22 tests), but an independent critic review found four minor defects, all confirmed: benchmarks/README.md:57's "about 8%" uses pooled medians (interleaved loop 1 gave 0.95); § Considered and deferred and ADR-0018 reason 2 wrongly say Parlot executes "after every edit" (it emits design-time stubs and executes per build); ADR-0019 omits the text of the § Risks opening and § Comparison opening sentences; § Streaming's "to byte sources" is wrong, since Parlot decodes a `Stream` through `StreamReader`. Next: maintainer to decide whether ADR-0018 and ADR-0019 are edited in place (unmerged branch) and whether the research note gets an erratum; then apply the fixes and re-run `/complete`.
+- 2026-10-24 (Build): Applied the four corrections from the critic review, with the maintainer's agreement: benchmarks/README.md:57 cites the side-by-side JSON gain instead of the pooled 8%; § Considered and deferred and ADR-0018 merge the old reasons 1 and 2, since Parlot executes per build, not per edit; § Streaming and ADR-0019 say "keeps byte offsets through decoding"; ADR-0019 records the § Comparison and § Risks opening sentences. Both ADRs were edited in place before merge, and the research note has a one-line erratum. `work.py check` clean. Completed.
+
+## Outcome
+
+Parlot 2.0.0 is the baseline. Delivered:
+
+- **Measurement** ([research note](../../docs/research/2026-10-24-parlot-2-0-baselines-and-generator.md), findings 3–8). Interpreted parsers on the FND-05 corpora, default BenchmarkDotNet job, two loops of three runs alternating versions, i9-13900H, .NET 11 RC 2. Median mean per operation:
+
+  | Benchmark | 1.5.12 | 1.6.0 | 2.0.0 (loop 1 / loop 2) | 2.0.0 / 1.5.12 (loop 1) | 2.0.0 / 1.6.0 (loop 2) |
+  | --- | --- | --- | --- | --- | --- |
+  | Arithmetic, per expression | 306.0 ns | 309.7 ns | 333.4 / 309.9 ns | 1.09 | 1.00 |
+  | JSON small | 5.52 µs | 5.12 µs | 5.47 / 4.99 µs | 0.99 | 0.97 |
+  | JSON medium | 553 µs | 501 µs | 486 / 486 µs | 0.88 | 0.97 |
+  | JSON large | 6.55 ms | 5.83 ms | 5.61 / 5.67 ms | 0.86 | 0.97 |
+  | Geometric mean | | | | 0.95 | 0.98 |
+
+  Loop 1's arithmetic gap did not replicate in loop 2, so it is treated as noise (finding 7). 2.0.0 allocates 8 bytes less per parse than 1.5.12 and 16 less than 1.6.0. ADR-0003's rule picks 2.0.0, by a margin over 1.6.0 that is within noise; it is also the only version with a stable generator, which BENCH-03 needs.
+- **Harness.** `Directory.Packages.props` pins Parlot 2.0.0. [ParlotJson.cs](../../../benchmarks/Creole.Benchmarks/Json/ParlotJson.cs) uses `Separated(comma, x, min: 0)`, since `ZeroOrOne` now returns a list. The `ParlotCompiled` benchmarks, parser fields and agreement cases are gone. Build: 0 warnings; `tests/Creole.Benchmarks.Tests`: 22/22.
+- **FND-05's findings** still hold on 1.5.12, 1.6.0 and 2.0.0: `\/` is rejected, and `Separated` fails on an empty list unless given a minimum of zero ([benchmarks/README.md](../../../benchmarks/README.md)).
+- **Whitepaper facts.** "Preview packages" removed (§ Background, § Comparison), § Roadmap's baseline rule restated, the References entry links Parlot's source generation and streaming guides. Checked with `/check-sources` against 2a34f3d, the v2.0.0 release notes, the v1.6.0 README and NuGet, then by an independent critic review.
+- **Arguments**, by decision: [ADR-0018](../../docs/decisions/0018-the-generator-keeps-reading-syntax-only.md) keeps the syntax-only generator and restates why (§ Considered and deferred, § Questions raised in review). [ADR-0019](../../docs/decisions/0019-parlot-streaming-is-prior-art-and-creoles-case-rests-on-layers.md) records Parlot 2.0's single-layer streaming as prior art (§ Background, § Streaming and async input, § Comparison, § Risks, § References).
+
+Deviations: scope widened to measure 1.6.0, which shipped stable the same day as 2.0.0 (agreed with the maintainer, 2026-10-24). No other deviation.
+
+Follow-ups, no card needed yet: Parlot's recursion limit is off by default and cannot be set on generated parsers, so if Creole's `ParseOptions.MaxDepth` is on by default (INT-07), benchmarks/README.md's known differences should say so when BENCH-01 and BENCH-03 measure. LAY-02, STRM-02 and STRM-04 link the research note as prior art for their designs.

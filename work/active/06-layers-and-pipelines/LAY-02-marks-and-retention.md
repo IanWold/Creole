@@ -38,3 +38,11 @@ Pinning bookmarks keep what may be rewound; light marks pin nothing, so `Or` and
 
 - [§ Bookmarks and retention](../../../whitepaper.md#bookmarks-and-retention)
 - [§ Guarantees](../../../whitepaper.md#guarantees)
+
+## Artifacts
+
+- [Research: Parlot 2.0 baselines and generator](../../docs/research/2026-10-24-parlot-2-0-baselines-and-generator.md) Prior art: Parlot 2.0.0 pins only where a parser can move back, and `Commit()` releases buffered text (finding 23)
+
+## Progress notes
+
+- 2026-10-24 (Not started): FND-10 research found Parlot 2.0.0 already bounds a streamed parse's buffer with pins and a backtrack floor (note, finding 23). Read it before designing retention. Next: unchanged.
