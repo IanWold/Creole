@@ -4,7 +4,7 @@ namespace Creole;
 /// Runs <see cref="Item"/> between <see cref="Min"/> and <see cref="Max"/> times and collects the results.
 /// Backs <c>Many</c>, <c>AtLeastOnce</c> and <c>Repeat</c>.
 /// </summary>
-internal sealed class RepeatNode<TIn, T>(Parser<TIn, T> item, int min, int? max) : Parser<TIn, IReadOnlyList<T>>
+internal sealed class RepeatNode<TIn, T>(Parser<TIn, T> item, int min, int? max) : Parser<TIn, IReadOnlyList<T>>, IRepetitionNode
 {
     internal override IReadOnlyList<INode> Children => [Item];
 

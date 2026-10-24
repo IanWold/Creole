@@ -41,11 +41,17 @@ internal sealed class StringNode : Parser<char, string>, IPrimitiveNode
         }
 
         IgnoreCase = ignoreCase;
-        First = FirstSet.OfChars(ignoreCase ? CaseVariants.Of(text[0]) : CharSet.Of(text[0]));
+        First = FirstSet.OfChars(CharactersAt(0));
     }
 
     internal override Plan<char, string> Lower(PlanBuilder builder) =>
         PlanBuilder.String(Text, IgnoreCase);
+
+    /// <summary>
+    /// The input characters that match the text's character at <paramref name="index"/>.
+    /// </summary>
+    public CharSet CharactersAt(int index) =>
+        IgnoreCase ? CaseVariants.Of(Text[index]) : CharSet.Of(Text[index]);
 }
 
 /// <summary>

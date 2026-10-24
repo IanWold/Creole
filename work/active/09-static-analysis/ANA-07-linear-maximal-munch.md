@@ -14,6 +14,7 @@ Maximal munch can go quadratic when a DFA backs up over unbounded input.
 
 - CRL0106: detect token sets whose backup is unbounded, with INT-06's backup analysis over the commit-aware automaton ([ADR-0017](../../docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md); [prototype note](../../docs/research/2026-10-23-commit-aware-automaton-prototypes.md), finding 7).
 - Implement Reps' memoized tokenization (1998) so remaining cases stay linear. Under commit semantics the memo stores the scan's stop state, not a failure flag (finding 8).
+- Build the backup analysis and stop-state memoization over INT-06's automata here, with their first user (moved from INT-06).
 
 ## Acceptance criteria
 
