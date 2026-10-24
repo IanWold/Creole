@@ -708,7 +708,7 @@ On first use, a grammar is lowered to an execution plan and cached in a `Conditi
 
 - Chains of `Select` collapse into one plan step that applies each function in turn.
 - An `Or` dispatches on the next character or token kind. Each alternative takes the keys of the primitive at its leading position, found through wrappers such as `Select`, `Named`, `Atomic` and a sequence's first item. The `Or` runs only the alternatives that can start with the next item, and those with no known leading item, in their original order ([ADR-0016](work/docs/decisions/0016-or-dispatches-on-each-alternatives-leading-item.md)).
-- Regular character subtrees (§ Properties) compile to DFA tables that follow commit semantics, not regex semantics ([ADR-0017](work/docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md)).
+- A `Longest` over regular character alternatives (§ Properties) compiles to DFA tables that follow commit semantics, not regex semantics ([ADR-0017](work/docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md)). Other regular subtrees compile only where a measurement shows a gain. None has yet: as one automaton, a character-level JSON token choice ran 0.59× as fast as with dispatch and scans.
   - **How choices resolve.** A choice resolves as soon as a path through its first branch consumes input outside any `Atomic`, or finishes the branch. A match discards every lower-priority path.
   - **`Longest`.** It becomes one automaton with a register per alternative, and ties go to the earliest.
   - **Size cap.** Lowering builds the tables in full. A subtree whose automaton would exceed a state cap runs on the interpreter instead.

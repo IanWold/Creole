@@ -36,7 +36,7 @@ Unlike `OneOf`, every alternative runs atomically. An alternative that fails, ev
 
 `Longest` takes 2 to 16 alternatives, each as a separate parameter so a null one is reported by its expression. For more, nest calls: `Longest(a, Longest(b, c))` matches the same input as `Longest(a, b, c)` and picks the same winner. The grammar tree keeps the nesting you wrote.
 
-`Longest` works on any input type, so a token layer can use it too. When every alternative is regular, engines are meant to compile it to a single DFA rather than run the alternatives one by one. That arrives with INT-06; until then the interpreter runs each alternative in turn.
+`Longest` works on any input type, so a token layer can use it too. Over characters, when every alternative is regular, the interpreter compiles it to one automaton that reads each character once instead of running the alternatives one by one. The results are the same either way; [The interpreter](../engines/interpreter.md#when-a-longest-compiles) says which alternatives compile and what it costs.
 
 The examples on this page are rows of `LongestTable` in the tests, and the interpreter passes every row.
 

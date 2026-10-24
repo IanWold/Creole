@@ -161,6 +161,11 @@ file sealed class Determinizer
 
     private void Cleanup(List<Candidate> candidates)
     {
+        if (candidates.Count == 0)
+        {
+            return;
+        }
+
         var firsts = candidates
             .SelectMany(static candidate => candidate.Scope)
             .Where(static entry => entry.Kind == EntryKind.First)
@@ -178,6 +183,11 @@ file sealed class Determinizer
             {
                 candidates.RemoveAt(i);
             }
+        }
+
+        if (candidates.Count < 2)
+        {
+            return;
         }
 
         var seen = new HashSet<string>();
@@ -382,6 +392,11 @@ file sealed class Determinizer
         foreach (var candidates in configuration)
         {
             Cleanup(candidates);
+
+            if (configuration.Length > 1 && candidates.TrueForAll(static candidate => candidate.Kind == CandidateKind.Dead))
+            {
+                candidates.Clear();
+            }
         }
 
         if (configuration.Sum(static candidates => candidates.Count) > _maxCandidates)
@@ -492,20 +507,24 @@ file sealed class Determinizer
 
     private List<Candidate>[] Step(List<Candidate>[] configuration, int symbol)
     {
-        var next =
-            configuration
-            .Select(static candidates =>
-                candidates
-                .Select(static candidate => new Candidate
+        var next = new List<Candidate>[configuration.Length];
+
+        for (var alternative = 0; alternative < configuration.Length; alternative++)
+        {
+            var candidates = configuration[alternative];
+            next[alternative] = [with(candidates.Count)];
+
+            foreach (var candidate in candidates)
+            {
+                next[alternative].Add(new Candidate
                 {
                     Committed = candidate.Committed,
                     Kind = candidate.Kind,
                     Rest = candidate.Rest,
                     Scope = [.. candidate.Scope],
-                })
-                .ToList()
-            )
-            .ToArray();
+                });
+            }
+        }
 
         var nextId = NextId(next);
 

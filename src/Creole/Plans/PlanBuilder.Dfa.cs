@@ -6,9 +6,10 @@ internal sealed partial class PlanBuilder
     /// The most states a <c>Longest</c>'s automaton may have; a larger one runs on the interpreter.
     /// </summary>
     /// <remarks>
-    /// A placeholder until INT-06 measures lowering time. The prototype's JSON lexer has 41 states and its 138-rule C#-like lexer 517.
+    /// A 12-rule JSON lexer has 39 states and lowers in about 0.9 ms; a 138-rule C#-like lexer has 513 and lowers in about 107 ms, roughly 0.2 ms a state.
+    /// The cap is about four times the larger, so lowering a <c>Longest</c> stays under about half a second.
     /// </remarks>
-    public const int DfaStateCap = 10_000;
+    public const int DfaStateCap = 2_000;
 
     private DfaLongestPlan<T>? DfaLongest<T>(IReadOnlyList<Parser<char, T>> alternatives)
     {
