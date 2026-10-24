@@ -30,6 +30,7 @@ Every phase gate depends on measurements, so the harness and competitor baseline
 ## Unblocks
 
 - [FND-06 Fix numeric gate thresholds](../01-foundations/FND-06-fix-numeric-gate-thresholds.md)
+- [FND-10 Move the Parlot baselines to 2.0.0](../01-foundations/FND-10-move-the-parlot-baselines-to-200.md)
 - [BENCH-02 Full benchmark suite](../13-benchmarks/BENCH-02-full-benchmark-suite.md)
 
 ## Whitepaper references

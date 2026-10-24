@@ -6,7 +6,7 @@ namespace Creole;
 /// </summary>
 /// <remarks>
 /// Each alternative starts with no cut in force, and a cut passed inside one does not survive leaving it (ADR-0011 point 4).
-/// A DFA replaces this plan for regular alternatives in INT-06.
+/// When every alternative is Regular, <see cref="DfaLongestPlan{T}"/> replaces this plan (<see cref="LoweringOptions.Dfa"/>).
 /// </remarks>
 internal sealed class LongestPlan<TIn, T>(Plan<TIn, T>[] alternatives) : Plan<TIn, T>
 {
@@ -33,6 +33,7 @@ internal sealed class LongestPlan<TIn, T>(Plan<TIn, T>[] alternatives) : Plan<TI
 
         cursor.Cut = outerCut;
         cursor.Reset(bestEnd < 0 ? start : bestEnd);
+
         return bestEnd >= 0;
     }
 }

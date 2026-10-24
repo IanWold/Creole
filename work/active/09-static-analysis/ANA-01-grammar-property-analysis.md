@@ -13,6 +13,7 @@ A fixpoint over the grammar graph computes the properties every check builds on.
 ## Scope
 
 - Nullable, FIRST (token kinds, character ranges or ⊤) and Regular per node, through `Rec` cycles.
+- Regular comes from INT-06's predicate in `src/Creole/Analysis/`, not a second implementation ([ADR-0017](../../docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md) point 7).
 - `Custom` uses its declared `ScannerInfo`; a null `First` is ⊤ and makes the node opaque ([ADR-0012](../../docs/decisions/0012-custom-scanner-metadata.md)). Union token case types count as kinds.
 - `Expression.Build`, `Switch`, `Match` and layers handled precisely. `Expression.Build` is read through its table view; operators that succeed without consuming input are reported ([ADR-0004](../../docs/decisions/0004-expression-build-operator-table-and-semantics.md)).
 - Write the analysis so it can be shared with the Roslyn component (RSLN-02).
@@ -35,6 +36,7 @@ A fixpoint over the grammar graph computes the properties every check builds on.
 - [CORE-11 Expression.Build](../02-core-combinators/CORE-11-expressionbuild.md)
 - [CORE-12 Custom primitives](../02-core-combinators/CORE-12-custom-primitives.md)
 - [LAY-03 Layer abstraction and Emit](../06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md)
+- [INT-06 DFA compiler for regular subtrees](../03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md)
 
 ## Unblocks
 
@@ -47,3 +49,8 @@ A fixpoint over the grammar graph computes the properties every check builds on.
 ## Whitepaper references
 
 - [§ Properties](../../../whitepaper.md#properties)
+
+## Artifacts
+
+- [Research: DFA compilation under commit semantics](../../docs/research/2026-10-23-dfa-compilation-under-commit-semantics.md) How regular subtrees can compile to DFAs that agree with commit semantics; construction, errors, alphabet, backup and prior art
+- [Research: commit-aware automaton prototypes](../../docs/research/2026-10-23-commit-aware-automaton-prototypes.md) Differential prototypes: the commit rule, lexer sizes, speed, proof sketches, Option B's condition, backup, blow-ups and a wider eager fragment

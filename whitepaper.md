@@ -265,7 +265,9 @@ An `Atomic` keeps a failure if a cut passed inside it is still in force; a cut p
 
 ### Longest match
 
-`Longest(p1, ..., pn)` runs every alternative atomically from the same position and keeps the one that consumed the most input; ties go to the earliest. This is the maximal-munch rule lexers need (`<=` beats `<`, `iffy` beats `if`), expressed as an ordinary combinator that also works at token level. When all alternatives are regular, engines compile it to a single DFA instead of n attempts.
+`Longest(p1, ..., pn)` runs every alternative atomically from the same position and keeps the one that consumed the most input; ties go to the earliest. This is the maximal-munch rule lexers need (`<=` beats `<`, `iffy` beats `if`), expressed as an ordinary combinator that also works at token level. When all alternatives are regular (§ Properties), engines compile it to a single DFA instead of n attempts.
+
+The DFA agrees with the interpreter, and that is not always what an alternative's regex reading suggests. On `1.x`, `Seq(Digits, Optional(Seq(Char('.'), Digits)))` does not match at all, because `Optional` fails once its item has consumed the `.`. A regex would match `1`. Writing the fraction as `Optional(Atomic(Seq(Char('.'), Digits)))` gives the regex behaviour ([ADR-0017](work/docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md)).
 
 ### Selective choice
 
@@ -424,7 +426,7 @@ Segments go back to the pool once released and are then refilled, so no value th
 
 Two kinds of mark remember a position:
 
-- **Pinning bookmarks**, taken by `Atomic`, `Lookahead`, `Not` and `Longest` over non-regular alternatives. These may rewind the cursor, so they keep their slots alive until they exit. An `Atomic` can release its bookmark once a cut inside it is permanent: no attempt between the cut and the `Atomic` can still fail without consuming, and no `Lookahead`, `Not` or `Longest` alternative lies between them. For the usual cut, after the tokens that identify a construct, that is the moment it is passed (§ Choice and backtracking).
+- **Pinning bookmarks**, taken by `Atomic`, `Lookahead`, `Not` and `Longest`, whether or not it runs as a DFA. These may rewind the cursor, so they keep their slots alive until they exit. An `Atomic` can release its bookmark once a cut inside it is permanent: no attempt between the cut and the `Atomic` can still fail without consuming, and no `Lookahead`, `Not` or `Longest` alternative lies between them. For the usual cut, after the tokens that identify a construct, that is the moment it is passed (§ Choice and backtracking).
 - **Light marks**, taken before each attempt of `Or`, `Optional`, repetition, `Expression.Build` and `Recover` (§ Choice and backtracking lists them). They record the cursor position, the mode log's length, the diagnostic count, the layer-state reference and the cut flag, but pin nothing. Under commit semantics `Or` never rewinds consumed input: once an alternative consumes, any failure is committed. Its mark only undoes zero-width effects, such as a `SetMode` or a `Cut`, when an attempt fails without consuming, including the last alternative.
 
 The buffer may discard every slot below the minimum of the cursor and the oldest pinning bookmark, returning segments to the pool. Each layer in turn pins its own input at the `stepStart` of the oldest output slot it still holds, so any retained item can be produced again. Every mark also snapshots layer-local state and the mode log length (§ Feedback).
@@ -433,7 +435,7 @@ The buffer may discard every slot below the minimum of the cursor and the oldest
 
 1. **Work once.** Each upstream item is produced once per parse, unless a mode change invalidates it.
 2. **Bounded memory.** Memory at a boundary is proportional to the longest window held by a pinning bookmark in the layer above, plus the input of the steps that produced retained items. `Or` and repetition add nothing, so a large document parsed without `Atomic`, `Lookahead` or `Not` keeps a constant number of items per boundary, however deeply its `Or`s nest.
-3. **Deterministic parser layers take no pinning bookmarks**, so the token buffer beneath them holds one item of lookahead. Lexer lookahead is separate: a `Longest` DFA backs up to its last accepting state, so the character buffer holds up to the longest such backup (§ Static analysis).
+3. **Deterministic parser layers take no pinning bookmarks**, so the token buffer beneath them holds one item of lookahead. Lexer lookahead is separate. A compiled `Longest` keeps its token's start pinned while it runs, because it may run the winning alternative again, and it reads past the match before backing up to its end. So the character buffer holds the longest token plus its backup (§ Static analysis).
 4. **Upstream backtracking is private.** A layer's own `Atomic` and `Longest` happen while it runs one step and are invisible downstream. So are its cuts: each layer has its own cut flag.
 
 Two-pass designs that tokenize everything first hold the whole token list in memory. A Creole pipeline over a multi-gigabyte JSON-lines file needs memory proportional to its largest record plus lookahead.
@@ -601,7 +603,13 @@ A fixpoint over the grammar graph (through `Rec` cycles) computes, per node:
 
 - **Nullable:** can succeed without consuming.
 - **FIRST:** the token kinds or character ranges that can start a match, or ⊤ when an opaque node is reachable first.
-- **Regular:** contains no `Rec`, `Bind` or state, so it can compile to a DFA.
+- **Regular:** reads characters and is built only from these:
+  - character classes, `String`, sequence, `Or`, `Optional`, `Many` and `AtLeastOnce` (with their skip forms) over a parser that cannot match empty, and `Atomic`;
+  - `Select`, `Slice`, `Text`, `Named` and `Context`, which do not change what is matched.
+
+  It must also meet a condition for every choice inside an `Atomic`, so that the automaton can resolve the choice early. Call the rest what follows the choice up to the end of the outermost `Atomic` around it. Then either the first branch followed by the rest never fails after consuming, or the second branch followed by the rest cannot match empty and starts with different characters from the first branch followed by the rest.
+
+  A `Longest` whose alternatives are all regular compiles to a DFA that agrees with the interpreter (§ Interpreted engine, [ADR-0017](work/docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md)). A `Longest` written directly as an alternative of another joins it, as nesting beyond 16 alternatives requires; one nested anywhere else is not regular.
 - **Deterministic:** satisfies the LL(1) conditions below.
 
 ### Diagnostics
@@ -702,7 +710,12 @@ On first use, a grammar is lowered to an execution plan and cached in a `Conditi
 
 - Chains of `Select` collapse into one plan step that applies each function in turn.
 - An `Or` dispatches on the next character or token kind. Each alternative takes the keys of the primitive at its leading position, found through wrappers such as `Select`, `Named`, `Atomic` and a sequence's first item. The `Or` runs only the alternatives that can start with the next item, and those with no known leading item, in their original order ([ADR-0016](work/docs/decisions/0016-or-dispatches-on-each-alternatives-leading-item.md)).
-- Regular character subtrees compile to DFA tables.
+- A `Longest` over regular character alternatives (§ Properties) compiles to DFA tables that follow commit semantics, not regex semantics ([ADR-0017](work/docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md)). Other regular subtrees compile only where a measurement shows a gain. None has yet: as one automaton, a character-level JSON token choice ran about 0.6× as fast as with dispatch and scans.
+  - **How choices resolve.** A choice resolves as soon as a path through its first branch consumes input outside any `Atomic`, or finishes the branch. A match discards every lower-priority path.
+  - **`Longest`.** It becomes one automaton with a register per alternative, and ties go to the earliest.
+  - **Size cap.** Lowering builds the tables in full. A subtree whose automaton would exceed a state cap runs on the interpreter instead.
+  - **Values.** A value that is a function of the matched span is computed from the span: an `As` constant, a skip form's `Unit`, `Slice`, `Text`, or a `Select` over one of these. Any other value comes from re-running the winning alternative.
+  - **Failures.** When the automaton finds no match, the interpreter re-runs the subtree and reports the failure, so errors never come from the tables.
 - Runs of a character class (`Letter.SkipMany()`, identifiers, whitespace) become a `SearchValues<char>` scan with `IndexOfAnyExcept`, which the runtime vectorizes.
 
 Plan nodes are sealed classes with `abstract bool TryParse(ref Cursor<TIn> c, ref TOut result)`. `Cursor<TIn>` is a ref struct with a fast path for reads inside the current buffer segment.

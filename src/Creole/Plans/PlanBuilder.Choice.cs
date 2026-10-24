@@ -5,7 +5,9 @@ namespace Creole;
 internal sealed partial class PlanBuilder
 {
     public Plan<TIn, T> Longest<TIn, T>(IReadOnlyList<Parser<TIn, T>> alternatives) =>
-        new LongestPlan<TIn, T>([.. alternatives.Select(Lower)]);
+        _options.HasFlag(LoweringOptions.Dfa) && alternatives is IReadOnlyList<Parser<char, T>> chars && DfaLongest(chars) is Plan<TIn, T> dfa
+        ? dfa
+        : new LongestPlan<TIn, T>([.. alternatives.Select(Lower)]);
 
     public Plan<TIn, TOut> Match<TIn, TUnion, TOut>(Parser<TIn, TUnion> scrutinee, IReadOnlyList<MatchCase<TIn, TOut>> cases)
         where TUnion : IUnion =>

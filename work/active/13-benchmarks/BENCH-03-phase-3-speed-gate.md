@@ -14,7 +14,7 @@ The Phase 3 speed gate: the generated engine is as fast as Parlot.
 ## Scope
 
 - Run the Phase 0 benchmarks (character-level JSON small, medium and large, and arithmetic) on the generated engine.
-- Compare against stable Parlot in the same run, median of three runs on the gate machine. Use Parlot's generated parsers once `Parlot.SourceGenerator` has a stable release, and record the Parlot version.
+- Compare against stable Parlot in the same run, median of three runs on the gate machine. `Parlot.SourceGenerator` is stable from 2.0.0, so add Parlot's generated JSON and arithmetic parsers to the harness (left out of [FND-10](../01-foundations/FND-10-move-the-parlot-baselines-to-200.md)), checked by `tests/Creole.Benchmarks.Tests` like the other baselines, compare against them, and record the Parlot version.
 
 ## Acceptance criteria
 
@@ -23,6 +23,7 @@ The Phase 3 speed gate: the generated engine is as fast as Parlot.
 ## Blocked by
 
 - [FND-06 Fix numeric gate thresholds](../01-foundations/FND-06-fix-numeric-gate-thresholds.md)
+- [FND-10 Move the Parlot baselines to 2.0.0](../01-foundations/FND-10-move-the-parlot-baselines-to-200.md)
 - [BENCH-02 Full benchmark suite](BENCH-02-full-benchmark-suite.md)
 
 ## Unblocks

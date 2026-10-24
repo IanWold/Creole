@@ -17,4 +17,9 @@ internal sealed class AnyNode<TIn> : Parser<TIn, TIn>, IPrimitiveNode
 
     internal override Plan<TIn, TIn> Lower(PlanBuilder builder) =>
         PlanBuilder.Any<TIn>();
+
+    internal override MatchValue<TIn>? ValueOfMatch() =>
+        typeof(TIn) == typeof(char)
+        ? (MatchValue<TIn>)(object)(MatchValue<char>)(static (ref cursor, start) => cursor.ItemAt(start))
+        : null;
 }

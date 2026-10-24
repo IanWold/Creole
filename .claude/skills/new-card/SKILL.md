@@ -25,5 +25,5 @@ Rules and format: CONTRIBUTING.md § Cards and § Epics, phases, waves and gates
    - If a card has more than about six criteria, or bundles deliverables that could ship separately, propose splitting it.
 3. **Write the card** in the exact format of existing cards (see any file in `work/active/`). Use relative links like existing cards do.
 4. **Wire dependencies both ways**: add it to each blocker's `## Unblocks` and each dependent's `## Blocked by`, replacing "Nothing directly." or "Nothing. This item can start immediately." where needed.
-5. **Update work/README.md**: the epic table, the phase table in the right wave (one more than its deepest blocker's wave in that phase), `**Totals:**`, "Can start now" if it is ready, and the critical path if this changes it.
+5. **Update work/README.md**: the epic table, the phase table in the right wave (its dependency wave, or, if every card there is done, the earliest later wave of its phase that still has an open card and is before every card it blocks in the phase; CONTRIBUTING.md § Epics, phases, waves and gates), `**Totals:**`, "Can start now" if it is ready, and the critical path if this changes it.
 6. Run `python3 scripts/work.py check`, fix anything reported, and suggest a commit message: `work: Add <ID> <title>`.

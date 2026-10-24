@@ -6,13 +6,14 @@ The interpreter runs any grammar, including one built at run time. On first use 
 
 ## What lowering speeds up
 
-Lowering rewrites three shapes of grammar. A rewrite never changes a parse's result, the input it consumes, or whether a failure is committed, so you can ignore them and still get correct parses. Writing grammars in these shapes makes them faster.
+Lowering rewrites four shapes of grammar. A rewrite never changes a parse's result, the input it consumes, or whether a failure is committed, so you can ignore them and still get correct parses. Writing grammars in these shapes makes them faster.
 
 | Shape | Runs as | To get it |
 | --- | --- | --- |
 | A skipped run of a character class: `Whitespace.SkipMany()`, `Digit.SkipAtLeastOnce()`, `NoneOf('"', '\\').SkipMany()` | One vectorized search per segment of input, not one step per character | Use a character class (`Char`, `Range`, `NoneOf`, `Digit`, `Letter`, `LetterOrDigit`, `Whitespace`), not `Satisfy`, whose predicate the interpreter cannot see into. Skip the run with `SkipMany` or `SkipAtLeastOnce`, and take its text with `Slice()`, not by collecting characters with `Many()`. |
 | A `Select` over a `Select`, including `As` and `Ignore` after a `Select` | One step that applies both functions in turn | Nothing to do. |
 | `Or` and `OneOf` | Only the alternatives that can start with the next character or token kind are tried | Start each alternative with a literal: see below. |
+| `Longest` over characters, when every alternative is regular | One automaton that reads each character once, however many alternatives there are | Build each alternative from the combinators listed in [When a Longest compiles](#when-a-longest-compiles). For more than 16 alternatives, nest `Longest` directly, `Longest(a, …, Longest(p, …))`: a `Longest` that is itself an alternative joins the outer one. |
 
 ### How a choice picks its alternatives
 
@@ -33,6 +34,25 @@ Any other alternative is tried for every item. That includes a choice inside a c
 | `Digit.SkipAtLeastOnce().Slice()` | anything: lowering does not look into repetitions |
 | `Char('-').Optional().Then(digits)` | anything: `Optional` can match nothing, so the first character could be a digit or something else |
 | `Satisfy(char.IsDigit)` | anything: the predicate is opaque |
+
+### When a Longest compiles
+
+A `Longest` compiles to an automaton when its input is characters and every alternative is regular:
+
+- **What an alternative can use.** Character classes (including `Any`), `String` and `CIString`, `Seq`, `Then`, `Before` and `Between`, `Or` and `OneOf`, `Optional`, `Atomic`, and `Many`, `AtLeastOnce`, `SkipMany` and `SkipAtLeastOnce` over a parser that cannot match nothing. `Select`, `As`, `Ignore`, `Slice`, `Text`, `Named` and `Context` can wrap any of these.
+- **What sends it to the interpreter.** Anything else in any alternative: `Satisfy`, `Custom`, `Where`, `Lookahead`, `Not`, `Cut`, `Rec`, a query, `Repeat`, `SepBy`, `Until`, `Return`, `End`, or a `Longest` anywhere but directly as an alternative.
+- **Choices inside `Atomic`.** A choice there must be one the automaton can settle early. Call the rest what follows the choice up to the end of the outermost `Atomic` around it. Either the first branch followed by the rest cannot fail once it has consumed input, or the second branch followed by the rest cannot match nothing and starts with different characters from the first branch followed by the rest. `Atomic(Char('.').Then(digits))`, the usual fraction of a number, qualifies. `Atomic(String("ab").Or(String("a")).Then(Char('c')))` does not: both branches start with `a`, and the `Atomic` can still fail after `ab`.
+- **Size.** The automaton may have at most 2,000 states. Lexers are far smaller: a 12-rule JSON lexer has 39 states and a 138-rule C#-like lexer has 513.
+
+A `Longest` that does not compile still works: it runs each alternative in turn, as before.
+
+The automaton follows the interpreter's commit semantics, so a compiled `Longest` gives exactly the results it would give otherwise. That is not always what an alternative's regular-expression reading suggests. `digits.Then(Char('.').Then(digits).Optional())` fails on `1.x`, because the `Optional` has consumed the `.`; write the fraction as `Atomic(Char('.').Then(digits)).Optional()` to match `1`.
+
+**Values.** The automaton finds the winning alternative and where its match ends. The plan produces the winner's value directly when it depends only on the text matched: a constant from `As` or `Ignore`, `Slice()`, `Text()`, a single character, a `String`, or a `Select` over one of these. Any other value, such as a `Seq`'s tuple or a `Select` over `Optional`, comes from running the winning alternative once more. When no alternative matches, the interpreter's own `Longest` runs and reports the failure.
+
+**Cost.** The automaton is built once, when the grammar is first lowered. That takes about 1 ms for the JSON lexer, and about 107 ms for the C#-like lexer, which allocates about 500 MB of short-lived memory while it builds. Tokenizing 100 KB then takes 3.3 times less time with the JSON lexer and 13.6 times less with the C#-like one (medians of three runs). So for a grammar used once on a small input, the interpreter alone is cheaper: the automaton pays for itself after about 85 KB of JSON or 0.7 MB of C#-like text.
+
+**Only `Longest` compiles.** A choice over regular alternatives that is not a `Longest` stays on the interpreter. As one automaton, a character-level JSON token `OneOf` ran at 0.6 times the speed it reaches with dispatch and vectorized scans. JSON strings are long runs, which a scan handles faster than an automaton reading one character at a time.
 
 ## What allocates
 

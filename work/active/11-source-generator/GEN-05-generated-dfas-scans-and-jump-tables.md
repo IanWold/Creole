@@ -12,7 +12,7 @@ Bring the interpreter's lowering rewrites into generated code.
 
 ## Scope
 
-- Emit DFA tables or code for regular subtrees and `Longest`, with Reps memoization where needed.
+- Emit DFA tables or code for regular subtrees and `Longest`, with Reps memoization where needed. They are the same commit-aware automata the interpreter builds, with the same fallback for subtrees over the cap ([ADR-0017](../../docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md)).
 - Emit `SearchValues<char>` scans for character-class runs.
 - Emit jump tables for deterministic grammars.
 
@@ -37,3 +37,8 @@ Bring the interpreter's lowering rewrites into generated code.
 
 - [§ Interpreted engine](../../../whitepaper.md#interpreted-engine)
 - [§ Deterministic mode](../../../whitepaper.md#deterministic-mode)
+
+## Artifacts
+
+- [Research: DFA compilation under commit semantics](../../docs/research/2026-10-23-dfa-compilation-under-commit-semantics.md) How regular subtrees can compile to DFAs that agree with commit semantics; construction, errors, alphabet, backup and prior art
+- [Research: commit-aware automaton prototypes](../../docs/research/2026-10-23-commit-aware-automaton-prototypes.md) Differential prototypes: the commit rule, lexer sizes, speed, proof sketches, Option B's condition, backup, blow-ups and a wider eager fragment
