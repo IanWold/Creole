@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Interpreted engine](../../README.md#int--interpreted-engine) |
 | Phase | Phase 0 — Core |
-| Status | Building |
+| Status | Done |
 
 ## Summary
 
@@ -20,8 +20,8 @@ Untrusted input must never cause a stack overflow.
 
 ## Acceptance criteria
 
-- [ ] A deeply nested input stops the interpreter with a depth abort at the offending position instead of crashing the process. For each counted point, an input at the limit parses and one more level aborts. An input 100,000 levels deep on a 256 KB thread aborts through the stack probe.
-- [ ] `Not`, `Atomic` and `Or` around the deep part do not change the outcome.
+- [x] A deeply nested input stops the interpreter with a depth abort at the offending position instead of crashing the process. For each counted point, an input at the limit parses and one more level aborts. An input 100,000 levels deep on a 256 KB thread aborts through the stack probe.
+- [x] `Not`, `Atomic` and `Or` around the deep part do not change the outcome.
 
 ## Blocked by
 
@@ -55,3 +55,41 @@ Untrusted input must never cause a stack overflow.
   | `KindsWithoutDispatch` | 103.46, 100.25, 100.62 | 103.85, 102.40, 104.17 | 1.032 |
 
   Every criterion appears met. Next: the maintainer reviews and commits, then `/complete` ticks the criteria and moves the cost into the Outcome.
+- 2026-10-24 (Done): Both criteria verified on 462dfc4. The full suite passes (1,228), and so do all 40 `DepthLimitTests` cases. An independent critic review agreed, found nothing blocking, and re-measured the cost (in the Outcome).
+
+## Outcome
+
+The interpreter counts recursion depth at the four points [ADR-0020](../../docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md) names. Past depth 20 it also checks the stack. Going past the limit or the stack ends the parse with an internal abort that no combinator catches. The user-facing half (`ParseOptions.MaxDepth`, its default of 1,000, and the `Failed` result) is [INT-08](INT-08-single-layer-parse-api.md)'s.
+
+- **Counter:**
+  - `Cursor<T>` holds `Depth`, `MaxDepth`, `EnterLevel` and `LeaveLevel` in `src/Creole/Cursor.cs`.
+  - The fast path is one compare below depth 20. The limit is checked before the probe, so `MaxDepth` wins when both apply.
+  - `MaxDepth` defaults to `int.MaxValue`, leaving only the probe, until INT-08 sets it.
+- **Abort:** `src/Creole/DepthExceededException.cs` carries `Position` (where the level would have started), `Depth` (the levels already entered) and `Cause`. `Cause` is a `DepthCause` (`src/Creole/DepthCause.cs`): `MaxDepth` or `Stack`.
+- **Counted points:**
+  - `Rec` lowers to `src/Creole/Plans/RecPlan.cs`.
+  - `BindPlan` counts around the chosen parser.
+  - `PrefixOperatorPlan` counts around the operand.
+  - `InfixOperatorPlan` counts around an `InfixR` right operand only.
+- **Tests:**
+  - `tests/Creole.Tests/DepthLimitTests.cs` has 40 cases over the four points:
+    - at limits 5 and 100, the limit and one level past it;
+    - `Not`, `Atomic`, `Or`, and `Atomic` inside `Or`;
+    - a balanced count;
+    - 100,000 levels on a 256 KB thread.
+  - The critic measured where the stack check fired at 100,000 levels on a 256 KB thread: 206–340 levels. With the probe removed, the test host crashed with a stack overflow, so the test does detect a missing probe.
+  - `RecLoweringTests` and `WorkedExampleATests` unwrap the new `RecPlan`.
+- **Docs:** the "Deep input" section of [docs/engines/interpreter.md](../../../docs/engines/interpreter.md#deep-input).
+- **Cost:** measured on `LoweringBenchmarks` `DispatchKinds`, which runs `CreoleTokenJson` on the medium document. Each measurement alternated the old and new builds, three runs each on the default job. Allocation was unchanged at 206.77 KB.
+
+  | Benchmark | Build session, median µs | Critic's rerun, median µs |
+  | --- | --- | --- |
+  | `KindsWithDispatch` | 80.59 → 84.37 (1.047×) | 85.10 → 90.37 (1.062×) |
+  | `KindsWithoutDispatch` | 100.62 → 103.85 (1.032×) | 107.39 → 111.38 (1.037×) |
+
+  So counting costs about 1.03–1.06× on token-level JSON. The benchmark's JSON nests only a few levels, so this is the counter and the extra `RecPlan` step alone; the probe never runs. No Creole benchmark covers prefix or `InfixR` counting yet. ADR-0020 names the remedy if BENCH-01 finds the cost too high: let the `ForwardPlan` that closes a cycle do the count.
+- **Deviations:** none.
+- **Not verified:** the probe at run time under Native AOT. The AOT smoke publishes with no warnings but parses nothing.
+- **Follow-ups:**
+  - INT-08 makes the limit settable. The `Rec`, `Bind` and `Expression.Build` pages in `docs/concepts/` should then say that these count.
+  - GEN-06 counts and probes at the same points. A `Rec` replaced by `Staging` with compiled code bypasses `RecPlan`.
