@@ -21,7 +21,7 @@ The .NET ecosystem has four mature combinator libraries, each a step past the la
 | [Sprache](https://github.com/sprache/Sprache) | Parsers are delegates over character input. `Or` backtracks; `XOr` commits. | Idiomatic combinators and LINQ query syntax in C#. |
 | [Superpower](https://github.com/datalust/superpower) | Two fixed stages: a `Tokenizer<TKind>` produces a token list, then `TokenListParser<TKind, T>` parses it. | Separate lexing, friendlier errors, much less backtracking. |
 | [Pidgin](https://github.com/benjamin-hodgson/Pidgin) | `Parser<TToken, T>` over any token type. `Or` commits after consumption; `Try` backtracks. | Generic input, high throughput, low allocation. |
-| [Parlot](https://github.com/sebastienros/parlot) | Parser classes over text, with whitespace and comments handled by `Terms`. Its generator, so far only in preview packages, runs `[GenerateParser]` methods at build time and emits the body of a `partial` parse method the user declares. | The fastest .NET combinators by its own benchmarks, build-time generation, recursion limits for untrusted input, and bounded-memory parsing of `TextReader` input. |
+| [Parlot](https://github.com/sebastienros/parlot) | Parser classes over text, with whitespace and comments handled by `Terms`. Its generator runs `[GenerateParser]` methods at build time and emits the body of a `partial` parse method the user declares. | The fastest .NET combinators by its own benchmarks, build-time generation, recursion limits for untrusted input, and bounded-memory parsing of `TextReader` input. |
 
 Other .NET tools sit beside these rather than competing directly. ANTLR's C# target is a parser generator; Irony builds LALR parsers from grammars written in C#; FParsec brings Parsec to F#; [Yoakke](https://github.com/LanguageDev/Yoakke) generates lexers and parsers from attributes but is still early, with nightly packages only. Parlot matters most: it already shows that build-time generation works for .NET combinators, so Creole's case cannot rest on speed, build-time generation or single-layer streaming.
 
@@ -1069,7 +1069,7 @@ In `(a) / 2`, the operand `(a)` ends in Operator mode, so `/` lexes as division.
 
 ## Comparison with existing .NET libraries
 
-Creole's differences are concentrated in three rows: stage count, feedback and analysis. Parlot's generator, so far only in preview packages, already generates code at build time, so Creole's generator is a means, not a differentiator. Parlot 2.0 also streams text, one layer at a time, so streaming differs only through Creole's layers ([ADR-0019](work/docs/decisions/0019-parlot-streaming-is-prior-art-and-creoles-case-rests-on-layers.md)). On combinator vocabulary and commit semantics Creole deliberately follows Pidgin.
+Creole's differences are concentrated in three rows: stage count, feedback and analysis. Parlot's generator already generates code at build time, so Creole's generator is a means, not a differentiator. Parlot 2.0 also streams text, one layer at a time, so streaming differs only through Creole's layers ([ADR-0019](work/docs/decisions/0019-parlot-streaming-is-prior-art-and-creoles-case-rests-on-layers.md)). On combinator vocabulary and commit semantics Creole deliberately follows Pidgin.
 
 | Capability | Sprache | Superpower | Pidgin | Parlot | Creole (proposed) |
 | --- | --- | --- | --- | --- | --- |
@@ -1081,7 +1081,7 @@ Creole's differences are concentrated in three rows: stage count, feedback and a
 | Parser-to-lexer feedback | None | None | None | None | Layer state and mode channels with rollback |
 | Source positions | Opt-in (`Positioned`) | Spans on tokens | Positions in errors | Offsets in `Then` callbacks; positions in errors | Spans on every item at every layer, bytes and characters |
 | Static grammar analysis | None | None | None | Lookup tables for `OneOf` from `ISeekable` | Build-time and construction-time checks |
-| Build-time code generation | None | None | None | Executes grammar methods, implements declared `partial` methods (preview packages only) | Reads grammar syntax; fusion later |
+| Build-time code generation | None | None | None | Executes grammar methods, implements declared `partial` methods | Reads grammar syntax; fusion later |
 | Incremental re-parsing | None | None | None | None | Planned for 1.x |
 
 Migration from Pidgin should be mostly mechanical: `Try` becomes `Atomic`, `Map((a, b) => ..., p, q)` becomes `Seq(p, q).Select(...)`, and `using static Pidgin.Parser` becomes a grammar base class. Migration from Sprache is larger, mainly because `Or` changes from backtracking to committing; analyzer CRL0102 flags most places where that matters.
@@ -1115,11 +1115,11 @@ Every gate is a number ([ADR-0003](work/docs/decisions/0003-numeric-gate-thresho
 | Layer fusion | Geometric mean ≥ 1.2× faster than the best unfused generated code, and no benchmark slower |
 | Resumable async | ≥ 1.2× the restart driver's throughput when the median record fills a pipe segment, and ≥ 0.95× on smaller records |
 
-Parlot means stable Parlot's interpreted parsers until `Parlot.SourceGenerator` ships a stable release; the Phase 3 speed gate then compares against Parlot's generated parsers.
+For the Phase 0 gate, Parlot means the fastest stable Parlot release's interpreted parsers. `Parlot.SourceGenerator` is stable, so the Phase 3 speed gate compares against Parlot's generated parsers.
 
 ## Risks and open questions
 
-The largest risks are the cost of maintaining two engines and the subtlety of mode rollback; both are addressed with testing rather than hope. The largest strategic risk is that Parlot already covers speed and build-time generation.
+The largest risks are the cost of maintaining two engines and the subtlety of mode rollback; both are addressed with testing rather than hope. The largest strategic risk is that Parlot already covers speed, build-time generation and single-layer streaming.
 
 ### Risks
 
@@ -1172,5 +1172,5 @@ Nothing is open.
 - [Sprache](https://github.com/sprache/Sprache), [Superpower](https://github.com/datalust/superpower) and [Pidgin](https://github.com/benjamin-hodgson/Pidgin) (.NET)
 - [chumsky](https://docs.rs/chumsky) (Rust): error-recovery strategies
 - FastParse (Scala): cuts
-- [Parlot](https://github.com/sebastienros/parlot) (.NET): build-time generation, recursion limits, streaming; [combinator reference](https://github.com/sebastienros/parlot/blob/main/docs/parsers.md); [streaming guide](https://github.com/sebastienros/parlot/blob/main/docs/streaming.md)
+- [Parlot](https://github.com/sebastienros/parlot) (.NET): build-time generation, recursion limits, streaming; [combinator reference](https://github.com/sebastienros/parlot/blob/main/docs/parsers.md); [source generation guide](https://github.com/sebastienros/parlot/blob/main/docs/source-generation.md); [streaming guide](https://github.com/sebastienros/parlot/blob/main/docs/streaming.md)
 - [Yoakke](https://github.com/LanguageDev/Yoakke) (.NET): attribute-driven lexer and parser generation
