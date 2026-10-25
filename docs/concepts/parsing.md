@@ -63,6 +63,8 @@ This grammar reads characters, so its error names a character and the whitespace
 
 `Parse` copies none of its input. `Slice` values are views of the string or memory it was given, and a failed result refers to the same text to render it. If the input is a buffer you reuse, finish with the slices and render the errors before you reuse it.
 
+Beyond its result and what the grammar builds, a parse allocates nothing: each thread reuses the buffers that record failures. [The interpreter § What allocates](../engines/interpreter.md#what-allocates) lists what does allocate.
+
 ## Options
 
 `ParseOptions` is an immutable record of settings that do not depend on the input, so one instance can serve every parse:

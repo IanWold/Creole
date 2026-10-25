@@ -62,6 +62,13 @@ file sealed class CharJson : CharGrammar
     public static readonly Parser<char, JsonValue> Document =
         _space.Then(Value).Before(End);
 
+    public static string Outcome(ParseResult<JsonValue> result) => result switch
+    {
+        Parsed<JsonValue> parsed => Show(parsed.Value),
+        Recovered<JsonValue> recovered => recovered.Diagnostics.Render(),
+        Failed failed => failed.Diagnostics.Render(),
+    };
+
     public static string Show(JsonValue value) => value switch
     {
         JsonString text => $"\"{text.Value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)}\"",
@@ -155,6 +162,17 @@ public class ParsingTests
     }
 
     [Fact]
+    public void ANestedParseKeepsItsOwnFailures()
+    {
+        var inner = Char('x');
+        var outer = Char('a').Then(Char('a').Optional()).Select(_ => inner.Parse("y").Value is Failed).Then(Char('b'));
+
+        _ = Char('z').Parse("z");
+
+        Assert.Equal([new ExpectedItem("'a'"), new ExpectedItem("'b'")], OnlyError(outer.Parse("ac")).Expected);
+    }
+
+    [Fact]
     public void AnInputWithoutASourceRendersWithoutAName()
     {
         var result = Char('a').Parse("b");
@@ -230,6 +248,28 @@ public class ParsingTests
         Assert.Throws<GrammarException>(() => ((Parser<char, char>)null!).Parse("a"));
         Assert.Throws<GrammarException>(() => ((Parser<char, char>)null!).Parse("a".AsMemory()));
         Assert.Throws<ArgumentNullException>("input", () => Char('a').Parse((string)null!));
+    }
+
+    [Fact]
+    public void ParsesOnManyThreadsAgreeWithParsesOnOne()
+    {
+        string[] texts = [.. Enumerable.Range(0, 200).Select(static i =>
+            i % 2 == 0
+                ? $"[{i}, {{\"k\": [{i}, true]}}]"
+                : $"[{i}, {{\"k\" {i}}}]")];
+        var expected = texts.Select(static text => CharJson.Outcome(CharJson.Document.Parse(text))).ToArray();
+        var mismatches = 0;
+
+        Parallel.For(0, texts.Length * 20, new ParallelOptions { MaxDegreeOfParallelism = 8 }, i =>
+        {
+            if (CharJson.Outcome(CharJson.Document.Parse(texts[i % texts.Length])) != expected[i % texts.Length])
+            {
+                Interlocked.Increment(ref mismatches);
+            }
+        });
+
+        Assert.Contains(expected, outcome => outcome.StartsWith("error[parser]", StringComparison.Ordinal));
+        Assert.Equal(0, mismatches);
     }
 
     [Fact]

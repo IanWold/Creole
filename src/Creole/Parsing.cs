@@ -18,6 +18,9 @@ public static class Parsing
 {
     private const string Layer = "parser";
 
+    [ThreadStatic]
+    private static FailureLog<char>? _spareLog;
+
     extension<TOut>(Parser<char, TOut> parser)
     {
         /// <summary>
@@ -109,10 +112,9 @@ public static class Parsing
         return new ParseError(SpanOf(0, end), Layer, unexpected, [], []);
     }
 
-    private static ParseResult<TOut> Run<TOut>(Parser<char, TOut> parser, ReadOnlyMemory<char> input, string? source, ParseOptions options)
+    private static ParseResult<TOut> ParseWith<TOut>(FailureLog<char> log, Parser<char, TOut> parser, ReadOnlyMemory<char> input, string? source, ParseOptions options)
     {
         var plan = PlanCache.Get(parser);
-        var log = new FailureLog<char>();
         var cursor = Cursor<char>.FromMemory(input) with { Failures = log, MaxDepth = options.MaxDepth };
         TOut value = default!;
         ParseError error;
@@ -132,6 +134,22 @@ public static class Parsing
         }
 
         return new Failed(new Diagnostics([error], new SourceText(SourceId.Unnamed, source, input)));
+    }
+
+    private static ParseResult<TOut> Run<TOut>(Parser<char, TOut> parser, ReadOnlyMemory<char> input, string? source, ParseOptions options)
+    {
+        var log = _spareLog ?? new FailureLog<char>();
+        _spareLog = null;
+
+        try
+        {
+            return ParseWith(log, parser, input, source, options);
+        }
+        finally
+        {
+            log.Clear();
+            _spareLog = log;
+        }
     }
 
     private static SourceSpan SpanOf(long start, long end) =>

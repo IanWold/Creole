@@ -54,7 +54,7 @@ The automaton follows the interpreter's commit semantics, so a compiled `Longest
 
 ## What allocates
 
-Results that are value types flow through the plan without boxing, so a parse whose results are value types or literal strings allocates nothing. These allocate by design:
+Results that are value types flow through the plan without boxing, so a parse whose results are value types or literal strings allocates only its result: `Parse` returns a `Parsed<T>`, one object. These allocate by design:
 
 | Combinator | Allocates |
 | --- | --- |
@@ -67,7 +67,7 @@ Results that are value types flow through the plan without boxing, so a parse wh
 
 Struct tokens that implement `IKinded<TKind>`, matched with `Kind(k)`, never box.
 
-Recording failures allocates nothing either, whether the parse succeeds or fails. A parse keeps its furthest failure in buffers it reuses, holding references to descriptions each grammar node creates once. Only the failure that is finally reported becomes a `ParseError`, and that is when token names are looked up and messages are formed (see [Errors](../concepts/errors.md#what-a-failure-reports)). Recording does take time: every alternative that fails and every loop that stops records where it did.
+Recording failures allocates nothing either, whether the parse succeeds or fails. A parse keeps its furthest failure in buffers that each thread keeps and reuses from one parse to the next, holding references to descriptions each grammar node creates once. A parse that runs inside another, such as one called from a `Select` function, gets buffers of its own. Only the failure that is finally reported becomes a `ParseError`, and that is when token names are looked up and messages are formed (see [Errors](../concepts/errors.md#what-a-failure-reports)). A failed parse allocates that error and its `Failed` result, but nothing in proportion to its input, which the result refers to rather than copies. Recording does take time: every alternative that fails and every loop that stops records where it did.
 
 ## Deep input
 
