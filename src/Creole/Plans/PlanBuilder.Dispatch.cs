@@ -16,12 +16,40 @@ internal sealed partial class PlanBuilder
     /// </summary>
     private DispatchPlan<TIn, T>? Dispatch<TIn, T>(IReadOnlyList<Parser<TIn, T>> alternatives, Plan<TIn, T>[] plans)
     {
-        var keyed = alternatives.Select(KeyedPrimitive).ToArray();
-        var primitives = keyed.OfType<IPrimitiveNode>().ToArray();
+        var keyed = alternatives.Select(static alternative => Keyed(alternative)).ToArray();
+        var primitives = keyed.Select(static key => key.Primitive).OfType<IPrimitiveNode>().ToArray();
 
         return primitives.Length >= _dispatchThreshold && KeyReader<TIn>(primitives) is { } read
-            ? new DispatchPlan<TIn, T>(plans, [.. keyed.Select(primitive => primitive?.First.Keys)], read)
+            ? new DispatchPlan<TIn, T>(
+                plans,
+                [.. keyed.Select(static key => key.Primitive?.First.Keys)],
+                [.. keyed.Select(static key => key.Label ?? key.Primitive?.Expected)],
+                read)
             : null;
+    }
+
+    /// <summary>
+    /// The primitive whose keys an alternative takes, or null when it has no keys, and the label of the outermost <c>Named</c> on the way to it.
+    /// </summary>
+    /// <remarks>
+    /// An alternative that dispatch skips would have failed at that primitive, so it records the label if there is one and the primitive's expectation otherwise.
+    /// </remarks>
+    private static (IPrimitiveNode? Primitive, Expected? Label) Keyed(INode node)
+    {
+        if (KeyedPrimitive(node) is not { } primitive)
+        {
+            return (null, null);
+        }
+
+        for (var at = node; at != primitive; at = at.Children[0])
+        {
+            if (at is ILabelNode named)
+            {
+                return (primitive, named.Expected);
+            }
+        }
+
+        return (primitive, null);
     }
 
     /// <summary>

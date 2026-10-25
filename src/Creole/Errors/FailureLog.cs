@@ -214,6 +214,22 @@ internal sealed class FailureLog<T>
     }
 
     /// <summary>
+    /// Records, as one failure at <paramref name="position"/>, the failures of several parsers that expected <paramref name="expected"/> in turn.
+    /// </summary>
+    public void Record(long position, Expected[] expected)
+    {
+        if (!Reaches(position))
+        {
+            return;
+        }
+
+        foreach (var expectation in expected)
+        {
+            Add(expectation);
+        }
+    }
+
+    /// <summary>
     /// Records a failure at <paramref name="position"/> that reports <paramref name="message"/>, as <c>Fail(message)</c> does.
     /// </summary>
     public void Record(long position, string message)

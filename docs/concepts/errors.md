@@ -75,7 +75,7 @@ Case values convert to the union implicitly, so `Expectation e = new Label("valu
 
 ## What a failure reports
 
-> The interpreter records failures as this section describes, with gaps that later steps of the error model's failure tracking (ERR-02) fill: a rejected filter and a chained non-associative operator do not yet report as [§ The error model](../../whitepaper.md#the-error-model) says, and an `Or` that dispatches on the next item does not yet record what the alternatives it skips expected. The public method that runs a parser and returns its errors arrives with INT-08.
+> The interpreter records failures as this section describes, with one gap that a later step of the error model's failure tracking (ERR-02) fills: a rejected filter and a chained non-associative operator do not yet report as [§ The error model](../../whitepaper.md#the-error-model) says. The public method that runs a parser and returns its errors arrives with INT-08.
 
 Each layer keeps the furthest failure of its parse, the one at the latest position, and reports that one. Where several parts of a grammar fail at that same position, their failures merge:
 

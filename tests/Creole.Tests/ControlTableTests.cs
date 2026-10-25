@@ -39,6 +39,16 @@ public class ControlTableTests
         );
     }
 
+    [Theory]
+    [MemberData(nameof(CaseNames))]
+    public void EveryRewriteGivesEachRowTheSameOutcomeAndFailure(string name)
+    {
+        var row = _cases[name];
+        var (without, with) = Rewrites.Compare(ControlTable.Build(row.Shape), LoweringOptions.All, row.Input);
+
+        Assert.Equal(without, with);
+    }
+
     [Fact]
     public void TheTableCoversEveryControlNode()
     {

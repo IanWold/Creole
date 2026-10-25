@@ -4,7 +4,7 @@ namespace Creole;
 /// Runs <see cref="Item"/> and, when it consumes nothing, replaces the expectations it recorded at its start position with <see cref="Label"/>.
 /// Backs <c>Named</c>.
 /// </summary>
-internal sealed class NamedNode<TIn, T>(Parser<TIn, T> item, Label label) : Parser<TIn, T>
+internal sealed class NamedNode<TIn, T>(Parser<TIn, T> item, Label label) : Parser<TIn, T>, ILabelNode
 {
     internal override IReadOnlyList<INode> Children => [Item];
 

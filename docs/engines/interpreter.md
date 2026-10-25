@@ -6,7 +6,7 @@ The interpreter runs any grammar, including one built at run time. On first use 
 
 ## What lowering speeds up
 
-Lowering rewrites four shapes of grammar. A rewrite never changes a parse's result, the input it consumes, or whether a failure is committed, so you can ignore them and still get correct parses. Writing grammars in these shapes makes them faster.
+Lowering rewrites four shapes of grammar. A rewrite never changes a parse's result, the input it consumes, whether a failure is committed, or what a failure reports, so you can ignore them and still get correct parses and the same error messages. Writing grammars in these shapes makes them faster.
 
 | Shape | Runs as | To get it |
 | --- | --- | --- |
@@ -24,7 +24,7 @@ For each alternative, lowering looks for the first thing it reads. It looks thro
 - `Kind(k)`, by token kind, and `Token(x)` when the items are characters or an enum;
 - a `Custom` scanner that declares `First` and is not `Nullable`.
 
-Any other alternative is tried for every item. That includes a choice inside a choice, so `OneOf(a, b, c, d)` can skip alternatives where `a.Or(b).Or(c).Or(d)` cannot. The alternatives that are tried keep their order, so an alternative that overlaps a later one still wins: `OneOf(String("if"), identifier)` tries `String("if")` first on `i`. A choice works this way when at least four of its alternatives start with a literal, because with fewer, checking the next item costs more than skipping saves; otherwise it tries every alternative in order. For the same reason, put the alternatives that start with a literal before those that do not: when they come last, the choice pays for the check and skips nothing that would have been tried.
+Any other alternative is tried for every item. That includes a choice inside a choice, so `OneOf(a, b, c, d)` can skip alternatives where `a.Or(b).Or(c).Or(d)` cannot. The alternatives that are tried keep their order, so an alternative that overlaps a later one still wins: `OneOf(String("if"), identifier)` tries `String("if")` first on `i`. An alternative that is skipped still counts toward the error: the choice records what it would have expected, in its place in the order, so a message lists the same expectations as trying every alternative would. A choice works this way when at least four of its alternatives start with a literal, because with fewer, checking the next item costs more than skipping saves; otherwise it tries every alternative in order. For the same reason, put the alternatives that start with a literal before those that do not: when they come last, the choice pays for the check and skips nothing that would have been tried.
 
 | Alternative | Tried when the next character is |
 | --- | --- |

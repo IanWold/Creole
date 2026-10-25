@@ -204,6 +204,11 @@ public ref struct Cursor<T>
     internal readonly void Fail(Expected? expected) => Failures?.Record(Position, expected);
 
     /// <summary>
+    /// Records at the cursor, as one failure, the failures of several parsers that expected <paramref name="expected"/> in turn.
+    /// </summary>
+    internal readonly void FailAll(Expected[] expected) => Failures?.Record(Position, expected);
+
+    /// <summary>
     /// Records a failure at <paramref name="position"/>, which the cursor has passed, that expected <paramref name="expected"/>, or nothing in particular when it is null.
     /// </summary>
     internal readonly void FailAt(long position, Expected? expected) => Failures?.Record(position, expected);
