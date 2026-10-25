@@ -6,8 +6,9 @@ internal sealed partial class PlanBuilder
     /// The most states a <c>Longest</c>'s automaton may have; a larger one runs on the interpreter.
     /// </summary>
     /// <remarks>
-    /// A 12-rule JSON lexer has 39 states and lowers in about 0.9 ms; a 138-rule C#-like lexer has 513 and lowers in about 107 ms, roughly 0.2 ms a state.
-    /// The cap is about four times the larger, so lowering a <c>Longest</c> stays under about half a second.
+    /// A 12-rule JSON lexer has 39 states and lowers in about 0.24 ms; a 138-rule C#-like lexer has 513 and lowers in about 10 ms, allocating about 16 MB.
+    /// In a new process, before the construction code is compiled, they take about 30 ms and 85 ms.
+    /// The cap is about four times the larger.
     /// </remarks>
     public const int DfaStateCap = 2_000;
 
