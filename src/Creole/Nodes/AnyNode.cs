@@ -9,6 +9,8 @@ internal sealed class AnyNode<TIn> : Parser<TIn, TIn>, IPrimitiveNode
 
     internal override NodeKind Kind => NodeKind.Any;
 
+    public Expected? Expected => null;
+
     public FirstSet First => FirstSet.AnyItem;
 
     public bool Nullable => false;

@@ -10,6 +10,14 @@ namespace Creole;
 internal interface IPrimitiveNode : INode
 {
     /// <summary>
+    /// What the node records when it fails, or null when it records a failure that expects nothing in particular.
+    /// </summary>
+    /// <remarks>
+    /// The node creates it once, so every plan lowered from the node records the same reference.
+    /// </remarks>
+    Expected? Expected { get; }
+
+    /// <summary>
     /// The items the node can start with, and whether it can start at the end of input.
     /// An opaque node reports <see cref="FirstSet.AnyItem"/>.
     /// </summary>

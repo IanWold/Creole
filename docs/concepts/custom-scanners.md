@@ -2,7 +2,7 @@
 
 Some tokens need hand-written code. C# raw string literals and Rust's `r#"…"#` strings count their delimiters, which no combinator can do. `Custom(scanner)` turns an `IScanner<TIn, TOut>` into a parser. The design is in the [whitepaper's § Custom primitives](../../whitepaper.md#custom-primitives), and the choices behind `ScannerInfo` are in [ADR-0012](../../work/docs/decisions/0012-custom-scanner-metadata.md).
 
-> The interpreter runs `Custom` as this page describes, with one gap: a failed scanner does not yet report its `Name` or `First` characters, which arrive with the error model's failure tracking (ERR-02). The public method that runs a parser on your input arrives with INT-08.
+> The interpreter runs `Custom` as this page describes. The public method that runs a parser on your input, and returns the errors it reports, arrives with INT-08.
 
 ## Writing a scanner
 
@@ -100,7 +100,7 @@ The rules a scanner must follow:
 | --- | --- | --- |
 | `Nullable` | Whether the scanner can succeed without consuming input. | — |
 | `First` | The characters the scanner can start with, as a [`CharSet`](primitives.md#character-sets). Only for a scanner over `char`. | The scanner can start with any item. Analysis treats it like `Satisfy`: it matches anything, and analysis can say little about rules that use it. |
-| `Name` | What error messages call the token, such as `"raw string"`. | A failed scanner expects the characters of `First`, such as `'r'`. With no `First` either, it adds no expectation. |
+| `Name` | What error messages call the token, such as `"raw string"`. | A failed scanner expects its `First` characters, described as one expectation such as `'r'` or `[a-z]`. With no `First` either, it expects nothing in particular. |
 
 Give a character scanner a `First` whenever you can: it keeps analysis precise for every rule that uses the scanner. A scanner over tokens leaves `First` null. Give a `Name` too, or wrap the parser in `Named`; "expected 'r'" is rarely the message you want.
 

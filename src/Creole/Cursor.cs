@@ -48,6 +48,11 @@ public ref struct Cursor<T>
     internal int Depth { get; private set; }
 
     /// <summary>
+    /// Where this layer's parse records its failures, or null to record none.
+    /// </summary>
+    internal FailureLog<T>? Failures { get; init; }
+
+    /// <summary>
     /// The most levels this layer's parse may be inside at once. <see cref="int.MaxValue"/> leaves only the stack check.
     /// </summary>
     internal int MaxDepth { get; init; } = int.MaxValue;
@@ -188,6 +193,22 @@ public ref struct Cursor<T>
     }
 
     /// <summary>
+    /// Records a failure at the cursor that expected <paramref name="expected"/>, or nothing in particular when it is null.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal readonly void Fail(Expected? expected) => Failures?.Record(Position, expected);
+
+    /// <summary>
+    /// Records a failure at <paramref name="position"/>, which the cursor has passed, that expected <paramref name="expected"/>, or nothing in particular when it is null.
+    /// </summary>
+    internal readonly void FailAt(long position, Expected? expected) => Failures?.Record(position, expected);
+
+    /// <summary>
+    /// Records a failure at the cursor that reports <paramref name="message"/>.
+    /// </summary>
+    internal readonly void FailWith(string message) => Failures?.Record(Position, message);
+
+    /// <summary>
     /// Creates a cursor at the start of an input held entirely in memory, whose items <see cref="Since"/> can return without copying.
     /// </summary>
     internal static Cursor<T> FromMemory(ReadOnlyMemory<T> input) => new(input.Span) { _segment = input };
@@ -197,9 +218,7 @@ public ref struct Cursor<T>
     /// </summary>
     internal readonly T ItemAt(long position)
     {
-        var at = this;
-        at.Reset(position);
-        at.TryPeek(out var item);
+        TryPeekAt(position, out var item);
 
         return item;
     }
@@ -277,6 +296,18 @@ public ref struct Cursor<T>
         }
 
         return items;
+    }
+
+    /// <summary>
+    /// Reads the item at <paramref name="position"/>, which must be a position this cursor has already reached and the input still holds. The cursor does not move.
+    /// </summary>
+    /// <returns><see langword="false"/> if <paramref name="position"/> is the end of the input.</returns>
+    internal readonly bool TryPeekAt(long position, out T item)
+    {
+        var at = this;
+        at.Reset(position);
+
+        return at.TryPeek(out item);
     }
 
     /// <summary>

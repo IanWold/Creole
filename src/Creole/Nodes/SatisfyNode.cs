@@ -13,6 +13,8 @@ internal sealed class SatisfyNode<TIn>(Func<TIn, bool> predicate) : Parser<TIn, 
 
     internal override NodeKind Kind => NodeKind.Satisfy;
 
+    public Expected? Expected => null;
+
     public FirstSet First => FirstSet.AnyItem;
 
     public bool Nullable => false;

@@ -55,7 +55,7 @@ internal sealed partial class PlanBuilder(LoweringOptions options = LoweringOpti
         return names.Length == 0 ? null : string.Join(" → ", names);
     }
 
-    public static Plan<TIn, TOut> Fail<TIn, TOut>() => new FailPlan<TIn, TOut>();
+    public static Plan<TIn, TOut> Fail<TIn, TOut>(string message) => new FailPlan<TIn, TOut>(message);
 
     /// <summary>
     /// Returns the plan for <paramref name="parser"/>, lowering it if this builder has not seen it yet.

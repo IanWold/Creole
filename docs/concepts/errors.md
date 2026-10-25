@@ -73,6 +73,44 @@ string Describe(Expectation expectation) => expectation switch
 
 Case values convert to the union implicitly, so `Expectation e = new Label("value");` works. Because `EndOfInput` converts to either union, a call such as `M(new EndOfInput())` is ambiguous when `M` has overloads for both `Unexpected` and `Expectation`. Give such methods different names, or cast the argument.
 
+## What a failure reports
+
+> The interpreter records failures as this section describes, with gaps that later steps of the error model's failure tracking (ERR-02) fill: `Named` labels, context lines, `Lookahead`, `Not`, `Longest`, filters and the chained-operator message do not yet change what is recorded, and an `Or` that dispatches on the next item does not yet record what the alternatives it skips expected. The public method that runs a parser and returns its errors arrives with INT-08.
+
+Each layer keeps the furthest failure of its parse, the one at the latest position, and reports that one. Where several parts of a grammar fail at that same position, their failures merge:
+
+- A failure before the furthest one is ignored, and one past it replaces it.
+- Expectations are listed in the order they were recorded. One that shows the same as an earlier one is listed once.
+- A message, from `Fail(message)`, takes the place of what was found. The first message recorded at the position wins, and the expectations stay alongside it.
+- The span covers the item at the position, or is zero-width at the end of the input.
+- What was found is the message if there is one, and otherwise the item at the position or the end of input.
+
+A failure deeper than the cursor counts too. In `Atomic(Char('a').Then(Char('b'))).Or(Char('c'))` on `ax`, the report is "expected 'b'" at the `x`, even though the `Atomic` rewound before `Char('c')` ran.
+
+What each primitive expects when it fails:
+
+| Parser | Expects |
+| --- | --- |
+| `Char(c)`, `Token(x)` | the item, such as `','` or `3` |
+| `String(s)`, `CIString(s)` | the whole string, such as `"let"`, at the position where it started |
+| `Digit`, `Letter`, `LetterOrDigit`, `Whitespace` | its name: `digit`, `letter`, `letter or digit`, `whitespace` (a `Label`) |
+| `Range`, `NoneOf` and other classes | one description of the class, such as `[a-z]` or `any character except '"'` |
+| `End` | the end of input |
+| `Kind(k)` | the kind, as the token type describes it (see [How errors show tokens](primitives.md#how-errors-show-tokens)) |
+| `Case<T>()` | the case type's name, such as `Ident` |
+| `Custom(scanner)` | the scanner's `Name` (a `Label`), or else its `First` characters as one description, or else nothing in particular |
+| `Any`, `Satisfy(predicate)` | nothing in particular: they can start with any item |
+| `Fail(message)` | nothing; it reports `message` |
+
+A `Match` whose value has no case expects nothing in particular, where its branch would have started.
+
+How items show:
+
+- A character shows in single quotes, such as `'a'`. Quotes, backslashes and characters that print nothing or move the cursor are escaped as in C#, such as `'
+'` or `''`, so a message never carries a terminal escape sequence. A string shows in double quotes with the same escapes.
+- A token from a `TokenGrammar` shows as its type describes it, such as `','` or `string "host"`.
+- Any other item shows as its `ToString()`.
+
 ## Results: `ParseResult<T>`
 
 A parse returns a `ParseResult<T>`, a union of three cases:

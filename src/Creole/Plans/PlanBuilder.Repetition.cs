@@ -12,9 +12,11 @@ internal sealed partial class PlanBuilder
     /// Lowers a skipped repetition, as a <see cref="ScanPlan"/> when the item is a character class and <see cref="LoweringOptions.Scan"/> is on.
     /// </summary>
     public Plan<TIn, Unit> SkipRepeat<TIn, T>(Parser<TIn, T> item, int min, int? max) =>
-        _options.HasFlag(LoweringOptions.Scan) && item is CharClassNode run && ScanPlan.Of(run.Set, min, max) is Plan<TIn, Unit> scan
-            ? scan
-            : new SkipRepeatPlan<TIn, T>(Lower(item), min, max);
+        _options.HasFlag(LoweringOptions.Scan)
+        && item is CharClassNode run
+        && ScanPlan.Of(run.Set, run.Expected, min, max) is Plan<TIn, Unit> scan
+        ? scan
+        : new SkipRepeatPlan<TIn, T>(Lower(item), min, max);
 
     public Plan<TIn, IReadOnlyList<T>> Until<TIn, T, TTerm>(Parser<TIn, T> item, Parser<TIn, TTerm> terminator) =>
         new UntilPlan<TIn, T, TTerm>(Lower(item), Lower(terminator));

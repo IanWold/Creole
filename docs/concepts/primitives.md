@@ -170,4 +170,4 @@ With these, a message reads `expected ','`, and an unexpected string token reads
 - A union token overrides them the same way, inside its declaration.
 - A struct token that keeps the default `Detail` is boxed for the call. That happens only when an error is built.
 
-The interpreter does not record failures yet, so nothing calls these members until the error model's failure tracking arrives (ERR-02). The reasons are in [ADR-0023](../../work/docs/decisions/0023-token-types-describe-their-kinds.md).
+What each primitive expects when it fails is listed in [Errors](errors.md#what-a-failure-reports). The public method that runs a parser and returns its errors arrives with INT-08. The reasons for this design are in [ADR-0023](../../work/docs/decisions/0023-token-types-describe-their-kinds.md).

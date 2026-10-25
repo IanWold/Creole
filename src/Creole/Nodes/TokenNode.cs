@@ -10,6 +10,8 @@ internal sealed class TokenNode<TIn>(TIn value) : Parser<TIn, TIn>, IPrimitiveNo
 
     internal override NodeKind Kind => NodeKind.Token;
 
+    public Expected Expected { get; } = Expected.Item(value);
+
     public FirstSet First { get; } = FirstSet.OfItem(value);
 
     public bool Nullable => false;
@@ -19,5 +21,5 @@ internal sealed class TokenNode<TIn>(TIn value) : Parser<TIn, TIn>, IPrimitiveNo
     public TIn Value { get; } = value;
 
     internal override Plan<TIn, TIn> Lower(PlanBuilder builder) =>
-        PlanBuilder.Token(Value);
+        PlanBuilder.Token(Value, Expected);
 }

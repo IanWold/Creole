@@ -18,6 +18,8 @@ internal sealed class StringNode : Parser<char, string>, IPrimitiveNode
 
     internal override NodeKind Kind => NodeKind.String;
 
+    public Expected Expected { get; }
+
     public FirstSet First { get; }
 
     public bool IgnoreCase { get; }
@@ -41,11 +43,12 @@ internal sealed class StringNode : Parser<char, string>, IPrimitiveNode
         }
 
         IgnoreCase = ignoreCase;
+        Expected = Expected.Text(text);
         First = FirstSet.OfChars(CharactersAt(0));
     }
 
     internal override Plan<char, string> Lower(PlanBuilder builder) =>
-        PlanBuilder.String(Text, IgnoreCase);
+        PlanBuilder.String(Text, IgnoreCase, Expected);
 
     internal override MatchValue<string> ValueOfMatch()
     {
