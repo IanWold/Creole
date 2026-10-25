@@ -122,14 +122,13 @@ public class AllocationTests
             Assert.True(parse());
         }
 
-        var before = GC.GetAllocatedBytesForCurrentThread();
-
-        for (var i = 0; i < 100; i++)
+        return Allocation.Fewest(() =>
         {
-            parse();
-        }
-
-        return GC.GetAllocatedBytesForCurrentThread() - before;
+            for (var i = 0; i < 100; i++)
+            {
+                parse();
+            }
+        });
     }
 
     [Theory]
