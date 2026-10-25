@@ -9,16 +9,21 @@ namespace Creole;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Errors are ordered by source, then by start offset, then by end offset. Errors with equal spans keep the order  they were given in.
+/// Errors are ordered by source, then by start offset, then by end offset. Errors with equal spans keep the order they were given in.
 /// Sources are ordered as their <see cref="SourceRegistry"/> issued them, with <see cref="SourceId.Unnamed"/> first.
 /// </para>
 /// <para>
-/// A collection is immutable. Two collections are equal when they hold equal errors in the same order.
+/// The errors from a parse come with the text of the sources they point into, so <see cref="Render()"/> can show them against it.
+/// A collection made with <see cref="Diagnostics(IEnumerable{ParseError})"/> holds no source texts.
+/// </para>
+/// <para>
+/// A collection is immutable. Two collections are equal when they hold equal errors in the same order, whatever source texts they hold.
 /// </para>
 /// </remarks>
 public sealed class Diagnostics : IReadOnlyList<ParseError>, IEquatable<Diagnostics>
 {
     private readonly ParseError[] _errors;
+    private readonly SourceText[] _sources;
 
     /// <summary>
     /// The number of errors.
@@ -39,11 +44,13 @@ public sealed class Diagnostics : IReadOnlyList<ParseError>, IEquatable<Diagnost
         _errors[index];
 
     /// <summary>
-    /// Creates a collection of <paramref name="errors"/>, ordered by span.
+    /// Creates a collection of <paramref name="errors"/>, ordered by span, that holds the text of <paramref name="sources"/> for <see cref="Render()"/>.
     /// </summary>
+    /// <param name="errors">The errors.</param>
+    /// <param name="sources">Texts with distinct ids, none null.</param>
     /// <exception cref="ArgumentNullException"><paramref name="errors"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="errors"/> contains a null error.</exception>
-    public Diagnostics(IEnumerable<ParseError> errors)
+    internal Diagnostics(IEnumerable<ParseError> errors, params ReadOnlySpan<SourceText> sources)
     {
         ArgumentNullException.ThrowIfNull(errors);
 
@@ -57,6 +64,93 @@ public sealed class Diagnostics : IReadOnlyList<ParseError>, IEquatable<Diagnost
         {
             throw new ArgumentException("A collection of errors cannot contain null.", nameof(errors));
         }
+
+        _sources = sources.ToArray();
+    }
+
+    /// <summary>
+    /// Creates a collection of <paramref name="errors"/>, ordered by span.
+    /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="errors"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="errors"/> contains a null error.</exception>
+    public Diagnostics(IEnumerable<ParseError> errors) : this(errors, []) { }
+
+    /// <summary>
+    /// Indexes <paramref name="sources"/> by id.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="sources"/> contains a null or a repeated id.</exception>
+    private static Dictionary<SourceId, SourceText> ById(ReadOnlySpan<SourceText> sources)
+    {
+        var byId = new Dictionary<SourceId, SourceText>(sources.Length);
+
+        foreach (var source in sources)
+        {
+            if (source is null)
+            {
+                throw new ArgumentException("The source texts cannot contain null.", nameof(sources));
+            }
+
+            if (!byId.TryAdd(source.Id, source))
+            {
+                throw new ArgumentException($"Two source texts have the id {source.Id}.", nameof(sources));
+            }
+        }
+
+        return byId;
+    }
+
+    /// <summary>
+    /// Writes each error against its source, which <paramref name="byId"/> covers.
+    /// </summary>
+    private string RenderAgainst(Dictionary<SourceId, SourceText> byId)
+    {
+        var builder = new StringBuilder();
+
+        foreach (var error in _errors)
+        {
+            if (builder.Length > 0)
+            {
+                builder.Append("\n\n");
+            }
+
+            DiagnosticRenderer.Append(builder, error, byId[error.Span.Source], byId);
+        }
+
+        return builder.ToString();
+    }
+
+    /// <summary>
+    /// Describes the first source an error or its context points into that <paramref name="byId"/> has no text for, or whose text is too short; or returns null if there is none.
+    /// </summary>
+    private string? Uncovered(Dictionary<SourceId, SourceText> byId)
+    {
+        foreach (var error in _errors)
+        {
+            if (!byId.TryGetValue(error.Span.Source, out var source))
+            {
+                return $"No source text was given for {error.Span.Source}, which an error points into.";
+            }
+
+            if (error.Span.CharEnd > source.Text.Length)
+            {
+                return $"An error's span ends at character {error.Span.CharEnd}, past the end of the text for {error.Span.Source}, which has {source.Text.Length} characters.";
+            }
+
+            foreach (var line in error.Context)
+            {
+                if (!byId.TryGetValue(line.Start.Source, out var start))
+                {
+                    return $"No source text was given for {line.Start.Source}, where an error's context line starts.";
+                }
+
+                if (line.Start.CharStart > start.Text.Length)
+                {
+                    return $"An error's context line starts at character {line.Start.CharStart}, past the end of the text for {line.Start.Source}, which has {start.Text.Length} characters.";
+                }
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -99,15 +193,33 @@ public sealed class Diagnostics : IReadOnlyList<ParseError>, IEquatable<Diagnost
     }
 
     /// <summary>
-    /// Writes the errors one per line, in span order, such as <c>error[parser] at 15..21: unexpected string "host"; expected ',' or '}'; in object starting at 2</c>.
+    /// Writes the errors against the source texts this collection holds, as <see cref="Render(ReadOnlySpan{SourceText})"/> does, or one per line if it lacks a text they point into.
     /// </summary>
-    /// <returns>The lines joined by <c>\n</c>, or an empty string when there are no errors.</returns>
+    /// <returns>The errors in span order, or an empty string when there are no errors.</returns>
     /// <remarks>
-    /// Each line is the error's <see cref="ParseError.ToString"/>. Offsets are character offsets (<see cref="SourceSpan.CharStart"/> to <see cref="SourceSpan.CharEnd"/>), and a context line shows the character offset where its construct started.
-    /// To show errors against the lines they point into, pass the source texts to <see cref="Render(ReadOnlySpan{SourceText})"/>.
+    /// <para>
+    /// The errors from a parse hold the text of its input, so they are shown against it.
+    /// Errors are written one per line when the collection holds no text for a source that an error or one of its context lines points into, or when a text is too short for a span.
+    /// </para>
+    /// <para>
+    /// A line is the error's <see cref="ParseError.ToString"/>, such as <c>error[parser] at 15..21: unexpected string "host"; expected ',' or '}'; in object starting at 2</c>, and lines are joined by <c>\n</c>.
+    /// Offsets are character offsets (<see cref="SourceSpan.CharStart"/> to <see cref="SourceSpan.CharEnd"/>), and a context line shows the character offset where its construct started.
+    /// </para>
     /// </remarks>
-    public string Render() =>
-        string.Join('\n', (IEnumerable<ParseError>)_errors);
+    public string Render()
+    {
+        if (_sources.Length > 0)
+        {
+            var byId = ById(_sources);
+
+            if (Uncovered(byId) is null)
+            {
+                return RenderAgainst(byId);
+            }
+        }
+
+        return string.Join('\n', (IEnumerable<ParseError>)_errors);
+    }
 
     /// <summary>
     /// Writes each error against the line of source text it points into, such as:
@@ -124,62 +236,17 @@ public sealed class Diagnostics : IReadOnlyList<ParseError>, IEquatable<Diagnost
     /// <returns>The errors in span order, separated by blank lines, or an empty string when there are no errors.</returns>
     /// <remarks>
     /// Columns count Unicode scalar values. Carets are aligned for a terminal: by grapheme cluster, with wide characters as two columns and tabs expanded to stops of four.
+    /// Only <paramref name="sources"/> are used, not the texts this collection holds.
     /// </remarks>
     /// <exception cref="ArgumentException">
     /// <paramref name="sources"/> contains a null or a repeated id, lacks a source an error or its context points into, or has a text shorter than an error's span or than where a context line starts.
     /// </exception>
     public string Render(params ReadOnlySpan<SourceText> sources)
     {
-        var byId = new Dictionary<SourceId, SourceText>(sources.Length);
+        var byId = ById(sources);
 
-        foreach (var source in sources)
-        {
-            if (source is null)
-            {
-                throw new ArgumentException("The source texts cannot contain null.", nameof(sources));
-            }
-
-            if (!byId.TryAdd(source.Id, source))
-            {
-                throw new ArgumentException($"Two source texts have the id {source.Id}.", nameof(sources));
-            }
-        }
-
-        var builder = new StringBuilder();
-
-        foreach (var error in _errors)
-        {
-            if (!byId.TryGetValue(error.Span.Source, out var source))
-            {
-                throw new ArgumentException($"No source text was given for {error.Span.Source}, which an error points into.", nameof(sources));
-            }
-
-            if (error.Span.CharEnd > source.Text.Length)
-            {
-                throw new ArgumentException($"An error's span ends at character {error.Span.CharEnd}, past the end of the text for {error.Span.Source}, which has {source.Text.Length} characters.", nameof(sources));
-            }
-
-            foreach (var line in error.Context)
-            {
-                if (!byId.TryGetValue(line.Start.Source, out var start))
-                {
-                    throw new ArgumentException($"No source text was given for {line.Start.Source}, where an error's context line starts.", nameof(sources));
-                }
-
-                if (line.Start.CharStart > start.Text.Length)
-                {
-                    throw new ArgumentException($"An error's context line starts at character {line.Start.CharStart}, past the end of the text for {line.Start.Source}, which has {start.Text.Length} characters.", nameof(sources));
-                }
-            }
-
-            if (builder.Length > 0)
-            {
-                builder.Append("\n\n");
-            }
-
-            DiagnosticRenderer.Append(builder, error, source, byId);
-        }
-
-        return builder.ToString();
+        return Uncovered(byId) is { } problem
+            ? throw new ArgumentException(problem, nameof(sources))
+            : RenderAgainst(byId);
     }
 }

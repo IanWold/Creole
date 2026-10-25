@@ -156,11 +156,12 @@ The reasons are in [ADR-0002](../../work/docs/decisions/0002-parseresult-as-a-pl
 - Errors are ordered by source, then start offset, then end offset. Errors with equal spans keep the order they were given in. Sources are ordered as their `SourceRegistry` issued them, with `SourceId.Unnamed` first.
 - `Diagnostics.Empty` has no errors.
 - `new Diagnostics(errors)` sorts `errors`. It throws `ArgumentException` if one is null.
-- Two collections are equal when they hold equal errors in the same order.
+- A collection can also hold the text of the sources its errors point into, so that `Render()` can show the errors against it. A collection made with `new Diagnostics(errors)` holds none.
+- Two collections are equal when they hold equal errors in the same order, whatever source texts they hold.
 
 ### Rendering against the source
 
-`Render(sources)` shows each error against the line it points into, in the format of the whitepaper's [§ The error model](../../whitepaper.md#the-error-model). Pass a `SourceText` for every source the errors point into:
+`Render(sources)` shows each error against the line it points into, in the format of the whitepaper's [§ The error model](../../whitepaper.md#the-error-model). Pass a `SourceText` for every source the errors point into. `Render(sources)` uses only the texts it is given, not any the collection holds:
 
 ```csharp
 var sources = new SourceRegistry();
@@ -184,14 +185,18 @@ error[parser]: expected ',' or '}'
 - **Notes.** One `= note:` line per context line, innermost first, ending with where the construct started, as `starting at line:column`. The start may lie in another source, such as the file an embedded script sits in.
 - **Order.** Errors come in span order, so they are grouped by source, in the order the `SourceRegistry` issued the ids, with `SourceId.Unnamed` first. A blank line separates errors, and lines are joined by `\n`.
 
+`Render()`, with no arguments, writes the same as `Render(sources)` when the collection holds a text for every source its errors and their context lines point into, and each text is long enough for its spans. Otherwise it writes [one line per error](#one-line-per-error). It never throws.
+
 #### `SourceText`
 
 A `SourceText` holds a source's full text with the id and name to show it under. It builds the source's `LineMap` on first use and keeps it, so many errors in one source share it.
 
 | Constructor | Use |
 | --- | --- |
-| `new SourceText(text, name)` | A source with no registry id (`SourceId.Unnamed`). `name` may be omitted or null. |
-| `new SourceText(id, name, text)` | A source with an id from a `SourceRegistry`. `name` is usually `registry.GetName(id)`. |
+| `new SourceText(text, name)` | A `string` source with no registry id (`SourceId.Unnamed`). `name` may be omitted or null. |
+| `new SourceText(id, name, text)` | A source with an id from a `SourceRegistry`, or `SourceId.Unnamed`. `text` is a `string` or a `ReadOnlyMemory<char>`. `name` is usually `registry.GetName(id)`. |
+
+`Text` is a `ReadOnlyMemory<char>` over the text as given. Nothing is copied. If you change memory after wrapping it, rendering shows the new contents, so render before you reuse a buffer.
 
 `Render(sources)` throws `ArgumentException` if an error or one of its context lines points into a source with no text, if two texts have the same id, if a text is null, or if an error's span ends, or a context line starts, past the end of its text. That last one usually means the wrong text was passed.
 
@@ -227,7 +232,7 @@ The width table comes from Unicode 16.0.0, the version .NET 11 uses. `scripts/ge
 
 ### One line per error
 
-`Render()`, with no sources, writes one line per error, in order, joined by `\n`. `ParseError.ToString()` gives the same line for one error.
+`Render()` writes one line per error, in order, joined by `\n`, when the collection lacks a text its errors point into, such as one made with `new Diagnostics(errors)`. `ParseError.ToString()` gives the same line for one error, so `string.Join('\n', diagnostics)` writes single lines for any collection.
 
 ```text
 error[lexer] at 4..7: number too large
@@ -237,4 +242,4 @@ error[parser] at 30..30: unexpected end of input; expected value, '[' or end of 
 
 - The offsets are character offsets, `CharStart..CharEnd`.
 - The expected part is left out when nothing was expected. Context lines follow, innermost first, each with the character offset where its construct started.
-- `Render()` shows no file names, lines or columns. Use it when the source text is not at hand.
+- A line shows no file name, line or column. Use it when the source text is not at hand.
