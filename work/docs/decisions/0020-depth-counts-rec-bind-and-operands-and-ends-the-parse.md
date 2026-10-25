@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | Accepted |
 | Date | 2026-10-24 |
-| Cards | [INT-07](../../active/03-interpreter/INT-07-recursion-depth-limit.md), [INT-08](../../active/03-interpreter/INT-08-single-layer-parse-api.md), [BENCH-01](../../active/13-benchmarks/BENCH-01-phase-0-speed-gate.md), [ERR-05](../../active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md), [GEN-06](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md) |
+| Cards | [INT-07](../../complete/03-interpreter/INT-07-recursion-depth-limit.md), [INT-08](../../complete/03-interpreter/INT-08-single-layer-parse-api.md), [BENCH-01](../../active/13-benchmarks/BENCH-01-phase-0-speed-gate.md), [ERR-05](../../active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md), [GEN-06](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md) |
 | Whitepaper | [§ Limits for untrusted input](../../../whitepaper.md#limits-for-untrusted-input), [§ Expressions](../../../whitepaper.md#expressions), [§ Equivalence](../../../whitepaper.md#equivalence) |
 | Research | — (prior art read for this record by a research subagent on 2026-10-24, and measurements on the maintainer's machine, cited inline); Parlot's limit from [the Parlot 2.0 note](../research/2026-10-24-parlot-2-0-baselines-and-generator.md) |
 | Supersedes | — |
@@ -261,8 +261,8 @@ What would change this record:
   - [§ Equivalence](../../../whitepaper.md#equivalence): engines agree on parses `MaxDepth` ends; parses the stack probe ends are not compared.
 - Decision index: a note that this record pins [ADR-0004](0004-expression-build-operator-table-and-semantics.md) point 5's "operand recursion".
 - Cards:
-  - [INT-07](../../active/03-interpreter/INT-07-recursion-depth-limit.md): scope and criteria restated for the mechanism; it now unblocks INT-08.
-  - [INT-08](../../active/03-interpreter/INT-08-single-layer-parse-api.md): scope adds `ParseOptions.MaxDepth` and the depth diagnostic, with a criterion that a parse exceeding it returns `Failed`; it is now blocked by INT-07.
+  - [INT-07](../../complete/03-interpreter/INT-07-recursion-depth-limit.md): scope and criteria restated for the mechanism; it now unblocks INT-08.
+  - [INT-08](../../complete/03-interpreter/INT-08-single-layer-parse-api.md): scope adds `ParseOptions.MaxDepth` and the depth diagnostic, with a criterion that a parse exceeding it returns `Failed`; it is now blocked by INT-07.
   - [BENCH-01](../../active/13-benchmarks/BENCH-01-phase-0-speed-gate.md): waits on INT-07 through INT-08, so no direct edge was added. Its scope adds the known-differences note on Parlot's limit.
   - [ERR-05](../../active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md): scope says `Recover` does not catch a depth abort.
   - [GEN-06](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md): scope says it counts and probes at the same points.

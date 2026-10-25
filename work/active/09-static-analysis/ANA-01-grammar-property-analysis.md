@@ -36,7 +36,7 @@ A fixpoint over the grammar graph computes the properties every check builds on.
 - [CORE-11 Expression.Build](../02-core-combinators/CORE-11-expressionbuild.md)
 - [CORE-12 Custom primitives](../02-core-combinators/CORE-12-custom-primitives.md)
 - [LAY-03 Layer abstraction and Emit](../06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md)
-- [INT-06 DFA compiler for regular subtrees](../03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md)
+- [INT-06 DFA compiler for regular subtrees](../../complete/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md)
 
 ## Unblocks
 

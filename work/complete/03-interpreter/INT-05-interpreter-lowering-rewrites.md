@@ -27,8 +27,8 @@ Rewrites that make the interpreter competitive with Pidgin and Parlot.
 
 ## Unblocks
 
-- [ANA-06 Deterministic mode](../09-static-analysis/ANA-06-deterministic-mode.md)
-- [BENCH-01 Phase 0 speed gate](../13-benchmarks/BENCH-01-phase-0-speed-gate.md)
+- [ANA-06 Deterministic mode](../../active/09-static-analysis/ANA-06-deterministic-mode.md)
+- [BENCH-01 Phase 0 speed gate](../../active/13-benchmarks/BENCH-01-phase-0-speed-gate.md)
 
 ## Whitepaper references
 
@@ -91,5 +91,5 @@ Follow-ups:
 
 - [`Match` over non-boxing unions](../../ideas/match-over-non-boxing-unions.md) (idea): `Match` reads `IUnion.Value`, so `Match` over `Maybe<int>` boxes on every parse (2,936 bytes per 100 parses), contradicting ADR-0007's consequence and § Design choices. `Case<T>()` over struct union tokens boxes too, as § Where unions are not used accepts.
 - `CharSet.Contains` is a binary search behind a delegate, so single-character class tests cost about 7–10 ns; not addressed here.
-- [ERR-02](../04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) records what a skipped alternative expects, using `DispatchPlan.Alternatives` (ADR-0016 point 4). [ANA-01](../09-static-analysis/ANA-01-grammar-property-analysis.md) may supply key sets instead of the walk.
-- [BENCH-01](../13-benchmarks/BENCH-01-phase-0-speed-gate.md) measures realistic grammars; `LoweringBenchmarks` decides no gate.
+- [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) records what a skipped alternative expects, using `DispatchPlan.Alternatives` (ADR-0016 point 4). [ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md) may supply key sets instead of the walk.
+- [BENCH-01](../../active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) measures realistic grammars; `LoweringBenchmarks` decides no gate.

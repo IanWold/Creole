@@ -22,7 +22,7 @@ Generated code for every core node, with semantics and error tracking identical 
 
 ## Blocked by
 
-- [INT-03 Execute the core combinators](../03-interpreter/INT-03-execute-the-core-combinators.md)
+- [INT-03 Execute the core combinators](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md)
 - [ERR-02 Furthest-failure tracking and labels](../04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md)
 - [GEN-01 Generator skeleton and registration](../11-source-generator/GEN-01-generator-skeleton-and-registration.md)
 

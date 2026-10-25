@@ -25,7 +25,7 @@ Emit one method per rule and register it, so callers keep using the field and tr
 
 ## Blocked by
 
-- [INT-02 Plan lowering and cache](../03-interpreter/INT-02-plan-lowering-and-cache.md)
+- [INT-02 Plan lowering and cache](../../complete/03-interpreter/INT-02-plan-lowering-and-cache.md)
 - [RSLN-01 Roslyn grammar reader](../10-roslyn-analyzers/RSLN-01-roslyn-grammar-reader.md)
 
 ## Unblocks

@@ -20,7 +20,7 @@ Repetition combinators with Pidgin-compatible behavior.
 ## Acceptance criteria
 
 - [x] Each combinator builds one node, and its child parsers are reachable through the structural view.
-- [x] A shared table of repetition cases exists, and a test checks each row's expected outcome against Pidgin 3.5.1. Running Creole against the table moved to [INT-03](../03-interpreter/INT-03-execute-the-core-combinators.md), the first card that executes repetition (agreed with the maintainer on 2026-10-18).
+- [x] A shared table of repetition cases exists, and a test checks each row's expected outcome against Pidgin 3.5.1. Running Creole against the table moved to [INT-03](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md), the first card that executes repetition (agreed with the maintainer on 2026-10-18).
 
 ## Blocked by
 
@@ -29,7 +29,7 @@ Repetition combinators with Pidgin-compatible behavior.
 ## Unblocks
 
 - [CORE-13 Extension members guard their receiver](../02-core-combinators/CORE-13-extension-members-guard-their-receiver.md)
-- [INT-03 Execute the core combinators](../03-interpreter/INT-03-execute-the-core-combinators.md)
+- [INT-03 Execute the core combinators](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md)
 - [ANA-01 Grammar property analysis](../09-static-analysis/ANA-01-grammar-property-analysis.md)
 - [TOOL-05 EBNF and railroad diagram export](../12-grammar-author-tooling/TOOL-05-ebnf-and-railroad-diagram-export.md)
 
@@ -56,7 +56,7 @@ Repetition combinators with Pidgin-compatible behavior.
 - **Evidence, 2026-10-18, commit cb2c33d:** `dotnet build` with 0 warnings; `dotnet test` with 183 passed and 0 failed (15 node tests, 54 table tests); the AOT smoke publish with 0 IL warnings.
 - **Docs:** [docs/concepts/repetition.md](../../../docs/concepts/repetition.md), indexed in docs/README.md. Execution semantics are in the XML docs; the page gains them when INT-03 runs them.
 - **Scope changes agreed with the maintainer:**
-  - The Pidgin criterion was split: running Creole against the table moved to [INT-03](../03-interpreter/INT-03-execute-the-core-combinators.md), with the rows where Pidgin throws.
+  - The Pidgin criterion was split: running Creole against the table moved to [INT-03](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md), with the rows where Pidgin throws.
   - Results are `IReadOnlyList<T>`, not Pidgin's `IEnumerable<T>`.
 - **Follow-ups:**
   - The maintainer plans to rename the public combinators to consistent full-word names (`SepBy1` sits beside `AtLeastOnce`). That changes the whitepaper, so it needs `/decide`.

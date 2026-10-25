@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | Accepted |
 | Date | 2026-10-22 |
-| Cards | [INT-03](../../active/03-interpreter/INT-03-execute-the-core-combinators.md), [INT-08](../../active/03-interpreter/INT-08-single-layer-parse-api.md), [LAY-01](../../active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md), [LAY-05](../../active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md), [CORE-12](../../active/02-core-combinators/CORE-12-custom-primitives.md) |
+| Cards | [INT-03](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md), [INT-08](../../complete/03-interpreter/INT-08-single-layer-parse-api.md), [LAY-01](../../active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md), [LAY-05](../../active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md), [CORE-12](../../active/02-core-combinators/CORE-12-custom-primitives.md) |
 | Whitepaper | [§ Text capture](../../../whitepaper.md#text-capture), [§ The stream buffer](../../../whitepaper.md#the-stream-buffer), [§ Design choices](../../../whitepaper.md#design-choices) |
 | Research | — |
 | Supersedes | — |
@@ -80,4 +80,4 @@ What would change this: LAY-01 or LAY-05 benchmarks showing that slice copies ar
 ## Changes made
 
 - Whitepaper: § Text capture states the rule and links this record; § The stream buffer says no value the parse hands out may view a pooled segment; § Design choices says slices save allocation on in-memory input and cost about as much as `Text()` on streams.
-- Cards: [INT-08](../../active/03-interpreter/INT-08-single-layer-parse-api.md) and [LAY-05](../../active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) build in-memory cursors over caller-owned memory; [LAY-01](../../active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) gains the copy rule in scope and a criterion that a slice survives its segment's reuse; [CORE-12](../../active/02-core-combinators/CORE-12-custom-primitives.md) applies the rule to any public slice method for scanners; [INT-03](../../active/03-interpreter/INT-03-execute-the-core-combinators.md) returns to Build to make `Cursor.Since` copy for every cursor not built over caller-owned memory, and to fix sequencing.md.
+- Cards: [INT-08](../../complete/03-interpreter/INT-08-single-layer-parse-api.md) and [LAY-05](../../active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) build in-memory cursors over caller-owned memory; [LAY-01](../../active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) gains the copy rule in scope and a criterion that a slice survives its segment's reuse; [CORE-12](../../active/02-core-combinators/CORE-12-custom-primitives.md) applies the rule to any public slice method for scanners; [INT-03](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md) returns to Build to make `Cursor.Since` copy for every cursor not built over caller-owned memory, and to fix sequencing.md.

@@ -20,16 +20,16 @@
 ## Acceptance criteria
 
 - [x] Mutually recursive grammars like Example A resolve correctly.
-- [x] Lowering a grammar with `Rec` cycles terminates and lowers each node once. Parsing recursive input with the lowered plan moved to [INT-03](../03-interpreter/INT-03-execute-the-core-combinators.md), the first card that executes the nodes a recursive grammar needs (agreed with the maintainer on 2026-10-19).
+- [x] Lowering a grammar with `Rec` cycles terminates and lowers each node once. Parsing recursive input with the lowered plan moved to [INT-03](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md), the first card that executes the nodes a recursive grammar needs (agreed with the maintainer on 2026-10-19).
 
 ## Blocked by
 
 - [CORE-02 Grammar base classes and authoring surface](../02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md)
-- [INT-02 Plan lowering and cache](../03-interpreter/INT-02-plan-lowering-and-cache.md)
+- [INT-02 Plan lowering and cache](../../complete/03-interpreter/INT-02-plan-lowering-and-cache.md)
 
 ## Unblocks
 
-- [INT-03 Execute the core combinators](../03-interpreter/INT-03-execute-the-core-combinators.md)
+- [INT-03 Execute the core combinators](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md)
 - [ANA-01 Grammar property analysis](../09-static-analysis/ANA-01-grammar-property-analysis.md)
 - [RSLN-04 CRL0004 forward field reference analyzer](../10-roslyn-analyzers/RSLN-04-crl0004-forward-field-reference-analyzer.md)
 
@@ -65,4 +65,4 @@ Delivered `Rec` with lazy resolution, rule names and cycle lowering.
 
 Deviations: none from the whitepaper. [ADR-0009](../../docs/decisions/0009-where-rule-names-come-from.md) (Accepted) settled where rule names come from, since `Rec` alone cannot name most rules; the whitepaper was updated with it. Calls made during Build: the reference returns a nullable parser, because `Rec(() => LaterField)` otherwise warns CS8603 under nullable (measured on RC 2); a `Rec`-only cycle is rejected at lowering because its plan would forward to itself.
 
-Scope changes agreed with the maintainer: parsing recursive input moved to [INT-03](../03-interpreter/INT-03-execute-the-core-combinators.md). Follow-ups: [RSLN-04](../10-roslyn-analyzers/RSLN-04-crl0004-forward-field-reference-analyzer.md) suppresses CS8603/CS8604 for later fields inside a `Rec` lambda and removes the pragma in `RecTests`; [GEN-01](../11-source-generator/GEN-01-generator-skeleton-and-registration.md) registers field names; [FND-09](../01-foundations/FND-09-move-to-the-net-11-ga-sdk.md) re-checks the `[CallerMemberName]` behaviour on GA; INT-03 replaces the test-only `AltNode` cycles with real ones.
+Scope changes agreed with the maintainer: parsing recursive input moved to [INT-03](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md). Follow-ups: [RSLN-04](../10-roslyn-analyzers/RSLN-04-crl0004-forward-field-reference-analyzer.md) suppresses CS8603/CS8604 for later fields inside a `Rec` lambda and removes the pragma in `RecTests`; [GEN-01](../11-source-generator/GEN-01-generator-skeleton-and-registration.md) registers field names; [FND-09](../01-foundations/FND-09-move-to-the-net-11-ga-sdk.md) re-checks the `[CallerMemberName]` behaviour on GA; INT-03 replaces the test-only `AltNode` cycles with real ones.

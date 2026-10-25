@@ -22,20 +22,20 @@ Interpreter support for the dependent, operator-precedence and user-scanner node
 ## Acceptance criteria
 
 - [x] Example grammars using all three run and pass their tests.
-- [x] Arithmetic grammar tests cover left and right associativity, `-` as both prefix and infix (`a - -b`), `2 ^ -x` with `-` looser than `^`, repeated prefix and postfix operators, the non-associative chain error (as a committed failure at the second operator; ERR-02 checks its message), and a committed failure after an operator. Moved here from [CORE-11](../02-core-combinators/CORE-11-expressionbuild.md).
+- [x] Arithmetic grammar tests cover left and right associativity, `-` as both prefix and infix (`a - -b`), `2 ^ -x` with `-` looser than `^`, repeated prefix and postfix operators, the non-associative chain error (as a committed failure at the second operator; ERR-02 checks its message), and a committed failure after an operator. Moved here from [CORE-11](../../active/02-core-combinators/CORE-11-expressionbuild.md).
 
 ## Blocked by
 
-- [CORE-10 Bind and LINQ query syntax](../02-core-combinators/CORE-10-bind-and-linq-query-syntax.md)
-- [CORE-11 Expression.Build](../02-core-combinators/CORE-11-expressionbuild.md)
-- [CORE-12 Custom primitives](../02-core-combinators/CORE-12-custom-primitives.md)
+- [CORE-10 Bind and LINQ query syntax](../../active/02-core-combinators/CORE-10-bind-and-linq-query-syntax.md)
+- [CORE-11 Expression.Build](../../active/02-core-combinators/CORE-11-expressionbuild.md)
+- [CORE-12 Custom primitives](../../active/02-core-combinators/CORE-12-custom-primitives.md)
 - [INT-03 Execute the core combinators](../03-interpreter/INT-03-execute-the-core-combinators.md)
 
 ## Unblocks
 
-- [ANA-08 Custom scanner contract checks](../09-static-analysis/ANA-08-custom-scanner-contract-checks.md)
-- [GEN-06 Generated layers, modes, recovery and streaming](../11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md)
-- [REL-01 Worked-example samples](../14-release/REL-01-worked-example-samples.md)
+- [ANA-08 Custom scanner contract checks](../../active/09-static-analysis/ANA-08-custom-scanner-contract-checks.md)
+- [GEN-06 Generated layers, modes, recovery and streaming](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md)
+- [REL-01 Worked-example samples](../../active/14-release/REL-01-worked-example-samples.md)
 
 ## Whitepaper references
 
@@ -98,9 +98,9 @@ Deviations and decisions:
 
 Follow-ups:
 
-- [ERR-02](../04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) records the filter's report, the chain message, `Custom`'s expectations and `Named` on expressions (ADR-0014 point 7).
-- [ERR-05](../04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md) repairs from the cursor.
-- [GEN-06](../11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md) emits the same behaviour.
+- [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) records the filter's report, the chain message, `Custom`'s expectations and `Named` on expressions (ADR-0014 point 7).
+- [ERR-05](../../active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md) repairs from the cursor.
+- [GEN-06](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md) emits the same behaviour.
 - [INT-07](INT-07-recursion-depth-limit.md) bounds expression recursion.
 - [INT-08](INT-08-single-layer-parse-api.md) lets the AOT smoke app run a plan.
 

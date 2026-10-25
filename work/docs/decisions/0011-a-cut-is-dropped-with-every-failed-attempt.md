@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | Accepted |
 | Date | 2026-10-19 |
-| Cards | [CORE-08](../../active/02-core-combinators/CORE-08-control-nodes.md), [INT-03](../../active/03-interpreter/INT-03-execute-the-core-combinators.md), [INT-04](../../active/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md), [GEN-02](../../active/11-source-generator/GEN-02-emit-the-core-combinators.md), [ERR-05](../../active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md) |
+| Cards | [CORE-08](../../active/02-core-combinators/CORE-08-control-nodes.md), [INT-03](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md), [INT-04](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md), [GEN-02](../../active/11-source-generator/GEN-02-emit-the-core-combinators.md), [ERR-05](../../active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md) |
 | Whitepaper | [§ Choice and backtracking](../../../whitepaper.md#choice-and-backtracking), [§ Bookmarks and retention](../../../whitepaper.md#bookmarks-and-retention), [§ Source-generated engine](../../../whitepaper.md#source-generated-engine) |
 | Research | — (measured with a model built for this record; see Context) |
 | Supersedes | [ADR-0010](0010-cuts-under-dispatch-and-across-layers.md); its points 2 and 3 stand (see Decision) |
@@ -172,7 +172,7 @@ What would change this:
   - [§ Source-generated engine](../../../whitepaper.md#source-generated-engine): the dispatch rule of point 6.
 - **Cards:**
   - [CORE-08](../../active/02-core-combinators/CORE-08-control-nodes.md): back to Building. The checked-in model, its tests, the new table rows and the alignment of the docs, XML docs and stale references follow as the next change.
-  - [INT-03](../../active/03-interpreter/INT-03-execute-the-core-combinators.md): the drop rule for every light-mark attempt.
-  - [INT-04](../../active/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md): operator and atom attempts.
+  - [INT-03](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md): the drop rule for every light-mark attempt.
+  - [INT-04](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md): operator and atom attempts.
   - [GEN-02](../../active/11-source-generator/GEN-02-emit-the-core-combinators.md): the dispatch rule.
   - [ERR-05](../../active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md): `Recover` restores the cut on an empty failure of its parser.

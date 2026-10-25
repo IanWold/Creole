@@ -24,20 +24,20 @@ The interpreter runs every analyzable node family with Parsec-style commit seman
 
 - [x] A semantic test suite covering the four-outcome table, including property tests, passes.
 - [x] The grammar classes in Worked Example A compile against the API, apart from `Layer.Tokens` (LAY-03). Moved here from CORE-02.
-- [x] The interpreter passes every row of the CORE-07 repetition table, and handles the rows where Pidgin throws on a repeated parser that consumes nothing. Moved here from [CORE-07](../02-core-combinators/CORE-07-repetition-nodes.md).
-- [x] The interpreter passes every row of the CORE-06 `Longest` table: `<=` beats `<`, `iffy` beats `if`, and ties go to the earliest alternative. Moved here from [CORE-06](../02-core-combinators/CORE-06-longest.md).
-- [x] The interpreter passes every row of the CORE-08 control table, including `Cut` inside nested `Atomic`s and a cut dropped with an abandoned alternative. Moved here from [CORE-08](../02-core-combinators/CORE-08-control-nodes.md).
-- [x] A plan lowered from a grammar with `Rec` cycles parses recursive input. Moved here from [CORE-09](../02-core-combinators/CORE-09-recursion-with-rec.md).
+- [x] The interpreter passes every row of the CORE-07 repetition table, and handles the rows where Pidgin throws on a repeated parser that consumes nothing. Moved here from [CORE-07](../../active/02-core-combinators/CORE-07-repetition-nodes.md).
+- [x] The interpreter passes every row of the CORE-06 `Longest` table: `<=` beats `<`, `iffy` beats `if`, and ties go to the earliest alternative. Moved here from [CORE-06](../../active/02-core-combinators/CORE-06-longest.md).
+- [x] The interpreter passes every row of the CORE-08 control table, including `Cut` inside nested `Atomic`s and a cut dropped with an abandoned alternative. Moved here from [CORE-08](../../active/02-core-combinators/CORE-08-control-nodes.md).
+- [x] A plan lowered from a grammar with `Rec` cycles parses recursive input. Moved here from [CORE-09](../../active/02-core-combinators/CORE-09-recursion-with-rec.md).
 
 ## Blocked by
 
-- [CORE-03 Primitive nodes](../02-core-combinators/CORE-03-primitive-nodes.md)
-- [CORE-04 Sequencing and mapping nodes](../02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md)
-- [CORE-05 Choice nodes](../02-core-combinators/CORE-05-choice-nodes.md)
-- [CORE-06 Longest](../02-core-combinators/CORE-06-longest.md)
-- [CORE-07 Repetition nodes](../02-core-combinators/CORE-07-repetition-nodes.md)
-- [CORE-08 Control nodes](../02-core-combinators/CORE-08-control-nodes.md)
-- [CORE-09 Recursion with Rec](../02-core-combinators/CORE-09-recursion-with-rec.md)
+- [CORE-03 Primitive nodes](../../active/02-core-combinators/CORE-03-primitive-nodes.md)
+- [CORE-04 Sequencing and mapping nodes](../../active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md)
+- [CORE-05 Choice nodes](../../active/02-core-combinators/CORE-05-choice-nodes.md)
+- [CORE-06 Longest](../../active/02-core-combinators/CORE-06-longest.md)
+- [CORE-07 Repetition nodes](../../active/02-core-combinators/CORE-07-repetition-nodes.md)
+- [CORE-08 Control nodes](../../active/02-core-combinators/CORE-08-control-nodes.md)
+- [CORE-09 Recursion with Rec](../../active/02-core-combinators/CORE-09-recursion-with-rec.md)
 - [INT-02 Plan lowering and cache](../03-interpreter/INT-02-plan-lowering-and-cache.md)
 
 ## Unblocks
@@ -47,11 +47,11 @@ The interpreter runs every analyzable node family with Parsec-style commit seman
 - [INT-06 DFA compiler for regular subtrees](../03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md)
 - [INT-07 Recursion depth limit](../03-interpreter/INT-07-recursion-depth-limit.md)
 - [INT-08 Single-layer Parse API](../03-interpreter/INT-08-single-layer-parse-api.md)
-- [ERR-02 Furthest-failure tracking and labels](../04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md)
-- [LAY-02 Marks and retention](../06-layers-and-pipelines/LAY-02-marks-and-retention.md)
-- [LAY-03 Layer abstraction and Emit](../06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md)
-- [GEN-02 Emit the core combinators](../11-source-generator/GEN-02-emit-the-core-combinators.md)
-- [TOOL-02 Tracing](../12-grammar-author-tooling/TOOL-02-tracing.md)
+- [ERR-02 Furthest-failure tracking and labels](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md)
+- [LAY-02 Marks and retention](../../active/06-layers-and-pipelines/LAY-02-marks-and-retention.md)
+- [LAY-03 Layer abstraction and Emit](../../active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md)
+- [GEN-02 Emit the core combinators](../../active/11-source-generator/GEN-02-emit-the-core-combinators.md)
+- [TOOL-02 Tracing](../../active/12-grammar-author-tooling/TOOL-02-tracing.md)
 
 ## Whitepaper references
 
@@ -94,7 +94,7 @@ Delivered the interpreter's reference semantics: every analyzable node family ru
 Evidence (2026-10-22, commit 7c9a9e8): `dotnet build` 0 warnings; `dotnet test` 951 passed, 0 failed; AOT smoke publish clean (the smoke app runs no plan until INT-08's `Parse`).
 
 1. Four-outcome suite with property tests: per-family execution tests, CsCheck properties in `PrimitiveExecutionTests` (3) and `ControlModelExecutionTests`, which matches outcome and cut-in-force with `ControlModel` on every shape to depth 3 over every input up to length 3 (over 30,000 grammars) and on 20,000 random shapes to depth 5.
-2. Worked Example A: `WorkedExampleATests` (7 tests) compiles the grammar classes and lexes and parses JSON end to end. Changes from the whitepaper text: file-local types, `private` and `_camelCase` names for private members as the repository's style requires, the lexer's item and skip as fields in place of `Layer.Tokens` (LAY-03), and `!` on `_arrayValue` and `_objectValue` inside `Value`'s `Rec` lambda for CS8604, which [RSLN-04](../10-roslyn-analyzers/RSLN-04-crl0004-forward-field-reference-analyzer.md) will remove.
+2. Worked Example A: `WorkedExampleATests` (7 tests) compiles the grammar classes and lexes and parses JSON end to end. Changes from the whitepaper text: file-local types, `private` and `_camelCase` names for private members as the repository's style requires, the lexer's item and skip as fields in place of `Layer.Tokens` (LAY-03), and `!` on `_arrayValue` and `_objectValue` inside `Value`'s `Rec` lambda for CS8604, which [RSLN-04](../../active/10-roslyn-analyzers/RSLN-04-crl0004-forward-field-reference-analyzer.md) will remove.
 3. Repetition table: `RepetitionTableTests` 52 of 52, including the 5 rows where Pidgin throws; Creole throws `GrammarException` there.
 4. `Longest` table: `LongestTableTests` 11 of 11 rows.
 5. Control table: `ControlTableTests` 56 of 56 rows.
@@ -108,4 +108,4 @@ Deviations and decisions:
 - Scope agreed with the maintainer: `Expression.Build` and CORE-10's `Bind` and filter stay `NotYetExecutable` for [INT-04](INT-04-execute-bind-expressionbuild-and-custom.md), whose scope now replaces them and removes the method.
 - Calls made in Build: the cut flag is an internal `Cursor<T>.Cut`, so plan and staged-code signatures are unchanged; `Switch` scans keys linearly, and a faster `Switch` waits for a benchmark that needs one (INT-05's scope does not include it); `Longest` runs each alternative in turn until [INT-06](INT-06-dfa-compiler-for-regular-subtrees.md); `GrammarException` may now be thrown during a parse, which its remarks state.
 
-Follow-ups: [ERR-02](../04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) gives `Named`, `Context` and `Fail` their reporting; [INT-08](INT-08-single-layer-parse-api.md) builds in-memory cursors with `FromMemory`; [LAY-01](../06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) gains a criterion that slices survive segment reuse; [RSLN-04](../10-roslyn-analyzers/RSLN-04-crl0004-forward-field-reference-analyzer.md) also removes the `!` in `WorkedExampleATests`.
+Follow-ups: [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) gives `Named`, `Context` and `Fail` their reporting; [INT-08](INT-08-single-layer-parse-api.md) builds in-memory cursors with `FromMemory`; [LAY-01](../../active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) gains a criterion that slices survive segment reuse; [RSLN-04](../../active/10-roslyn-analyzers/RSLN-04-crl0004-forward-field-reference-analyzer.md) also removes the `!` in `WorkedExampleATests`.

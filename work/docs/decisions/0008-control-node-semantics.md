@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | Superseded by 0010 |
 | Date | 2026-10-19 |
-| Cards | [CORE-08](../../active/02-core-combinators/CORE-08-control-nodes.md), [INT-03](../../active/03-interpreter/INT-03-execute-the-core-combinators.md), [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [LAY-02](../../active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) |
+| Cards | [CORE-08](../../active/02-core-combinators/CORE-08-control-nodes.md), [INT-03](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md), [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [LAY-02](../../active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) |
 | Whitepaper | [§ Choice and backtracking](../../../whitepaper.md#choice-and-backtracking), [§ The error model](../../../whitepaper.md#the-error-model) |
 | Research | — (prior art read for this record, cited inline) |
 | Supersedes | — (refines the `Named` rule that [ADR-0004](0004-expression-build-operator-table-and-semantics.md) point 5 restates; see Consequences) |
@@ -178,6 +178,6 @@ What would change this:
   - [§ The error model](../../../whitepaper.md#the-error-model): `Named` applies whenever `p` consumes nothing, at `p`'s start position only; links this record.
 - **Cards:**
   - [CORE-08](../../active/02-core-combinators/CORE-08-control-nodes.md): scope names the API, the class name and the case table; moved to Building.
-  - [INT-03](../../active/03-interpreter/INT-03-execute-the-core-combinators.md): scope names the cut boundaries, including each `Longest` alternative; gains a criterion to pass every row of the CORE-08 control table.
+  - [INT-03](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md): scope names the cut boundaries, including each `Longest` alternative; gains a criterion to pass every row of the CORE-08 control table.
   - [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md): `Named` per point 4; deciding whether `Context` lines carry a start position.
   - [LAY-02](../../active/06-layers-and-pipelines/LAY-02-marks-and-retention.md): release an `Atomic`'s bookmark once a cut is in force inside it.

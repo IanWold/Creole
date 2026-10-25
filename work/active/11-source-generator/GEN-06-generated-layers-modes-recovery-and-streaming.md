@@ -24,8 +24,8 @@ Full feature parity: everything the interpreter supports must run in generated c
 
 ## Blocked by
 
-- [INT-04 Execute Bind, Expression.Build and Custom](../03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md)
-- [INT-07 Recursion depth limit](../03-interpreter/INT-07-recursion-depth-limit.md)
+- [INT-04 Execute Bind, Expression.Build and Custom](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md)
+- [INT-07 Recursion depth limit](../../complete/03-interpreter/INT-07-recursion-depth-limit.md)
 - [ERR-05 Recover combinator and strategies](../04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md)
 - [ERR-06 OrInsert for missing items](../04-errors-and-recovery/ERR-06-orinsert-for-missing-items.md)
 - [ERR-07 Lexer recovery and cascade suppression](../04-errors-and-recovery/ERR-07-lexer-recovery-and-cascade-suppression.md)

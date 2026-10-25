@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | Accepted |
 | Date | 2026-10-22 |
-| Cards | [INT-04](../../active/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md), [GEN-06](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md) |
+| Cards | [INT-04](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md), [GEN-06](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md) |
 | Whitepaper | [§ Expressions](../../../whitepaper.md#expressions) |
 | Research | — (found while building INT-04) |
 | Supersedes | — (refines [ADR-0004](0004-expression-build-operator-table-and-semantics.md) points 3 and 5, which otherwise stand) |
@@ -122,6 +122,6 @@ What would change this:
 - **Whitepaper:** [§ Expressions](../../../whitepaper.md#expressions): the Operands bullet says a prefix operator's operand is parsed with only the tighter levels, so at one level a prefix applies before postfix and infix operators. It links this record.
 - **Decisions index:** a note that this record refines ADR-0004 points 3 and 5.
 - **Cards:**
-  - [INT-04](../../active/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md): links this record. `ExpressionExecutionTests.APrefixAtTheSameLevelAsAnInfixOperatorAppliesFirst` pins `-a*b` as `((-a)*b)`.
+  - [INT-04](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md): links this record. `ExpressionExecutionTests.APrefixAtTheSameLevelAsAnInfixOperatorAppliesFirst` pins `-a*b` as `((-a)*b)`.
   - [GEN-06](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md): the scope's node line cites this record for `Expression.Build`.
 - **Docs:** none. docs/concepts/expressions.md already states the rule, and does not give the `Atomic` advice.

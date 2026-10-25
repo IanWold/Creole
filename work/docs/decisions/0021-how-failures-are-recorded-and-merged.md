@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | Accepted |
 | Date | 2026-10-24 |
-| Cards | [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [ERR-01](../../active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [ERR-03](../../active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md), [INT-05](../../active/03-interpreter/INT-05-interpreter-lowering-rewrites.md), [GEN-02](../../active/11-source-generator/GEN-02-emit-the-core-combinators.md) |
+| Cards | [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [ERR-01](../../active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [ERR-03](../../active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md), [INT-05](../../complete/03-interpreter/INT-05-interpreter-lowering-rewrites.md), [GEN-02](../../active/11-source-generator/GEN-02-emit-the-core-combinators.md) |
 | Whitepaper | [§ The error model](../../../whitepaper.md#the-error-model), [§ Failure positions](../../../whitepaper.md#failure-positions), [§ Choice and backtracking](../../../whitepaper.md#choice-and-backtracking), [§ Custom primitives](../../../whitepaper.md#custom-primitives) |
 | Research | — (prior art read for this record by a research subagent on 2026-10-24, cited inline) |
 | Supersedes | — |

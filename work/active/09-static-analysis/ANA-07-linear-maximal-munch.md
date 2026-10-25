@@ -22,7 +22,7 @@ Maximal munch can go quadratic when a DFA backs up over unbounded input.
 
 ## Blocked by
 
-- [INT-06 DFA compiler for regular subtrees](../03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md)
+- [INT-06 DFA compiler for regular subtrees](../../complete/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md)
 - [ANA-02 Analysis report and Debug enforcement](../09-static-analysis/ANA-02-analysis-report-and-debug-enforcement.md)
 
 ## Unblocks

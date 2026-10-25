@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | Accepted |
 | Date | 2026-10-25 |
-| Cards | [INT-09](../../active/03-interpreter/INT-09-cheaper-automaton-construction.md), [INT-06](../../active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [GEN-05](../../active/11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md), [ANA-04](../../active/09-static-analysis/ANA-04-choice-checks.md), [ANA-07](../../active/09-static-analysis/ANA-07-linear-maximal-munch.md) |
+| Cards | [INT-09](../../complete/03-interpreter/INT-09-cheaper-automaton-construction.md), [INT-06](../../complete/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [GEN-05](../../active/11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md), [ANA-04](../../active/09-static-analysis/ANA-04-choice-checks.md), [ANA-07](../../active/09-static-analysis/ANA-07-linear-maximal-munch.md) |
 | Whitepaper | [§ Interpreted engine](../../../whitepaper.md#interpreted-engine) |
 | Research | [DFA compilation under commit semantics](../research/2026-10-23-dfa-compilation-under-commit-semantics.md), [Commit-aware automaton prototypes](../research/2026-10-23-commit-aware-automaton-prototypes.md) |
 | Supersedes | — |
@@ -13,7 +13,7 @@
 
 [ADR-0017](0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md) point 3 builds a compiled `Longest`'s automaton eagerly, when the grammar is first lowered. Above a state cap, the `Longest` runs on the interpreter. INT-06 set the cap at 2,000 states. [§ Interpreted engine](../../../whitepaper.md#interpreted-engine) states the same rule.
 
-The state cap limits the size of the result, not the cost of finding out whether it fits. Measured at commit 0ea4256 with a scratch harness ([INT-09](../../active/03-interpreter/INT-09-cheaper-automaton-construction.md) progress notes):
+The state cap limits the size of the result, not the cost of finding out whether it fits. Measured at commit 0ea4256 with a scratch harness ([INT-09](../../complete/03-interpreter/INT-09-cheaper-automaton-construction.md) progress notes):
 
 | `Longest` | States | Lowering time | Allocated |
 | --- | --- | --- | --- |
@@ -116,6 +116,6 @@ What would change this decision:
 
 - **Whitepaper.** [§ Interpreted engine](../../../whitepaper.md#interpreted-engine): the "Size cap" bullet becomes "Size limits". It names the state cap and the work budget, says either decides only which engine runs, and links this record. Checked and unchanged: § Longest match and § Properties, which say nothing about limits.
 - **Decision index.** A note says this record refines ADR-0017 point 3. ADR-0017 is not superseded.
-- **[INT-09](../../active/03-interpreter/INT-09-cheaper-automaton-construction.md).** Scope now builds the work budget and removes the path limit. It returns to Building.
+- **[INT-09](../../complete/03-interpreter/INT-09-cheaper-automaton-construction.md).** Scope now builds the work budget and removes the path limit. It returns to Building.
 - **[GEN-05](../../active/11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md), [ANA-04](../../active/09-static-analysis/ANA-04-choice-checks.md), [ANA-07](../../active/09-static-analysis/ANA-07-linear-maximal-munch.md).** Each scope notes that construction stops at either limit and that it may pass its own.
 - **Not yet.** [docs/engines/interpreter.md](../../../docs/engines/interpreter.md) changes with the code, in INT-09's build.

@@ -22,7 +22,7 @@ Bring the interpreter's lowering rewrites into generated code.
 
 ## Blocked by
 
-- [INT-06 DFA compiler for regular subtrees](../03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md)
+- [INT-06 DFA compiler for regular subtrees](../../complete/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md)
 - [ANA-06 Deterministic mode](../09-static-analysis/ANA-06-deterministic-mode.md)
 - [ANA-07 Linear maximal munch](../09-static-analysis/ANA-07-linear-maximal-munch.md)
 - [GEN-02 Emit the core combinators](../11-source-generator/GEN-02-emit-the-core-combinators.md)
