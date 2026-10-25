@@ -127,7 +127,7 @@ public class RejectionFailureTests
     public void AFurtherFailureForgetsTheRejectedValue() =>
         Assert.Equal(
             At(1, 2, new UnexpectedItem("'b'"), new ExpectedItem("'q'")),
-            Execution.Error(Atomic(Grammars.Word.Where(static _ => false)).Or(Return("")).Then(Char('a')).Then(Char('q')), "ab")
+            Execution.Error(Atomic(Grammars.Word.Where(static _ => false)).Or(Return("")).Then(Char('a')).Then(Char('q')), "abc")
         );
 
     [Fact]

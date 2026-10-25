@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Errors, diagnostics and recovery](../../README.md#err--errors-diagnostics-and-recovery) |
 | Phase | Phase 0 — Core |
-| Status | Building |
+| Status | Done |
 
 ## Summary
 
@@ -26,11 +26,11 @@ Report the furthest failure with merged expectations, without allocating until a
 
 ## Acceptance criteria
 
-- [ ] The whitepaper's rendered JSON error is reproduced exactly.
-- [ ] Failure paths allocate nothing in benchmarks.
-- [ ] A rejected filter and a chained non-associative operator are reported as ADR-0014 and ADR-0004 point 4 say, and building their errors reads no buffer item behind the cursor.
-- [ ] Every point of ADR-0021 has a test. Dispatch records the same failure as running in order: INT-05's dispatch exactness tests compare recorded failures, and the CORE-08 control table gains expected sets.
-- [ ] A compiled and an interpreted `Longest` leave the same furthest failure, for matches and non-matches, over `RegularShapes` and the lexer samples (ADR-0022).
+- [x] The whitepaper's rendered JSON error is reproduced exactly.
+- [x] Failure paths allocate nothing in benchmarks.
+- [x] A rejected filter and a chained non-associative operator are reported as ADR-0014 and ADR-0004 point 4 say, and building their errors reads no buffer item behind the cursor.
+- [x] Every point of ADR-0021 has a test. Dispatch records the same failure as running in order: INT-05's dispatch exactness tests compare recorded failures, and the CORE-08 control table gains expected sets.
+- [x] A compiled and an interpreted `Longest` leave the same furthest failure, for matches and non-matches, over `RegularShapes` and the lexer samples (ADR-0022).
 
 ## Blocked by
 
@@ -77,3 +77,45 @@ Report the furthest failure with merged expectations, without allocating until a
 - 2026-10-25 (Build): `/complete` stopped; no criterion ticked. Full suite passes (1,448), AOT smoke OK, and criterion 1's text matches the whitepaper exactly; the critic confirmed criteria 1 and 5. The critic's mutations found gaps. Criterion 4 is not met: five single-line mutations leave every test passing (`Restore` not resetting the record count; `Reject` letting the last span end win; `Named` relabelling after its parser consumed; `Relabel` ignoring whether its parser recorded; a further failure keeping a captured item). Criterion 3's chained-operator half cannot fail, because the operator's segment still holds its position, so `Cursor.Reset` never asks the released source. Criterion 2's only failing-parse benchmark has no baseline without a log. Two defects: context frames grow with the input while a save is open (compaction waits for no open save, so a document-level `Where` keeps one frame per object), and tokens show through `Describe` only after `TokenGrammar<TToken, TKind>` has initialised (ADR-0023 point 3 covers any `IKinded` token). One deviation without a record: a `Context` captures its start position, not its first item's span (ADR-0021 point 4, whitepaper § Failure positions); LAY-01's scope says ERR-02 captures items by value, which is untrue for `Context`. Next: the maintainer decides how to settle the span capture and the token display; then a fix increment (the missing tests, the chained-operator release test, benchmark baselines, frames bounded under a save), then `/complete` again.
 - 2026-10-25 (Build): Fix increment from the `/complete` review. The maintainer chose to narrow ADR-0021 point 4 to positions and to state ADR-0023 point 3's rule. Both records are edited in place before merge, with "Changes made" entries. Point 4: in-memory layers record positions and map them to spans when the error is built, and LAY-01 captures spans by value. Point 3: a token type shows through `Describe` once a `TokenGrammar<TToken, TKind>` over it is initialised. Whitepaper § Failure positions and § The error model (**Display**), this card's scope, LAY-01, GEN-02 and docs/concepts/primitives.md changed to match. `FailureLog<T>` now compacts context frames while a save is open, above the frames that existed when the innermost save was taken (`FailureMark<T>.FrameFloor` replaces the open-save count). New tests: `NamedAddsNoLabelWhenItsParserRecordedNothing`, `ASavedFailureKeepsItsContextWhileFramesAreCompacted`, `TheSpanCoversTheLongestValueRejectedAtAPosition`, `AFurtherFailureForgetsTheRejectedValue`, and new cases in `NamedChangesNothingOnceItsParserConsumed`, `NamedHasNothingToLabelAfterALookaheadPutTheFailureBack`, `ContextFramesStayFewOverALongInput` (under `Where` and `Lookahead`; 501 frames before the fix), the chained-operator test (an operator with no key) and the release test (`"<="`, whose operator leaves its first segment). Mutation check on a scratch copy: the six changes that used to survive each fail a test now, and so does compacting from frame 0 during a save. `ErrorBenchmarks` gains `Invalid` and `InvalidRecording`. Default job: Invalid 40.3 µs, InvalidRecording 60.6 µs (1.50x), both 105,448 B; InvalidWithError 106,015 B, the error's 560 B more; Plain 83.2 µs; PlainRecording 121.7 µs (1.46x); Labelled 96.7 µs (1.16x); LabelledRecording 142.1 µs (1.71x); all 211,728 B. Full suite passes (1,452); AOT smoke OK. Next: maintainer commits, then `/complete ERR-02` again.
 - 2026-10-25 (Build): Second `/complete` stopped; no criterion ticked. A fresh critic review confirmed that the first fix closed every earlier gap, but found more. Criterion 4 still had two decided rules with no test: ADR-0021 point 3 (`Named` past an earlier failure at another position) and point 5 (dispatch naming a skipped alternative by its outermost `Named`). The public XML docs on `Named` and `Context` (ErrorReporting.cs) stated rules ADR-0021 refined. Two mechanisms were also untested: compaction keeping the furthest failure's frames, and the first message winning over a rejection or a chain. Fixed: new tests `NamedReplacesWhatItsParserExpectedPastAnEarlierFailure`, `TheFurthestFailureKeepsItsContextWhileFramesAreCompacted`, `TheFirstMessageAtAPositionWinsOverRejectionsAndChains` and `ADispatchedChoiceNamesASkippedAlternativeByItsOutermostLabel`, and a nested-`Named` alternative in the dispatch property tests. A mutation check on a scratch copy covered the five rules: each change fails a test. The XML docs now match ADR-0021 points 3 and 4. docs/concepts/expressions.md now says how a chained operator is named as the code does (an operator with no keyed leading item is named by its first item). docs/concepts/errors.md had a literal newline and ESC where `'\n'` and `'\u001B'` were meant; fixed, and no file on the branch holds hidden characters. Whitepaper § Failure positions lists `Longest` among the combinators that save the record (editorial). The critic also saw `AllocationTests` fail once under heavy load in a mutation run that cannot change allocation, and not in 9 other runs; not reproduced here. Full suite passes (1,456); AOT smoke OK. Next: maintainer commits, then `/complete ERR-02`.
+- 2026-10-25 (Build): Third `/complete`. The critic confirmed that the second fix closed every finding, and found no new defect. One sub-rule of ADR-0021 point 1 was still untested: a further failure must clear a rejection's span end. `AFurtherFailureForgetsTheRejectedValue` now uses input `abc`, where a stale end would show, and removing the reset fails it. Every criterion met; card completed.
+
+## Outcome
+
+Delivered furthest-failure reporting for the interpreter, under [ADR-0021](../../docs/decisions/0021-how-failures-are-recorded-and-merged.md), [ADR-0022](../../docs/decisions/0022-a-successful-longest-restores-the-furthest-failure.md) and [ADR-0023](../../docs/decisions/0023-token-types-describe-their-kinds.md). Each layer keeps one failure record in a reusable `FailureLog<T>`. Primitives, control nodes, dispatch, filters and chained operators record into it, and it builds the one reported `ParseError` when asked. Recording allocates nothing; building the error allocates only the error.
+
+| Path | Contents |
+| --- | --- |
+| `src/Creole/Errors/FailureLog.cs`, `FailureMark.cs`, `ContextFrame.cs` | The record: furthest position, expectations in recording order without duplicates, first message, captured item and span end for failures behind the cursor, a context-frame arena with parent links. Saves for `Lookahead`, `Not`, `Longest` and filters; notes and relabelling for `Named`. Frames are compacted above the innermost open save, so they stay about as many as the nesting is deep. `ToError` builds the `ParseError`. |
+| `src/Creole/Errors/Expected.cs`, `ChainMessage.cs`, `Display.cs`, `DisplayOfT.cs` | Expectation descriptors made once per node and built only into an error; the chained-operator message; how characters, strings, tokens and type names show. |
+| `src/Creole/Errors/ContextLine.cs`, `ParseError.cs`, `DiagnosticRenderer.cs`, `Diagnostics.cs` | `ContextLine(Text, Start)`, `ParseError.Context` as `IReadOnlyList<ContextLine>`, and notes rendered as "in object starting at 2:1" (ERR-01's and ERR-03's types and renderer, changed here as ADR-0021 point 4 says). |
+| `src/Creole/IKinded.cs`, `TokenGrammar.cs` | `static virtual string Describe(TKind)` and `string? Detail`; `TokenGrammar`'s static constructor registers how its tokens show. |
+| `src/Creole/Cursor.cs` | `Failures` and the recording, context and save members plans call. |
+| `src/Creole/Plans/` | Recording in every primitive plan; `NamedPlan`, `ContextPlan`; restores in `LookaheadPlan`, `NotPlan`, `LongestPlan`, `DfaLongestPlan`; per-gap records in `DispatchPlan` and `DispatchStep`; rejections in `FilterPlan` and `ExpressionPlan`. |
+| `tests/Creole.Tests/` | `FailureRecordingTests`, `ControlFailureTests`, `RejectionFailureTests`, `TokenDisplayTests`; the control table's reported failures; rewrite comparisons that check errors; `WorkedExampleATests.AnErrorRendersAsTheWhitepaperShowsIt`; `AllocationTests` with a log, plus failing parses. |
+| `benchmarks/Creole.Benchmarks/ErrorBenchmarks.cs` | The Errors category, described in benchmarks/README.md. |
+| `docs/` | concepts/errors.md (what a failure reports, context lines), primitives.md (how errors show tokens), control.md, choice.md, sequencing.md, expressions.md, custom-scanners.md, engines/interpreter.md. XML docs on `Named` and `Context` in `ErrorReporting.cs`. |
+
+Evidence (2026-10-25, this machine):
+
+| Criterion | Evidence |
+| --- | --- |
+| 1. The whitepaper's JSON error | `AnErrorRendersAsTheWhitepaperShowsIt` renders text a script found identical to the block in [§ The error model](../../../whitepaper.md#the-error-model). |
+| 2. Failure paths allocate nothing | 9 failing parses and 16 succeeding ones with a log measure 0 bytes in `AllocationTests`. `ErrorBenchmarks`, default job: `Invalid` and `InvalidRecording` both 105,448 B; `Plain`, `PlainRecording`, `Labelled` and `LabelledRecording` all 211,728 B (lists from `SepBy`); `BuildError` 560 B, the error alone. |
+| 3. Filters and chained operators | `RejectionFailureTests`, including a source that refuses every position behind the cursor; removing either capture fails it. |
+| 4. Every point of ADR-0021 | Focused tests per point, the control table's reported failures (55 rows, also run under every rewrite), and dispatch property tests that compare errors with running in order. Critic reviews broke each decided rule with a one-line change on a scratch copy; every such change now fails at least one test. |
+| 5. Compiled and interpreted `Longest` | 2,000 `RegularShapes` cases and both sample lexers at every position, plus `DfaLoweringTests` for a winner that runs again. |
+
+The full suite passes (1,456), and the Native AOT smoke publishes without warnings and runs.
+
+Deviations and decisions:
+
+- [ADR-0021](../../docs/decisions/0021-how-failures-are-recorded-and-merged.md), [ADR-0022](../../docs/decisions/0022-a-successful-longest-restores-the-furthest-failure.md) and [ADR-0023](../../docs/decisions/0023-token-types-describe-their-kinds.md) (Accepted) settled the card's open choices. ADR-0021 point 4 and ADR-0023 point 3 were edited in place before merge, as their "Changes made" say. A `Context` records its start position, which in-memory input maps to a span exactly, and LAY-01 captures spans by value. A token type shows through `Describe` once a token grammar over it is initialised.
+- The time cost of recording is the open risk for [BENCH-01](../13-benchmarks/BENCH-01-phase-0-speed-gate.md). On token JSON (default job), recording costs 1.46x (`Plain` 83.2 µs, `PlainRecording` 121.7 µs) and 1.50x on the invalid copy. `Named` and `Context` cost 1.16x with no log. Cheaper recording that keeps behaviour (a fast path with no log, deduplicating gaps at lowering) is not a card yet; propose one if BENCH-01 needs it.
+
+Follow-ups:
+
+- [INT-08](../03-interpreter/INT-08-single-layer-parse-api.md) attaches and reuses the log, maps positions to spans, and settles how worked example A renders against its source.
+- [LAY-01](../06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) captures `Context`, filter and chain spans by value for streamed input.
+- [GEN-02](../11-source-generator/GEN-02-emit-the-core-combinators.md) records and displays as the interpreter does.
+- `scripts/work.py` blanks inline code before slugging headings, so it rejects valid anchors to headings with code in them. This predates the card and needs a `tooling:` fix.
+- `AllocationTests` failed once under heavy load during a critic's mutation run that cannot change allocation, and passed in every other run. If it recurs, it needs its own card.
