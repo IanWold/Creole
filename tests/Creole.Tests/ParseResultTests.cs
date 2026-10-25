@@ -21,8 +21,12 @@ public class ParseResultTests
         }
         """;
 
-    private static readonly HashSet<string> _coveredMembers = [];
-    private static readonly Diagnostics _oneError = new([ new ParseError(new SourceSpan(SourceId.Unnamed, 3, 4), "parser", new UnexpectedItem("'x'"), [new ExpectedItem("','")], []) ]);
+    private static readonly HashSet<string> _coveredMembers =
+    [
+        "Creole.Parsing: Creole.ParseResult`1[TOut] Parse[TOut](Creole.Parser`2[System.Char,TOut], System.String, System.String, Creole.ParseOptions, System.String)",
+        "Creole.Parsing: Creole.ParseResult`1[TOut] Parse[TOut](Creole.Parser`2[System.Char,TOut], System.ReadOnlyMemory`1[System.Char], System.String, Creole.ParseOptions, System.String)",
+    ];
+    private static readonly Diagnostics _oneError = new([new ParseError(new SourceSpan(SourceId.Unnamed, 3, 4), "parser", new UnexpectedItem("'x'"), [new ExpectedItem("','")], [])]);
 
     private static bool IsAccessor(MethodInfo method) =>
         method.IsSpecialName && (method.Name.StartsWith("get_", StringComparison.Ordinal) || method.Name.StartsWith("set_", StringComparison.Ordinal));
@@ -34,12 +38,14 @@ public class ParseResultTests
         isPublic || isProtected || isProtectedInternal;
 
     // Public and protected methods, properties and fields whose type, return type or out or ref parameter mentions
-    // ParseResult<T>, keyed by declaring type and full signature so that overloads are told apart.
+    // ParseResult<T>, keyed by declaring type and full signature so that overloads are told apart. The special-name
+    // types the compiler emits for an extension block are skipped: their members only mark the static methods it
+    // implements the block with, which are scanned.
     private static IEnumerable<string> MembersExposingAResult(IEnumerable<Type> types)
     {
         const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
 
-        foreach (var type in types)
+        foreach (var type in types.Where(type => !type.IsSpecialName))
         {
             var methods = type.GetMethods(flags)
                 .Where(method => IsVisible(method.IsPublic, method.IsFamily, method.IsFamilyOrAssembly) && !IsAccessor(method))
@@ -144,6 +150,25 @@ public class ParseResultTests
     }
 
     [Fact]
+    public void ParseNeverReturnsDefault()
+    {
+        Parser<char, char> nested = null!;
+        nested = CharGrammar.Char('[').Then(Grammar<char>.Rec(() => nested)).Or(CharGrammar.Char('x'));
+        var shallow = new ParseOptions { MaxDepth = 1 };
+        ParseResult<char>[] results =
+        [
+            nested.Parse("x"),
+            nested.Parse("y"),
+            nested.Parse("[[x", options: shallow),
+            nested.Parse("x".AsMemory()),
+            nested.Parse("y".AsMemory()),
+            nested.Parse("[[x".AsMemory(), options: shallow),
+        ];
+
+        Assert.All(results, result => Assert.NotNull(result.Value));
+    }
+
+    [Fact]
     public void RecoveredAndFailedNeedAnError()
     {
         Assert.Throws<ArgumentException>(() => new Recovered<int>(1, Diagnostics.Empty));
@@ -175,6 +200,17 @@ public class ParseResultTests
         var errors = SnippetCompiler.Compile("Outsider", Consumer.Replace("{{LastArm}}", "", StringComparison.Ordinal));
 
         Assert.Equal(["CS8509"], errors);
+    }
+
+    [Fact]
+    public void TheMemberScanSkipsExtensionBlockMarkers()
+    {
+        var target = typeof(ExtensionScanTarget);
+
+        Assert.Equal(
+            [$"{target.FullName}: Creole.ParseResult`1[System.Int32] Parsed(System.String)"],
+            MembersExposingAResult([target, .. target.GetNestedTypes()])
+        );
     }
 
     [Fact]
@@ -226,6 +262,14 @@ file abstract class ScanTarget
     public abstract int Unrelated();
 
     public abstract Task<ParseResult<int>> Wrapped();
+}
+
+file static class ExtensionScanTarget
+{
+    extension(string text)
+    {
+        public ParseResult<int> Parsed() => new Parsed<int>(text.Length);
+    }
 }
 
 file record JsonValue(string Text);

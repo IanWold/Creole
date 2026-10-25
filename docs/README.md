@@ -26,6 +26,7 @@ The layout follows the scope of [REL-02](../work/active/14-release/REL-02-docume
 | [Backtracking and labels](concepts/control.md) | `Atomic`, `Lookahead`, `Not` and `Cut`: when a parse may rewind, and how far a cut reaches. `Named` and `Context`: what a failure reports. |
 | [Repetition](concepts/repetition.md) | `Many`, `AtLeastOnce`, `Repeat`, `SepBy`, `SepBy1`, `SepEndBy`, `Until`, `SkipMany` and `SkipAtLeastOnce`, and their Pidgin names. |
 | [Sequencing and mapping](concepts/sequencing.md) | `Seq`, `Select`, `As`, `Ignore`, `Before`, `Then`, `Between`, `Optional` with the union `Maybe<T>`, `Slice` and `Text`, and query syntax with `Bind`, `Where` and `let`: running parsers in order and shaping their results. |
+| [Running a parser](concepts/parsing.md) | `Parse` and `ParseOptions`: running a parser on text, what it returns, showing its errors against the input, and the depth limit. |
 | [Errors](concepts/errors.md) | `ParseError`, the `Unexpected` and `Expectation` unions, `ParseResult<T>` and its cases, and `Diagnostics`: what a parse reports, and how to render it against the source with `SourceText`. |
 | [Source spans](concepts/spans.md) | `SourceSpan`, `SourceId`, `SourceRegistry` and `LineMap`: where items came from in the original source, as offsets or as lines and columns. |
 | [The cursor](engines/cursor.md) | `Cursor<T>`: absolute positions, reading without allocation, bulk scans over segmented input. |

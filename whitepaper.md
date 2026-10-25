@@ -603,6 +603,8 @@ Lexer layers recover the same way. `Layer.Tokens(..., onError: Recover.SkipChar(
 
 `ParseResult<T>` is a union of Parsed, Recovered and Failed (§ Using C# 15 unions). Recovered and Failed carry a `Diagnostics` collection ordered by span. `Parsed<T>` means no errors were recorded. After recovery a value can exist alongside errors, which is what editors and linters want, and the Recovered case makes that state impossible to overlook.
 
+The collection holds the text of the sources its errors point into, so `Diagnostics.Render()` shows them as in § The error model. `Parse(text, source: path)` names the source. The result refers to the caller's string or memory and copies nothing, so a caller that reuses a buffer renders first, as it would read slices first. A collection without those texts, such as one built from bare errors, renders one line per error. Equality ignores the held texts ([ADR-0024](work/docs/decisions/0024-a-parses-diagnostics-hold-their-source-text.md)).
+
 ### Limits for untrusted input
 
 `ParseOptions.MaxDepth` bounds recursion depth and `ParseOptions.MaxBufferedItems` bounds each layer's buffer. Exceeding either produces an ordinary diagnostic at the offending span, never a stack overflow. Parlot's recursion limit is the model for depth ([ADR-0020](work/docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md)):
@@ -855,7 +857,7 @@ Parsing is synchronous over buffered data; asynchrony lives only at the source. 
 
 Byte sources decode through a `Layer<byte, char>`, so decoding is just another layer. Spans then carry both byte offsets into the root source and character offsets into the decoded text (§ Source spans).
 
-**Diagnostics from streams.** A streaming parse discards text behind the bookmark horizon, so it cannot render a diagnostic later. Instead, each diagnostic raised in streaming mode is resolved at once. It captures its line and column, from a line counter the root layer updates as it releases segments, and a snippet of the offending line capped at a configurable length. Whole-input parses still resolve lazily.
+**Diagnostics from streams.** A streaming parse discards text behind the bookmark horizon, so it cannot render a diagnostic later. Instead, each diagnostic raised in streaming mode is resolved at once. It captures its line and column, from a line counter the root layer updates as it releases segments, and a snippet of the offending line capped at a configurable length. Whole-input parses still resolve lazily, from the source text their result holds (§ Results). Either way, `Diagnostics.Render()` shows the format in § The error model.
 
 ### The restart protocol
 

@@ -16,6 +16,21 @@ if (Tokens.Describe<Tok>(K.Comma) != "','" || Tokens.Describe<Plain>(K.Comma) !=
     return 1;
 }
 
+var parsed = Lists.Depth.Parse("[[x]]") switch
+{
+    Parsed<int> result => result.Value,
+    Recovered<int> => -1,
+    Failed => -1,
+};
+
+if (parsed != 2
+    || !Lists.Depth.Parse("[[y]]".AsMemory(), source: "smoke.txt").Diagnostics.Render().Contains(" --> smoke.txt:1:3", StringComparison.Ordinal)
+    || Lists.Depth.Parse("[[x]]", options: new ParseOptions { MaxDepth = 1 }).Value is not Failed
+)
+{
+    return 1;
+}
+
 Console.WriteLine("Creole AOT smoke: OK");
 return 0;
 
@@ -66,6 +81,12 @@ internal class Queries : CharGrammar
         from b in _word
         from c in _word.Repeat(a)
         select c.Count + b.Length;
+}
+
+internal class Lists : CharGrammar
+{
+    public static readonly Parser<char, int> Depth =
+        Char('[').Then(Rec(() => Depth)).Before(Char(']')).Select(static depth => depth + 1).Or(Char('x').As(0));
 }
 
 internal enum K

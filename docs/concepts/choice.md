@@ -2,7 +2,7 @@
 
 Choice combinators pick one of several parsers. `p.Or(q)`, `p.Switch(...)` and `p.Match(...)` are extension members of `Parser<TIn, TOut>` in the `Choice` class. `OneOf`, `Longest` and `Case` are members of `Grammar<TIn>`, so a grammar class calls them unqualified. The design is in the [whitepaper's § Choice and backtracking](../../whitepaper.md#choice-and-backtracking), [§ Longest match](../../whitepaper.md#longest-match) and [§ Selective choice](../../whitepaper.md#selective-choice).
 
-> The interpreter runs these combinators as this page describes. The public method that runs a parser on your input arrives with INT-08.
+> The interpreter runs these combinators as this page describes. Run a parser with `Parse` ([Running a parser](parsing.md)).
 
 ## Ordered choice
 

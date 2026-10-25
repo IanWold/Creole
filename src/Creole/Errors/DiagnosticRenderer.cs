@@ -17,7 +17,7 @@ internal static class DiagnosticRenderer
     /// <summary>
     /// Returns the offset just past the last character of the line from <paramref name="lineStart"/> to <paramref name="nextLineStart"/>, leaving out its line break.
     /// </summary>
-    private static long LineContentEnd(string text, long lineStart, long nextLineStart)
+    private static long LineContentEnd(ReadOnlySpan<char> text, long lineStart, long nextLineStart)
     {
         var end = nextLineStart;
 
@@ -47,9 +47,9 @@ internal static class DiagnosticRenderer
         var map = source.LineMap;
         var position = map.GetPosition(span.CharStart);
         var lineStart = map.GetLineStart(position.Line);
-        var lineEnd = LineContentEnd(source.Text, lineStart, map.GetLineStart(position.Line + 1));
+        var lineEnd = LineContentEnd(source.Text.Span, lineStart, map.GetLineStart(position.Line + 1));
         var (shown, caretColumn, caretCount) = DisplayWidth.ShowLine(
-            source.Text.AsSpan((int)lineStart, (int)(lineEnd - lineStart)),
+            source.Text.Span.Slice((int)lineStart, (int)(lineEnd - lineStart)),
             (int)(span.CharStart - lineStart),
             (int)(span.CharEnd - lineStart)
         );
