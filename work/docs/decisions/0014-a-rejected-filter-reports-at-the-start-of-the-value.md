@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | Accepted |
 | Date | 2026-10-22 |
-| Cards | [INT-04](../../active/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md), [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [ERR-05](../../active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md), [GEN-06](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md) |
+| Cards | [INT-04](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md), [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [ERR-05](../../active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md), [GEN-06](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md) |
 | Whitepaper | [§ LINQ query syntax](../../../whitepaper.md#linq-query-syntax), [§ The error model](../../../whitepaper.md#the-error-model) |
 | Research | — (prior art read for this record by a research subagent on 2026-10-22, cited inline) |
 | Supersedes | — |
@@ -17,7 +17,7 @@ Three facts shape the choice:
 
 - **Furthest failure wins** ([§ The error model](../../../whitepaper.md#the-error-model)). A layer keeps the furthest failure recorded while it runs, including failures inside a parser that then succeeds. A `Number` built from a digit loop records "expected digit" where the loop stops. A rejection recorded at the start of that `Number` loses to it.
 - **Memory is bounded** ([§ Guarantees](../../../whitepaper.md#guarantees), G2). `Or` and repetition pin nothing, so a streamed layer may release items as soon as the cursor passes them. Until now a reported failure is never behind the cursor. A failure reported at the start of a value the parser has already consumed would be the first.
-- **The interpreter records no expectations yet.** [INT-03](../../active/03-interpreter/INT-03-execute-the-core-combinators.md) lowered `Named`, `Context` and `Fail` to plans that only succeed or fail, and left recording to ERR-02. INT-04's scope names four things that only recording can show: the filter's report, the non-associative chain message ([ADR-0004](0004-expression-build-operator-table-and-semantics.md) point 4), a failed `Custom`'s expectations ([ADR-0012](0012-custom-scanner-metadata.md) point 4, already in ERR-02's scope) and `Named` on an expression ([ADR-0008](0008-control-node-semantics.md) point 4, which ERR-02 implements for every node).
+- **The interpreter records no expectations yet.** [INT-03](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md) lowered `Named`, `Context` and `Fail` to plans that only succeed or fail, and left recording to ERR-02. INT-04's scope names four things that only recording can show: the filter's report, the non-associative chain message ([ADR-0004](0004-expression-build-operator-table-and-semantics.md) point 4), a failed `Custom`'s expectations ([ADR-0012](0012-custom-scanner-metadata.md) point 4, already in ERR-02's scope) and `Named` on an expression ([ADR-0008](0008-control-node-semantics.md) point 4, which ERR-02 implements for every node).
 
 Prior art, read for this record. Files were read at the branch heads named:
 
@@ -208,7 +208,7 @@ What would change this:
   - [§ The error model](../../../whitepaper.md#the-error-model): a new **Filters** bullet gives points 2 to 5.
   - [§ Failure positions](../../../whitepaper.md#failure-positions): a failure reported behind the cursor captures what its error needs by value (point 6).
 - **Cards:**
-  - [INT-04](../../active/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md): moves to Building.
+  - [INT-04](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md): moves to Building.
     - The filter line cites this record and adds the optional message.
     - The `Custom`, chain-message and `Named` lines say that ERR-02 records them (point 7).
     - The docs line adds the sequencing page.

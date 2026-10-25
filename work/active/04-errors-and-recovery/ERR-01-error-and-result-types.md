@@ -32,7 +32,7 @@ The public shapes for results and errors, using C# 15 unions as decided in FND-0
 
 ## Unblocks
 
-- [INT-07 Recursion depth limit](../03-interpreter/INT-07-recursion-depth-limit.md)
+- [INT-07 Recursion depth limit](../../complete/03-interpreter/INT-07-recursion-depth-limit.md)
 - [ERR-02 Furthest-failure tracking and labels](../04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md)
 - [ERR-03 Diagnostic rendering](../04-errors-and-recovery/ERR-03-diagnostic-rendering.md)
 - [ERR-04 Diagnostic withdrawal](../04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md)

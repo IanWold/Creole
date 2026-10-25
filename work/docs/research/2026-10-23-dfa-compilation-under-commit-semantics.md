@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | Date | 2026-10-23 |
-| Cards | [INT-06](../../active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md), [ANA-04](../../active/09-static-analysis/ANA-04-choice-checks.md), [ANA-07](../../active/09-static-analysis/ANA-07-linear-maximal-munch.md), [GEN-05](../../active/11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md) |
+| Cards | [INT-06](../../complete/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md), [ANA-04](../../active/09-static-analysis/ANA-04-choice-checks.md), [ANA-07](../../active/09-static-analysis/ANA-07-linear-maximal-munch.md), [GEN-05](../../active/11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md) |
 | Whitepaper | [§ Longest match](../../../whitepaper.md#longest-match), [§ Interpreted engine](../../../whitepaper.md#interpreted-engine), [§ Properties](../../../whitepaper.md#properties), [§ Deterministic mode](../../../whitepaper.md#deterministic-mode), [§ Equivalence](../../../whitepaper.md#equivalence), [§ The error model](../../../whitepaper.md#the-error-model) |
 | Confidence | Medium. Facts about papers and libraries were read in source, and the passages this note leans on were spot-checked first-hand. The proposed construction is our inference: no source does it, and nothing proves it. A prototype is the missing evidence. |
 

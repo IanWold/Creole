@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | Accepted |
 | Date | 2026-10-22 |
-| Cards | [CORE-12](../../active/02-core-combinators/CORE-12-custom-primitives.md), [INT-04](../../active/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md), [ANA-08](../../active/09-static-analysis/ANA-08-custom-scanner-contract-checks.md), [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [FUS-03](../../active/16-layer-fusion/FUS-03-fusion-with-modes-and-custom-scanners.md) |
+| Cards | [CORE-12](../../active/02-core-combinators/CORE-12-custom-primitives.md), [INT-04](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md), [ANA-08](../../active/09-static-analysis/ANA-08-custom-scanner-contract-checks.md), [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [FUS-03](../../active/16-layer-fusion/FUS-03-fusion-with-modes-and-custom-scanners.md) |
 | Whitepaper | [§ Custom primitives](../../../whitepaper.md#custom-primitives) |
 | Research | — (raised when CORE-12 was started) |
 | Supersedes | — |
@@ -197,7 +197,7 @@ What would change this:
   - [§ Diagnostics](../../../whitepaper.md#diagnostics): CRL0201's examples include `Custom` with no `First`.
 - **Cards:**
   - [CORE-12](../../active/02-core-combinators/CORE-12-custom-primitives.md): scope gains the record shape, construction checks and the two documentation points; a second criterion covers the checks and analysis properties. Moves to Building.
-  - [INT-04](../../active/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md): what a failed `Custom` records.
+  - [INT-04](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md): what a failed `Custom` records.
   - [ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md): a null `First` is ⊤ and opaque.
   - [ANA-08](../../active/09-static-analysis/ANA-08-custom-scanner-contract-checks.md): no FIRST check for a scanner without `First`.
   - [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md): a `Custom`'s expectations, and the case it shares with `Satisfy`.

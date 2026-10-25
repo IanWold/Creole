@@ -24,7 +24,7 @@ Layers turn a stream of one type into a stream of another using ordinary combina
 
 ## Blocked by
 
-- [INT-03 Execute the core combinators](../03-interpreter/INT-03-execute-the-core-combinators.md)
+- [INT-03 Execute the core combinators](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md)
 - [LAY-01 StreamBuffer and pulling cursor](../06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md)
 
 ## Unblocks

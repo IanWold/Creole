@@ -12,7 +12,7 @@ Bring the interpreter's lowering rewrites into generated code.
 
 ## Scope
 
-- Emit DFA tables or code for regular subtrees and `Longest`, with Reps memoization where needed. They are the same commit-aware automata the interpreter builds, with the same fallback for subtrees over the cap ([ADR-0017](../../docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md)). A generated `Longest` records no failure when it matches and re-runs on a non-match, as the interpreter's does ([ADR-0022](../../docs/decisions/0022-a-successful-longest-restores-the-furthest-failure.md)).
+- Emit DFA tables or code for regular subtrees and `Longest`, with Reps memoization where needed. They are the same commit-aware automata the interpreter builds, with the same fallback when construction passes the state cap or the work budget ([ADR-0017](../../docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md), [ADR-0025](../../docs/decisions/0025-automaton-construction-stops-at-a-state-cap-or-a-work-budget.md)). Built at compile time, it may pass its own limits. A generated `Longest` records no failure when it matches and re-runs on a non-match, as the interpreter's does ([ADR-0022](../../docs/decisions/0022-a-successful-longest-restores-the-furthest-failure.md)).
 - Emit `SearchValues<char>` scans for character-class runs.
 - Emit jump tables for deterministic grammars.
 
@@ -22,7 +22,7 @@ Bring the interpreter's lowering rewrites into generated code.
 
 ## Blocked by
 
-- [INT-06 DFA compiler for regular subtrees](../03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md)
+- [INT-06 DFA compiler for regular subtrees](../../complete/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md)
 - [ANA-06 Deterministic mode](../09-static-analysis/ANA-06-deterministic-mode.md)
 - [ANA-07 Linear maximal munch](../09-static-analysis/ANA-07-linear-maximal-munch.md)
 - [GEN-02 Emit the core combinators](../11-source-generator/GEN-02-emit-the-core-combinators.md)

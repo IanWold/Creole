@@ -14,7 +14,7 @@ Maximal munch can go quadratic when a DFA backs up over unbounded input.
 
 - CRL0106: detect token sets whose backup is unbounded, with INT-06's backup analysis over the commit-aware automaton ([ADR-0017](../../docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md); [prototype note](../../docs/research/2026-10-23-commit-aware-automaton-prototypes.md), finding 7).
 - Implement Reps' memoized tokenization (1998) so remaining cases stay linear. Under commit semantics the memo stores the scan's stop state, not a failure flag (finding 8).
-- Build the backup analysis and stop-state memoization over INT-06's automata here, with their first user (moved from INT-06).
+- Build the backup analysis and stop-state memoization over INT-06's automata here, with their first user (moved from INT-06). Construction stops at a state cap or a work budget ([ADR-0025](../../docs/decisions/0025-automaton-construction-stops-at-a-state-cap-or-a-work-budget.md)). The analysis may pass its own limits, and decides what to report when an automaton is not built.
 
 ## Acceptance criteria
 
@@ -22,7 +22,7 @@ Maximal munch can go quadratic when a DFA backs up over unbounded input.
 
 ## Blocked by
 
-- [INT-06 DFA compiler for regular subtrees](../03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md)
+- [INT-06 DFA compiler for regular subtrees](../../complete/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md)
 - [ANA-02 Analysis report and Debug enforcement](../09-static-analysis/ANA-02-analysis-report-and-debug-enforcement.md)
 
 ## Unblocks

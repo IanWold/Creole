@@ -33,7 +33,7 @@ A hand-written scanner escape hatch for tokens no regular expression can describ
 
 ## Unblocks
 
-- [INT-04 Execute Bind, Expression.Build and Custom](../03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md)
+- [INT-04 Execute Bind, Expression.Build and Custom](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md)
 - [ANA-01 Grammar property analysis](../09-static-analysis/ANA-01-grammar-property-analysis.md)
 - [RSLN-01 Roslyn grammar reader](../10-roslyn-analyzers/RSLN-01-roslyn-grammar-reader.md)
 - [FUS-03 Fusion with modes and custom scanners](../16-layer-fusion/FUS-03-fusion-with-modes-and-custom-scanners.md)
@@ -64,7 +64,7 @@ Delivered:
   - [IScanner.cs](../../../src/Creole/IScanner.cs) and [ScannerInfo.cs](../../../src/Creole/ScannerInfo.cs) are the public types.
   - `Grammar<TIn>.Custom` is in [GrammarOfTIn.Primitives.cs](../../../src/Creole/GrammarOfTIn.Primitives.cs). It builds a [CustomNode](../../../src/Creole/Nodes/CustomNode.cs) (`NodeKind.Custom`) that reads `Info` once and makes the four construction checks.
   - `Guard.ScannerNotNull` gives the null-scanner message, which says to declare the scanner earlier, not to use `Rec`.
-  - `CustomNode` lowers to `NotYetExecutable` until [INT-04](../03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md), whose scope lists it.
+  - `CustomNode` lowers to `NotYetExecutable` until [INT-04](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md), whose scope lists it.
 - **Tests:**
   - [CustomNodeTests](../../../tests/Creole.Tests/CustomNodeTests.cs) (10) cover each construction error and its message; the FIRST set, nullability and opacity with and without `First`, for `char` and `byte` input; reading `Info` once; and `Custom` as an alternative of `Longest`.
   - [RawStringSampleTests](../../../tests/Creole.Tests/Samples/RawStringSampleTests.cs) (18) run a Rust-style raw-string scanner on cursors: successful scans, malformed openers that fail without consuming, an unterminated string, and input split into segments. They also check the sample lexer's structure: the `Custom` node inside `Longest`, and the unterminated check bound after it.

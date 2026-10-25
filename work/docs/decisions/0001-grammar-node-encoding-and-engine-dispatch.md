@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | Accepted |
 | Date | 2026-10-18 |
-| Cards | [CORE-01](../../active/02-core-combinators/CORE-01-grammar-node-model.md), [FND-07](../../active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [INT-02](../../active/03-interpreter/INT-02-plan-lowering-and-cache.md), [RSLN-02](../../active/10-roslyn-analyzers/RSLN-02-share-the-analysis-engine-with-the-roslyn-component.md) |
+| Cards | [CORE-01](../../active/02-core-combinators/CORE-01-grammar-node-model.md), [FND-07](../../active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [INT-02](../../complete/03-interpreter/INT-02-plan-lowering-and-cache.md), [RSLN-02](../../active/10-roslyn-analyzers/RSLN-02-share-the-analysis-engine-with-the-roslyn-component.md) |
 | Whitepaper | [§ Types](../../../whitepaper.md#types), [§ Where unions are not used](../../../whitepaper.md#where-unions-are-not-used), [§ Custom primitives](../../../whitepaper.md#custom-primitives), [§ Interpreted engine](../../../whitepaper.md#interpreted-engine) |
 | Research | [Grammar node encoding and dispatch](../research/2026-10-18-grammar-node-encoding-and-dispatch.md) |
 | Supersedes | — |
@@ -115,5 +115,5 @@ What would change this:
 - **Cards:**
   - [CORE-01](../../active/02-core-combinators/CORE-01-grammar-node-model.md): scope and criterion 2 rewritten; moved to Building.
   - [FND-07](../../active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md): the `closed` bullet is now limited to the `ParseResult<T>` fallback.
-  - [INT-02](../../active/03-interpreter/INT-02-plan-lowering-and-cache.md): lowering is a per-node abstract method.
+  - [INT-02](../../complete/03-interpreter/INT-02-plan-lowering-and-cache.md): lowering is a per-node abstract method.
   - [RSLN-02](../../active/10-roslyn-analyzers/RSLN-02-share-the-analysis-engine-with-the-roslyn-component.md): the runtime adapter reads `NodeKind` and children.

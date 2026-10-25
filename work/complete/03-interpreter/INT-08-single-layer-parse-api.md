@@ -30,11 +30,11 @@ Phase 0 on its own is a modern single-layer library, so parsers need a public en
 
 - [INT-03 Execute the core combinators](../03-interpreter/INT-03-execute-the-core-combinators.md)
 - [INT-07 Recursion depth limit](../03-interpreter/INT-07-recursion-depth-limit.md)
-- [ERR-02 Furthest-failure tracking and labels](../04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md)
+- [ERR-02 Furthest-failure tracking and labels](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md)
 
 ## Unblocks
 
-- [BENCH-01 Phase 0 speed gate](../13-benchmarks/BENCH-01-phase-0-speed-gate.md)
+- [BENCH-01 Phase 0 speed gate](../../active/13-benchmarks/BENCH-01-phase-0-speed-gate.md)
 
 ## Whitepaper references
 
@@ -96,6 +96,6 @@ Phase 0 on its own is a modern single-layer library, so parsers need a public en
   - No test reaches the position-0 fallback, because no plan fails without recording a failure.
   - ERR-02 measured recording at about 40% of the time on token JSON, and `Parse` always records, so that cost is in BENCH-01's numbers. Parsing without a log and re-running on failure would avoid it, but it runs user code twice and would need a decision.
 - **Follow-ups:**
-  - [BENCH-01](../13-benchmarks/BENCH-01-phase-0-speed-gate.md) can start.
-  - [LAY-05](../06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) applies ADR-0024 points 1 and 5 to pipelines and brings token input.
-  - [STRM-03](../08-streaming/STRM-03-streaming-diagnostics.md) makes `Render()` use captured lines.
+  - [BENCH-01](../../active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) can start.
+  - [LAY-05](../../active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) applies ADR-0024 points 1 and 5 to pipelines and brings token input.
+  - [STRM-03](../../active/08-streaming/STRM-03-streaming-diagnostics.md) makes `Render()` use captured lines.

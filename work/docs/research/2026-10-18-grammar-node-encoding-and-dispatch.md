@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | Date | 2026-10-18 |
-| Cards | [CORE-01](../../active/02-core-combinators/CORE-01-grammar-node-model.md), [FND-07](../../active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [INT-02](../../active/03-interpreter/INT-02-plan-lowering-and-cache.md), [RSLN-02](../../active/10-roslyn-analyzers/RSLN-02-share-the-analysis-engine-with-the-roslyn-component.md) |
+| Cards | [CORE-01](../../active/02-core-combinators/CORE-01-grammar-node-model.md), [FND-07](../../active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [INT-02](../../complete/03-interpreter/INT-02-plan-lowering-and-cache.md), [RSLN-02](../../active/10-roslyn-analyzers/RSLN-02-share-the-analysis-engine-with-the-roslyn-component.md) |
 | Whitepaper | [§ Types](../../../whitepaper.md#types), [§ Where unions are not used](../../../whitepaper.md#where-unions-are-not-used), [§ Custom primitives](../../../whitepaper.md#custom-primitives), [§ Interpreted engine](../../../whitepaper.md#interpreted-engine) |
 | Confidence | High on the language and runtime facts: the spec and LDM notes were read, and every claim about compiler behaviour was reproduced on the pinned RC 2 SDK. Medium on the recommendation: Native AOT code size was not measured. |
 

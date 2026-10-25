@@ -1,5 +1,6 @@
 using System.Diagnostics;
-using System.Text;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Creole;
 
@@ -18,6 +19,11 @@ file enum EntryKind : byte
 }
 
 /// <summary>
+/// The paths a configuration holds for one alternative, in priority order.
+/// </summary>
+file readonly record struct AlternativePaths(int Alternative, List<Candidate> Candidates);
+
+/// <summary>
 /// A path through one alternative.
 /// </summary>
 /// <remarks>
@@ -34,10 +40,37 @@ file sealed class Candidate
 
     public Continuation? Rest { get; set; }
 
-    public List<Entry> Scope { get; init; } = [];
+    public required List<Entry> Scope { get; init; }
 
-    private List<Entry> SecondBranches() =>
-        [.. Scope.Where(static entry => entry.Kind == EntryKind.Second)];
+    private List<Entry> SecondBranches()
+    {
+        var second = new List<Entry>();
+
+        foreach (var entry in Scope)
+        {
+            if (entry.Kind == EntryKind.Second)
+            {
+                second.Add(entry);
+            }
+        }
+
+        return second;
+    }
+
+    public Candidate Advanced() => new()
+    {
+        Committed = Committed,
+        Rest = Rest!.Tail,
+        Scope = [.. Scope]
+    };
+
+    public Candidate Copy() => new()
+    {
+        Committed = Committed,
+        Kind = Kind,
+        Rest = Rest,
+        Scope = [.. Scope]
+    };
 
     public Candidate Dead() => new()
     {
@@ -54,6 +87,83 @@ file sealed class Candidate
     };
 }
 
+/// <summary>
+/// Compares paths by kind, commitment, scope and continuation, so that duplicate paths in one alternative can be dropped.
+/// </summary>
+/// <remarks>
+/// A <see cref="Run"/> frame is compared by the identity of its term.
+/// </remarks>
+file sealed class CandidateComparer : IEqualityComparer<Candidate>
+{
+    private static int Hash(Frame frame) => frame switch
+    {
+        Run run => RuntimeHelpers.GetHashCode(run.Term),
+        EndChoice end => HashCode.Combine(1, end.Id),
+        EndAtomic end => HashCode.Combine(2, end.Id),
+        _ => throw new UnreachableException(),
+    };
+
+    private static bool Same(Frame left, Frame right) => (left, right) switch
+    {
+        (Run first, Run second) => ReferenceEquals(first.Term, second.Term),
+        (EndChoice first, EndChoice second) => first.Id == second.Id,
+        (EndAtomic first, EndAtomic second) => first.Id == second.Id,
+        _ => false,
+    };
+
+    public bool Equals(Candidate? left, Candidate? right)
+    {
+        if (left is null || right is null)
+        {
+            return ReferenceEquals(left, right);
+        }
+
+        if (left.Kind != right.Kind
+            || left.Committed != right.Committed
+            || !CollectionsMarshal.AsSpan(left.Scope).SequenceEqual(CollectionsMarshal.AsSpan(right.Scope))
+        )
+        {
+            return false;
+        }
+
+        var leftRest = left.Rest;
+        var rightRest = right.Rest;
+
+        while (!ReferenceEquals(leftRest, rightRest))
+        {
+            if (leftRest is null || rightRest is null || !Same(leftRest.Head, rightRest.Head))
+            {
+                return false;
+            }
+
+            leftRest = leftRest.Tail;
+            rightRest = rightRest.Tail;
+        }
+
+        return true;
+    }
+
+    public int GetHashCode(Candidate candidate)
+    {
+        var hash = new HashCode();
+
+        hash.Add(candidate.Kind);
+        hash.Add(candidate.Committed);
+
+        foreach (var entry in candidate.Scope)
+        {
+            hash.Add(entry);
+        }
+
+        for (var rest = candidate.Rest; rest is not null; rest = rest.Tail)
+        {
+            hash.Add(Hash(rest.Head));
+        }
+
+        return hash.ToHashCode();
+    }
+}
+
 file sealed record Continuation(Frame Head, Continuation? Tail);
 
 file readonly record struct Entry(EntryKind Kind, int Id, bool Consumed);
@@ -67,96 +177,95 @@ file sealed record EndChoice(int Id) : Frame;
 file sealed record Run(RegularTerm Term) : Frame;
 
 /// <summary>
+/// Compares state keys, and lets a key held in a reused buffer be looked up without copying it.
+/// </summary>
+file sealed class KeyComparer : IEqualityComparer<int[]>, IAlternateEqualityComparer<ReadOnlySpan<int>, int[]>
+{
+    public int[] Create(ReadOnlySpan<int> alternate) =>
+        alternate.ToArray();
+
+    public bool Equals(int[]? left, int[]? right) =>
+        left is null || right is null
+            ? ReferenceEquals(left, right)
+            : left.AsSpan().SequenceEqual(right);
+
+    public bool Equals(ReadOnlySpan<int> alternate, int[] other) =>
+        alternate.SequenceEqual(other);
+
+    public int GetHashCode(int[] key) =>
+        GetHashCode(key.AsSpan());
+
+    public int GetHashCode(ReadOnlySpan<int> alternate)
+    {
+        var hash = new HashCode();
+
+        hash.AddBytes(MemoryMarshal.AsBytes(alternate));
+
+        return hash.ToHashCode();
+    }
+}
+
+/// <summary>
 /// Builds a <see cref="CommitAutomaton"/> by exploring every configuration of candidates reachable from the start, one character class at a time.
 /// </summary>
 /// <remarks>
-/// Configurations are compared after renaming their choice and <c>Atomic</c> ids in order of first appearance, so equivalent ones become one state.
+/// A configuration holds only the alternatives that still have paths, so an alternative costs nothing once it can no longer match.
+/// Configurations are compared by a key written after renaming their choice and <c>Atomic</c> ids in order of first appearance, so equivalent ones become one state.
+/// A configuration is copied for storage only when it is a new state.
+/// Each transition explored steps every path of the state it leaves, and the build stops once the paths stepped pass a budget.
 /// </remarks>
-file sealed class Determinizer
+file sealed class Determinizer(IReadOnlyList<RegularTerm> alternatives)
 {
-    private readonly RegularTerm[] _alternatives;
+    private readonly RegularTerm[] _alternatives = [.. alternatives];
     private readonly ushort[] _classOf = new ushort[char.MaxValue + 1];
-    private readonly List<List<Candidate>[]> _configurations = [];
-    private readonly Dictionary<string, int> _ids = [];
-    private readonly int _maxCandidates;
+    private readonly List<AlternativePaths[]> _configurations = [];
+    private readonly HashSet<int> _firstIds = [];
+    private readonly List<int> _fresh = [];
+    private readonly Dictionary<int[], int>.AlternateLookup<ReadOnlySpan<int>> _ids = new Dictionary<int[], int>(new KeyComparer()).GetAlternateLookup<ReadOnlySpan<int>>();
+    private readonly List<int> _key = [];
+    private readonly Dictionary<int, int> _renamed = [];
     private readonly List<char> _representatives = [];
+    private readonly List<int> _resolving = [];
+    private readonly HashSet<Candidate> _seen = new(new CandidateComparer());
+    private readonly List<AlternativePaths> _stepped = [];
     private readonly Dictionary<RegularTerm, int> _termIds = new(ReferenceEqualityComparer.Instance);
 
-    public Determinizer(IReadOnlyList<RegularTerm> alternatives, int maxCandidates)
-    {
-        _alternatives = [.. alternatives];
-        _maxCandidates = maxCandidates;
-        Partition();
-    }
+    private static int Bit(bool value) =>
+        value
+            ? 1
+            : 0;
 
-    private static void Advance(List<Candidate> candidates, char c)
+    private AlternativePaths[] Canonical(List<AlternativePaths> configuration)
     {
-        for (var i = 0; i < candidates.Count; i++)
+        var canonical = new AlternativePaths[configuration.Count];
+
+        for (var i = 0; i < configuration.Count; i++)
         {
-            var candidate = candidates[i];
+            var (alternative, candidates) = configuration[i];
+            var copies = new List<Candidate>(candidates.Count);
 
-            if (candidate.Kind != CandidateKind.Live)
+            foreach (var candidate in candidates)
             {
-                continue;
-            }
+                var scope = new List<Entry>(candidate.Scope.Count);
 
-            var chars = (RegularTerm.Chars)((Run)candidate.Rest!.Head).Term;
-
-            if (chars.Set.Contains(c))
-            {
-                candidate.Rest = candidate.Rest.Tail;
-                Commit(candidates, i, candidate.Scope.Count);
-            }
-            else
-            {
-                candidates[i] = candidate.Dead();
-            }
-        }
-    }
-
-    private (string Key, List<Candidate>[] Configuration) Canonicalize(List<Candidate>[] configuration)
-    {
-        var renamed = new Dictionary<int, int>();
-        int Rename(int id) => renamed.TryGetValue(id, out var to) ? to : renamed[id] = renamed.Count;
-
-        Continuation? RenameRest(Continuation? rest) =>
-            rest is null
-            ? null
-            : new(
-                rest.Head switch
+                foreach (var entry in candidate.Scope)
                 {
-                    EndAtomic end => new EndAtomic(Rename(end.Id)),
-                    EndChoice end => new EndChoice(Rename(end.Id)),
-                    var frame => frame,
-                },
-                RenameRest(rest.Tail)
-            );
+                    scope.Add(entry with { Id = _renamed[entry.Id] });
+                }
 
-        var key = new StringBuilder();
-        var canonical = new List<Candidate>[configuration.Length];
-
-        for (var alternative = 0; alternative < configuration.Length; alternative++)
-        {
-            key.Append('|');
-            canonical[alternative] = [];
-
-            foreach (var candidate in configuration[alternative])
-            {
-                var scope = candidate.Scope.Select(entry => entry with { Id = Rename(entry.Id) }).ToList();
-                var copy = new Candidate
+                copies.Add(new Candidate
                 {
                     Committed = candidate.Committed,
                     Kind = candidate.Kind,
-                    Scope = scope,
-                    Rest = RenameRest(candidate.Rest)
-                };
-
-                canonical[alternative].Add(copy);
-                Describe(copy, key);
+                    Rest = Renamed(candidate.Rest),
+                    Scope = scope
+                });
             }
+
+            canonical[i] = new(alternative, copies);
         }
 
-        return (key.ToString(), canonical);
+        return canonical;
     }
 
     private void Cleanup(List<Candidate> candidates)
@@ -166,15 +275,33 @@ file sealed class Determinizer
             return;
         }
 
-        var firsts = candidates
-            .SelectMany(static candidate => candidate.Scope)
-            .Where(static entry => entry.Kind == EntryKind.First)
-            .Select(static entry => entry.Id)
-            .ToHashSet();
+        _firstIds.Clear();
 
         foreach (var candidate in candidates)
         {
-            candidate.Scope.RemoveAll(entry => entry.Kind == EntryKind.Second && !firsts.Contains(entry.Id));
+            foreach (var entry in candidate.Scope)
+            {
+                if (entry.Kind == EntryKind.First)
+                {
+                    _firstIds.Add(entry.Id);
+                }
+            }
+        }
+
+        foreach (var candidate in candidates)
+        {
+            var scope = candidate.Scope;
+            var kept = 0;
+
+            for (var i = 0; i < scope.Count; i++)
+            {
+                if (scope[i].Kind != EntryKind.Second || _firstIds.Contains(scope[i].Id))
+                {
+                    scope[kept++] = scope[i];
+                }
+            }
+
+            scope.RemoveRange(kept, scope.Count - kept);
         }
 
         for (var i = candidates.FindIndex(static candidate => candidate.Kind == CandidateKind.Live) - 1; i >= 0; i--)
@@ -190,28 +317,30 @@ file sealed class Determinizer
             return;
         }
 
-        var seen = new HashSet<string>();
+        _seen.Clear();
 
         for (var i = 0; i < candidates.Count; i++)
         {
-            if (candidates[i].Kind == CandidateKind.Live && !seen.Add(Describe(candidates[i], new StringBuilder()).ToString()))
+            if (candidates[i].Kind == CandidateKind.Live && !_seen.Add(candidates[i]))
             {
                 candidates.RemoveAt(i--);
             }
         }
 
-        seen.Clear();
+        _seen.Clear();
 
         for (var i = candidates.Count - 1; i >= 0; i--)
         {
-            if (candidates[i].Kind == CandidateKind.Dead && !seen.Add(Describe(candidates[i], new StringBuilder()).ToString()))
+            if (candidates[i].Kind == CandidateKind.Dead && !_seen.Add(candidates[i]))
             {
                 candidates.RemoveAt(i);
             }
         }
+
+        _seen.Clear();
     }
 
-    private static void Close(List<Candidate> candidates, ref int nextId)
+    private void Close(List<Candidate> candidates, ref int nextId)
     {
         for (var i = 0; i < candidates.Count; i++)
         {
@@ -247,11 +376,12 @@ file sealed class Determinizer
         }
     }
 
-    private static void Commit(List<Candidate> candidates, int i, int from)
+    private void Commit(List<Candidate> candidates, int i, int from)
     {
         var candidate = candidates[i];
-        var firsts = new List<int>();
         var reachedAtomic = false;
+
+        _resolving.Clear();
 
         for (var j = from - 1; j >= 0 && !reachedAtomic; j--)
         {
@@ -259,7 +389,7 @@ file sealed class Determinizer
 
             if (entry.Kind == EntryKind.First)
             {
-                firsts.Add(entry.Id);
+                _resolving.Add(entry.Id);
             }
             else if (entry.Kind == EntryKind.Atomic)
             {
@@ -270,40 +400,49 @@ file sealed class Determinizer
 
         candidate.Committed |= !reachedAtomic;
 
-        foreach (var id in firsts)
+        foreach (var id in _resolving)
         {
             Resolve(candidates, i, id);
         }
     }
 
-    private StringBuilder Describe(Candidate candidate, StringBuilder key)
+    private void Encode(List<AlternativePaths> configuration)
     {
-        key.Append(candidate.Kind switch { CandidateKind.Live => 'L', CandidateKind.Dead => 'D', _ => 'M' }).Append(candidate.Committed ? '!' : '.');
+        _key.Clear();
+        _renamed.Clear();
 
-        foreach (var entry in candidate.Scope)
+        foreach (var (alternative, candidates) in configuration)
         {
-            key.Append(entry.Kind switch { EntryKind.First => 'f', EntryKind.Second => 's', _ => entry.Consumed ? 'A' : 'a' }).Append(entry.Id);
-        }
+            _key.Add(alternative);
+            _key.Add(candidates.Count);
 
-        key.Append(':');
-
-        for (var rest = candidate.Rest; rest is not null; rest = rest.Tail)
-        {
-            _ = rest.Head switch
+            foreach (var candidate in candidates)
             {
-                Run run => key.Append('r').Append(TermId(run.Term)),
-                EndChoice end => key.Append('c').Append(end.Id),
-                EndAtomic end => key.Append('x').Append(end.Id),
-                _ => throw new UnreachableException(),
-            };
+                _key.Add(((int)candidate.Kind << 1) | Bit(candidate.Committed));
+                _key.Add(candidate.Scope.Count);
 
-            key.Append(',');
+                foreach (var entry in candidate.Scope)
+                {
+                    _key.Add((Rename(entry.Id) << 3) | ((int)entry.Kind << 1) | Bit(entry.Consumed));
+                }
+
+                for (var rest = candidate.Rest; rest is not null; rest = rest.Tail)
+                {
+                    _key.Add(rest.Head switch
+                    {
+                        Run run => TermId(run.Term) << 2,
+                        EndChoice end => (Rename(end.Id) << 2) | 1,
+                        EndAtomic end => (Rename(end.Id) << 2) | 2,
+                        _ => throw new UnreachableException(),
+                    });
+                }
+
+                _key.Add(-1);
+            }
         }
-
-        return key.Append(';');
     }
 
-    private static void Expand(List<Candidate> candidates, int i, ref int nextId)
+    private void Expand(List<Candidate> candidates, int i, ref int nextId)
     {
         var candidate = candidates[i];
 
@@ -353,7 +492,7 @@ file sealed class Determinizer
                 case EndAtomic end:
                     candidate.Rest = rest.Tail;
 
-                    var at = candidate.Scope.FindIndex(entry => entry.Kind == EntryKind.Atomic && entry.Id == end.Id);
+                    var at = IndexOf(candidate.Scope, EntryKind.Atomic, end.Id);
                     var consumed = candidate.Scope[at].Consumed;
 
                     candidate.Scope.RemoveAt(at);
@@ -387,55 +526,93 @@ file sealed class Determinizer
         candidates.Insert(i + 1, lower);
     }
 
-    private (int State, int[] Fresh)? Make(List<Candidate>[] configuration)
+    private int[] Fresh(List<AlternativePaths> configuration)
     {
-        foreach (var candidates in configuration)
-        {
-            Cleanup(candidates);
+        _fresh.Clear();
 
-            if (configuration.Length > 1 && candidates.TrueForAll(static candidate => candidate.Kind == CandidateKind.Dead))
+        foreach (var (alternative, candidates) in configuration)
+        {
+            if (candidates.Exists(static candidate => candidate.Fresh))
             {
-                candidates.Clear();
+                _fresh.Add(alternative);
             }
         }
 
-        if (configuration.Sum(static candidates => candidates.Count) > _maxCandidates)
+        return [.. _fresh];
+    }
+
+    private static int IndexOf(List<Entry> scope, EntryKind kind, int id)
+    {
+        for (var i = 0; i < scope.Count; i++)
         {
-            return null;
+            if (scope[i].Kind == kind && scope[i].Id == id)
+            {
+                return i;
+            }
         }
 
-        int[] fresh = [.. Enumerable.Range(0, configuration.Length).Where(alternative => configuration[alternative].Exists(static candidate => candidate.Fresh))];
-        var (key, canonical) = Canonicalize(configuration);
+        return -1;
+    }
 
-        if (!_ids.TryGetValue(key, out var state))
+    private (int State, int[] Fresh) Make(List<AlternativePaths> configuration)
+    {
+        var kept = 0;
+
+        for (var i = 0; i < configuration.Count; i++)
+        {
+            var candidates = configuration[i].Candidates;
+
+            Cleanup(candidates);
+
+            if (_alternatives.Length > 1 && candidates.TrueForAll(static candidate => candidate.Kind == CandidateKind.Dead))
+            {
+                continue;
+            }
+
+            configuration[kept++] = configuration[i];
+        }
+
+        configuration.RemoveRange(kept, configuration.Count - kept);
+
+        var fresh = Fresh(configuration);
+
+        Encode(configuration);
+
+        if (!_ids.TryGetValue(CollectionsMarshal.AsSpan(_key), out var state))
         {
             state = _configurations.Count;
-            _ids.Add(key, state);
-            _configurations.Add(canonical);
+            _ids.TryAdd(CollectionsMarshal.AsSpan(_key), state);
+            _configurations.Add(Canonical(configuration));
         }
 
         return (state, fresh);
     }
 
-    private static int NextId(List<Candidate>[] configuration)
+    private static int[] Matched(AlternativePaths[] configuration) =>
+        [.. configuration.Where(static paths => paths.Candidates.Exists(static candidate => candidate.Kind == CandidateKind.Matched)).Select(static paths => paths.Alternative)];
+
+    private static int NextId(List<AlternativePaths> configuration)
     {
         var max = -1;
 
-        foreach (var candidate in configuration.SelectMany(static candidates => candidates))
+        foreach (var (_, candidates) in configuration)
         {
-            foreach (var entry in candidate.Scope)
+            foreach (var candidate in candidates)
             {
-                max = Math.Max(max, entry.Id);
-            }
-
-            for (var rest = candidate.Rest; rest is not null; rest = rest.Tail)
-            {
-                max = rest.Head switch
+                foreach (var entry in candidate.Scope)
                 {
-                    EndAtomic end => Math.Max(max, end.Id),
-                    EndChoice end => Math.Max(max, end.Id),
-                    _ => max,
-                };
+                    max = Math.Max(max, entry.Id);
+                }
+
+                for (var rest = candidate.Rest; rest is not null; rest = rest.Tail)
+                {
+                    max = rest.Head switch
+                    {
+                        EndAtomic end => Math.Max(max, end.Id),
+                        EndChoice end => Math.Max(max, end.Id),
+                        _ => max,
+                    };
+                }
             }
         }
 
@@ -482,18 +659,39 @@ file sealed class Determinizer
         }
     }
 
+    private static bool Reads(Candidate candidate, char c) =>
+        ((RegularTerm.Chars)((Run)candidate.Rest!.Head).Term).Set.Contains(c);
+
+    private int Rename(int id) =>
+        _renamed.TryGetValue(id, out var to)
+            ? to
+            : _renamed[id] = _renamed.Count;
+
+    private Continuation? Renamed(Continuation? rest) =>
+        rest is null
+            ? null
+            : new(
+                rest.Head switch
+                {
+                    EndAtomic end => new EndAtomic(_renamed[end.Id]),
+                    EndChoice end => new EndChoice(_renamed[end.Id]),
+                    var frame => frame,
+                },
+                Renamed(rest.Tail)
+            );
+
     private static void Resolve(List<Candidate> candidates, int i, int id)
     {
-        if (!candidates[i].Scope.Exists(entry => entry.Kind == EntryKind.First && entry.Id == id))
+        if (IndexOf(candidates[i].Scope, EntryKind.First, id) < 0)
         {
             return;
         }
 
-        Debug.Assert(!candidates.Take(i).Any(candidate => candidate.Scope.Exists(entry => entry.Kind == EntryKind.Second && entry.Id == id)), "A path on a second branch sits above the first branch.");
+        Debug.Assert(!SecondBranchAbove(candidates, i, id), "A path on a second branch sits above the first branch.");
 
         for (var j = candidates.Count - 1; j > i; j--)
         {
-            if (candidates[j].Scope.Exists(entry => entry.Kind == EntryKind.Second && entry.Id == id))
+            if (IndexOf(candidates[j].Scope, EntryKind.Second, id) >= 0)
             {
                 candidates.RemoveAt(j);
             }
@@ -501,53 +699,100 @@ file sealed class Determinizer
 
         foreach (var candidate in candidates)
         {
-            candidate.Scope.RemoveAll(entry => entry.Kind == EntryKind.First && entry.Id == id);
+            for (var at = IndexOf(candidate.Scope, EntryKind.First, id); at >= 0; at = IndexOf(candidate.Scope, EntryKind.First, id))
+            {
+                candidate.Scope.RemoveAt(at);
+            }
         }
     }
 
-    private List<Candidate>[] Step(List<Candidate>[] configuration, int symbol)
+    private static bool SecondBranchAbove(List<Candidate> candidates, int i, int id)
     {
-        var next = new List<Candidate>[configuration.Length];
-
-        for (var alternative = 0; alternative < configuration.Length; alternative++)
+        for (var j = 0; j < i; j++)
         {
-            var candidates = configuration[alternative];
-            next[alternative] = [with(candidates.Count)];
+            if (IndexOf(candidates[j].Scope, EntryKind.Second, id) >= 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private List<AlternativePaths> Step(AlternativePaths[] configuration, int symbol)
+    {
+        var atEnd = symbol == _representatives.Count;
+        var c = atEnd
+            ? '\0'
+            : _representatives[symbol];
+
+        _stepped.Clear();
+
+        foreach (var (alternative, candidates) in configuration)
+        {
+            if (_alternatives.Length > 1 && !Survives(candidates, atEnd, c))
+            {
+                continue;
+            }
+
+            var next = new List<Candidate>(candidates.Count);
 
             foreach (var candidate in candidates)
             {
-                next[alternative].Add(new Candidate
+                if (candidate.Kind != CandidateKind.Live)
                 {
-                    Committed = candidate.Committed,
-                    Kind = candidate.Kind,
-                    Rest = candidate.Rest,
-                    Scope = [.. candidate.Scope],
-                });
-            }
-        }
-
-        var nextId = NextId(next);
-
-        foreach (var candidates in next)
-        {
-            if (symbol == _representatives.Count)
-            {
-                for (var i = 0; i < candidates.Count; i++)
+                    next.Add(candidate.Copy());
+                }
+                else if (!atEnd && Reads(candidate, c))
                 {
-                    if (candidates[i].Kind == CandidateKind.Live)
-                    {
-                        candidates[i] = candidates[i].Dead();
-                    }
+                    next.Add(candidate.Advanced());
+                }
+                else
+                {
+                    next.Add(candidate.Dead());
                 }
             }
-            else
+
+            _stepped.Add(new(alternative, next));
+        }
+
+        if (atEnd)
+        {
+            return _stepped;
+        }
+
+        var nextId = NextId(_stepped);
+
+        foreach (var (_, candidates) in _stepped)
+        {
+            for (var i = 0; i < candidates.Count; i++)
             {
-                Advance(candidates, _representatives[symbol]);
-                Close(candidates, ref nextId);
+                if (candidates[i].Kind == CandidateKind.Live)
+                {
+                    Commit(candidates, i, candidates[i].Scope.Count);
+                }
+            }
+
+            Close(candidates, ref nextId);
+        }
+
+        return _stepped;
+    }
+
+    private static bool Survives(List<Candidate> candidates, bool atEnd, char c)
+    {
+        foreach (var candidate in candidates)
+        {
+            if (candidate.Kind == CandidateKind.Matched
+                || (candidate.Kind == CandidateKind.Live
+                    && !atEnd
+                    && Reads(candidate, c)))
+            {
+                return true;
             }
         }
 
-        return next;
+        return false;
     }
 
     private int TermId(RegularTerm term)
@@ -561,21 +806,25 @@ file sealed class Determinizer
         return id;
     }
 
-    public CommitAutomaton? Run(int maxStates)
+    public CommitAutomaton? Run(int maxStates, long maxWork)
     {
-        var initial = _alternatives.Select(static alternative => new List<Candidate> { new() { Rest = new(new Run(alternative), null) } }).ToArray();
+        var initial = new List<AlternativePaths>(_alternatives.Length);
         var nextId = 0;
+        var work = 0L;
 
-        foreach (var candidates in initial)
+        Partition();
+
+        for (var alternative = 0; alternative < _alternatives.Length; alternative++)
+        {
+            initial.Add(new(alternative, [new() { Rest = new(new Run(_alternatives[alternative]), null), Scope = [] }]));
+        }
+
+        foreach (var (_, candidates) in initial)
         {
             Close(candidates, ref nextId);
         }
 
-        if (Make(initial) is not { } start)
-        {
-            return null;
-        }
-
+        var start = Make(initial);
         var symbols = _representatives.Count + 1;
         var next = new List<int>();
         var ends = new List<int[]>();
@@ -591,11 +840,12 @@ file sealed class Determinizer
             }
 
             var configuration = _configurations[state];
-            var isLive = configuration.Any(static candidates => candidates.Exists(static candidate => candidate.Kind == CandidateKind.Live));
+            var isLive = configuration.Any(static paths => paths.Candidates.Exists(static candidate => candidate.Kind == CandidateKind.Live));
+            var paths = configuration.Sum(static alternative => alternative.Candidates.Count);
 
             live.Add(isLive);
-            matched.Add([.. Enumerable.Range(0, configuration.Length).Where(alternative => configuration[alternative].Exists(static candidate => candidate.Kind == CandidateKind.Matched))]);
-            committed.Add(configuration[0] is [.., var lowest] && lowest.Committed);
+            matched.Add(Matched(configuration));
+            committed.Add(configuration is [{ Alternative: 0, Candidates: [.., var lowest] }, ..] && lowest.Committed);
 
             for (var symbol = 0; symbol < symbols; symbol++)
             {
@@ -603,16 +853,20 @@ file sealed class Determinizer
                 {
                     next.Add(state);
                     ends.Add([]);
+                    continue;
                 }
-                else if (Make(Step(configuration, symbol)) is { } target)
-                {
-                    next.Add(target.State);
-                    ends.Add(target.Fresh);
-                }
-                else
+
+                work += paths;
+
+                if (work > maxWork)
                 {
                     return null;
                 }
+
+                var (target, fresh) = Make(Step(configuration, symbol));
+
+                next.Add(target);
+                ends.Add(fresh);
             }
         }
 
@@ -650,8 +904,6 @@ internal sealed class CommitAutomaton
     /// The result of a scan: the winning alternative and where its match ended, or <c>-1</c> and whether the failure consumed input.
     /// </summary>
     public readonly record struct Result(int Alternative, int End, bool Committed);
-
-    private const int MaxCandidates = 1_000;
 
     /// <summary>
     /// The number of alternatives.
@@ -710,10 +962,14 @@ internal sealed class CommitAutomaton
     public int Symbols => Classes + 1;
 
     /// <summary>
-    /// Builds the automaton for <paramref name="alternatives"/>, or returns <see langword="null"/> if it would have more than <paramref name="maxStates"/> states.
+    /// Builds the automaton for <paramref name="alternatives"/>, or returns <see langword="null"/> if it would have more than <paramref name="maxStates"/> states,
+    /// or if building it would step more than <paramref name="maxWork"/> paths.
     /// </summary>
-    public static CommitAutomaton? Build(IReadOnlyList<RegularTerm> alternatives, int maxStates) =>
-        new Determinizer(alternatives, MaxCandidates).Run(maxStates);
+    /// <remarks>
+    /// Each transition explored steps every path of the state it leaves. The count depends only on the alternatives, so the same alternatives always give the same result.
+    /// </remarks>
+    public static CommitAutomaton? Build(IReadOnlyList<RegularTerm> alternatives, int maxStates, long maxWork = long.MaxValue) =>
+        new Determinizer(alternatives).Run(maxStates, maxWork);
 
     /// <summary>
     /// Scans <paramref name="input"/> from its start.

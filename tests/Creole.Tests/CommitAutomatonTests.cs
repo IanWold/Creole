@@ -55,8 +55,22 @@ public class CommitAutomatonTests
     }
 
     [Fact]
+    public void ALongestOfMoreThanAThousandAlternativesIsBuilt()
+    {
+        var automaton = CommitAutomaton.Build([.. Enumerable.Range(0, 1_001).Select(static i => Regular.Of(Char((char)(0x4E00 + i)))!)], MaxStates);
+        var last = (char)(0x4E00 + 1_000);
+
+        Assert.NotNull(automaton);
+        Assert.Equal(new CommitAutomaton.Result(1_000, 1, Committed: false), automaton.Match(last.ToString()));
+    }
+
+    [Fact]
     public void AnAutomatonOverTheStateCapIsNotBuilt() =>
         Assert.Null(CommitAutomaton.Build([.. LexerSamples.CSharp().Select(static rule => Regular.Of(rule)!)], maxStates: 50));
+
+    [Fact]
+    public void AnAutomatonOverTheWorkBudgetIsNotBuilt() =>
+        Assert.Null(CommitAutomaton.Build([.. LexerSamples.CSharp().Select(static rule => Regular.Of(rule)!)], MaxStates, maxWork: 1_000));
 
     [Fact]
     public void BothLexersStaySmall()

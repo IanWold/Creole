@@ -23,7 +23,7 @@ Examples A, B and C as runnable samples with tests.
 ## Blocked by
 
 - [CORE-11 Expression.Build](../02-core-combinators/CORE-11-expressionbuild.md)
-- [INT-04 Execute Bind, Expression.Build and Custom](../03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md)
+- [INT-04 Execute Bind, Expression.Build and Custom](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md)
 - [LAY-07 Three-layer demo and bounded-memory check](../06-layers-and-pipelines/LAY-07-three-layer-demo-and-bounded-memory-check.md)
 - [MODE-03 Rollback rule](../07-mode-channels/MODE-03-rollback-rule.md)
 - [ANA-06 Deterministic mode](../09-static-analysis/ANA-06-deterministic-mode.md)

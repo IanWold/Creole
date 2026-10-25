@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | Accepted |
 | Date | 2026-10-23 |
-| Cards | [INT-06](../../active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md), [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [ANA-04](../../active/09-static-analysis/ANA-04-choice-checks.md), [ANA-07](../../active/09-static-analysis/ANA-07-linear-maximal-munch.md), [GEN-05](../../active/11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md) |
+| Cards | [INT-06](../../complete/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md), [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [ANA-04](../../active/09-static-analysis/ANA-04-choice-checks.md), [ANA-07](../../active/09-static-analysis/ANA-07-linear-maximal-munch.md), [GEN-05](../../active/11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md) |
 | Whitepaper | [§ Properties](../../../whitepaper.md#properties), [§ Longest match](../../../whitepaper.md#longest-match), [§ Interpreted engine](../../../whitepaper.md#interpreted-engine), [§ Deterministic mode](../../../whitepaper.md#deterministic-mode) |
 | Research | [DFA compilation under commit semantics](../research/2026-10-23-dfa-compilation-under-commit-semantics.md), [Commit-aware automaton prototypes](../research/2026-10-23-commit-aware-automaton-prototypes.md) |
 | Supersedes | — |
@@ -118,7 +118,7 @@ This record was edited in place before its branch merged, to reflect what INT-06
     - § Diagnostics (CRL0101).
     - § Custom primitives: running a scanner alongside a `Longest` DFA is a fusion feature for FUS-03, not part of this decision.
     - § Layer fusion.
-- **[INT-06](../../active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md).** Summary, Scope and acceptance criteria are rewritten from points 1–8. The claim that `Longest` "is unaffected" is gone. INT-06 now unblocks ANA-01 and is Building.
+- **[INT-06](../../complete/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md).** Summary, Scope and acceptance criteria are rewritten from points 1–8. The claim that `Longest` "is unaffected" is gone. INT-06 now unblocks ANA-01 and is Building.
 - **[ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md).** Regular comes from INT-06's predicate (point 7). ANA-01 is now blocked by INT-06; no wave changed.
 - **[ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md).** A scope item covers expectations from compiled subtrees, and exposing how far each scan read (point 6).
 - **[ANA-04](../../active/09-static-analysis/ANA-04-choice-checks.md), [ANA-07](../../active/09-static-analysis/ANA-07-linear-maximal-munch.md), [GEN-05](../../active/11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md).** Their scopes point at this record and at the commit-aware automata.

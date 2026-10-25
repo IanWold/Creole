@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | Accepted |
 | Date | 2026-10-25 |
-| Cards | [INT-08](../../active/03-interpreter/INT-08-single-layer-parse-api.md), [LAY-05](../../active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md), [STRM-03](../../active/08-streaming/STRM-03-streaming-diagnostics.md), [ERR-03](../../active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) |
+| Cards | [INT-08](../../complete/03-interpreter/INT-08-single-layer-parse-api.md), [LAY-05](../../active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md), [STRM-03](../../active/08-streaming/STRM-03-streaming-diagnostics.md), [ERR-03](../../active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) |
 | Whitepaper | [§ Results](../../../whitepaper.md#results-1), [§ The error model](../../../whitepaper.md#the-error-model), [§ Running pipelines](../../../whitepaper.md#running-pipelines), [§ A. JSON in two layers](../../../whitepaper.md#a-json-in-two-layers), [§ Streaming and async input](../../../whitepaper.md#streaming-and-async-input) |
 | Research | — (library documentation read for this record by a subagent on 2026-10-25, cited inline) |
 | Supersedes | — |
@@ -162,7 +162,7 @@ What would change this record:
   - [§ Streaming and async input](../../../whitepaper.md#streaming-and-async-input): whole-input parses resolve lazily from the text their result holds, and `Diagnostics.Render()` shows the same format for both kinds of parse.
   - [§ A. JSON in two layers](../../../whitepaper.md#a-json-in-two-layers) and [§ Running pipelines](../../../whitepaper.md#running-pipelines) are unchanged; they already read this way.
 - Cards:
-  - [INT-08](../../active/03-interpreter/INT-08-single-layer-parse-api.md): its rendering scope item is settled. Its signature is now `parser.Parse(input, source, options)`, and a new criterion covers rendering.
+  - [INT-08](../../complete/03-interpreter/INT-08-single-layer-parse-api.md): its rendering scope item is settled. Its signature is now `parser.Parse(input, source, options)`, and a new criterion covers rendering.
   - [LAY-05](../../active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md): its rendering scope line is settled. A pipeline's result holds its root source.
   - [STRM-03](../../active/08-streaming/STRM-03-streaming-diagnostics.md): its scope gains `Render()` over captured lines.
 - Docs: docs/concepts/errors.md changes with INT-08's build, since the docs describe what is built.

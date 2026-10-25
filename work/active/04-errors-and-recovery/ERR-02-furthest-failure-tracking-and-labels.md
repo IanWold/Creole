@@ -34,12 +34,12 @@ Report the furthest failure with merged expectations, without allocating until a
 
 ## Blocked by
 
-- [INT-03 Execute the core combinators](../03-interpreter/INT-03-execute-the-core-combinators.md)
+- [INT-03 Execute the core combinators](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md)
 - [ERR-01 Error and result types](../04-errors-and-recovery/ERR-01-error-and-result-types.md)
 
 ## Unblocks
 
-- [INT-08 Single-layer Parse API](../03-interpreter/INT-08-single-layer-parse-api.md)
+- [INT-08 Single-layer Parse API](../../complete/03-interpreter/INT-08-single-layer-parse-api.md)
 - [ERR-05 Recover combinator and strategies](../04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md)
 - [ERR-06 OrInsert for missing items](../04-errors-and-recovery/ERR-06-orinsert-for-missing-items.md)
 - [LAY-06 Buffer size limit](../06-layers-and-pipelines/LAY-06-buffer-size-limit.md)
@@ -114,7 +114,7 @@ Deviations and decisions:
 
 Follow-ups:
 
-- [INT-08](../03-interpreter/INT-08-single-layer-parse-api.md) attaches and reuses the log, maps positions to spans, and settles how worked example A renders against its source.
+- [INT-08](../../complete/03-interpreter/INT-08-single-layer-parse-api.md) attaches and reuses the log, maps positions to spans, and settles how worked example A renders against its source.
 - [LAY-01](../06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) captures `Context`, filter and chain spans by value for streamed input.
 - [GEN-02](../11-source-generator/GEN-02-emit-the-core-combinators.md) records and displays as the interpreter does.
 - `scripts/work.py` blanks inline code before slugging headings, so it rejects valid anchors to headings with code in them. This predates the card and needs a `tooling:` fix.

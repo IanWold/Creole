@@ -15,7 +15,7 @@ Warn about alternatives that can never succeed or never be tried.
 - CRL0101: shadowed alternative, exact via a product of INT-06's commit-aware automata when both are regular, otherwise from FIRST sets ([ADR-0017](../../docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md)). Regex automata would be wrong here: the regex reading of a regular rule can disagree with the interpreter ([prototype note](../../docs/research/2026-10-23-commit-aware-automaton-prototypes.md), finding 4).
 - CRL0102: overlapping FIRST in `Or` without `Atomic`.
 - CRL0103: two `Longest` alternatives match the same string, decided on the same automata.
-- Build the product construction over INT-06's automata here, with its first user (moved from INT-06).
+- Build the product construction over INT-06's automata here, with its first user (moved from INT-06). Construction stops at a state cap or a work budget ([ADR-0025](../../docs/decisions/0025-automaton-construction-stops-at-a-state-cap-or-a-work-budget.md)). The analysis may pass its own limits, and decides what to report when an automaton is not built.
 - CRL0105: `Match` leaves a union case without a branch.
 
 ## Acceptance criteria
@@ -24,7 +24,7 @@ Warn about alternatives that can never succeed or never be tried.
 
 ## Blocked by
 
-- [INT-06 DFA compiler for regular subtrees](../03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md)
+- [INT-06 DFA compiler for regular subtrees](../../complete/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md)
 - [ANA-02 Analysis report and Debug enforcement](../09-static-analysis/ANA-02-analysis-report-and-debug-enforcement.md)
 
 ## Unblocks

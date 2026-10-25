@@ -27,7 +27,7 @@ Each layer boundary is a memoizing buffer, so a rewind is an index reset and ups
 
 ## Blocked by
 
-- [INT-01 Cursor and in-memory input](../03-interpreter/INT-01-cursor-and-in-memory-input.md)
+- [INT-01 Cursor and in-memory input](../../complete/03-interpreter/INT-01-cursor-and-in-memory-input.md)
 
 ## Unblocks
 
