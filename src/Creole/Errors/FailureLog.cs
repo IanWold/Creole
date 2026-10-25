@@ -10,6 +10,11 @@ namespace Creole;
 /// The first failure at a position keeps its context stack.
 /// </para>
 /// <para>
+/// A rejected filter and a chained non-associative operator are reported behind the cursor, at the start of the input they name.
+/// They capture that position's item by value and the end of their span, so building the error reads nothing behind the cursor, and the span covers the longest of them.
+/// A chained operator's message is built only when the error is.
+/// </para>
+/// <para>
 /// <c>Lookahead</c>, <c>Not</c> and <c>Longest</c> take a <see cref="Save"/> and may put the failure back as it was with <see cref="Restore"/>.
 /// While one is open, the expectations it saved are protected, so a further failure starts a new range of the array instead of overwriting them.
 /// <c>Named</c> takes a <see cref="Note"/> and relabels with <see cref="Relabel"/>.
@@ -27,12 +32,16 @@ namespace Creole;
 /// </remarks>
 internal sealed class FailureLog<T>
 {
+    private ChainMessage? _chain;
     private int _context = -1;
     private int _count;
     private int _current = -1;
+    private long _end = -1;
     private Expected[] _expected = new Expected[8];
     private int _frameCount;
     private ContextFrame[] _frames = new ContextFrame[8];
+    private bool _hasItem;
+    private T _item = default!;
     private string? _message;
     private int _protected;
     private int _records;
@@ -129,6 +138,10 @@ internal sealed class FailureLog<T>
             _start = _protected;
             _count = _protected;
             _message = null;
+            _chain = null;
+            _end = -1;
+            _hasItem = false;
+            _item = default!;
             _context = _current;
         }
 
@@ -145,6 +158,10 @@ internal sealed class FailureLog<T>
         _start = 0;
         _count = 0;
         _message = null;
+        _chain = null;
+        _end = -1;
+        _hasItem = false;
+        _item = default!;
         _context = -1;
         _current = -1;
         _frameCount = 0;
@@ -175,7 +192,7 @@ internal sealed class FailureLog<T>
     /// <summary>
     /// Ends a <see cref="Save"/> and keeps the furthest failure as it is now.
     /// </summary>
-    public void Keep(in FailureMark mark)
+    public void Keep(in FailureMark<T> mark)
     {
         _protected = mark.Protected;
         _restoring--;
@@ -199,8 +216,8 @@ internal sealed class FailureLog<T>
     /// <summary>
     /// The furthest failure as it is now, for <see cref="Relabel"/>. Unlike <see cref="Save"/>, it protects nothing and needs no ending.
     /// </summary>
-    public FailureMark Note() =>
-        new(Position, _start, _count, _message, _context, _records, _protected);
+    public FailureMark<T> Note() =>
+        new(Position, _start, _count, _message, _chain, _end, _hasItem, _item, _context, _records, _protected);
 
     /// <summary>
     /// Records a failure at <paramref name="position"/> that expected <paramref name="expected"/>, or nothing in particular when it is null.
@@ -234,9 +251,43 @@ internal sealed class FailureLog<T>
     /// </summary>
     public void Record(long position, string message)
     {
-        if (Reaches(position))
+        if (Reaches(position) && _message is null && _chain is null)
         {
-            _message ??= message;
+            _message = message;
+        }
+    }
+
+    /// <summary>
+    /// Records a failure reported behind the cursor at <paramref name="position"/>, naming the input up to <paramref name="end"/>: a rejected filter, with <paramref name="message"/> if it has one, or a chained operator, with <paramref name="chain"/>.
+    /// </summary>
+    /// <param name="position">Where the input the failure names starts.</param>
+    /// <param name="end">Where that input ends.</param>
+    /// <param name="hasItem">Whether <paramref name="item"/> holds the item at <paramref name="position"/>.</param>
+    /// <param name="item">The item at <paramref name="position"/>, captured before it was consumed.</param>
+    /// <param name="message">The filter's message, or null.</param>
+    /// <param name="chain">The chained operator's message, or null.</param>
+    public void Reject(long position, long end, bool hasItem, T item, string? message, ChainMessage? chain)
+    {
+        if (!Reaches(position))
+        {
+            return;
+        }
+
+        if (_message is null && _chain is null)
+        {
+            _message = message;
+            _chain = chain;
+        }
+
+        if (end > _end)
+        {
+            _end = end;
+        }
+
+        if (hasItem && !_hasItem)
+        {
+            _item = item;
+            _hasItem = true;
         }
     }
 
@@ -248,7 +299,7 @@ internal sealed class FailureLog<T>
     /// A failure that expected nothing in particular counts. Expectations recorded at <paramref name="start"/> before the note stay, ahead of the label.
     /// A message is never removed.
     /// </remarks>
-    public void Relabel(in FailureMark note, long start, Expected label)
+    public void Relabel(in FailureMark<T> note, long start, Expected label)
     {
         if (Position != start || _records == note.Records)
         {
@@ -265,12 +316,16 @@ internal sealed class FailureLog<T>
     /// <summary>
     /// Ends a <see cref="Save"/> and puts the furthest failure back as it was then.
     /// </summary>
-    public void Restore(in FailureMark mark)
+    public void Restore(in FailureMark<T> mark)
     {
         Position = mark.Position;
         _start = mark.Start;
         _count = mark.Count;
         _message = mark.Message;
+        _chain = mark.Chain;
+        _end = mark.End;
+        _hasItem = mark.HasItem;
+        _item = mark.Item;
         _context = mark.Context;
         _records = mark.Records;
         _protected = mark.Protected;
@@ -280,7 +335,7 @@ internal sealed class FailureLog<T>
     /// <summary>
     /// Saves the furthest failure so that <see cref="Restore"/> can put it back, protecting its expectations until <see cref="Restore"/> or <see cref="Keep"/> ends the save.
     /// </summary>
-    public FailureMark Save()
+    public FailureMark<T> Save()
     {
         var mark = Note();
 
@@ -297,8 +352,9 @@ internal sealed class FailureLog<T>
     /// <param name="layer">The name of the layer, such as <c>parser</c>.</param>
     /// <param name="spanOf">The source span of the items from a start position up to an end position; for an empty range, a zero-width span there.</param>
     /// <remarks>
-    /// The span covers the item at the position, or is zero-width at the end of the input.
+    /// The span covers the item at the position, or is zero-width at the end of the input, widened to cover the input a failure reported behind the cursor named.
     /// What was found is the message if one was recorded, otherwise that item or the end of input.
+    /// An item captured by a failure reported behind the cursor is used rather than read.
     /// Expected items that show the same are listed once, in the order first recorded.
     /// Context lines come from the stack of the first failure at the position, innermost first, leaving out contexts that started there.
     /// </remarks>
@@ -309,11 +365,13 @@ internal sealed class FailureLog<T>
             return null;
         }
 
-        var atItem = cursor.TryPeekAt(Position, out var item);
-        var span = spanOf(Position, atItem ? Position + 1 : Position);
+        var item = _item;
+        var atItem = _hasItem || cursor.TryPeekAt(Position, out item);
+        var span = spanOf(Position, Math.Max(atItem ? Position + 1 : Position, _end));
+        var message = _message ?? _chain?.Text(_hasItem, _item);
 
-        Unexpected unexpected = _message is not null
-            ? new CustomMessage(_message)
+        Unexpected unexpected = message is not null
+            ? new CustomMessage(message)
             : atItem
                 ? new UnexpectedItem(Display<T>.Item(item))
                 : new EndOfInput();

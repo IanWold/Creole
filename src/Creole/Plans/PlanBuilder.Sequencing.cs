@@ -5,7 +5,8 @@ internal sealed partial class PlanBuilder
     public Plan<TIn, TResult> Bind<TIn, TSource, TNext, TResult>(Parser<TIn, TSource> source, Func<TSource, Parser<TIn, TNext>> next, Func<TSource, TNext, TResult> selector, string nextExpression) =>
         new BindPlan<TIn, TSource, TNext, TResult>(Lower(source), next, selector, nextExpression);
 
-    public Plan<TIn, T> Filter<TIn, T>(Parser<TIn, T> source, Func<T, bool> predicate) => new FilterPlan<TIn, T>(Lower(source), predicate);
+    public Plan<TIn, T> Filter<TIn, T>(Parser<TIn, T> source, Func<T, bool> predicate, string? message) =>
+        new FilterPlan<TIn, T>(Lower(source), predicate, message);
 
     /// <summary>
     /// Lowers a <c>Select</c>, composed with its source's function when the source is also a <c>Select</c> and <see cref="LoweringOptions.CollapseSelect"/> is on.

@@ -75,14 +75,14 @@ Case values convert to the union implicitly, so `Expectation e = new Label("valu
 
 ## What a failure reports
 
-> The interpreter records failures as this section describes, with one gap that a later step of the error model's failure tracking (ERR-02) fills: a rejected filter and a chained non-associative operator do not yet report as [§ The error model](../../whitepaper.md#the-error-model) says. The public method that runs a parser and returns its errors arrives with INT-08.
+> The interpreter records failures as this section describes. The public method that runs a parser and returns its errors arrives with INT-08.
 
 Each layer keeps the furthest failure of its parse, the one at the latest position, and reports that one. Where several parts of a grammar fail at that same position, their failures merge:
 
 - A failure before the furthest one is ignored, and one past it replaces it.
 - Expectations are listed in the order they were recorded. One that shows the same as an earlier one is listed once.
-- A message, from `Fail(message)`, takes the place of what was found. The first message recorded at the position wins, and the expectations stay alongside it.
-- The span covers the item at the position, or is zero-width at the end of the input.
+- A message, from `Fail(message)`, a filter's message or a chained operator, takes the place of what was found. The first message recorded at the position wins, and the expectations stay alongside it.
+- The span covers the item at the position, or is zero-width at the end of the input. A rejected value or a chained operator reported there widens it to cover that input, the longest of them if there are several.
 - What was found is the message if there is one, and otherwise the item at the position or the end of input.
 
 A failure deeper than the cursor counts too. In `Atomic(Char('a').Then(Char('b'))).Or(Char('c'))` on `ax`, the report is "expected 'b'" at the `x`, even though the `Atomic` rewound before `Char('c')` ran.
@@ -105,6 +105,8 @@ What each primitive expects when it fails:
 | `Fail(message)` | nothing; it reports `message` |
 
 A `Match` whose value has no case expects nothing in particular, where its branch would have started.
+
+Two failures are reported before the cursor, at the start of the input they name: a value that `Where` rejects ([Sequencing](sequencing.md)) and a chained non-associative operator ([Expressions](expressions.md)). Each keeps what its error needs, such as the first item of the rejected value, when it is recorded, so building the error never reads input the parse has already moved past.
 
 How items show:
 
