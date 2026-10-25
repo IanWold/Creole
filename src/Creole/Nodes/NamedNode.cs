@@ -10,12 +10,17 @@ internal sealed class NamedNode<TIn, T>(Parser<TIn, T> item, Label label) : Pars
 
     internal override NodeKind Kind => NodeKind.Named;
 
+    /// <summary>
+    /// What a failure expects once the label replaces what <see cref="Item"/> recorded.
+    /// </summary>
+    public Expected Expected { get; } = Expected.Labelled(label.Name);
+
     public Parser<TIn, T> Item { get; } = item;
 
     public Label Label { get; } = label;
 
     internal override Plan<TIn, T> Lower(PlanBuilder builder) =>
-        builder.Named(Item);
+        builder.Named(Item, Expected);
 
     internal override MatchValue<T>? ValueOfMatch() =>
         Item.ValueOfMatch();

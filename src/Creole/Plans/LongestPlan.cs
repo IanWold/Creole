@@ -2,7 +2,8 @@ namespace Creole;
 
 /// <summary>
 /// Runs every alternative atomically from the same position and keeps the one that consumed the most. A tie goes to the earliest.
-/// Fails without consuming if every alternative fails.
+/// Fails without consuming if every alternative fails, keeping every alternative's failures.
+/// When one succeeds, the furthest failure is put back as it was, so neither the winner's loop exits nor a loser that read further are reported.
 /// </summary>
 /// <remarks>
 /// Each alternative starts with no cut in force, and a cut passed inside one does not survive leaving it (ADR-0011 point 4).
@@ -16,6 +17,7 @@ internal sealed class LongestPlan<TIn, T>(Plan<TIn, T>[] alternatives) : Plan<TI
     {
         var outerCut = cursor.Cut;
         var start = cursor.Position;
+        var failures = cursor.SaveFailures();
         var bestEnd = -1L;
 
         foreach (var alternative in _alternatives)
@@ -32,8 +34,16 @@ internal sealed class LongestPlan<TIn, T>(Plan<TIn, T>[] alternatives) : Plan<TI
         }
 
         cursor.Cut = outerCut;
-        cursor.Reset(bestEnd < 0 ? start : bestEnd);
 
-        return bestEnd >= 0;
+        if (bestEnd < 0)
+        {
+            cursor.Reset(start);
+            cursor.KeepFailures(in failures);
+            return false;
+        }
+
+        cursor.Reset(bestEnd);
+        cursor.RestoreFailures(in failures);
+        return true;
     }
 }

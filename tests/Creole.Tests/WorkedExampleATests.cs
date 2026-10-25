@@ -182,7 +182,8 @@ public class WorkedExampleATests
         var chars = Cursor<char>.FromMemory(json.AsMemory());
         var (_, tokens) = Execution.Run(JsonExample.Tokens, ref chars);
         var (without, with) = Rewrites.Compare(JsonGrammar.Document, LoweringOptions.Dispatch, [.. tokens]);
-        var value = Assert.IsType<RecPlan<JTok, JsonValue>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(JsonGrammar.Value));
+        var named = Assert.IsType<NamedPlan<JTok, JsonValue>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(JsonGrammar.Value));
+        var value = Assert.IsType<RecPlan<JTok, JsonValue>>(named.Item);
 
         Assert.IsType<DispatchPlan<JTok, JsonValue>>(value.Target);
         Assert.Equal(without, with);

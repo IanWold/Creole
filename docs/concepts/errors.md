@@ -75,7 +75,7 @@ Case values convert to the union implicitly, so `Expectation e = new Label("valu
 
 ## What a failure reports
 
-> The interpreter records failures as this section describes, with gaps that later steps of the error model's failure tracking (ERR-02) fill: `Named` labels, context lines, `Lookahead`, `Not`, `Longest`, filters and the chained-operator message do not yet change what is recorded, and an `Or` that dispatches on the next item does not yet record what the alternatives it skips expected. The public method that runs a parser and returns its errors arrives with INT-08.
+> The interpreter records failures as this section describes, with gaps that later steps of the error model's failure tracking (ERR-02) fill: a rejected filter and a chained non-associative operator do not yet report as [§ The error model](../../whitepaper.md#the-error-model) says, and an `Or` that dispatches on the next item does not yet record what the alternatives it skips expected. The public method that runs a parser and returns its errors arrives with INT-08.
 
 Each layer keeps the furthest failure of its parse, the one at the latest position, and reports that one. Where several parts of a grammar fail at that same position, their failures merge:
 
@@ -86,6 +86,8 @@ Each layer keeps the furthest failure of its parse, the one at the latest positi
 - What was found is the message if there is one, and otherwise the item at the position or the end of input.
 
 A failure deeper than the cursor counts too. In `Atomic(Char('a').Then(Char('b'))).Or(Char('c'))` on `ax`, the report is "expected 'b'" at the `x`, even though the `Atomic` rewound before `Char('c')` ran.
+
+`Named`, `Context`, `Lookahead`, `Not` and `Longest` change what is reported, as [Backtracking and labels](control.md#what-failures-report) and [Choice](choice.md#longest-match) describe. Context lines come from the first failure recorded at the position, innermost first, and leave out a construct that started at the position itself.
 
 What each primitive expects when it fails:
 

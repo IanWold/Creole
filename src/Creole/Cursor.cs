@@ -174,6 +174,11 @@ public ref struct Cursor<T>
     }
 
     /// <summary>
+    /// Enters a context with <paramref name="text"/> at the cursor, for the failures recorded until <see cref="LeaveContext"/>.
+    /// </summary>
+    internal readonly void EnterContext(string text) => Failures?.Enter(text, Position);
+
+    /// <summary>
     /// Enters one level of recursion at the cursor's position. Call <see cref="LeaveLevel"/> when the level returns, whether it succeeded or failed.
     /// </summary>
     /// <remarks>
@@ -224,9 +229,29 @@ public ref struct Cursor<T>
     }
 
     /// <summary>
+    /// Ends a <see cref="SaveFailures"/> and keeps the furthest failure as it is now.
+    /// </summary>
+    internal readonly void KeepFailures(in FailureMark mark) => Failures?.Keep(in mark);
+
+    /// <summary>
+    /// Leaves the context the matching <see cref="EnterContext"/> entered.
+    /// </summary>
+    internal readonly void LeaveContext() => Failures?.Leave();
+
+    /// <summary>
     /// Leaves the level the matching <see cref="EnterLevel"/> entered.
     /// </summary>
     internal void LeaveLevel() => Depth--;
+
+    /// <summary>
+    /// The furthest failure as it is now, for <see cref="Relabel"/>.
+    /// </summary>
+    internal readonly FailureMark NoteFailures() => Failures?.Note() ?? default;
+
+    /// <summary>
+    /// Replaces the expectations recorded at <paramref name="start"/> since <paramref name="note"/> with <paramref name="label"/>, as <c>Named</c> does.
+    /// </summary>
+    internal readonly void Relabel(in FailureMark note, long start, Expected label) => Failures?.Relabel(in note, start, label);
 
     /// <summary>
     /// Moves the cursor to <paramref name="position"/>, which must be a position this cursor has already reached and the input still holds.
@@ -258,6 +283,16 @@ public ref struct Cursor<T>
 
         throw new ArgumentOutOfRangeException(nameof(position), position, "The input does not hold this position.");
     }
+
+    /// <summary>
+    /// Ends a <see cref="SaveFailures"/> and puts the furthest failure back as it was then.
+    /// </summary>
+    internal readonly void RestoreFailures(in FailureMark mark) => Failures?.Restore(in mark);
+
+    /// <summary>
+    /// Saves the furthest failure until <see cref="RestoreFailures"/> or <see cref="KeepFailures"/>, as <c>Lookahead</c>, <c>Not</c> and <c>Longest</c> do.
+    /// </summary>
+    internal readonly FailureMark SaveFailures() => Failures?.Save() ?? default;
 
     /// <summary>
     /// The items from <paramref name="start"/> up to the cursor, which must be a position this cursor has already reached and the input still holds.

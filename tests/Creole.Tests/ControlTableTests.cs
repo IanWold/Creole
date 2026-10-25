@@ -27,6 +27,18 @@ public class ControlTableTests
         Assert.Equal(row.Expected, Execution.Outcome(ControlTable.Build(row.Shape), row.Input));
     }
 
+    [Theory]
+    [MemberData(nameof(CaseNames))]
+    public void TheInterpreterReportsEachRowsFailure(string name)
+    {
+        var row = _cases[name];
+
+        Assert.Equal(
+            row.Reported is null ? null : $"error[parser] at {row.Reported}",
+            Execution.Error(ControlTable.Build(row.Shape), row.Input)?.ToString()
+        );
+    }
+
     [Fact]
     public void TheTableCoversEveryControlNode()
     {

@@ -18,6 +18,7 @@ Each layer boundary is a memoizing buffer, so a rewind is an index reset and ups
 - Release segments below the retention horizon back to the pool.
 - Back `Cursor<TIn>` with the buffer, keeping the in-segment fast path.
 - A slice taken over the buffer is a copy, never a view of a pooled segment ([ADR-0013](../../docs/decisions/0013-slices-view-in-memory-input-and-copy-streamed-input.md)).
+- A `Context` frame captures the span of its first item by value when it is entered, because the buffer may release that item before an error is built ([ADR-0021](../../docs/decisions/0021-how-failures-are-recorded-and-merged.md) point 4). ERR-02 records only the position, which is exact for in-memory input; its `FailureLog<T>` maps positions to spans when it builds the error.
 
 ## Acceptance criteria
 
