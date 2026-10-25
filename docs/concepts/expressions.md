@@ -56,7 +56,7 @@ With the table above:
 | `a < b + 1` | `a < (b + 1)` | `+` is tighter than `<` |
 | `a < b < c` | An error at the second `<` | `<` is `InfixN`, so it cannot be chained; write `(a < b) < c` |
 
-**Chained non-associative operators.** On `a < b < c`, the expression fails after consuming the second `<`. The error points at that operator, with the message `'<' cannot be chained; add parentheses`. The operator is named as an error would name what it expects: by its `Named` label if it has one, otherwise as its leading character, string or token kind (`"<="` for `String("<=")`). Anything else expected at that position, such as a tighter operator, is still listed.
+**Chained non-associative operators.** On `a < b < c`, the expression fails after consuming the second `<`. The error points at that operator, with the message `'<' cannot be chained; add parentheses`. The operator is named as an error would name what it expects: by its leading character, string or token kind (`"<="` for `String("<=")`), or by the label of the outermost `Named` on the way to it. An operator with no such leading item, such as a `Satisfy` or a choice, is named by the item it starts with. Anything else expected at that position, such as a tighter operator, is still listed.
 
 **Commit.** Ordinary [commit semantics](choice.md#ordered-choice) apply. An operator that fails without consuming input ends the expression. An operator that consumed input commits, so on `a +` the expression fails at the end of the input instead of producing `a`. An expression that fails without consuming, as on `+`, lets an enclosing choice try its next alternative.
 

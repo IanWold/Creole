@@ -131,6 +131,20 @@ public class RejectionFailureTests
         );
 
     [Fact]
+    public void TheFirstMessageAtAPositionWinsOverRejectionsAndChains()
+    {
+        Assert.Equal(
+            At(0, 2, new CustomMessage("first")),
+            Execution.Error(OneOf(Fail<string>("first"), Atomic(Grammars.Word.Where(static _ => false, "second"))), "ab")
+        );
+
+        Assert.Equal(
+            At(3, 4, new CustomMessage("less-than cannot be chained; add parentheses")),
+            Execution.Error(Atomic(Grammars.NamedOperator).Or(String("a<b").Then(Fail<int>("second"))), "a<b<c")
+        );
+    }
+
+    [Fact]
     public void UnderAtomicALabelNamesARejection()
     {
         var identifier = Atomic(Grammars.Word.Where(static word => word != "if"));

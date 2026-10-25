@@ -60,6 +60,7 @@ public class DispatchLoweringTests
         Char('a').Then(new CutThenNode<char>(Char('b'))).Select(static _ => "a!b"),
         Atomic(Char('b').Then(Char('a'))).Select(static _ => "ba"),
         CIString("k").Named("k"),
+        Char('a').Named("a").Then(Char('d')).Named("ad").Select(static _ => "ad"),
         Digit.Slice().Select(static text => text.ToString()),
         Char('c').Optional().Select(static _ => "c?"),
         new CutThenNode<string>(String("b")),
@@ -148,6 +149,24 @@ public class DispatchLoweringTests
             "parser",
             new UnexpectedItem("'x'"),
             [new ExpectedItem("'a'"), new Label("B"), new ExpectedItem("'c'"), new ExpectedItem("'d'"), new ExpectedItem("'!'")],
+            []
+        );
+
+        Assert.IsType<DispatchPlan<char, char>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(choice));
+        Assert.Equal(expected, Execution.Error(parser, "x", LoweringOptions.Dispatch));
+        Assert.Equal(expected, Execution.Error(parser, "x"));
+    }
+
+    [Fact]
+    public void ADispatchedChoiceNamesASkippedAlternativeByItsOutermostLabel()
+    {
+        var choice = OneOf(Char('a').Named("inner").Then(Char('b')).Named("outer"), Char('c'), Char('d'), Char('e'), Return('r'));
+        var parser = choice.Then(Char('!'));
+        var expected = new ParseError(
+            new SourceSpan(SourceId.Unnamed, 0, 1),
+            "parser",
+            new UnexpectedItem("'x'"),
+            [new Label("outer"), new ExpectedItem("'c'"), new ExpectedItem("'d'"), new ExpectedItem("'e'"), new ExpectedItem("'!'")],
             []
         );
 

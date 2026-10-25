@@ -110,8 +110,7 @@ Two failures are reported before the cursor, at the start of the input they name
 
 How items show:
 
-- A character shows in single quotes, such as `'a'`. Quotes, backslashes and characters that print nothing or move the cursor are escaped as in C#, such as `'
-'` or `''`, so a message never carries a terminal escape sequence. A string shows in double quotes with the same escapes.
+- A character shows in single quotes, such as `'a'`. Quotes, backslashes and characters that print nothing or move the cursor are escaped as in C#, such as `'\n'` or `'\u001B'`, so a message never carries a terminal escape sequence. A string shows in double quotes with the same escapes.
 - A token from a `TokenGrammar` shows as its type describes it, such as `','` or `string "host"`.
 - Any other item shows as its `ToString()`.
 

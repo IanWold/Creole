@@ -42,6 +42,13 @@ public class ControlFailureTests
         Assert.Equal(At(0, 1, new UnexpectedItem("'x'"), [new Label("sign")]), Execution.Error(Char('+').Or(Char('-')).Named("sign"), "x"));
 
     [Fact]
+    public void NamedReplacesWhatItsParserExpectedPastAnEarlierFailure() =>
+        Assert.Equal(
+            At(1, 2, new UnexpectedItem("'x'"), [new Label("bc")]),
+            Execution.Error(Char('q').Optional().Then(Char('a')).Then(Char('b').Or(Char('c')).Named("bc")), "ax")
+        );
+
+    [Fact]
     public void NamedKeepsWhatWasExpectedThereBeforeItRan() =>
         Assert.Equal(
             At(0, 1, new UnexpectedItem("'x'"), [new ExpectedItem("','"), new Label("letter")]),
@@ -150,6 +157,18 @@ public class ControlFailureTests
         Assert.Equal(error, ErrorKeepingFewFrames(Json.Objects, input));
         Assert.Equal(error, ErrorKeepingFewFrames(Json.Objects.Where(static _ => true), input));
         Assert.Equal(error, ErrorKeepingFewFrames(Lookahead(Json.Objects), input));
+    }
+
+    [Fact]
+    public void TheFurthestFailureKeepsItsContextWhileFramesAreCompacted()
+    {
+        var first = Atomic(Char('a').Then(Char('b')).Context("first")).Or(Return('z'));
+        var nested = Enumerable.Range(0, 9).Aggregate(Char('q'), static (parser, level) => parser.Context($"level {level}"));
+
+        Assert.Equal(
+            At(1, 2, new UnexpectedItem("'x'"), [new ExpectedItem("'b'")], Line("first", 0)),
+            ErrorKeepingFewFrames(first.Then(nested), "ax")
+        );
     }
 
     [Fact]
