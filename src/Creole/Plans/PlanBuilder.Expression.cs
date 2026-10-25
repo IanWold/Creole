@@ -16,7 +16,22 @@ internal sealed partial class PlanBuilder
     }
 
     public OperatorPlan<TIn, T> Infix<TIn, TOp, T>(Fixity fixity, Parser<TIn, TOp> op, Func<T, TOp, T, T> combine, int level) =>
-        new InfixOperatorPlan<TIn, TOp, T>(fixity, Lower(op), combine, level);
+        new InfixOperatorPlan<TIn, TOp, T>(fixity, Lower(op), combine, level)
+        {
+            Chain = fixity == Fixity.InfixN
+                ? Chained(op)
+                : null,
+        };
+
+    /// <summary>
+    /// The message for <paramref name="op"/> when it follows another operator of its non-associative level, naming it as dispatch would name it if skipped.
+    /// </summary>
+    private static ChainMessage Chained(INode op)
+    {
+        var (primitive, label) = Keyed(op);
+
+        return new ChainMessage(label ?? primitive?.Expected);
+    }
 
     public OperatorPlan<TIn, T> Postfix<TIn, TOp, T>(Parser<TIn, TOp> op, Func<T, TOp, T> combine, int level) =>
         new PostfixOperatorPlan<TIn, TOp, T>(Lower(op), combine, level);

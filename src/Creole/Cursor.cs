@@ -48,6 +48,11 @@ public ref struct Cursor<T>
     internal int Depth { get; private set; }
 
     /// <summary>
+    /// Where this layer's parse records its failures, or null to record none.
+    /// </summary>
+    internal FailureLog<T>? Failures { get; init; }
+
+    /// <summary>
     /// The most levels this layer's parse may be inside at once. <see cref="int.MaxValue"/> leaves only the stack check.
     /// </summary>
     internal int MaxDepth { get; init; } = int.MaxValue;
@@ -169,6 +174,11 @@ public ref struct Cursor<T>
     }
 
     /// <summary>
+    /// Enters a context with <paramref name="text"/> at the cursor, for the failures recorded until <see cref="LeaveContext"/>.
+    /// </summary>
+    internal readonly void EnterContext(string text) => Failures?.Enter(text, Position);
+
+    /// <summary>
     /// Enters one level of recursion at the cursor's position. Call <see cref="LeaveLevel"/> when the level returns, whether it succeeded or failed.
     /// </summary>
     /// <remarks>
@@ -188,6 +198,27 @@ public ref struct Cursor<T>
     }
 
     /// <summary>
+    /// Records a failure at the cursor that expected <paramref name="expected"/>, or nothing in particular when it is null.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal readonly void Fail(Expected? expected) => Failures?.Record(Position, expected);
+
+    /// <summary>
+    /// Records at the cursor, as one failure, the failures of several parsers that expected <paramref name="expected"/> in turn.
+    /// </summary>
+    internal readonly void FailAll(Expected[] expected) => Failures?.Record(Position, expected);
+
+    /// <summary>
+    /// Records a failure at <paramref name="position"/>, which the cursor has passed, that expected <paramref name="expected"/>, or nothing in particular when it is null.
+    /// </summary>
+    internal readonly void FailAt(long position, Expected? expected) => Failures?.Record(position, expected);
+
+    /// <summary>
+    /// Records a failure at the cursor that reports <paramref name="message"/>.
+    /// </summary>
+    internal readonly void FailWith(string message) => Failures?.Record(Position, message);
+
+    /// <summary>
     /// Creates a cursor at the start of an input held entirely in memory, whose items <see cref="Since"/> can return without copying.
     /// </summary>
     internal static Cursor<T> FromMemory(ReadOnlyMemory<T> input) => new(input.Span) { _segment = input };
@@ -197,17 +228,46 @@ public ref struct Cursor<T>
     /// </summary>
     internal readonly T ItemAt(long position)
     {
-        var at = this;
-        at.Reset(position);
-        at.TryPeek(out var item);
+        TryPeekAt(position, out var item);
 
         return item;
     }
 
     /// <summary>
+    /// Ends a <see cref="SaveFailures"/> and keeps the furthest failure as it is now.
+    /// </summary>
+    internal readonly void KeepFailures(in FailureMark<T> mark) => Failures?.Keep(in mark);
+
+    /// <summary>
+    /// Leaves the context the matching <see cref="EnterContext"/> entered.
+    /// </summary>
+    internal readonly void LeaveContext() => Failures?.Leave();
+
+    /// <summary>
     /// Leaves the level the matching <see cref="EnterLevel"/> entered.
     /// </summary>
     internal void LeaveLevel() => Depth--;
+
+    /// <summary>
+    /// The furthest failure as it is now, for <see cref="Relabel"/>.
+    /// </summary>
+    internal readonly FailureMark<T> NoteFailures() => Failures?.Note() ?? default;
+
+    /// <summary>
+    /// Records a failure behind the cursor at <paramref name="start"/>, naming the input from there to the cursor: a rejected filter with <paramref name="message"/>, or a chained operator with <paramref name="chain"/>.
+    /// </summary>
+    /// <param name="start">Where the named input starts.</param>
+    /// <param name="hasItem">Whether <paramref name="item"/> holds the item at <paramref name="start"/>.</param>
+    /// <param name="item">That item, captured before it was consumed.</param>
+    /// <param name="message">The filter's message, or null.</param>
+    /// <param name="chain">The chained operator's message, or null.</param>
+    internal readonly void Reject(long start, bool hasItem, T item, string? message, ChainMessage? chain) =>
+        Failures?.Reject(start, Position, hasItem, item, message, chain);
+
+    /// <summary>
+    /// Replaces the expectations recorded at <paramref name="start"/> since <paramref name="note"/> with <paramref name="label"/>, as <c>Named</c> does.
+    /// </summary>
+    internal readonly void Relabel(in FailureMark<T> note, long start, Expected label) => Failures?.Relabel(in note, start, label);
 
     /// <summary>
     /// Moves the cursor to <paramref name="position"/>, which must be a position this cursor has already reached and the input still holds.
@@ -239,6 +299,16 @@ public ref struct Cursor<T>
 
         throw new ArgumentOutOfRangeException(nameof(position), position, "The input does not hold this position.");
     }
+
+    /// <summary>
+    /// Ends a <see cref="SaveFailures"/> and puts the furthest failure back as it was then.
+    /// </summary>
+    internal readonly void RestoreFailures(in FailureMark<T> mark) => Failures?.Restore(in mark);
+
+    /// <summary>
+    /// Saves the furthest failure until <see cref="RestoreFailures"/> or <see cref="KeepFailures"/>, as <c>Lookahead</c>, <c>Not</c> and <c>Longest</c> do.
+    /// </summary>
+    internal readonly FailureMark<T> SaveFailures() => Failures?.Save() ?? default;
 
     /// <summary>
     /// The items from <paramref name="start"/> up to the cursor, which must be a position this cursor has already reached and the input still holds.
@@ -277,6 +347,18 @@ public ref struct Cursor<T>
         }
 
         return items;
+    }
+
+    /// <summary>
+    /// Reads the item at <paramref name="position"/>, which must be a position this cursor has already reached and the input still holds. The cursor does not move.
+    /// </summary>
+    /// <returns><see langword="false"/> if <paramref name="position"/> is the end of the input.</returns>
+    internal readonly bool TryPeekAt(long position, out T item)
+    {
+        var at = this;
+        at.Reset(position);
+
+        return at.TryPeek(out item);
     }
 
     /// <summary>

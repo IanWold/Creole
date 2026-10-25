@@ -14,6 +14,8 @@ internal sealed class CustomNode<TIn, TOut> : Parser<TIn, TOut>, IPrimitiveNode
 
     internal override NodeKind Kind => NodeKind.Custom;
 
+    public Expected? Expected { get; }
+
     public FirstSet First { get; }
 
     /// <summary>
@@ -48,8 +50,13 @@ internal sealed class CustomNode<TIn, TOut> : Parser<TIn, TOut>, IPrimitiveNode
         }
 
         First = Info.First is null ? FirstSet.AnyItem : FirstSet.OfChars(Info.First);
+        Expected = Info.Name is { } name
+            ? Expected.Labelled(name)
+            : Info.First is { } first
+                ? Expected.CharacterSet(first)
+                : null;
     }
 
     internal override Plan<TIn, TOut> Lower(PlanBuilder builder) =>
-        PlanBuilder.Custom(Scanner);
+        PlanBuilder.Custom(Scanner, Expected);
 }

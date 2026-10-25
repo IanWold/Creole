@@ -8,6 +8,11 @@ namespace Creole;
 /// </remarks>
 internal abstract class OperatorPlan<TIn, T>(Fixity fixity, int level)
 {
+    /// <summary>
+    /// What a second operator from this operator's non-associative level reports, or null for an operator of another fixity.
+    /// </summary>
+    public ChainMessage? Chain { get; init; }
+
     public Fixity Fixity { get; } = fixity;
 
     /// <summary>

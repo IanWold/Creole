@@ -6,7 +6,7 @@ namespace Creole;
 /// </summary>
 /// <remarks>
 /// A rejection leaves the cursor where <see cref="Source"/> left it, so it is committed if the source consumed input.
-/// It is reported at the source's start position (ADR-0014), which ERR-02 records.
+/// It is reported at the source's start position, over the input the source consumed.
 /// </remarks>
 internal sealed class FilterNode<TIn, TOut>(Parser<TIn, TOut> source, Func<TOut, bool> predicate, string? message) : Parser<TIn, TOut>
 {
@@ -24,5 +24,5 @@ internal sealed class FilterNode<TIn, TOut>(Parser<TIn, TOut> source, Func<TOut,
     public Parser<TIn, TOut> Source { get; } = source;
 
     internal override Plan<TIn, TOut> Lower(PlanBuilder builder) =>
-        builder.Filter(Source, Predicate);
+        builder.Filter(Source, Predicate, Message);
 }

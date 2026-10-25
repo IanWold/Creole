@@ -62,7 +62,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 6 | ✅ [INT-05](active/03-interpreter/INT-05-interpreter-lowering-rewrites.md) Interpreter lowering rewrites | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md) |
 | 6 | ✅ [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md) DFA compiler for regular subtrees | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md) |
 | 6 | ✅ [INT-07](active/03-interpreter/INT-07-recursion-depth-limit.md) Recursion depth limit | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) |
-| 6 | [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) Furthest-failure tracking and labels | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) |
+| 6 | ✅ [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) Furthest-failure tracking and labels | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) |
 | 7 | [INT-08](active/03-interpreter/INT-08-single-layer-parse-api.md) Single-layer Parse API | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [INT-07](active/03-interpreter/INT-07-recursion-depth-limit.md), [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) |
 | 7 | [INT-09](active/03-interpreter/INT-09-cheaper-automaton-construction.md) Cheaper automaton construction | [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md) |
 | 8 | [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) Phase 0 speed gate **(Phase 0 gate)** | [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md), [FND-10](active/01-foundations/FND-10-move-the-parlot-baselines-to-200.md), [INT-05](active/03-interpreter/INT-05-interpreter-lowering-rewrites.md), [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [INT-08](active/03-interpreter/INT-08-single-layer-parse-api.md), [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) |
@@ -202,14 +202,14 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- None yet.
+None yet.
 
 ### Can start now
 
 These items have all their blockers done:
 
+- [INT-08](active/03-interpreter/INT-08-single-layer-parse-api.md) Single-layer Parse API
 - [INT-09](active/03-interpreter/INT-09-cheaper-automaton-construction.md) Cheaper automaton construction
-- [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) Furthest-failure tracking and labels
 - [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) StreamBuffer and pulling cursor
 - [RSLN-04](active/10-roslyn-analyzers/RSLN-04-crl0004-forward-field-reference-analyzer.md) CRL0004 forward field reference analyzer
 
@@ -275,7 +275,7 @@ The error model, furthest-failure reporting, rendering, withdrawal and recovery.
 | Work item | Phase | Blocked by |
 | --- | --- | --- |
 | ✅ [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) Error and result types | 0 | [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) |
-| [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) Furthest-failure tracking and labels | 0 | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) |
+| ✅ [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) Furthest-failure tracking and labels | 0 | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) |
 | ✅ [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) Diagnostic rendering | 0 | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) |
 | [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md) Diagnostic withdrawal | 1 | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) |
 | [ERR-05](active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md) Recover combinator and strategies | 2 | [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md), [LAY-04](active/06-layers-and-pipelines/LAY-04-layer-local-state.md), [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md), [STRM-01](active/08-streaming/STRM-01-starved-outcome.md) |

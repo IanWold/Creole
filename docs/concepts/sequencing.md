@@ -2,7 +2,7 @@
 
 Most grammar code runs parsers one after another and turns their results into a value. `Seq` runs parsers in order, and `Select` combines what they produced. This page also covers `Optional`, text capture and query syntax. The design is in the [whitepaper's § Authoring ergonomics](../../whitepaper.md#authoring-ergonomics), [§ LINQ query syntax](../../whitepaper.md#linq-query-syntax) and [§ Small API consequences](../../whitepaper.md#small-api-consequences).
 
-> The interpreter runs these combinators as this page describes, with one gap: a rejected `Where` does not yet report its position or message, which arrive with the error model's failure tracking (ERR-02). The public method that runs a parser on your input arrives with INT-08.
+> The interpreter runs these combinators as this page describes. The public method that runs a parser on your input arrives with INT-08.
 
 ## `Seq` and `Select`
 

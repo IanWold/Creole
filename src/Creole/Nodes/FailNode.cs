@@ -11,5 +11,6 @@ internal sealed class FailNode<TIn, TOut>(string message) : Parser<TIn, TOut>
 
     public string Message { get; } = Guard.NotNull(message);
 
-    internal override Plan<TIn, TOut> Lower(PlanBuilder builder) => PlanBuilder.Fail<TIn, TOut>();
+    internal override Plan<TIn, TOut> Lower(PlanBuilder builder) =>
+        PlanBuilder.Fail<TIn, TOut>(Message);
 }

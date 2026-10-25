@@ -9,6 +9,8 @@ internal sealed class EndNode<TIn> : Parser<TIn, Unit>, IPrimitiveNode
 
     internal override NodeKind Kind => NodeKind.End;
 
+    public Expected Expected => Expected.End;
+
     public FirstSet First => FirstSet.EndOfInput;
 
     public bool Nullable => true;

@@ -14,7 +14,7 @@ Generated code for every core node, with semantics and error tracking identical 
 
 - `Seq` as straight-line code, `Or` as a `switch`, `Many` as a loop, `Rec` as direct (possibly mutually recursive) calls.
 - Control nodes, `Switch`, `Match` and commit semantics. A dispatched `Or`, `Optional` or loop saves and restores the cut flag as the interpreter's light marks do, so dispatch is exact. Generated code does not fail early on any other node that can reach a `Cut` without consuming inside an `Atomic` ([ADR-0011](../../docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md)). Compare against CORE-08's reference model.
-- Expectation-set tracking identical to ERR-02.
+- Expectation-set tracking identical to ERR-02, as [ADR-0021](../../docs/decisions/0021-how-failures-are-recorded-and-merged.md) says. That includes the per-gap records for alternatives a dispatched `Or` skips, the restores in `Lookahead` and `Not`, and `Named`'s relabelling. Display strings come from `IKinded<TKind>.Describe` and `Detail`, called only when an error is built, and tokens show through them by the interpreter's rule, once a token grammar over the type is initialised ([ADR-0023](../../docs/decisions/0023-token-types-describe-their-kinds.md) point 3).
 
 ## Acceptance criteria
 

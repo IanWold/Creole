@@ -99,11 +99,11 @@ public sealed class Diagnostics : IReadOnlyList<ParseError>, IEquatable<Diagnost
     }
 
     /// <summary>
-    /// Writes the errors one per line, in span order, such as <c>error[parser] at 15..21: unexpected string "host"; expected ',' or '}'</c>.
+    /// Writes the errors one per line, in span order, such as <c>error[parser] at 15..21: unexpected string "host"; expected ',' or '}'; in object starting at 2</c>.
     /// </summary>
     /// <returns>The lines joined by <c>\n</c>, or an empty string when there are no errors.</returns>
     /// <remarks>
-    /// Each line is the error's <see cref="ParseError.ToString"/>. Offsets are character offsets (<see cref="SourceSpan.CharStart"/> to <see cref="SourceSpan.CharEnd"/>).
+    /// Each line is the error's <see cref="ParseError.ToString"/>. Offsets are character offsets (<see cref="SourceSpan.CharStart"/> to <see cref="SourceSpan.CharEnd"/>), and a context line shows the character offset where its construct started.
     /// To show errors against the lines they point into, pass the source texts to <see cref="Render(ReadOnlySpan{SourceText})"/>.
     /// </remarks>
     public string Render() =>
@@ -126,7 +126,7 @@ public sealed class Diagnostics : IReadOnlyList<ParseError>, IEquatable<Diagnost
     /// Columns count Unicode scalar values. Carets are aligned for a terminal: by grapheme cluster, with wide characters as two columns and tabs expanded to stops of four.
     /// </remarks>
     /// <exception cref="ArgumentException">
-    /// <paramref name="sources"/> contains a null or a repeated id, lacks a source an error points into, or has a text shorter than an error's span.
+    /// <paramref name="sources"/> contains a null or a repeated id, lacks a source an error or its context points into, or has a text shorter than an error's span or than where a context line starts.
     /// </exception>
     public string Render(params ReadOnlySpan<SourceText> sources)
     {
@@ -159,12 +159,25 @@ public sealed class Diagnostics : IReadOnlyList<ParseError>, IEquatable<Diagnost
                 throw new ArgumentException($"An error's span ends at character {error.Span.CharEnd}, past the end of the text for {error.Span.Source}, which has {source.Text.Length} characters.", nameof(sources));
             }
 
+            foreach (var line in error.Context)
+            {
+                if (!byId.TryGetValue(line.Start.Source, out var start))
+                {
+                    throw new ArgumentException($"No source text was given for {line.Start.Source}, where an error's context line starts.", nameof(sources));
+                }
+
+                if (line.Start.CharStart > start.Text.Length)
+                {
+                    throw new ArgumentException($"An error's context line starts at character {line.Start.CharStart}, past the end of the text for {line.Start.Source}, which has {start.Text.Length} characters.", nameof(sources));
+                }
+            }
+
             if (builder.Length > 0)
             {
                 builder.Append("\n\n");
             }
 
-            DiagnosticRenderer.Append(builder, error, source);
+            DiagnosticRenderer.Append(builder, error, source, byId);
         }
 
         return builder.ToString();

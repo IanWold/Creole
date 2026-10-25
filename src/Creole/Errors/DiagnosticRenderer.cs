@@ -40,7 +40,8 @@ internal static class DiagnosticRenderer
     /// <param name="builder">The text so far.</param>
     /// <param name="error">An error whose span ends within <paramref name="source"/>'s text.</param>
     /// <param name="source">The text of the source the error points into.</param>
-    public static void Append(StringBuilder builder, ParseError error, SourceText source)
+    /// <param name="sources">The texts by id, holding every source the error's context lines start in.</param>
+    public static void Append(StringBuilder builder, ParseError error, SourceText source, IReadOnlyDictionary<SourceId, SourceText> sources)
     {
         var span = error.Span;
         var map = source.LineMap;
@@ -86,7 +87,9 @@ internal static class DiagnosticRenderer
 
         foreach (var line in error.Context)
         {
-            builder.Append('\n').Append(gutter).Append(" = note: ").Append(line);
+            var start = sources[line.Start.Source].LineMap.GetPosition(line.Start.CharStart);
+
+            builder.Append('\n').Append(gutter).Append(" = note: ").Append(line.Text).Append(" starting at ").Append(Format(start.Line)).Append(':').Append(Format(start.Column));
         }
     }
 }

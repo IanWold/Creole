@@ -10,6 +10,10 @@ internal sealed class CharClassNode(CharSet set, string? name) : Parser<char, ch
 
     internal override NodeKind Kind => NodeKind.CharClass;
 
+    public Expected Expected { get; } = name is null
+        ? Expected.CharacterSet(set)
+        : Expected.Labelled(name);
+
     public FirstSet First { get; } = FirstSet.OfChars(set);
 
     /// <summary>
@@ -24,7 +28,7 @@ internal sealed class CharClassNode(CharSet set, string? name) : Parser<char, ch
     public CharSet Set { get; } = set;
 
     internal override Plan<char, char> Lower(PlanBuilder builder) =>
-        PlanBuilder.CharClass(Set);
+        PlanBuilder.CharClass(Set, Expected);
 
     internal override MatchValue<char> ValueOfMatch() =>
         static (ref cursor, start) => cursor.ItemAt(start);

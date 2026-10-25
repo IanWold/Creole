@@ -76,10 +76,8 @@ public class MaybeTests
         }
 
         Run();
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        Run();
 
-        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+        Assert.Equal(0, Allocation.Fewest(Run));
         Assert.NotEqual(0, total);
     }
 

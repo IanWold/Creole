@@ -2,7 +2,7 @@
 
 Control combinators decide when a parse may go back and try again, and what a failure reports. `Atomic`, `Lookahead`, `Not` and `Cut` are members of `Grammar<TIn>`, so a grammar class calls them unqualified. `p.Named(label)` and `p.Context(text)` are extension members of `Parser<TIn, TOut>` in the `ErrorReporting` class. The design and its reasons are in the [whitepaper's § Choice and backtracking](../../whitepaper.md#choice-and-backtracking) and [ADR-0008](../../work/docs/decisions/0008-control-node-semantics.md), and for `Cut`, [ADR-0011](../../work/docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md).
 
-> The interpreter runs these combinators as this page describes, with one gap: failures do not yet carry the labels and context that `Named` and `Context` add, which arrive with the error model's failure tracking (ERR-02). `ControlTable` in the test project lists the behaviour as cases: a grammar, an input and the expected outcome. The interpreter passes every case. It also agrees with a reference model of the cut rules on every grammar the model generates up to three levels deep, over every input up to three characters long. The public method that runs a parser on your input arrives with INT-08.
+> The interpreter runs these combinators as this page describes. `ControlTable` in the test project lists the behaviour as cases: a grammar, an input, the expected outcome and the failure it reports. The interpreter passes every case. It also agrees with a reference model of the cut rules on every grammar the model generates up to three levels deep, over every input up to three characters long. The public method that runs a parser on your input arrives with INT-08.
 
 ## Commit semantics, briefly
 
@@ -17,6 +17,13 @@ A parser that fails **without consuming input** lets an enclosing choice try its
 | `Not(p)` | rewinds; fails without consuming | succeeds with `Unit`, consuming nothing | rewinds; succeeds with `Unit`, consuming nothing |
 | `Cut` | always succeeds, consuming nothing | — | — |
 | `p.Named(label)`, `p.Context(text)` | as `p` | as `p` | as `p` |
+
+## What failures report
+
+`Atomic` keeps the failures its parser recorded, even ones it rewound past, so the furthest failure still wins. `Lookahead` and `Not` do not:
+
+- `Lookahead(p)`, when `p` succeeds, forgets every failure `p` recorded. So `Lookahead(Digit.SkipMany()).Then(Char('x'))` on `12y` reports "expected 'x'" at the `1`, not "expected digit" after the digits it only looked at. When `p` fails, its failure is reported as usual.
+- `Not(p)` always forgets the failures `p` recorded, because they describe what must not come next. When `p` succeeds, `Not` fails and reports what it found there with nothing expected: `Not(String("if"))` on `if` reads "unexpected 'i'". Give it a name with `Named` to say more.
 
 When input is streamed, an attempt can also run out of buffered data. That is not a failure: `Atomic`, `Lookahead` and `Not` pass it on unchanged, without rewinding or inverting it ([§ The restart protocol](../../whitepaper.md#the-restart-protocol)).
 
@@ -82,12 +89,20 @@ public static readonly Parser<char, char> Sign = Char('+').Or(Char('-')).Named("
 ```
 
 - The label applies when `p` consumes nothing, whether `p` fails or succeeds. So in `Digit.Many().Named("digits")` followed by `Char(';')`, input `x` reports "expected digits or ';'".
-- It replaces the expectations `p` recorded at the position where it started, and adds none if there were none.
+- It replaces the expectations `p` recorded at the position where it started, and adds none if `p` recorded no failure there.
+- Expectations recorded at that position before `p` ran stay, ahead of the label: `Char(',').Or(Letter.Named("name"))` on `1` reports "expected ',' or name".
+- A failure that expected nothing in particular, such as that of `Satisfy` or `Not`, still counts, so `Satisfy(char.IsAsciiHexDigit).Named("hex digit")` reports "expected hex digit".
+- The label never removes a message from `Fail`: the message still says what was found, and the label says what was expected.
 - If `p` consumes input, the label changes nothing. A failure after consuming keeps its precise expectations, and so does a deeper failure that an `Atomic` rewound past.
+- Of two labels on one parser, the outer one wins.
 
 ## `Context`
 
-`p.Context(text)` adds `text` to the context of every failure recorded while `p` runs. Context lines appear in `ParseError.Context`, innermost first, and as `= note:` lines when the error is rendered (see [Errors](errors.md)).
+`p.Context(text)` adds `text` to the context of failures recorded while `p` runs, past the position where `p` started. Context lines appear in `ParseError.Context`, innermost first, each with where its construct started, and as `= note:` lines such as `in object starting at 2:1` when the error is rendered (see [Errors](errors.md)).
+
+- A construct that never began adds no line. `Char('{').Then(Char('}')).Context("in object")` on `{x` reports "in object", but on `x` it does not.
+- When several failures merge at one position, the first one recorded there keeps its lines.
+- A label from `Named` keeps the lines of the context around `p`.
 
 ```csharp
 public static readonly Parser<char, string> Name = Letter.AtLeastOnce().Text().Context("in name");

@@ -11,7 +11,7 @@ namespace Creole;
 /// <param name="Layer">The name of the layer that raised the error, such as <c>lexer</c> or <c>parser</c>.</param>
 /// <param name="Unexpected">What the parse found at <paramref name="Span"/>.</param>
 /// <param name="Expected">What the parse would have accepted there, in the order it was recorded. May be empty.</param>
-/// <param name="Context">The context lines for the error, innermost first, such as <c>in object starting at 2:3</c>. May be empty.</param>
+/// <param name="Context">The constructs the parse was inside, innermost first, such as <c>in object</c> with where the object started. May be empty.</param>
 /// <remarks>
 /// <para>
 /// An error is immutable: it copies <paramref name="Expected"/> and <paramref name="Context"/>, so later changes to the lists passed in do not affect it.
@@ -30,13 +30,13 @@ public sealed record ParseError(
     string Layer,
     Unexpected Unexpected,
     IReadOnlyList<Expectation> Expected,
-    IReadOnlyList<string> Context
+    IReadOnlyList<ContextLine> Context
 )
 {
     /// <summary>
-    /// The context lines for the error, innermost first. May be empty.
+    /// The constructs the parse was inside, innermost first. May be empty.
     /// </summary>
-    public IReadOnlyList<string> Context { get; init => field = CopyContext(value); } = CopyContext(Context);
+    public IReadOnlyList<ContextLine> Context { get; init => field = CopyContext(value); } = CopyContext(Context);
 
     /// <summary>
     /// What the parse would have accepted at <see cref="Span"/>, in the order it was recorded. May be empty.
@@ -78,7 +78,7 @@ public sealed record ParseError(
         return Array.AsReadOnly(copy);
     }
 
-    private static ReadOnlyCollection<string> CopyContext(IReadOnlyList<string> context) =>
+    private static ReadOnlyCollection<ContextLine> CopyContext(IReadOnlyList<ContextLine> context) =>
         Copy(context, nameof(Context), static line => line is not null);
 
     private static ReadOnlyCollection<Expectation> CopyExpected(IReadOnlyList<Expectation> expected) =>
@@ -161,7 +161,7 @@ public sealed record ParseError(
 
         foreach (var line in Context)
         {
-            builder.Append("; ").Append(line);
+            builder.Append(CultureInfo.InvariantCulture, $"; {line.Text} starting at {line.Start.CharStart}");
         }
 
         return builder.ToString();

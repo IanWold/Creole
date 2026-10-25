@@ -95,6 +95,10 @@ public readonly record struct Unit;
 public interface IKinded<TKind> where TKind : struct, Enum
 {
     TKind Kind { get; }
+
+    // How error messages name a kind, such as "','", and what an unexpected token adds, such as its text.
+    static virtual string Describe(TKind kind) => kind.ToString();
+    string? Detail => null;
 }
 ```
 
@@ -261,13 +265,15 @@ A fifth outcome, **Starved**, exists only in streaming mode and is never visible
 - `Cut`: from this point, failure stays committed even inside an enclosing `Atomic`. After `if` and `(` are seen, a failure is reported here instead of being retried elsewhere, which improves messages and lets buffers release earlier.
 - Literal primitives (`String("<=")`, `Kind(k)`) are atomic by construction: they fail without consuming.
 
-An `Atomic` keeps a failure if a cut passed inside it is still in force; a cut passed before the `Atomic` was entered does not affect it. A cut stops being in force when the parse leaves the nearest enclosing `Lookahead`, `Not` or `Longest` alternative, which must rewind by definition. It also stops when the attempt that passed it fails without consuming. An attempt is anything a light mark holds: each alternative of `Or` and `OneOf` including the last, the item of `Optional`, each item of a repetition whether mandatory or not, each separator and terminator, each `Expression.Build` operator and atom, and the parser of `Recover`. The light mark that undoes a `SetMode` there undoes the cut too, whether the combinator then moves on, stops or fails (§ Bookmarks and retention). Otherwise the cut lasts until the parse ends. A cut never turns an empty failure into a committed one. An attempt that dispatch skips would only have failed without consuming, so dispatching on FIRST sets gives the same result as trying in order. Skipping any other node that can reach a `Cut` without consuming is not exact when an `Atomic` encloses it, so engines do not fail early there. Each layer has its own cut, kept as one flag that `Atomic`, the three boundaries and every light mark save and restore ([ADR-0011](work/docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md), refining [ADR-0010](work/docs/decisions/0010-cuts-under-dispatch-and-across-layers.md) and [ADR-0008](work/docs/decisions/0008-control-node-semantics.md)).
+An `Atomic` keeps a failure if a cut passed inside it is still in force; a cut passed before the `Atomic` was entered does not affect it. A cut stops being in force when the parse leaves the nearest enclosing `Lookahead`, `Not` or `Longest` alternative, which must rewind by definition. It also stops when the attempt that passed it fails without consuming. An attempt is anything a light mark holds: each alternative of `Or` and `OneOf` including the last, the item of `Optional`, each item of a repetition whether mandatory or not, each separator and terminator, each `Expression.Build` operator and atom, and the parser of `Recover`. The light mark that undoes a `SetMode` there undoes the cut too, whether the combinator then moves on, stops or fails (§ Bookmarks and retention). Otherwise the cut lasts until the parse ends. A cut never turns an empty failure into a committed one. An attempt that dispatch skips would only have failed without consuming, so dispatching on FIRST sets gives the same result as trying in order. Dispatch records what the skipped attempts would have expected, in their original order, so the error is the same too ([ADR-0021](work/docs/decisions/0021-how-failures-are-recorded-and-merged.md)). Skipping any other node that can reach a `Cut` without consuming is not exact when an `Atomic` encloses it, so engines do not fail early there. Each layer has its own cut, kept as one flag that `Atomic`, the three boundaries and every light mark save and restore ([ADR-0011](work/docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md), refining [ADR-0010](work/docs/decisions/0010-cuts-under-dispatch-and-across-layers.md) and [ADR-0008](work/docs/decisions/0008-control-node-semantics.md)).
 
 ### Longest match
 
 `Longest(p1, ..., pn)` runs every alternative atomically from the same position and keeps the one that consumed the most input; ties go to the earliest. This is the maximal-munch rule lexers need (`<=` beats `<`, `iffy` beats `if`), expressed as an ordinary combinator that also works at token level. When all alternatives are regular (§ Properties), engines compile it to a single DFA instead of n attempts.
 
 The DFA agrees with the interpreter, and that is not always what an alternative's regex reading suggests. On `1.x`, `Seq(Digits, Optional(Seq(Char('.'), Digits)))` does not match at all, because `Optional` fails once its item has consumed the `.`. A regex would match `1`. Writing the fraction as `Optional(Atomic(Seq(Char('.'), Digits)))` gives the regex behaviour ([ADR-0017](work/docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md)).
+
+A `Longest` that matches contributes nothing to error messages. It restores the furthest failure to what it was when it started, so neither the winner's loop exits nor a loser that read further are reported. One that fails reports every alternative's failures. The DFA therefore records nothing when it matches, and re-runs the alternatives on the interpreter when it does not ([ADR-0022](work/docs/decisions/0022-a-successful-longest-restores-the-furthest-failure.md)).
 
 ### Selective choice
 
@@ -340,7 +346,7 @@ static readonly Parser<char, ReadOnlyMemory<char>> RawStringToken = Custom(new R
 
 `Custom` reads `Info` once, when the node is built ([ADR-0012](work/docs/decisions/0012-custom-scanner-metadata.md)). It throws `GrammarException` if `First` is given for an input type other than `char`, or if `Name` is empty. A scanner over tokens leaves `First` null. So does a character scanner that can start with anything. Analysis then treats it like `Satisfy`: it can start with any item, and CRL0201 reports it as opaque.
 
-A failed `Custom` expects its `Name`, or failing that the characters in `First`. `Scan` only says yes or no, so it cannot explain a failure such as an unterminated raw string. A scanner that wants to succeeds instead: it consumes the malformed text and returns a value that marks it. The grammar then binds that value and calls `Fail(message)`, which is committed because input was consumed.
+A failed `Custom` expects its `Name`, or failing that its `First` set, as one expectation. With neither, it records a failure with no expectation, as `Satisfy` does ([ADR-0021](work/docs/decisions/0021-how-failures-are-recorded-and-merged.md)). `Scan` only says yes or no, so it cannot explain a failure such as an unterminated raw string. A scanner that wants to succeeds instead: it consumes the malformed text and returns a value that marks it. The grammar then binds that value and calls `Fail(message)`, which is committed because input was consumed.
 
 Analysis trusts the declaration. Debug builds and the tracing interpreter check it on every call and report CRL0206 when a scanner breaks it. Inside a `Longest`, engines run the scanner alongside the DFA whenever the next character is in its declared FIRST set, so a lexer with one custom token can still be fused. `Custom` is a single node kind like any other, so every engine still handles every node (§ Types).
 
@@ -442,7 +448,7 @@ Two-pass designs that tokenize everything first hold the whole token list in mem
 
 ### Failure positions
 
-Each layer records its furthest failure as a buffer index plus an expectation-set handle, without allocating. A `ParseError` is built only for the failure that is finally reported. A failure reported behind the cursor, such as a rejected filter or a chained non-associative operator, captures the item and source position its error needs by value, because a streamed layer may have released them by then.
+Each layer records its furthest failure as a buffer index plus an expectation-set handle, without allocating. A `ParseError` is built only for the failure that is finally reported. A failure reported behind the cursor, such as a rejected filter or a chained non-associative operator, captures the item its error needs by value and records the positions its span covers. A `Context` records the position of its first item. A layer over in-memory input maps those positions to source spans when it builds the error, which is exact because it holds every item until the parse ends. A streamed layer may have released those items by then, so it captures their spans by value when they are recorded. `Lookahead`, `Not`, `Longest`, filters and `Named` save the record on entry, so they can restore or relabel it on exit ([ADR-0021](work/docs/decisions/0021-how-failures-are-recorded-and-merged.md)).
 
 ## Feedback between layers
 
@@ -539,7 +545,9 @@ public sealed record ParseError(
     string Layer,                                 // "lexer", "layout", "parser"
     Unexpected Unexpected,
     IReadOnlyList<Expectation> Expected,
-    IReadOnlyList<string> Context);               // "in object starting at 2:3"
+    IReadOnlyList<ContextLine> Context);          // innermost first
+
+public sealed record ContextLine(string Text, SourceSpan Start);   // "in object", where the object began
 
 public sealed record UnexpectedItem(string Display);
 public sealed record EndOfInput;
@@ -551,11 +559,17 @@ public union Unexpected(UnexpectedItem, EndOfInput, CustomMessage);
 public union Expectation(Label, ExpectedItem, EndOfInput);
 ```
 
-- **Furthest failure wins.** At equal positions, expected sets are merged.
-- **Labels.** `p.Named("value")` replaces `p`'s expected set with one label, but only when `p` consumes nothing, whether it fails or succeeds. The label replaces the expectations `p` recorded at its start position, and adds none if there were none. A committed failure inside it keeps its precise expectations, as do deeper failures that an `Atomic` rewound past ([ADR-0008](work/docs/decisions/0008-control-node-semantics.md)).
+- **Furthest failure wins.** Each layer keeps one furthest failure. A failure before it is ignored, and one past it replaces it. One at the same position merges into it ([ADR-0021](work/docs/decisions/0021-how-failures-are-recorded-and-merged.md)):
+  - Expectations are added in the order recorded, without duplicates.
+  - The first custom message wins and takes the place of the unexpected item. The expectations stay alongside it.
+  - The first failure recorded keeps its context stack.
+  - The span covers the item at the position. A rejected value or a chained operator named there widens it to the longest such span.
+- **Labels.** `p.Named("value")` replaces `p`'s expected set with one label, but only when `p` consumes nothing, whether it fails or succeeds. The label replaces the expectations `p` recorded at its start position, and adds none if there were none. Expectations recorded there before `p` started stay, ahead of the label. A failure with no expectations counts as one `p` recorded, so `Satisfy(isHex).Named("hex digit")` reads "expected hex digit". A label never removes a custom message: labels say what was expected, and messages say what was found. A committed failure inside `p` keeps its precise expectations, as do deeper failures that an `Atomic` rewound past ([ADR-0008](work/docs/decisions/0008-control-node-semantics.md), [ADR-0021](work/docs/decisions/0021-how-failures-are-recorded-and-merged.md)).
+- **Lookahead, Not and Longest.** These restore the furthest failure to what it was when they started: `Lookahead` and `Longest` when they succeed, and `Not` in either outcome. So the input a lookahead matched, what a negative lookahead rules out, and the alternatives a `Longest` tried before keeping one do not show up as expected. A `Not` whose parser succeeds then records a failure at its start with no expectations ([ADR-0022](work/docs/decisions/0022-a-successful-longest-restores-the-furthest-failure.md) for `Longest`).
+- **Primitives.** A failed primitive records, at its start, the item, string, kind or class name it expects. An unnamed class such as `Range('a', 'z')` records one expectation that describes its set, and `End` expects the end of input. `Satisfy`, `Any`, and a `Custom` with neither `Name` nor `First`, can start with any item. They record a failure with no expectation, which `Named` can label. `Fail(message)` records its message.
 - **Filters.** A rejected `p.Where(predicate)` is reported at the position where `p` started, with a span over the value it rejected, even when the failure is committed. The failures recorded while `p` ran are dropped first, so `p`'s own trailing expectations cannot outrank the rejection. Without a message the rejected input is unexpected; `Where(predicate, message)` reports the message, as `Fail(message)` does. A rejection counts as a failure at `p`'s start, so `Atomic(Identifier.Where(isNotKeyword)).Named("identifier")` reads "expected identifier" ([ADR-0014](work/docs/decisions/0014-a-rejected-filter-reports-at-the-start-of-the-value.md)).
-- **Context.** `p.Context("in object")` pushes a line onto the context stack for failures inside `p`.
-- **Display.** `TokenGrammar` has an overridable `Describe(TKind)`, so expectations read `','` or `'}'` rather than `Comma` or `RBrace`.
+- **Context.** `p.Context("in object")` adds a line to the failures recorded inside `p` past the position where `p` started, innermost first. A construct that never began adds no line. The line keeps the span of `p`'s first item, and the renderer shows it as "in object starting at 2:1".
+- **Display.** A token type describes its kinds by overriding `IKinded<TKind>.Describe`, a static virtual member, so expectations read `','` or `'}'` rather than `Comma` or `RBrace`. An unexpected token shows its kind's description, followed by its `Detail` when it has one, so a string token reads `string "host"`. Engines reach both through a token grammar, so a token type shows this way once a `TokenGrammar<TToken, TKind>` over it has been initialised, as any grammar that uses `Kind` does. Engines call both only when they build an error, and tools call them the same way ([ADR-0023](work/docs/decisions/0023-token-types-describe-their-kinds.md)).
 
 Rendered, an error looks like this:
 
@@ -716,8 +730,8 @@ If the generator ever covered every grammar, the interpreter could shrink to a t
 On first use, a grammar is lowered to an execution plan and cached in a `ConditionalWeakTable` keyed by node. Each node lowers itself through an internal abstract method (§ Types), so lowering sees every node's types without casts. Plans are immutable and thread-safe; parse state lives in the call. Lowering performs these rewrites:
 
 - Chains of `Select` collapse into one plan step that applies each function in turn.
-- An `Or` dispatches on the next character or token kind. Each alternative takes the keys of the primitive at its leading position, found through wrappers such as `Select`, `Named`, `Atomic` and a sequence's first item. The `Or` runs only the alternatives that can start with the next item, and those with no known leading item, in their original order ([ADR-0016](work/docs/decisions/0016-or-dispatches-on-each-alternatives-leading-item.md)).
-- A `Longest` over regular character alternatives (§ Properties) compiles to DFA tables that follow commit semantics, not regex semantics ([ADR-0017](work/docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md)). Other regular subtrees compile only where a measurement shows a gain. None has yet: as one automaton, a character-level JSON token choice ran about 0.6× as fast as with dispatch and scans.
+- An `Or` dispatches on the next character or token kind. Each alternative takes the keys of the primitive at its leading position, found through wrappers such as `Select`, `Named`, `Atomic` and a sequence's first item. The `Or` runs only the alternatives that can start with the next item, and those with no known leading item, in their original order ([ADR-0016](work/docs/decisions/0016-or-dispatches-on-each-alternatives-leading-item.md)). Lowering also computes what the skipped alternatives would have expected, merged for each gap between candidates, and the `Or` records each gap before the candidate that follows it ([ADR-0021](work/docs/decisions/0021-how-failures-are-recorded-and-merged.md)).
+- A `Longest` over regular character alternatives (§ Properties) compiles to DFA tables that follow commit semantics, not regex semantics ([ADR-0017](work/docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md)). A match records no failure, because a successful `Longest` restores the furthest failure. When nothing matches, the alternatives run again on the interpreter, which records their failures ([ADR-0022](work/docs/decisions/0022-a-successful-longest-restores-the-furthest-failure.md)). Other regular subtrees compile only where a measurement shows a gain. None has yet: as one automaton, a character-level JSON token choice ran about 0.6× as fast as with dispatch and scans.
   - **How choices resolve.** A choice resolves as soon as a path through its first branch consumes input outside any `Atomic`, or finishes the branch. A match discards every lower-priority path.
   - **`Longest`.** It becomes one automaton with a register per alternative, and ties go to the earliest.
   - **Size cap.** Lowering builds the tables in full. A subtree whose automaton would exceed a state cap runs on the interpreter instead.
@@ -930,7 +944,19 @@ The lexer uses `Longest` over regular alternatives, so it is eligible for DFA co
 ```csharp
 public enum J { LBrace, RBrace, LBracket, RBracket, Colon, Comma, String, Number, True, False, Null }
 
-public readonly record struct JTok(J Kind, ReadOnlyMemory<char> Text) : IKinded<J>;
+public readonly record struct JTok(J Kind, ReadOnlyMemory<char> Text) : IKinded<J>
+{
+    // Errors read "expected ',' or '}'" and "unexpected string "host"".
+    static string IKinded<J>.Describe(J kind) => kind switch
+    {
+        J.LBrace => "'{'",   J.RBrace => "'}'",   J.LBracket => "'['", J.RBracket => "']'",
+        J.Colon => "':'",    J.Comma => "','",    J.String => "string", J.Number => "number",
+        J.True => "true",    J.False => "false",  J.Null => "null",
+        _ => kind.ToString(),
+    };
+
+    string? IKinded<J>.Detail => Kind is J.String or J.Number ? Text.ToString() : null;
+}
 
 public union JsonValue(JsonString, JsonNumber, JsonBool, JsonNull, JsonArray, JsonObject);
 
@@ -981,7 +1007,8 @@ public sealed partial class JsonGrammar : TokenGrammar<JTok, J>
             .Select(static (k, _, v) => KeyValuePair.Create(Unescape(k.Text), v))
             .SepBy(Kind(J.Comma))
             .Between(Kind(J.LBrace), Kind(J.RBrace))
-            .Select<JsonValue>(static members => new JsonObject(members));
+            .Select<JsonValue>(static members => new JsonObject(members))
+            .Context("in object");
 
     // Every alternative of Value starts with a distinct kind, so the LL(1) check passes.
     public static readonly Parser<JTok, JsonValue> Document =

@@ -8,13 +8,21 @@ namespace Creole;
 /// <typeparam name="TToken">The token type. Make it a struct so tokens never box.</typeparam>
 /// <typeparam name="TKind">The enum of token kinds.</typeparam>
 /// <remarks>
+/// <para>
 /// It adds <see cref="Kind"/> and <see cref="Case{TCase}"/> to the combinators of <see cref="Grammar{TIn}"/>.
+/// </para>
+/// <para>
+/// Error messages show its tokens as <typeparamref name="TToken"/> describes them through <see cref="IKinded{TKind}.Describe"/> and <see cref="IKinded{TKind}.Detail"/>.
+/// </para>
 /// </remarks>
 [SuppressMessage("Design", "CA1000:Do not declare static members on generic types", Justification = "Static members on the generic base are the point: a derived grammar class calls them unqualified, with TToken and TKind fixed by the base.")]
 public abstract class TokenGrammar<TToken, TKind> : Grammar<TToken>
     where TToken : IKinded<TKind>
     where TKind : struct, Enum
 {
+    static TokenGrammar() =>
+        Display<TToken>.Tokens ??= Display.Token<TToken, TKind>;
+
     /// <summary>
     /// Creates a grammar. Grammar classes hold static rules and are not usually instantiated.
     /// </summary>

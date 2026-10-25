@@ -34,7 +34,7 @@ public class ErrorModelTests
     public void ErrorsCopyTheirLists()
     {
         List<Expectation> expected = [new Label("value")];
-        List<string> context = ["in array"];
+        List<ContextLine> context = [new("in array", _at3)];
 
         var error = new ParseError(_at3, "parser", new EndOfInput(), expected, context);
         var rendered = error.ToString();
@@ -46,7 +46,7 @@ public class ErrorModelTests
         Assert.Equal(rendered, error.ToString());
         Assert.Equal(hash, error.GetHashCode());
         Assert.True(((ICollection<Expectation>)error.Expected).IsReadOnly);
-        Assert.True(((ICollection<string>)error.Context).IsReadOnly);
+        Assert.True(((ICollection<ContextLine>)error.Context).IsReadOnly);
     }
 
     [Theory]
@@ -61,8 +61,8 @@ public class ErrorModelTests
     [Fact]
     public void ErrorsWithEqualPartsAreEqual()
     {
-        var a = new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("value"), new EndOfInput()], ["in array"]);
-        var b = new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("value"), new EndOfInput()], ["in array"]);
+        var a = new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("value"), new EndOfInput()], [new ContextLine("in array", _at3)]);
+        var b = new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("value"), new EndOfInput()], [new ContextLine("in array", _at3)]);
 
         Assert.Equal(a, b);
         Assert.Equal(a.GetHashCode(), b.GetHashCode());
@@ -97,13 +97,13 @@ public class ErrorModelTests
     [Fact]
     public void ParseErrorKeepsItsParts()
     {
-        var error = new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new ExpectedItem("','")], ["in array"]);
+        var error = new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new ExpectedItem("','")], [new ContextLine("in array", _at3)]);
 
         Assert.Equal(_at3, error.Span);
         Assert.Equal("parser", error.Layer);
         Assert.Equal(new UnexpectedItem("'x'"), error.Unexpected.Value);
         Assert.Equal(new ExpectedItem("','"), Assert.Single(error.Expected).Value);
-        Assert.Equal("in array", Assert.Single(error.Context));
+        Assert.Equal(new ContextLine("in array", _at3), Assert.Single(error.Context));
     }
 
     [Fact]
@@ -129,17 +129,18 @@ public class ErrorModelTests
         new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("number")], []),
         new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("value"), new EndOfInput()], []),
         new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [], []),
-        new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("value")], ["in array"]),
+        new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("value")], [new ContextLine("in array", _at3)]),
+        new ParseError(_at3, "parser", new UnexpectedItem("'x'"), [new Label("value")], [new ContextLine("in array", new SourceSpan(SourceId.Unnamed, 1, 2))]),
     ];
 
     [Fact]
     public void WithChangesEachPart()
     {
-        var error = new ParseError(_at3, "parser", new EndOfInput(), [new Label("value")], ["in array"]);
+        var error = new ParseError(_at3, "parser", new EndOfInput(), [new Label("value")], [new ContextLine("in array", _at3)]);
 
         Assert.Equal(
-            new ParseError(_at3, "lexer", new UnexpectedItem("'x'"), [new ExpectedItem("','")], ["in object"]),
-            error with { Layer = "lexer", Unexpected = new UnexpectedItem("'x'"), Expected = [new ExpectedItem("','")], Context = ["in object"] }
+            new ParseError(_at3, "lexer", new UnexpectedItem("'x'"), [new ExpectedItem("','")], [new ContextLine("in object", _at3)]),
+            error with { Layer = "lexer", Unexpected = new UnexpectedItem("'x'"), Expected = [new ExpectedItem("','")], Context = [new ContextLine("in object", _at3)] }
         );
     }
 
@@ -158,5 +159,21 @@ public class ErrorModelTests
         Assert.Throws<ArgumentException>(() => error with { Unexpected = default });
         Assert.Throws<ArgumentException>(() => error with { Expected = [default] });
         Assert.Throws<ArgumentNullException>(() => error with { Context = null! });
+    }
+
+    [Fact]
+    public void AContextLineNeedsText()
+    {
+        Assert.Throws<ArgumentNullException>(() => new ContextLine(null!, _at3));
+        Assert.Throws<ArgumentException>(() => new ContextLine("", _at3));
+        Assert.Throws<ArgumentException>(() => new ContextLine("in array", _at3) with { Text = "" });
+    }
+
+    [Fact]
+    public void ToStringShowsWhereEachContextStarted()
+    {
+        var error = new ParseError(_at3, "parser", new EndOfInput(), [], [new("in array", new SourceSpan(SourceId.Unnamed, 2, 3)), new("in object", new SourceSpan(SourceId.Unnamed, 0, 1))]);
+
+        Assert.Equal("error[parser] at 3..4: unexpected end of input; in array starting at 2; in object starting at 0", error.ToString());
     }
 }

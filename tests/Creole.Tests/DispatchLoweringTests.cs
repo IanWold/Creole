@@ -60,6 +60,7 @@ public class DispatchLoweringTests
         Char('a').Then(new CutThenNode<char>(Char('b'))).Select(static _ => "a!b"),
         Atomic(Char('b').Then(Char('a'))).Select(static _ => "ba"),
         CIString("k").Named("k"),
+        Char('a').Named("a").Then(Char('d')).Named("ad").Select(static _ => "ad"),
         Digit.Slice().Select(static text => text.ToString()),
         Char('c').Optional().Select(static _ => "c?"),
         new CutThenNode<string>(String("b")),
@@ -137,4 +138,58 @@ public class DispatchLoweringTests
         Assert.IsType<DispatchPlan<TwoKinds, TwoKinds>>(new PlanBuilder(LoweringOptions.Dispatch, dispatchThreshold: 1).Lower(same));
         AssertAgrees(same, [new TwoKinds(Letter.B, Shade.Dark)]);
     }
+
+    [Fact]
+    public void ADispatchedChoiceRecordsWhatTheAlternativesItSkipsExpected()
+    {
+        var choice = OneOf(Char('a'), Char('b').Named("B"), Char('c').Context("in c"), Char('d'), Return('r'));
+        var parser = choice.Then(Char('!'));
+        var expected = new ParseError(
+            new SourceSpan(SourceId.Unnamed, 0, 1),
+            "parser",
+            new UnexpectedItem("'x'"),
+            [new ExpectedItem("'a'"), new Label("B"), new ExpectedItem("'c'"), new ExpectedItem("'d'"), new ExpectedItem("'!'")],
+            []
+        );
+
+        Assert.IsType<DispatchPlan<char, char>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(choice));
+        Assert.Equal(expected, Execution.Error(parser, "x", LoweringOptions.Dispatch));
+        Assert.Equal(expected, Execution.Error(parser, "x"));
+    }
+
+    [Fact]
+    public void ADispatchedChoiceNamesASkippedAlternativeByItsOutermostLabel()
+    {
+        var choice = OneOf(Char('a').Named("inner").Then(Char('b')).Named("outer"), Char('c'), Char('d'), Char('e'), Return('r'));
+        var parser = choice.Then(Char('!'));
+        var expected = new ParseError(
+            new SourceSpan(SourceId.Unnamed, 0, 1),
+            "parser",
+            new UnexpectedItem("'x'"),
+            [new Label("outer"), new ExpectedItem("'c'"), new ExpectedItem("'d'"), new ExpectedItem("'e'"), new ExpectedItem("'!'")],
+            []
+        );
+
+        Assert.IsType<DispatchPlan<char, char>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(choice));
+        Assert.Equal(expected, Execution.Error(parser, "x", LoweringOptions.Dispatch));
+        Assert.Equal(expected, Execution.Error(parser, "x"));
+    }
+
+    [Fact]
+    public void ADispatchedChoiceRecordsNothingPastACandidateThatSucceeds()
+    {
+        var parser = OneOf(Char('a'), Char('b'), Return('r'), Char('c'), Char('d'), Char('e')).Then(Char('!'));
+
+        Assert.Equal(
+            new ParseError(new SourceSpan(SourceId.Unnamed, 0, 1), "parser", new UnexpectedItem("'x'"), [new ExpectedItem("'a'"), new ExpectedItem("'b'"), new ExpectedItem("'!'")], []),
+            Execution.Error(parser, "x", LoweringOptions.Dispatch)
+        );
+    }
+
+    [Fact]
+    public void ADispatchedChoiceAtTheEndOfInputRecordsEveryAlternative() =>
+        Assert.Equal(
+            new ParseError(new SourceSpan(SourceId.Unnamed, 0, 0), "parser", new EndOfInput(), [new ExpectedItem("'a'"), new ExpectedItem("'b'"), new ExpectedItem("'c'"), new ExpectedItem("'d'")], []),
+            Execution.Error(OneOf(Char('a'), Char('b'), Char('c'), Char('d')), "", LoweringOptions.Dispatch)
+        );
 }

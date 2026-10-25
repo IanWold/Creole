@@ -78,6 +78,24 @@ public class BaselineAgreementTests
         Assert.Equal(sha256, Hash(JsonInputs.Get(input)));
 
     [Fact]
+    public void ErrorBenchmarksReadTheWholeInputAndReportTheInvalidOne()
+    {
+        var benchmarks = new ErrorBenchmarks();
+
+        Assert.Equal(LoweringInputs.JsonTokens.Length, benchmarks.Plain());
+        Assert.Equal(LoweringInputs.JsonTokens.Length, benchmarks.PlainRecording());
+        Assert.Equal(LoweringInputs.JsonTokens.Length, benchmarks.Labelled());
+        Assert.Equal(LoweringInputs.JsonTokens.Length, benchmarks.LabelledRecording());
+        Assert.Equal(-1, benchmarks.Invalid());
+        Assert.Equal(-1, benchmarks.InvalidRecording());
+        Assert.NotNull(benchmarks.InvalidWithError());
+
+        benchmarks.Setup();
+
+        Assert.Equal(benchmarks.InvalidWithError(), benchmarks.BuildError());
+    }
+
+    [Fact]
     public void LoweringBenchmarksReadTheWholeInputWithAndWithoutEachRewrite()
     {
         var benchmarks = new LoweringBenchmarks();

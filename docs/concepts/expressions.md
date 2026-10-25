@@ -2,7 +2,7 @@
 
 `Expression.Build` parses operator expressions from an atom and a table of operators, so a grammar never needs left recursion for `a + b * c`. It builds one grammar node that holds the whole table. The design is in the [whitepaper's § Expressions](../../whitepaper.md#expressions) and [ADR-0004](../../work/docs/decisions/0004-expression-build-operator-table-and-semantics.md).
 
-> The interpreter parses expressions as this page describes, with one gap: the message for a chained non-associative operator arrives with the error model's failure tracking (ERR-02). The public method that runs a parser on your input arrives with INT-08.
+> The interpreter parses expressions as this page describes. The public method that runs a parser on your input arrives with INT-08.
 
 ## Writing a table
 
@@ -55,6 +55,8 @@ With the table above:
 | `-x!` | `-(x!)` | `!` is tighter than `-`. When a prefix and a postfix operator share a level, the prefix applies first: `(-x)!` |
 | `a < b + 1` | `a < (b + 1)` | `+` is tighter than `<` |
 | `a < b < c` | An error at the second `<` | `<` is `InfixN`, so it cannot be chained; write `(a < b) < c` |
+
+**Chained non-associative operators.** On `a < b < c`, the expression fails after consuming the second `<`. The error points at that operator, with the message `'<' cannot be chained; add parentheses`. The operator is named as an error would name what it expects: by its leading character, string or token kind (`"<="` for `String("<=")`), or by the label of the outermost `Named` on the way to it. An operator with no such leading item, such as a `Satisfy` or a choice, is named by the item it starts with. Anything else expected at that position, such as a tighter operator, is still listed.
 
 **Commit.** Ordinary [commit semantics](choice.md#ordered-choice) apply. An operator that fails without consuming input ends the expression. An operator that consumed input commits, so on `a +` the expression fails at the end of the input instead of producing `a`. An expression that fails without consuming, as on `+`, lets an enclosing choice try its next alternative.
 

@@ -11,6 +11,11 @@ if (just switch { int value => value, Nothing => 0 } != 3 || default(Maybe<int>)
     return 1;
 }
 
+if (Tokens.Describe<Tok>(K.Comma) != "','" || Tokens.Describe<Plain>(K.Comma) != "Comma" || Tokens.Detail(new Tok(K.Word, "x")) != "x" || Tokens.Detail(new Plain(K.Word)) is not null)
+{
+    return 1;
+}
+
 Console.WriteLine("Creole AOT smoke: OK");
 return 0;
 
@@ -61,4 +66,26 @@ internal class Queries : CharGrammar
         from b in _word
         from c in _word.Repeat(a)
         select c.Count + b.Length;
+}
+
+internal enum K
+{
+    Comma,
+    Word,
+}
+
+internal readonly record struct Tok(K Kind, string Text) : IKinded<K>
+{
+    static string IKinded<K>.Describe(K kind) => kind == K.Comma ? "','" : "word";
+
+    string? IKinded<K>.Detail => Kind == K.Word ? Text : null;
+}
+
+internal readonly record struct Plain(K Kind) : IKinded<K>;
+
+internal static class Tokens
+{
+    public static string? Detail<TToken>(TToken token) where TToken : IKinded<K> => token.Detail;
+
+    public static string Describe<TToken>(K kind) where TToken : IKinded<K> => TToken.Describe(kind);
 }

@@ -14,6 +14,10 @@ namespace Creole;
 /// An infix attempt is the operator and its right operand together.
 /// An attempt that fails after consuming fails the expression.
 /// </para>
+/// <para>
+/// A second operator from a non-associative level fails the expression after consuming, reported where that operator starts with its chain message.
+/// Its first item is captured before it is matched, so the error never reads it back from behind the cursor.
+/// </para>
 /// </remarks>
 internal sealed class ExpressionPlan<TIn, T>(Plan<TIn, T> atom, OperatorPlan<TIn, T>[] prefixes, OperatorPlan<TIn, T>[] operators, int loosest) : Plan<TIn, T>
 {
@@ -86,7 +90,15 @@ internal sealed class ExpressionPlan<TIn, T>(Plan<TIn, T> atom, OperatorPlan<TIn
 
                 if (op.Level == chained)
                 {
-                    if (op.TryMatch(ref cursor) || !mark.FailedEmpty(ref cursor))
+                    var hasFirst = cursor.TryPeek(out var first);
+
+                    if (op.TryMatch(ref cursor))
+                    {
+                        cursor.Reject(mark.Position, hasFirst, first, null, op.Chain ?? ChainMessage.Unnamed);
+                        return false;
+                    }
+
+                    if (!mark.FailedEmpty(ref cursor))
                     {
                         return false;
                     }

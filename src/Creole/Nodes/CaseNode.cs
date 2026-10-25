@@ -15,6 +15,8 @@ internal sealed class CaseNode<TToken, TCase> : Parser<TToken, TCase>, IPrimitiv
 
     internal override NodeKind Kind => NodeKind.Case;
 
+    public Expected Expected { get; } = Expected.UnionCase<TCase>();
+
     public FirstSet First { get; } = FirstSet.OfCase(typeof(TCase));
 
     public bool Nullable => false;
@@ -31,5 +33,5 @@ internal sealed class CaseNode<TToken, TCase> : Parser<TToken, TCase>, IPrimitiv
     }
 
     internal override Plan<TToken, TCase> Lower(PlanBuilder builder) =>
-        PlanBuilder.Case<TToken, TCase>();
+        PlanBuilder.Case<TToken, TCase>(Expected);
 }

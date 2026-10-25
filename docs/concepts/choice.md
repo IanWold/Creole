@@ -34,6 +34,8 @@ On `<=` the result is `Le`, though `Lt` comes first and also matches. On `iffy` 
 
 Unlike `OneOf`, every alternative runs atomically. An alternative that fails, even after consuming input, simply does not match, and the input it read is given back. With `Longest(Lt, Spaceship)`, where `Spaceship` is `<=>`, the input `<=x` produces `Lt`: `Spaceship` read `<=` before failing. If every alternative fails, `Longest` fails without consuming input. An alternative that succeeds without consuming input beats one that fails, and loses to any that consumes something. A `Cut` inside an alternative stays inside it (see [Backtracking and labels](control.md)).
 
+A `Longest` that matches contributes nothing to error messages: neither where the winner stopped nor what a losing alternative expected is reported. A `Longest` that fails reports what every alternative expected (see [Errors](errors.md#what-a-failure-reports)).
+
 `Longest` takes 2 to 16 alternatives, each as a separate parameter so a null one is reported by its expression. For more, nest calls: `Longest(a, Longest(b, c))` matches the same input as `Longest(a, b, c)` and picks the same winner. The grammar tree keeps the nesting you wrote.
 
 `Longest` works on any input type, so a token layer can use it too. Over characters, when every alternative is regular, the interpreter compiles it to one automaton that reads each character once instead of running the alternatives one by one. The results are the same either way; [The interpreter](../engines/interpreter.md#when-a-longest-compiles) says which alternatives compile and what it costs.

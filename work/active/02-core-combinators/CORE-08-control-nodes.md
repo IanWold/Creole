@@ -77,8 +77,8 @@ Nodes that control backtracking and error labelling.
   - [ADR-0011](../../docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md): the cut rule. A cut is dropped with every attempt that fails without consuming, so choice dispatch is exact and nesting does not matter.
   - All three are folded into the whitepaper: § Choice and backtracking, § Bookmarks and retention, § Guarantees, § The error model and § Source-generated engine.
 - **Specification as tests:**
-  - [ControlTable.cs](../../../tests/Creole.Tests/ControlTable.cs): 55 cases of grammar, input and expected outcome.
-  - [ControlModel.cs](../../../tests/Creole.Tests/ControlModel.cs): a reference model with in-order and dispatching modes.
+  - [ControlTable.cs](../../../tests/Creole.Tests/Utilities/ControlTable.cs): 55 cases of grammar, input and expected outcome.
+  - [ControlModel.cs](../../../tests/Creole.Tests/Utilities/ControlModel.cs): a reference model with in-order and dispatching modes.
   - [ControlModelTests.cs](../../../tests/Creole.Tests/ControlModelTests.cs), over every grammar to depth 3 (43,965) by every input to length 3:
     - the model matches every row;
     - dispatching matches running in order;

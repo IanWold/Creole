@@ -11,6 +11,10 @@ namespace Creole;
 /// The candidates run exactly as <see cref="OrPlan{TIn, T}"/> runs its alternatives, each with its light mark.
 /// </para>
 /// <para>
+/// Before each candidate, and after the last, the plan records what the alternatives skipped since the previous candidate would have expected, in their order.
+/// So it records the same failures as running every alternative in order, and stops recording where a candidate succeeds or fails after consuming, as that would.
+/// </para>
+/// <para>
 /// An alternative that is not a candidate would have failed without consuming input and without passing a cut, so skipping it changes nothing a parse can observe (ADR-0011 point 6).
 /// The alternatives a key skips are those of <see cref="Alternatives"/> not among its candidates; the error model records what they would have expected (ERR-02).
 /// </para>
@@ -22,11 +26,11 @@ internal sealed class DispatchPlan<TIn, T> : Plan<TIn, T>
     /// </summary>
     private const int DirectKeys = 128;
 
-    private readonly Plan<TIn, T>[][] _direct;
-    private readonly Plan<TIn, T>[][] _ranges;
+    private readonly DispatchStep<TIn, T>[][] _direct;
+    private readonly DispatchStep<TIn, T>[][] _ranges;
     private readonly Func<TIn, long> _read;
     private readonly long[] _starts;
-    private readonly Plan<TIn, T>[] _unkeyed;
+    private readonly DispatchStep<TIn, T>[] _unkeyed;
 
     /// <summary>
     /// The alternatives, in order.
@@ -35,12 +39,13 @@ internal sealed class DispatchPlan<TIn, T> : Plan<TIn, T>
 
     /// <param name="alternatives">The alternatives' plans, in order.</param>
     /// <param name="keys">Each alternative's keys, or null for an alternative with none.</param>
+    /// <param name="skipped">What each alternative with keys records when it is skipped; null for an alternative with none.</param>
     /// <param name="read">Reads the key of an item.</param>
-    public DispatchPlan(Plan<TIn, T>[] alternatives, RangeSet?[] keys, Func<TIn, long> read)
+    public DispatchPlan(Plan<TIn, T>[] alternatives, RangeSet?[] keys, Expected?[] skipped, Func<TIn, long> read)
     {
         Alternatives = alternatives;
         _read = read;
-        _unkeyed = [.. alternatives.Where((_, i) => keys[i] is null)];
+        _unkeyed = Steps(alternatives, skipped, i => keys[i] is null);
 
         var starts = new SortedSet<long>();
 
@@ -58,14 +63,14 @@ internal sealed class DispatchPlan<TIn, T> : Plan<TIn, T>
         }
 
         _starts = [.. starts];
-        _ranges = [.. _starts.Select(start => (Plan<TIn, T>[])[.. alternatives.Where((_, i) => keys[i] is not { } set || set.Contains(start))])];
+        _ranges = [.. _starts.Select(start => Steps(alternatives, skipped, i => keys[i] is not { } set || set.Contains(start)))];
         _direct = [.. Enumerable.Range(0, DirectKeys).Select(key => Search(key))];
     }
 
     /// <summary>
-    /// The candidates for <paramref name="key"/>, from the range that holds it.
+    /// The steps for <paramref name="key"/>, from the range that holds it.
     /// </summary>
-    private Plan<TIn, T>[] Search(long key)
+    private DispatchStep<TIn, T>[] Search(long key)
     {
         var index = Array.BinarySearch(_starts, key);
 
@@ -77,25 +82,65 @@ internal sealed class DispatchPlan<TIn, T> : Plan<TIn, T>
         return index < 0 ? _unkeyed : _ranges[index];
     }
 
+    /// <summary>
+    /// The steps for one candidate list: each candidate in order, with a recording step for the skipped alternatives before it, and one after the last.
+    /// </summary>
+    private static DispatchStep<TIn, T>[] Steps(Plan<TIn, T>[] alternatives, Expected?[] skipped, Func<int, bool> isCandidate)
+    {
+        var steps = new List<DispatchStep<TIn, T>>();
+        var gap = new List<Expected>();
+
+        for (var i = 0; i < alternatives.Length; i++)
+        {
+            if (isCandidate(i))
+            {
+                if (gap.Count > 0)
+                {
+                    steps.Add(new DispatchStep<TIn, T>(null, [.. gap]));
+                    gap.Clear();
+                }
+
+                steps.Add(new DispatchStep<TIn, T>(alternatives[i], null));
+            }
+            else if (skipped[i] is { } expected)
+            {
+                gap.Add(expected);
+            }
+        }
+
+        if (gap.Count > 0)
+        {
+            steps.Add(new DispatchStep<TIn, T>(null, [.. gap]));
+        }
+
+        return [.. steps];
+    }
+
     public override bool TryParse(ref Cursor<TIn> cursor, ref T result)
     {
-        Plan<TIn, T>[] candidates;
+        DispatchStep<TIn, T>[] steps;
 
         if (cursor.TryPeek(out var item))
         {
             var key = _read(item);
-            candidates = (ulong)key < DirectKeys ? _direct[key] : Search(key);
+            steps = (ulong)key < DirectKeys ? _direct[key] : Search(key);
         }
         else
         {
-            candidates = _unkeyed;
+            steps = _unkeyed;
         }
 
-        foreach (var alternative in candidates)
+        foreach (var (alternative, skipped) in steps)
         {
+            if (skipped is not null)
+            {
+                cursor.FailAll(skipped);
+                continue;
+            }
+
             var mark = LightMark.Take(ref cursor);
 
-            if (alternative.TryParse(ref cursor, ref result))
+            if (alternative!.TryParse(ref cursor, ref result))
             {
                 return true;
             }

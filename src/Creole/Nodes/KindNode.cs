@@ -12,6 +12,8 @@ internal sealed class KindNode<TToken, TKind>(TKind kind) : Parser<TToken, TToke
 
     internal override NodeKind Kind => NodeKind.Kind;
 
+    public Expected Expected { get; } = Expected.TokenKind<TToken, TKind>(kind);
+
     public FirstSet First { get; } = FirstSet.OfItem(kind);
 
     public Type KindType => typeof(TKind);
@@ -25,5 +27,5 @@ internal sealed class KindNode<TToken, TKind>(TKind kind) : Parser<TToken, TToke
     public TKind TokenKind { get; } = kind;
 
     internal override Plan<TToken, TToken> Lower(PlanBuilder builder) =>
-        PlanBuilder.Kind<TToken, TKind>(TokenKind);
+        PlanBuilder.Kind<TToken, TKind>(TokenKind, Expected);
 }

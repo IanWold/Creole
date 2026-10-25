@@ -137,3 +137,38 @@ public sealed class JsonTokens : TokenGrammar<JTok, J>
 
 - Analysis treats each case type as a kind, but it cannot tell which `TKind` a case has. It assumes `Kind(k)` and `Case<T>()` may match the same token.
 - A union stores its case as an `object`, so struct cases box. For the fastest lexers, prefer struct tokens matched with `Kind` ([whitepaper § Where unions are not used](../../whitepaper.md#where-unions-are-not-used)).
+
+### How errors show tokens
+
+A token type says how error messages show it, through two members of `IKinded<TKind>` that have defaults:
+
+| Member | Default | Used for |
+| --- | --- | --- |
+| `static virtual string Describe(TKind kind)` | the kind's enum name | an expected kind, and the start of an unexpected token |
+| `string? Detail { get; }` | `null` | what follows the kind's name when the token is unexpected, such as its text |
+
+Override them on the token type with explicit implementations:
+
+```csharp
+public readonly record struct JTok(J Kind, string Text) : IKinded<J>
+{
+    static string IKinded<J>.Describe(J kind) => kind switch
+    {
+        J.Comma => "','",
+        J.String => "string",
+        _ => kind.ToString(),
+    };
+
+    string? IKinded<J>.Detail => Kind == J.String ? Text : null;
+}
+```
+
+With these, a message reads `expected ','`, and an unexpected string token reads `unexpected string "host"`: the kind's name, a space, then the detail. A comma, with no detail, reads `unexpected ','`.
+
+- Engines call both only when they build an error, never while parsing, so `Describe` may read the current UI culture.
+- `Describe` must not throw. A null or empty result is replaced by the kind's enum name.
+- Engines reach both members through `TokenGrammar<TToken, TKind>`. A token type shows this way once a token grammar over it has been initialised, which happens when any grammar calls `Kind`. Until then a token shows as its `ToString()`. A token type that implements `IKinded` for two kind enums shows through the token grammar initialised first.
+- A union token overrides them the same way, inside its declaration.
+- A struct token that keeps the default `Detail` is boxed for the call. That happens only when an error is built.
+
+What each primitive expects when it fails is listed in [Errors](errors.md#what-a-failure-reports). The public method that runs a parser and returns its errors arrives with INT-08. The reasons for this design are in [ADR-0023](../../work/docs/decisions/0023-token-types-describe-their-kinds.md).

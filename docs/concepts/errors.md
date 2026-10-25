@@ -10,7 +10,9 @@ public sealed record ParseError(
     string Layer,
     Unexpected Unexpected,
     IReadOnlyList<Expectation> Expected,
-    IReadOnlyList<string> Context);
+    IReadOnlyList<ContextLine> Context);
+
+public sealed record ContextLine(string Text, SourceSpan Start);
 ```
 
 | Property | Meaning |
@@ -19,11 +21,18 @@ public sealed record ParseError(
 | `Layer` | The layer that raised it, such as `"lexer"` or `"parser"`. |
 | `Unexpected` | What the parse found there. |
 | `Expected` | What it would have accepted there. May be empty. A `p.Named(label)` rule appears here as its label (see [Backtracking and labels](control.md)). |
-| `Context` | Lines such as `"in object starting at 2:3"`, innermost first, from `p.Context(text)` rules. May be empty. |
+| `Context` | The constructs the parse was inside, innermost first, from `p.Context(text)` rules. May be empty. See [Context lines](#context-lines). |
 
 An error is immutable. It copies `Expected` and `Context`, so changing the lists you passed in afterwards does not change the error. A `with` expression, such as `error with { Expected = merged }`, makes a new error and checks and copies the values it sets in the same way.
 
 The constructor throws `ArgumentNullException` if `Layer`, `Expected` or `Context` is null. It throws `ArgumentException` if `Unexpected` is `default`, or if a list contains a null or a `default` expectation.
+
+### Context lines
+
+A `ContextLine` names a construct the parse was inside when it failed, such as `in object`, and holds `Start`, the span of the first item that construct read. Renderers show where it started: `in object starting at 2:1` against the source text, or `in object starting at 2` (a character offset) on one line.
+
+- `Text` is the text given to `p.Context(text)`. A null `Text` throws `ArgumentNullException`, and an empty one throws `ArgumentException`, in the constructor and in a `with` expression.
+- Two lines are equal when their text and start are equal.
 
 Two errors are equal when all their parts are equal. `Expected` and `Context` are compared element by element, in order, so two errors built from separate lists with the same contents are equal.
 
@@ -63,6 +72,47 @@ string Describe(Expectation expectation) => expectation switch
 ```
 
 Case values convert to the union implicitly, so `Expectation e = new Label("value");` works. Because `EndOfInput` converts to either union, a call such as `M(new EndOfInput())` is ambiguous when `M` has overloads for both `Unexpected` and `Expectation`. Give such methods different names, or cast the argument.
+
+## What a failure reports
+
+> The interpreter records failures as this section describes. The public method that runs a parser and returns its errors arrives with INT-08.
+
+Each layer keeps the furthest failure of its parse, the one at the latest position, and reports that one. Where several parts of a grammar fail at that same position, their failures merge:
+
+- A failure before the furthest one is ignored, and one past it replaces it.
+- Expectations are listed in the order they were recorded. One that shows the same as an earlier one is listed once.
+- A message, from `Fail(message)`, a filter's message or a chained operator, takes the place of what was found. The first message recorded at the position wins, and the expectations stay alongside it.
+- The span covers the item at the position, or is zero-width at the end of the input. A rejected value or a chained operator reported there widens it to cover that input, the longest of them if there are several.
+- What was found is the message if there is one, and otherwise the item at the position or the end of input.
+
+A failure deeper than the cursor counts too. In `Atomic(Char('a').Then(Char('b'))).Or(Char('c'))` on `ax`, the report is "expected 'b'" at the `x`, even though the `Atomic` rewound before `Char('c')` ran.
+
+`Named`, `Context`, `Lookahead`, `Not` and `Longest` change what is reported, as [Backtracking and labels](control.md#what-failures-report) and [Choice](choice.md#longest-match) describe. Context lines come from the first failure recorded at the position, innermost first, and leave out a construct that started at the position itself.
+
+What each primitive expects when it fails:
+
+| Parser | Expects |
+| --- | --- |
+| `Char(c)`, `Token(x)` | the item, such as `','` or `3` |
+| `String(s)`, `CIString(s)` | the whole string, such as `"let"`, at the position where it started |
+| `Digit`, `Letter`, `LetterOrDigit`, `Whitespace` | its name: `digit`, `letter`, `letter or digit`, `whitespace` (a `Label`) |
+| `Range`, `NoneOf` and other classes | one description of the class, such as `[a-z]` or `any character except '"'` |
+| `End` | the end of input |
+| `Kind(k)` | the kind, as the token type describes it (see [How errors show tokens](primitives.md#how-errors-show-tokens)) |
+| `Case<T>()` | the case type's name, such as `Ident` |
+| `Custom(scanner)` | the scanner's `Name` (a `Label`), or else its `First` characters as one description, or else nothing in particular |
+| `Any`, `Satisfy(predicate)` | nothing in particular: they can start with any item |
+| `Fail(message)` | nothing; it reports `message` |
+
+A `Match` whose value has no case expects nothing in particular, where its branch would have started.
+
+Two failures are reported before the cursor, at the start of the input they name: a value that `Where` rejects ([Sequencing](sequencing.md)) and a chained non-associative operator ([Expressions](expressions.md)). Each keeps what its error needs, such as the first item of the rejected value, when it is recorded, so building the error never reads input the parse has already moved past.
+
+How items show:
+
+- A character shows in single quotes, such as `'a'`. Quotes, backslashes and characters that print nothing or move the cursor are escaped as in C#, such as `'\n'` or `'\u001B'`, so a message never carries a terminal escape sequence. A string shows in double quotes with the same escapes.
+- A token from a `TokenGrammar` shows as its type describes it, such as `','` or `string "host"`.
+- Any other item shows as its `ToString()`.
 
 ## Results: `ParseResult<T>`
 
@@ -131,7 +181,7 @@ error[parser]: expected ',' or '}'
 
 - **Headline.** `error[layer]:` and what was expected. The carets are labelled with what was found. When nothing was expected, the headline says what was found and the carets have no label. A `CustomMessage` is shown as its text.
 - **Location.** ` --> name:line:column`, or ` --> line:column` for a source with no name. Lines and columns start at 1, and columns count Unicode scalar values, as [`LineMap`](spans.md) does.
-- **Notes.** One `= note:` line per context line, innermost first.
+- **Notes.** One `= note:` line per context line, innermost first, ending with where the construct started, as `starting at line:column`. The start may lie in another source, such as the file an embedded script sits in.
 - **Order.** Errors come in span order, so they are grouped by source, in the order the `SourceRegistry` issued the ids, with `SourceId.Unnamed` first. A blank line separates errors, and lines are joined by `\n`.
 
 #### `SourceText`
@@ -143,7 +193,7 @@ A `SourceText` holds a source's full text with the id and name to show it under.
 | `new SourceText(text, name)` | A source with no registry id (`SourceId.Unnamed`). `name` may be omitted or null. |
 | `new SourceText(id, name, text)` | A source with an id from a `SourceRegistry`. `name` is usually `registry.GetName(id)`. |
 
-`Render(sources)` throws `ArgumentException` if an error points into a source with no text, if two texts have the same id, if a text is null, or if an error's span ends past the end of its text. That last one usually means the wrong text was passed.
+`Render(sources)` throws `ArgumentException` if an error or one of its context lines points into a source with no text, if two texts have the same id, if a text is null, or if an error's span ends, or a context line starts, past the end of its text. That last one usually means the wrong text was passed.
 
 #### Caret alignment
 
@@ -181,10 +231,10 @@ The width table comes from Unicode 16.0.0, the version .NET 11 uses. `scripts/ge
 
 ```text
 error[lexer] at 4..7: number too large
-error[parser] at 15..21: unexpected string "host"; expected ',' or '}'; in object starting at 2:1
-error[parser] at 30..30: unexpected end of input; expected value, '[' or end of input; in array; in object starting at 1:1
+error[parser] at 15..21: unexpected string "host"; expected ',' or '}'; in object starting at 2
+error[parser] at 30..30: unexpected end of input; expected value, '[' or end of input; in array starting at 25; in object starting at 0
 ```
 
 - The offsets are character offsets, `CharStart..CharEnd`.
-- The expected part is left out when nothing was expected. Context lines follow, innermost first.
+- The expected part is left out when nothing was expected. Context lines follow, innermost first, each with the character offset where its construct started.
 - `Render()` shows no file names, lines or columns. Use it when the source text is not at hand.
