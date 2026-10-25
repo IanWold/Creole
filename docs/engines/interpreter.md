@@ -2,8 +2,6 @@
 
 The interpreter runs any grammar, including one built at run time. On first use it lowers the grammar to an execution plan and keeps the plan for as long as the grammar is alive, so later parses reuse it. Plans are immutable and shared between threads; everything a parse changes lives in its cursor. The design is in the whitepaper's [§ Interpreted engine](../../whitepaper.md#interpreted-engine).
 
-> The public method that runs a parser on your input arrives with INT-08.
-
 ## What lowering speeds up
 
 Lowering rewrites four shapes of grammar. A rewrite never changes a parse's result, the input it consumes, whether a failure is committed, or what a failure reports, so you can ignore them and still get correct parses and the same error messages. Writing grammars in these shapes makes them faster.
@@ -84,4 +82,4 @@ Nothing else counts, so how deep a parse goes depends only on the grammar and th
 
 Deeper than 20 levels, each counted level also checks that the thread has enough stack left. A parse that goes too deep for its limit, or for the thread's stack, ends there. No combinator inside the parse catches that, including `Or`, `Optional`, repetitions, `Not`, `Lookahead` and `Atomic`, so the limit never changes what a grammar accepts. On a thread with a small stack, the stack check can end a parse before the limit does. Recursion in your own code is not counted: `Select` and `Where` functions, custom scanners, and code that builds grammars. The reasons are in [ADR-0020](../../work/docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md).
 
-> Setting the limit, and the result a too-deep parse returns, arrive with INT-08.
+The limit is `ParseOptions.MaxDepth`, 1,000 levels by default. A parse that goes too deep returns `Failed` with one error where the level would have started, whose message names the cause. [Running a parser § Options](../concepts/parsing.md#options) shows how to set the limit and what the error holds.

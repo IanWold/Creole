@@ -75,7 +75,7 @@ Case values convert to the union implicitly, so `Expectation e = new Label("valu
 
 ## What a failure reports
 
-> The interpreter records failures as this section describes. The public method that runs a parser and returns its errors arrives with INT-08.
+> The interpreter records failures as this section describes. `Parse` reports the furthest one ([Running a parser](parsing.md)).
 
 Each layer keeps the furthest failure of its parse, the one at the latest position, and reports that one. Where several parts of a grammar fail at that same position, their failures merge:
 
@@ -116,7 +116,7 @@ How items show:
 
 ## Results: `ParseResult<T>`
 
-A parse returns a `ParseResult<T>`, a union of three cases:
+[`Parse`](parsing.md) returns a `ParseResult<T>`, a union of three cases:
 
 | Case | Meaning | `Diagnostics` |
 | --- | --- | --- |
@@ -156,7 +156,7 @@ The reasons are in [ADR-0002](../../work/docs/decisions/0002-parseresult-as-a-pl
 - Errors are ordered by source, then start offset, then end offset. Errors with equal spans keep the order they were given in. Sources are ordered as their `SourceRegistry` issued them, with `SourceId.Unnamed` first.
 - `Diagnostics.Empty` has no errors.
 - `new Diagnostics(errors)` sorts `errors`. It throws `ArgumentException` if one is null.
-- A collection can also hold the text of the sources its errors point into, so that `Render()` can show the errors against it. A collection made with `new Diagnostics(errors)` holds none.
+- A collection can also hold the text of the sources its errors point into, so that `Render()` can show the errors against it. The errors from `Parse` hold the text of its input. A collection made with `new Diagnostics(errors)` holds none.
 - Two collections are equal when they hold equal errors in the same order, whatever source texts they hold.
 
 ### Rendering against the source
@@ -185,7 +185,7 @@ error[parser]: expected ',' or '}'
 - **Notes.** One `= note:` line per context line, innermost first, ending with where the construct started, as `starting at line:column`. The start may lie in another source, such as the file an embedded script sits in.
 - **Order.** Errors come in span order, so they are grouped by source, in the order the `SourceRegistry` issued the ids, with `SourceId.Unnamed` first. A blank line separates errors, and lines are joined by `\n`.
 
-`Render()`, with no arguments, writes the same as `Render(sources)` when the collection holds a text for every source its errors and their context lines point into, and each text is long enough for its spans. Otherwise it writes [one line per error](#one-line-per-error). It never throws.
+`Render()`, with no arguments, writes the same as `Render(sources)` when the collection holds a text for every source its errors and their context lines point into, and each text is long enough for its spans. Otherwise it writes [one line per error](#one-line-per-error). It never throws. The errors from `Parse` hold the text of its input, so `result.Diagnostics.Render()` shows them against it.
 
 #### `SourceText`
 

@@ -2,7 +2,7 @@
 
 Control combinators decide when a parse may go back and try again, and what a failure reports. `Atomic`, `Lookahead`, `Not` and `Cut` are members of `Grammar<TIn>`, so a grammar class calls them unqualified. `p.Named(label)` and `p.Context(text)` are extension members of `Parser<TIn, TOut>` in the `ErrorReporting` class. The design and its reasons are in the [whitepaper's § Choice and backtracking](../../whitepaper.md#choice-and-backtracking) and [ADR-0008](../../work/docs/decisions/0008-control-node-semantics.md), and for `Cut`, [ADR-0011](../../work/docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md).
 
-> The interpreter runs these combinators as this page describes. `ControlTable` in the test project lists the behaviour as cases: a grammar, an input, the expected outcome and the failure it reports. The interpreter passes every case. It also agrees with a reference model of the cut rules on every grammar the model generates up to three levels deep, over every input up to three characters long. The public method that runs a parser on your input arrives with INT-08.
+> The interpreter runs these combinators as this page describes. `ControlTable` in the test project lists the behaviour as cases: a grammar, an input, the expected outcome and the failure it reports. The interpreter passes every case. It also agrees with a reference model of the cut rules on every grammar the model generates up to three levels deep, over every input up to three characters long. Run a parser with `Parse` ([Running a parser](parsing.md)).
 
 ## Commit semantics, briefly
 
