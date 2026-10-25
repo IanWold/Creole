@@ -2,7 +2,7 @@
 
 Some tokens need hand-written code. C# raw string literals and Rust's `r#"…"#` strings count their delimiters, which no combinator can do. `Custom(scanner)` turns an `IScanner<TIn, TOut>` into a parser. The design is in the [whitepaper's § Custom primitives](../../whitepaper.md#custom-primitives), and the choices behind `ScannerInfo` are in [ADR-0012](../../work/docs/decisions/0012-custom-scanner-metadata.md).
 
-> The interpreter runs `Custom` as this page describes. The public method that runs a parser on your input, and returns the errors it reports, arrives with INT-08.
+> The interpreter runs `Custom` as this page describes. Run a parser with `Parse` ([Running a parser](parsing.md)).
 
 ## Writing a scanner
 

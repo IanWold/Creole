@@ -17,7 +17,7 @@ Chain layers into a parser and run it over in-memory or reader input.
 - `TextReader` sources with blocking pulls.
 - Slices follow [ADR-0013](../../docs/decisions/0013-slices-view-in-memory-input-and-copy-streamed-input.md): `Parse(text)` builds its root cursor over the caller's memory, so slices are views; over a `TextReader` they are copies.
 - Immutable, thread-shareable pipelines; each call owns its buffers and state.
-- Make Example A's `result.Diagnostics.Render()` show the full format. That format needs the source text (`Diagnostics.Render(SourceText)`, from [ERR-03](../04-errors-and-recovery/ERR-03-diagnostic-rendering.md)), so either results carry their `SourceText` or the example passes it in. Decide which.
+- A pipeline's result holds its root source text, as [INT-08](../03-interpreter/INT-08-single-layer-parse-api.md)'s does, so Example A's `result.Diagnostics.Render()` shows the full format ([ADR-0024](../../docs/decisions/0024-a-parses-diagnostics-hold-their-source-text.md) points 1 and 5).
 
 ## Acceptance criteria
 

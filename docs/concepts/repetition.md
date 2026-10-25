@@ -2,7 +2,7 @@
 
 Repetition combinators run a parser several times. They are extension members of `Parser<TIn, TOut>` in the `Repetition` class, so they read left to right: `p.AtLeastOnce()`, `p.SepBy(comma)`. The design is in the [whitepaper's § Repetition and structure](../../whitepaper.md#repetition-and-structure).
 
-> The interpreter runs these combinators as this page describes. The public method that runs a parser on your input arrives with INT-08.
+> The interpreter runs these combinators as this page describes. Run a parser with `Parse` ([Running a parser](parsing.md)).
 
 ## The combinators
 

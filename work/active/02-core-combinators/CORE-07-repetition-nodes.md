@@ -50,7 +50,7 @@ Repetition combinators with Pidgin-compatible behavior.
 - **C# 14 extension members, not instance methods.** Called as `p.Many()`, as the whitepaper writes them. Instance methods failed the AOT smoke publish with IL3054 (generic recursion), and a scratch app that did not root Creole crashed with `TypeLoadException`. The rule is recorded in [CORE-04](CORE-04-sequencing-and-mapping-nodes.md) for `Optional`.
 - **Tests:**
   - [tests/Creole.Tests/RepetitionNodeTests.cs](../../../tests/Creole.Tests/RepetitionNodeTests.cs): each combinator's node, kind, children and argument checks.
-  - [tests/Creole.Tests/Utilities/RepetitionTable.cs](../../../tests/Creole.Tests/RepetitionTable.cs): the shared table, 52 rows written as shapes.
+  - [tests/Creole.Tests/Utilities/RepetitionTable.cs](../../../tests/Creole.Tests/Utilities/RepetitionTable.cs): the shared table, 52 rows written as shapes.
   - [tests/Creole.Tests/RepetitionTablePidginTests.cs](../../../tests/Creole.Tests/RepetitionTablePidginTests.cs): checks every row against Pidgin 3.5.1. `Creole.Tests` now references Pidgin.
   - `NodeCompletenessTests` builds its every-kind switch from the enum.
 - **Evidence, 2026-10-18, commit cb2c33d:** `dotnet build` with 0 warnings; `dotnet test` with 183 passed and 0 failed (15 node tests, 54 table tests); the AOT smoke publish with 0 IL warnings.

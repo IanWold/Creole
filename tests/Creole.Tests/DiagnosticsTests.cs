@@ -73,6 +73,17 @@ public class DiagnosticsTests
     }
 
     [Fact]
+    public void HeldSourcesDoNotAffectEquality()
+    {
+        ParseError[] errors = [ErrorAt(SourceId.Unnamed, 1, 2)];
+        var held = new Diagnostics(errors, new SourceText("abc"));
+        var bare = new Diagnostics(errors);
+
+        Assert.Equal(held, bare);
+        Assert.Equal(held.GetHashCode(), bare.GetHashCode());
+    }
+
+    [Fact]
     public void NullsAreRejected()
     {
         Assert.Throws<ArgumentNullException>(() => new Diagnostics(null!));

@@ -2,7 +2,7 @@
 
 Primitives are the leaves of a grammar: the parsers that read input directly. Every other combinator is built from them. The design is in the [whitepaper's § Types](../../whitepaper.md#types) and [§ Choice and backtracking](../../whitepaper.md#choice-and-backtracking).
 
-> The interpreter runs these parsers as this page describes. The public method that runs a parser on your input arrives with INT-08.
+> The interpreter runs these parsers as this page describes. Run a parser with `Parse` ([Running a parser](parsing.md)).
 
 ## Items
 
@@ -171,4 +171,4 @@ With these, a message reads `expected ','`, and an unexpected string token reads
 - A union token overrides them the same way, inside its declaration.
 - A struct token that keeps the default `Detail` is boxed for the call. That happens only when an error is built.
 
-What each primitive expects when it fails is listed in [Errors](errors.md#what-a-failure-reports). The public method that runs a parser and returns its errors arrives with INT-08. The reasons for this design are in [ADR-0023](../../work/docs/decisions/0023-token-types-describe-their-kinds.md).
+What each primitive expects when it fails is listed in [Errors](errors.md#what-a-failure-reports). The reasons for this design are in [ADR-0023](../../work/docs/decisions/0023-token-types-describe-their-kinds.md).
