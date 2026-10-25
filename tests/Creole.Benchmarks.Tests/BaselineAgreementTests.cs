@@ -86,6 +86,8 @@ public class BaselineAgreementTests
         Assert.Equal(LoweringInputs.JsonTokens.Length, benchmarks.PlainRecording());
         Assert.Equal(LoweringInputs.JsonTokens.Length, benchmarks.Labelled());
         Assert.Equal(LoweringInputs.JsonTokens.Length, benchmarks.LabelledRecording());
+        Assert.Equal(-1, benchmarks.Invalid());
+        Assert.Equal(-1, benchmarks.InvalidRecording());
         Assert.NotNull(benchmarks.InvalidWithError());
 
         benchmarks.Setup();

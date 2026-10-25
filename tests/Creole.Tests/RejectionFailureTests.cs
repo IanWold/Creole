@@ -49,6 +49,11 @@ file static class Grammars
     [
         [op.InfixN(Char('<').Named("less-than"), static (l, _, r) => l < r ? 1 : 0)],
     ]);
+
+    public static readonly Parser<char, int> UnkeyedOperator = Expression.Build(Letter.Select(static c => (int)c), op =>
+    [
+        [op.InfixN(Satisfy(static c => c == '<'), static (l, _, r) => l < r ? 1 : 0)],
+    ]);
 }
 
 public class RejectionFailureTests
@@ -112,6 +117,20 @@ public class RejectionFailureTests
         );
 
     [Fact]
+    public void TheSpanCoversTheLongestValueRejectedAtAPosition() =>
+        Assert.Equal(
+            At(0, 3, new UnexpectedItem("'a'")),
+            Execution.Error(Atomic(Grammars.Word.Where(static _ => false)).Or(Atomic(Letter.Select(static c => c.ToString()).Where(static _ => false))), "abc")
+        );
+
+    [Fact]
+    public void AFurtherFailureForgetsTheRejectedValue() =>
+        Assert.Equal(
+            At(1, 2, new UnexpectedItem("'b'"), new ExpectedItem("'q'")),
+            Execution.Error(Atomic(Grammars.Word.Where(static _ => false)).Or(Return("")).Then(Char('a')).Then(Char('q')), "ab")
+        );
+
+    [Fact]
     public void UnderAtomicALabelNamesARejection()
     {
         var identifier = Atomic(Grammars.Word.Where(static word => word != "if"));
@@ -151,13 +170,18 @@ public class RejectionFailureTests
             At(3, 4, new CustomMessage("less-than cannot be chained; add parentheses")),
             Execution.Error(Grammars.NamedOperator, "a<b<c")
         );
+
+        Assert.Equal(
+            At(3, 4, new CustomMessage("'<' cannot be chained; add parentheses")),
+            Execution.Error(Grammars.UnkeyedOperator, "a<b<c")
+        );
     }
 
     [Fact]
     public void BuildingTheErrorsReadsNothingBehindTheCursor()
     {
         Assert.Equal(Execution.Error(Grammars.Number.Where(static n => n <= 255), "300;"), ErrorAfterRelease(Grammars.Number.Where(static n => n <= 255), "300;"));
-        Assert.Equal(Execution.Error(Grammars.Comparison, "a<b<c"), ErrorAfterRelease(Grammars.Comparison, "a<b<c"));
+        Assert.Equal(Execution.Error(Grammars.Range, "a<=b<=c"), ErrorAfterRelease(Grammars.Range, "a<=b<=c"));
     }
 
     [Fact]

@@ -5,7 +5,7 @@ using static Creole.TokenGrammar<Creole.Benchmarks.JsonToken, Creole.Benchmarks.
 namespace Creole.Benchmarks;
 
 /// <summary>
-/// What recording failures costs: the medium JSON document's tokens parsed with and without a failure log, and an invalid copy whose error is built.
+/// What recording failures costs: the medium JSON document's tokens, and an invalid copy of them, parsed with and without a failure log, and the invalid copy's error built.
 /// </summary>
 /// <remarks>
 /// <c>Labelled</c> adds <c>Named</c> and <c>Context</c> to the grammar. <c>BuildError</c> builds only the reported error, from a log that <see cref="Setup"/> filled, so its allocation is the error's alone.
@@ -70,6 +70,14 @@ public class ErrorBenchmarks
 
         return _failed.ToError(in cursor, "parser", static (start, end) => new SourceSpan(SourceId.Unnamed, start, end));
     }
+
+    [Benchmark]
+    public long Invalid() =>
+        Run(_plain, _invalid, null);
+
+    [Benchmark]
+    public long InvalidRecording() =>
+        Run(_plain, _invalid, _log);
 
     [Benchmark]
     public ParseError? InvalidWithError()

@@ -171,6 +171,8 @@ Option **A** with **a**, chosen by the maintainer in conversation on 2026-10-25.
 
 3. **Unexpected tokens.** For a token that implements `IKinded<TKind>`, the `UnexpectedItem` display is `TToken.Describe(token.Kind)`. When `token.Detail` is neither null nor empty, a space and the detail follow.
 
+   Engines reach both members through a token grammar's type parameters, because AOT rules out finding them from the token type alone. So a token type shows this way once a `TokenGrammar<TToken, TKind>` over it has been initialised, which any grammar that uses `Kind` does. Until then it shows as point 5 says. A token type that implements `IKinded` for two kind enums shows through the token grammar over it that was initialised first.
+
 4. **Timing.**
    - Engines call `Describe` and `Detail` only when a `ParseError` is built, never while parsing.
    - A null or empty `Describe` result is replaced by `kind.ToString()`, so building an error never fails on it. An exception from either member propagates.
@@ -178,7 +180,7 @@ Option **A** with **a**, chosen by the maintainer in conversation on 2026-10-25.
 
 5. **Other items.** These are pinned for G7, and their formatting is a build detail, pinned by snapshot tests:
    - A character shows quoted, as `'x'`, with escapes for quotes, backslashes and control characters. `String(s)` and `CIString(s)` show as `"s"`.
-   - `Token(x)`, and any item that is not a character and does not implement `IKinded`, shows as `x.ToString()`.
+   - `Token(x)`, and any item that is not a character and does not show as point 3 says, shows as `x.ToString()`.
    - `Case<TCase>()` records an expectation shown as `typeof(TCase).Name`. This fills a gap in ADR-0021 point 6's table. `Named` relabels it as usual.
 
 Deciding reason: A is the only option that is additive, AOT-clean without annotations, and shared by every grammar over a token type. It also puts `Describe` and `Detail` in one place.
@@ -223,3 +225,4 @@ What would change this:
   - [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md): the `Describe` scope item cites this record, and adds `Detail`, the display of `Case` and other items, and an AOT smoke token. ERR-02 moves to Building.
   - [GEN-02](../../active/11-source-generator/GEN-02-emit-the-core-combinators.md): generated parsers call the same members when they build an error.
 - **Decisions index:** a note that this record moves `Describe` from `TokenGrammar` to `IKinded`, and fills ADR-0021 point 6's `Kind` display and its missing `Case` row.
+- **Edited in place during ERR-02's build (2026-10-25), before merge.** ERR-02's completion review found that tokens show through `Describe` only once a token grammar over them has been initialised. The maintainer chose to state that rule rather than look for another mechanism. Point 3 now says how engines reach the members, and point 5 refers to it. Whitepaper [§ The error model](../../../whitepaper.md#the-error-model), ERR-02's scope, [GEN-02](../../active/11-source-generator/GEN-02-emit-the-core-combinators.md) and docs/concepts/primitives.md changed to match.

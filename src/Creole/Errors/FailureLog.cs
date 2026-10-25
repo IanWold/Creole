@@ -22,8 +22,8 @@ namespace Creole;
 /// <para>
 /// Context frames live in an array with links to their parents, so a failure keeps its whole stack as one index.
 /// A frame is dropped when its context ends unless the furthest failure needs it.
-/// When no saved failure is open, frames that neither the current stack nor the furthest failure needs are compacted away,
-/// so the array grows with the depth of nesting rather than the length of the input.
+/// Frames that neither the current stack nor the furthest failure needs are compacted away, so the array grows with the depth of nesting rather than the length of the input.
+/// While a save is open, the frames that existed when it was taken stay where they are, because the saved failure may point into them.
 /// </para>
 /// <para>
 /// Recording stores references and indexes in reusable arrays and allocates nothing once the arrays are large enough.
@@ -39,6 +39,7 @@ internal sealed class FailureLog<T>
     private long _end = -1;
     private Expected[] _expected = new Expected[8];
     private int _frameCount;
+    private int _frameFloor;
     private ContextFrame[] _frames = new ContextFrame[8];
     private bool _hasItem;
     private T _item = default!;
@@ -46,7 +47,6 @@ internal sealed class FailureLog<T>
     private int _protected;
     private int _records;
     private int[] _remap = [];
-    private int _restoring;
     private int _start;
 
     /// <summary>
@@ -84,21 +84,21 @@ internal sealed class FailureLog<T>
             _remap = new int[_frames.Length];
         }
 
-        Array.Fill(_remap, -1, 0, _frameCount);
+        Array.Fill(_remap, -1, _frameFloor, _frameCount - _frameFloor);
 
-        for (var i = _current; i >= 0; i = _frames[i].Parent)
+        for (var i = _current; i >= _frameFloor; i = _frames[i].Parent)
         {
             _remap[i] = 0;
         }
 
-        for (var i = _context; i >= 0 && _remap[i] < 0; i = _frames[i].Parent)
+        for (var i = _context; i >= _frameFloor && _remap[i] < 0; i = _frames[i].Parent)
         {
             _remap[i] = 0;
         }
 
-        var kept = 0;
+        var kept = _frameFloor;
 
-        for (var i = 0; i < _frameCount; i++)
+        for (var i = _frameFloor; i < _frameCount; i++)
         {
             if (_remap[i] < 0)
             {
@@ -109,19 +109,19 @@ internal sealed class FailureLog<T>
 
             _frames[kept] = frame with
             {
-                Parent = frame.Parent < 0
-                    ? -1
+                Parent = frame.Parent < _frameFloor
+                    ? frame.Parent
                     : _remap[frame.Parent],
             };
             _remap[i] = kept++;
         }
 
         _frameCount = kept;
-        _current = _current < 0
-            ? -1
+        _current = _current < _frameFloor
+            ? _current
             : _remap[_current];
-        _context = _context < 0
-            ? -1
+        _context = _context < _frameFloor
+            ? _context
             : _remap[_context];
     }
 
@@ -165,9 +165,9 @@ internal sealed class FailureLog<T>
         _context = -1;
         _current = -1;
         _frameCount = 0;
+        _frameFloor = 0;
         _records = 0;
         _protected = 0;
-        _restoring = 0;
     }
 
     /// <summary>
@@ -175,7 +175,7 @@ internal sealed class FailureLog<T>
     /// </summary>
     public void Enter(string text, long start)
     {
-        if (_frameCount == _frames.Length && _restoring == 0)
+        if (_frameCount == _frames.Length)
         {
             Compact();
         }
@@ -195,7 +195,7 @@ internal sealed class FailureLog<T>
     public void Keep(in FailureMark<T> mark)
     {
         _protected = mark.Protected;
-        _restoring--;
+        _frameFloor = mark.FrameFloor;
     }
 
     /// <summary>
@@ -217,7 +217,7 @@ internal sealed class FailureLog<T>
     /// The furthest failure as it is now, for <see cref="Relabel"/>. Unlike <see cref="Save"/>, it protects nothing and needs no ending.
     /// </summary>
     public FailureMark<T> Note() =>
-        new(Position, _start, _count, _message, _chain, _end, _hasItem, _item, _context, _records, _protected);
+        new(Position, _start, _count, _message, _chain, _end, _hasItem, _item, _context, _records, _protected, _frameFloor);
 
     /// <summary>
     /// Records a failure at <paramref name="position"/> that expected <paramref name="expected"/>, or nothing in particular when it is null.
@@ -329,18 +329,18 @@ internal sealed class FailureLog<T>
         _context = mark.Context;
         _records = mark.Records;
         _protected = mark.Protected;
-        _restoring--;
+        _frameFloor = mark.FrameFloor;
     }
 
     /// <summary>
-    /// Saves the furthest failure so that <see cref="Restore"/> can put it back, protecting its expectations until <see cref="Restore"/> or <see cref="Keep"/> ends the save.
+    /// Saves the furthest failure so that <see cref="Restore"/> can put it back, protecting its expectations and context frames until <see cref="Restore"/> or <see cref="Keep"/> ends the save.
     /// </summary>
     public FailureMark<T> Save()
     {
         var mark = Note();
 
         _protected = _count;
-        _restoring++;
+        _frameFloor = _frameCount;
 
         return mark;
     }

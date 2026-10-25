@@ -167,6 +167,7 @@ With these, a message reads `expected ','`, and an unexpected string token reads
 
 - Engines call both only when they build an error, never while parsing, so `Describe` may read the current UI culture.
 - `Describe` must not throw. A null or empty result is replaced by the kind's enum name.
+- Engines reach both members through `TokenGrammar<TToken, TKind>`. A token type shows this way once a token grammar over it has been initialised, which happens when any grammar calls `Kind`. Until then a token shows as its `ToString()`. A token type that implements `IKinded` for two kind enums shows through the token grammar initialised first.
 - A union token overrides them the same way, inside its declaration.
 - A struct token that keeps the default `Detail` is boxed for the call. That happens only when an error is built.
 

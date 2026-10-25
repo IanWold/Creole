@@ -203,7 +203,7 @@ Every failure at the furthest position merges into one record. Its expectations 
 **Cons:**
 
 - Changes ERR-01's public `ParseError`, its tests and docs, and the whitepaper's sketch.
-- Each `Context` entry captures its first item's span by value, because that item may be released before the error is built. This is the same capture that ADR-0014 point 6 needs.
+- A streamed layer captures each `Context` entry's first item span by value, because that item may be released before the error is built. This is the same capture that ADR-0014 point 6 needs.
 
 #### 4B. The engine appends " starting at L:C"
 
@@ -343,8 +343,9 @@ The unexpected part is the message if there is one. Otherwise it is the item at 
 
 **4. Context.** This refines ADR-0008 point 5.
 
-- `p.Context(text)` pushes a line while `p` runs, with the span of the item at `p`'s start, captured by value.
+- `p.Context(text)` pushes a line while `p` runs, recording the position of the item at `p`'s start. The line's `Start` is that item's span.
 - A failure carries the lines whose construct started before the failure's position, innermost first.
+- A layer over in-memory input records positions and maps them to spans when it builds the error. That is exact, because the layer holds every item until the parse ends. A layer whose buffer can release items captures each span by value when it is recorded instead ([LAY-01](../../active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md)). The spans of failures reported behind the cursor follow the same rule, while their items are captured by value (ADR-0014 point 6).
 - `ParseError.Context` is `IReadOnlyList<ContextLine>`, where `public sealed record ContextLine(string Text, SourceSpan Start)`. `Text` is not null or empty.
 - [ERR-03](../../active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md)'s renderer prints `= note: {Text} starting at {line}:{column}` from `Start`. `Render()` without sources prints the character offset instead.
 
@@ -399,7 +400,7 @@ What would change this:
 - ERR-02 changes a public type from a Done card: `ParseError.Context`, with ERR-01's tests and docs/concepts/errors.md.
 - ERR-03's renderer and its snapshot test change too.
 - `Lookahead`, `Not`, filters and `Named` each save part of the furthest failure on entry.
-- `Context` captures a span on entry.
+- A layer whose buffer can release items captures a span on each `Context` entry ([LAY-01](../../active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md)).
 
 **Implementation sketch (not decided here).** None of this needs allocation in steady state:
 
@@ -425,10 +426,11 @@ The build chooses, measured against ERR-02's allocation criterion and [BENCH-01]
 
 - **Whitepaper:**
   - [§ The error model](../../../whitepaper.md#the-error-model): the `ParseError` sketch holds `ContextLine`s. **Furthest failure wins** gives the merge rule (point 1). **Labels** keeps earlier expectations, counts failures and never removes a message (point 3). New **Lookahead and Not** and **Primitives** bullets (points 2 and 6). **Context** applies a line only past its start and shows where it began (point 4). Each links this record.
-  - [§ Failure positions](../../../whitepaper.md#failure-positions): `Lookahead`, `Not`, filters and `Named` save the record on entry, and `Context` captures its first item's span by value.
+  - [§ Failure positions](../../../whitepaper.md#failure-positions): `Lookahead`, `Not`, filters and `Named` save the record on entry. `Context` records where its first item is, and a layer that can release items captures that span by value.
   - [§ Choice and backtracking](../../../whitepaper.md#choice-and-backtracking) and [§ Interpreted engine](../../../whitepaper.md#interpreted-engine): dispatch records what the attempts it skips would have expected (point 5).
   - [§ Custom primitives](../../../whitepaper.md#custom-primitives): `First` is one expectation, and a scanner with neither `Name` nor `First` records as `Satisfy` does.
 - **Cards:**
   - [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md): the scope items this record settles cite it. The `ContextLine` change and the renderer change are in scope, and a new criterion requires tests for every point, including dispatch against running in order. The card stays in Design for groups B and C.
   - [GEN-02](../../active/11-source-generator/GEN-02-emit-the-core-combinators.md): its expectation-tracking line cites this record and names dispatch's records per gap.
 - **Decisions index:** a note that this record refines ADR-0008 points 4 and 5 and ADR-0012 point 4.
+- **Edited in place during ERR-02's build (2026-10-25), before merge.** ERR-02's completion review found that `Context` recorded a position, not a span captured by value. The maintainer chose to narrow point 4 rather than capture spans in Phase 0, where every layer holds its input in memory. Point 4 and its 4A cons now say so, and [LAY-01](../../active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) captures spans by value for streamed layers. Whitepaper [§ Failure positions](../../../whitepaper.md#failure-positions) and ERR-02's scope changed to match.

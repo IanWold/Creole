@@ -21,6 +21,19 @@ public class ControlFailureTests
     private static ParseError At(long start, long end, Unexpected unexpected, Expectation[] expected, params ContextLine[] context) =>
         new(new SourceSpan(SourceId.Unnamed, start, end), "parser", unexpected, expected, context);
 
+    private static ParseError? ErrorKeepingFewFrames<T>(Parser<char, T> parser, string input)
+    {
+        var plan = new PlanBuilder(LoweringOptions.None).Lower(parser);
+        var log = new FailureLog<char>();
+        var cursor = new Cursor<char>(input) { Failures = log };
+        T value = default!;
+
+        Assert.False(plan.TryParse(ref cursor, ref value));
+        Assert.InRange(log.FrameCount, 0, 8);
+
+        return log.ToError(in cursor, "parser", static (start, end) => new SourceSpan(SourceId.Unnamed, start, end));
+    }
+
     private static ContextLine Line(string text, long start) =>
         new(text, new SourceSpan(SourceId.Unnamed, start, start + 1));
 
@@ -59,7 +72,12 @@ public class ControlFailureTests
     {
         Assert.Equal(At(1, 2, new UnexpectedItem("'x'"), [new ExpectedItem("'b'")]), Execution.Error(Char('a').Then(Char('b')).Named("ab"), "ax"));
         Assert.Equal(At(1, 2, new UnexpectedItem("'x'"), [new ExpectedItem("'b'")]), Execution.Error(Atomic(Char('a').Then(Char('b'))).Named("ab"), "ax"));
+        Assert.Equal(At(0, 1, new UnexpectedItem("'a'"), [new ExpectedItem("'x'")]), Execution.Error(Char('x').Or(Char('a')).Named("n"), "a"));
     }
+
+    [Fact]
+    public void NamedAddsNoLabelWhenItsParserRecordedNothing() =>
+        Assert.Equal(At(0, 1, new UnexpectedItem("'a'"), [new ExpectedItem("','")]), Execution.Error(Char(',').Or(Return('x').Named("v")), "a"));
 
     [Fact]
     public void NamedKeepsAMessage() =>
@@ -73,6 +91,7 @@ public class ControlFailureTests
     public void NamedHasNothingToLabelAfterALookaheadPutTheFailureBack()
     {
         Assert.Null(Execution.Error(Lookahead(Char('a')).Named("a"), "a"));
+        Assert.Equal(At(0, 1, new UnexpectedItem("'a'"), [new ExpectedItem("'c'")]), Execution.Error(Char('c').Or(Lookahead(Char('b').Or(Char('a'))).Named("x")), "a"));
         Assert.Equal(At(0, 1, new UnexpectedItem("'a'"), [new Label("not a")]), Execution.Error(Not(Char('a')).Named("not a"), "a"));
     }
 
@@ -126,16 +145,22 @@ public class ControlFailureTests
     public void ContextFramesStayFewOverALongInput()
     {
         var input = string.Concat(Enumerable.Repeat("{a}", 500)) + "{ax";
-        var plan = new PlanBuilder(LoweringOptions.None).Lower(Json.Objects);
-        var log = new FailureLog<char>();
-        var cursor = new Cursor<char>(input) { Failures = log };
-        var value = default(Unit);
+        var error = At(1502, 1503, new UnexpectedItem("'x'"), [new ExpectedItem("'a'"), new ExpectedItem("'}'")], Line("in object", 1500));
 
-        Assert.False(plan.TryParse(ref cursor, ref value));
-        Assert.InRange(log.FrameCount, 0, 8);
+        Assert.Equal(error, ErrorKeepingFewFrames(Json.Objects, input));
+        Assert.Equal(error, ErrorKeepingFewFrames(Json.Objects.Where(static _ => true), input));
+        Assert.Equal(error, ErrorKeepingFewFrames(Lookahead(Json.Objects), input));
+    }
+
+    [Fact]
+    public void ASavedFailureKeepsItsContextWhileFramesAreCompacted()
+    {
+        var outer = Char('{').Then(Char('a').Optional()).Context("outer");
+        var input = "{" + string.Concat(Enumerable.Repeat("{a}", 20)) + "x";
+
         Assert.Equal(
-            At(1502, 1503, new UnexpectedItem("'x'"), [new ExpectedItem("'a'"), new ExpectedItem("'}'")], Line("in object", 1500)),
-            log.ToError(in cursor, "parser", static (start, end) => new SourceSpan(SourceId.Unnamed, start, end))
+            At(1, 2, new UnexpectedItem("'{'"), [new ExpectedItem("'a'"), new ExpectedItem("'!'")], Line("outer", 0)),
+            ErrorKeepingFewFrames(outer.Then(Lookahead(Json.Objects)).Then(Char('!')), input)
         );
     }
 

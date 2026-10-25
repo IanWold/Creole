@@ -14,6 +14,7 @@ namespace Creole;
 /// <param name="Context">The context frame of its first failure, or -1 for none.</param>
 /// <param name="Records">How many failures the log had recorded, which tells <c>Named</c> whether its parser recorded one.</param>
 /// <param name="Protected">How much of the log's array was protected for an enclosing combinator that may put it back.</param>
+/// <param name="FrameFloor">How many context frames were kept in place for an enclosing combinator that may put it back.</param>
 internal readonly record struct FailureMark<T>(
     long Position,
     int Start,
@@ -25,5 +26,6 @@ internal readonly record struct FailureMark<T>(
     T Item,
     int Context,
     int Records,
-    int Protected
+    int Protected,
+    int FrameFloor
 );
