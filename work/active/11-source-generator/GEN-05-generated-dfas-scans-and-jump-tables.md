@@ -12,7 +12,7 @@ Bring the interpreter's lowering rewrites into generated code.
 
 ## Scope
 
-- Emit DFA tables or code for regular subtrees and `Longest`, with Reps memoization where needed. They are the same commit-aware automata the interpreter builds, with the same fallback for subtrees over the cap ([ADR-0017](../../docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md)).
+- Emit DFA tables or code for regular subtrees and `Longest`, with Reps memoization where needed. They are the same commit-aware automata the interpreter builds, with the same fallback for subtrees over the cap ([ADR-0017](../../docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md)). A generated `Longest` records no failure when it matches and re-runs on a non-match, as the interpreter's does ([ADR-0022](../../docs/decisions/0022-a-successful-longest-restores-the-furthest-failure.md)).
 - Emit `SearchValues<char>` scans for character-class runs.
 - Emit jump tables for deterministic grammars.
 
