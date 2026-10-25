@@ -212,8 +212,9 @@ file sealed class KeyComparer : IEqualityComparer<int[]>, IAlternateEqualityComp
 /// A configuration holds only the alternatives that still have paths, so an alternative costs nothing once it can no longer match.
 /// Configurations are compared by a key written after renaming their choice and <c>Atomic</c> ids in order of first appearance, so equivalent ones become one state.
 /// A configuration is copied for storage only when it is a new state.
+/// Each transition explored steps every path of the state it leaves, and the build stops once the paths stepped pass a budget.
 /// </remarks>
-file sealed class Determinizer(IReadOnlyList<RegularTerm> alternatives, int maxCandidates)
+file sealed class Determinizer(IReadOnlyList<RegularTerm> alternatives)
 {
     private readonly RegularTerm[] _alternatives = [.. alternatives];
     private readonly ushort[] _classOf = new ushort[char.MaxValue + 1];
@@ -222,7 +223,6 @@ file sealed class Determinizer(IReadOnlyList<RegularTerm> alternatives, int maxC
     private readonly List<int> _fresh = [];
     private readonly Dictionary<int[], int>.AlternateLookup<ReadOnlySpan<int>> _ids = new Dictionary<int[], int>(new KeyComparer()).GetAlternateLookup<ReadOnlySpan<int>>();
     private readonly List<int> _key = [];
-    private readonly int _maxCandidates = maxCandidates;
     private readonly Dictionary<int, int> _renamed = [];
     private readonly List<char> _representatives = [];
     private readonly List<int> _resolving = [];
@@ -554,10 +554,9 @@ file sealed class Determinizer(IReadOnlyList<RegularTerm> alternatives, int maxC
         return -1;
     }
 
-    private (int State, int[] Fresh)? Make(List<AlternativePaths> configuration)
+    private (int State, int[] Fresh) Make(List<AlternativePaths> configuration)
     {
         var kept = 0;
-        var paths = 0;
 
         for (var i = 0; i < configuration.Count; i++)
         {
@@ -571,15 +570,9 @@ file sealed class Determinizer(IReadOnlyList<RegularTerm> alternatives, int maxC
             }
 
             configuration[kept++] = configuration[i];
-            paths += candidates.Count;
         }
 
         configuration.RemoveRange(kept, configuration.Count - kept);
-
-        if (paths > _maxCandidates)
-        {
-            return null;
-        }
 
         var fresh = Fresh(configuration);
 
@@ -694,7 +687,7 @@ file sealed class Determinizer(IReadOnlyList<RegularTerm> alternatives, int maxC
             return;
         }
 
-        Debug.Assert(!candidates.Take(i).Any(candidate => IndexOf(candidate.Scope, EntryKind.Second, id) >= 0), "A path on a second branch sits above the first branch.");
+        Debug.Assert(!SecondBranchAbove(candidates, i, id), "A path on a second branch sits above the first branch.");
 
         for (var j = candidates.Count - 1; j > i; j--)
         {
@@ -711,6 +704,19 @@ file sealed class Determinizer(IReadOnlyList<RegularTerm> alternatives, int maxC
                 candidate.Scope.RemoveAt(at);
             }
         }
+    }
+
+    private static bool SecondBranchAbove(List<Candidate> candidates, int i, int id)
+    {
+        for (var j = 0; j < i; j++)
+        {
+            if (IndexOf(candidates[j].Scope, EntryKind.Second, id) >= 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private List<AlternativePaths> Step(AlternativePaths[] configuration, int symbol)
@@ -800,10 +806,11 @@ file sealed class Determinizer(IReadOnlyList<RegularTerm> alternatives, int maxC
         return id;
     }
 
-    public CommitAutomaton? Run(int maxStates)
+    public CommitAutomaton? Run(int maxStates, long maxWork)
     {
         var initial = new List<AlternativePaths>(_alternatives.Length);
         var nextId = 0;
+        var work = 0L;
 
         Partition();
 
@@ -817,11 +824,7 @@ file sealed class Determinizer(IReadOnlyList<RegularTerm> alternatives, int maxC
             Close(candidates, ref nextId);
         }
 
-        if (Make(initial) is not { } start)
-        {
-            return null;
-        }
-
+        var start = Make(initial);
         var symbols = _representatives.Count + 1;
         var next = new List<int>();
         var ends = new List<int[]>();
@@ -838,6 +841,7 @@ file sealed class Determinizer(IReadOnlyList<RegularTerm> alternatives, int maxC
 
             var configuration = _configurations[state];
             var isLive = configuration.Any(static paths => paths.Candidates.Exists(static candidate => candidate.Kind == CandidateKind.Live));
+            var paths = configuration.Sum(static alternative => alternative.Candidates.Count);
 
             live.Add(isLive);
             matched.Add(Matched(configuration));
@@ -849,16 +853,20 @@ file sealed class Determinizer(IReadOnlyList<RegularTerm> alternatives, int maxC
                 {
                     next.Add(state);
                     ends.Add([]);
+                    continue;
                 }
-                else if (Make(Step(configuration, symbol)) is { } target)
-                {
-                    next.Add(target.State);
-                    ends.Add(target.Fresh);
-                }
-                else
+
+                work += paths;
+
+                if (work > maxWork)
                 {
                     return null;
                 }
+
+                var (target, fresh) = Make(Step(configuration, symbol));
+
+                next.Add(target);
+                ends.Add(fresh);
             }
         }
 
@@ -896,8 +904,6 @@ internal sealed class CommitAutomaton
     /// The result of a scan: the winning alternative and where its match ended, or <c>-1</c> and whether the failure consumed input.
     /// </summary>
     public readonly record struct Result(int Alternative, int End, bool Committed);
-
-    private const int MaxCandidates = 1_000;
 
     /// <summary>
     /// The number of alternatives.
@@ -956,10 +962,14 @@ internal sealed class CommitAutomaton
     public int Symbols => Classes + 1;
 
     /// <summary>
-    /// Builds the automaton for <paramref name="alternatives"/>, or returns <see langword="null"/> if it would have more than <paramref name="maxStates"/> states.
+    /// Builds the automaton for <paramref name="alternatives"/>, or returns <see langword="null"/> if it would have more than <paramref name="maxStates"/> states,
+    /// or if building it would step more than <paramref name="maxWork"/> paths.
     /// </summary>
-    public static CommitAutomaton? Build(IReadOnlyList<RegularTerm> alternatives, int maxStates) =>
-        new Determinizer(alternatives, MaxCandidates).Run(maxStates);
+    /// <remarks>
+    /// Each transition explored steps every path of the state it leaves. The count depends only on the alternatives, so the same alternatives always give the same result.
+    /// </remarks>
+    public static CommitAutomaton? Build(IReadOnlyList<RegularTerm> alternatives, int maxStates, long maxWork = long.MaxValue) =>
+        new Determinizer(alternatives).Run(maxStates, maxWork);
 
     /// <summary>
     /// Scans <paramref name="input"/> from its start.

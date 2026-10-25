@@ -12,6 +12,15 @@ internal sealed partial class PlanBuilder
     /// </remarks>
     public const int DfaStateCap = 2_000;
 
+    /// <summary>
+    /// The most paths building a <c>Longest</c>'s automaton may step, counting every path of a state for each transition explored from it; a costlier build runs on the interpreter.
+    /// </summary>
+    /// <remarks>
+    /// The 12-rule JSON lexer steps 1,767 paths, the 138-rule C#-like lexer 90,816, and 300 keywords and an identifier 135,120.
+    /// The budget is about three and a half times the largest. Keyword lexers reach the state cap long before it; it stops builds whose states hold many paths.
+    /// </remarks>
+    public const long DfaWorkBudget = 500_000;
+
     private DfaLongestPlan<T>? DfaLongest<T>(IReadOnlyList<Parser<char, T>> alternatives)
     {
         var flat = new List<Parser<char, T>>();
@@ -28,7 +37,7 @@ internal sealed partial class PlanBuilder
             terms[i] = term;
         }
 
-        if (CommitAutomaton.Build(terms, _dfaStateCap) is not { } automaton)
+        if (CommitAutomaton.Build(terms, _dfaStateCap, _dfaWorkBudget) is not { } automaton)
         {
             return null;
         }
