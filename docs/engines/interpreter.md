@@ -69,6 +69,8 @@ Results that are value types flow through the plan without boxing, so a parse wh
 
 Struct tokens that implement `IKinded<TKind>`, matched with `Kind(k)`, never box.
 
+Recording failures allocates nothing either, whether the parse succeeds or fails. A parse keeps its furthest failure in buffers it reuses, holding references to descriptions each grammar node creates once. Only the failure that is finally reported becomes a `ParseError`, and that is when token names are looked up and messages are formed (see [Errors](../concepts/errors.md#what-a-failure-reports)). Recording does take time: every alternative that fails and every loop that stops records where it did.
+
 ## Deep input
 
 A parse counts how deep it recurses, so deeply nested input cannot overflow the stack and crash the process. One level is counted while each of these runs:

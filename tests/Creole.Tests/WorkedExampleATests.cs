@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Creole.Tests;
@@ -18,7 +19,29 @@ file enum J
     Null
 }
 
-file readonly record struct JTok(J Kind, ReadOnlyMemory<char> Text) : IKinded<J>;
+file readonly record struct JTok(J Kind, ReadOnlyMemory<char> Text) : IKinded<J>
+{
+    static string IKinded<J>.Describe(J kind) => kind switch
+    {
+        J.LBrace => "'{'",
+        J.RBrace => "'}'",
+        J.LBracket => "'['",
+        J.RBracket => "']'",
+        J.Colon => "':'",
+        J.Comma => "','",
+        J.String => "string",
+        J.Number => "number",
+        J.True => "true",
+        J.False => "false",
+        J.Null => "null",
+        _ => kind.ToString(),
+    };
+
+    string? IKinded<J>.Detail =>
+        Kind is J.String or J.Number
+        ? Text.ToString()
+        : null;
+}
 
 file sealed record JsonString(string Value);
 
@@ -88,7 +111,8 @@ file sealed partial class JsonGrammar : TokenGrammar<JTok, J>
             .Select(static (k, _, v) => KeyValuePair.Create(Unescape(k.Text), v))
             .SepBy(Kind(J.Comma))
             .Between(Kind(J.LBrace), Kind(J.RBrace))
-            .Select<JsonValue>(static members => new JsonObject(members));
+            .Select<JsonValue>(static members => new JsonObject(members))
+            .Context("in object");
 
     public static readonly Parser<JTok, JsonValue> Document =
         Grammar.Deterministic(Value.Before(End));
@@ -126,6 +150,44 @@ file static class JsonExample
         var (parsed, value) = Execution.Run(JsonGrammar.Document, ref cursor);
 
         return parsed ? Render(value) : null;
+    }
+
+    public static ParseError? Error(string json, SourceId source)
+    {
+        var chars = Cursor<char>.FromMemory(json.AsMemory());
+        var (lexed, lexedTokens) = Execution.Run(Tokens, ref chars);
+
+        Assert.True(lexed);
+
+        JTok[] tokens = [.. lexedTokens];
+        var log = new FailureLog<JTok>();
+        var cursor = new Cursor<JTok>(tokens) { Failures = log };
+        JsonValue value = default!;
+
+        Assert.False(PlanCache.Get(JsonGrammar.Document).TryParse(ref cursor, ref value));
+
+        return log.ToError(in cursor, "parser", (start, end) => Span(json, source, tokens, start, end));
+    }
+
+    private static int Offset(JTok token) =>
+        MemoryMarshal.TryGetString(token.Text, out _, out var start, out _)
+        ? start
+        : throw new InvalidOperationException("A token's text is not a slice of the input.");
+
+    private static SourceSpan Span(string json, SourceId source, JTok[] tokens, long start, long end)
+    {
+        if (start == end)
+        {
+            var at = start < tokens.Length
+                ? Offset(tokens[start])
+                : json.Length;
+
+            return new SourceSpan(source, at, at);
+        }
+
+        var last = tokens[end - 1];
+
+        return new SourceSpan(source, Offset(tokens[start]), Offset(last) + last.Text.Length);
     }
 
     public static string Render(JsonValue value) => value switch
@@ -187,5 +249,28 @@ public class WorkedExampleATests
 
         Assert.IsType<DispatchPlan<JTok, JsonValue>>(value.Target);
         Assert.Equal(without, with);
+    }
+
+    [Fact]
+    public void AnErrorRendersAsTheWhitepaperShowsIt()
+    {
+        var registry = new SourceRegistry();
+        var config = registry.Add("config.json");
+        var text = "[\n{\n  \"port\": 8080 \"host\": \"x\"\n}\n]";
+        var error = JsonExample.Error(text, config);
+
+        Assert.NotNull(error);
+        Assert.Equal(
+            """
+            error[parser]: expected ',' or '}'
+             --> config.json:3:16
+              |
+            3 |   "port": 8080 "host": "x"
+              |                ^^^^^^ unexpected string "host"
+              = note: in object starting at 2:1
+            """
+                .ReplaceLineEndings("\n"),
+            new Diagnostics([error]).Render(new SourceText(config, "config.json", text))
+        );
     }
 }
