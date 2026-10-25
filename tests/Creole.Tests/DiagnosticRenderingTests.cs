@@ -11,7 +11,7 @@ public class DiagnosticRenderingTests
     private const string EscPicture = "\u241B";
     private const string ThumbsUp = "\U0001F44D\U0001F3FD";
 
-    private static ParseError Error(long start, long end, Unexpected unexpected, Expectation[]? expected = null, string[]? context = null, string layer = "parser", SourceId source = default) =>
+    private static ParseError Error(long start, long end, Unexpected unexpected, Expectation[]? expected = null, ContextLine[]? context = null, string layer = "parser", SourceId source = default) =>
         new(new SourceSpan(source, start, end), layer, unexpected, expected ?? [], context ?? []);
 
     private static string Lines(string text) =>
@@ -34,7 +34,7 @@ public class DiagnosticRenderingTests
             """
         );
         var start = text.IndexOf("\"host\"", StringComparison.Ordinal);
-        var error = Error(start, start + 6, new UnexpectedItem("string \"host\""), [new ExpectedItem("','"), new ExpectedItem("'}'")], ["in object starting at 2:1"], source: id);
+        var error = Error(start, start + 6, new UnexpectedItem("string \"host\""), [new ExpectedItem("','"), new ExpectedItem("'}'")], [new ContextLine("in object", new SourceSpan(id, 2, 3))], source: id);
 
         Assert.Equal(
             Lines("""
@@ -244,11 +244,11 @@ public class DiagnosticRenderingTests
                    |
                 10 | line 10 #
                    |         ^
-                   = note: in block
-                   = note: in file
+                   = note: in block starting at 10:1
+                   = note: in file starting at 1:1
                 """
             ),
-            Render(text, Error(text.Length - 1, text.Length, new UnexpectedItem("character '#'"), context: ["in block", "in file"], layer: "lexer"))
+            Render(text, Error(text.Length - 1, text.Length, new UnexpectedItem("character '#'"), context: [new ContextLine("in block", new SourceSpan(default, text.LastIndexOf('\n') + 1, text.LastIndexOf('\n') + 2)), new ContextLine("in file", new SourceSpan(default, 0, 1))], layer: "lexer"))
         );
     }
 
@@ -343,6 +343,45 @@ public class DiagnosticRenderingTests
     }
 
     [Fact]
+    public void AContextLineInASourceWithNoTextThrows()
+    {
+        var registry = new SourceRegistry();
+        var diagnostics = new Diagnostics([Error(0, 1, new EndOfInput(), context: [new ContextLine("in a", new SourceSpan(registry.Add("a.json"), 0, 1))])]);
+
+        Assert.Throws<ArgumentException>("sources", () => diagnostics.Render(new SourceText("abc")));
+    }
+
+    [Fact]
+    public void AContextLineStartingPastTheEndOfItsTextThrows()
+    {
+        var diagnostics = new Diagnostics([Error(0, 1, new EndOfInput(), context: [new ContextLine("in a", new SourceSpan(default, 4, 5))])]);
+
+        Assert.Throws<ArgumentException>("sources", () => diagnostics.Render(new SourceText("abc")));
+    }
+
+    [Fact]
+    public void AContextLineShowsWhereItStartedInItsOwnSource()
+    {
+        var registry = new SourceRegistry();
+        var host = registry.Add("page.html");
+        var script = registry.Add("script.js");
+        var error = Error(1, 2, new EndOfInput(), [new Label("value")], [new ContextLine("in script tag", new SourceSpan(host, 7, 8))], source: script);
+
+        Assert.Equal(
+            Lines("""
+                error[parser]: expected value
+                 --> script.js:1:2
+                  |
+                1 | x;
+                  |  ^ unexpected end of input
+                  = note: in script tag starting at 2:1
+                """
+            ),
+            new Diagnostics([error]).Render(new SourceText(host, "page.html", "<html>\n<script>"), new SourceText(script, "script.js", "x;"))
+        );
+    }
+
+    [Fact]
     public void BadSourceListsThrow()
     {
         var diagnostics = new Diagnostics([Error(0, 1, new EndOfInput())]);
@@ -376,7 +415,7 @@ public class DiagnosticRenderingTests
         gen.Sample(sample =>
         {
             var (text, start, end) = sample;
-            var rendered = Render(text, Error(start, end, new EndOfInput(), [new Label("value")], ["in test"]));
+            var rendered = Render(text, Error(start, end, new EndOfInput(), [new Label("value")], [new ContextLine("in test", new SourceSpan(default, start, start))]));
             var lines = rendered.Split('\n');
             var position = LineMap.Create(text).GetPosition(start);
             var number = position.Line.ToString(CultureInfo.InvariantCulture);
@@ -391,7 +430,7 @@ public class DiagnosticRenderingTests
                 && lines[2] == $"{gutter} |"
                 && (lines[3] == $"{number} |" || lines[3].StartsWith($"{number} | ", StringComparison.Ordinal))
                 && Regex.IsMatch(lines[4], $@"^{gutter} \| *\^+ unexpected end of input$")
-                && lines[5] == $"{gutter} = note: in test";
+                && lines[5] == $"{gutter} = note: in test starting at {position}";
         });
     }
 }

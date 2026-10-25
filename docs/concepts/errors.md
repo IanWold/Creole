@@ -10,7 +10,9 @@ public sealed record ParseError(
     string Layer,
     Unexpected Unexpected,
     IReadOnlyList<Expectation> Expected,
-    IReadOnlyList<string> Context);
+    IReadOnlyList<ContextLine> Context);
+
+public sealed record ContextLine(string Text, SourceSpan Start);
 ```
 
 | Property | Meaning |
@@ -19,11 +21,18 @@ public sealed record ParseError(
 | `Layer` | The layer that raised it, such as `"lexer"` or `"parser"`. |
 | `Unexpected` | What the parse found there. |
 | `Expected` | What it would have accepted there. May be empty. A `p.Named(label)` rule appears here as its label (see [Backtracking and labels](control.md)). |
-| `Context` | Lines such as `"in object starting at 2:3"`, innermost first, from `p.Context(text)` rules. May be empty. |
+| `Context` | The constructs the parse was inside, innermost first, from `p.Context(text)` rules. May be empty. See [Context lines](#context-lines). |
 
 An error is immutable. It copies `Expected` and `Context`, so changing the lists you passed in afterwards does not change the error. A `with` expression, such as `error with { Expected = merged }`, makes a new error and checks and copies the values it sets in the same way.
 
 The constructor throws `ArgumentNullException` if `Layer`, `Expected` or `Context` is null. It throws `ArgumentException` if `Unexpected` is `default`, or if a list contains a null or a `default` expectation.
+
+### Context lines
+
+A `ContextLine` names a construct the parse was inside when it failed, such as `in object`, and holds `Start`, the span of the first item that construct read. Renderers show where it started: `in object starting at 2:1` against the source text, or `in object starting at 2` (a character offset) on one line.
+
+- `Text` is the text given to `p.Context(text)`. A null `Text` throws `ArgumentNullException`, and an empty one throws `ArgumentException`, in the constructor and in a `with` expression.
+- Two lines are equal when their text and start are equal.
 
 Two errors are equal when all their parts are equal. `Expected` and `Context` are compared element by element, in order, so two errors built from separate lists with the same contents are equal.
 
@@ -131,7 +140,7 @@ error[parser]: expected ',' or '}'
 
 - **Headline.** `error[layer]:` and what was expected. The carets are labelled with what was found. When nothing was expected, the headline says what was found and the carets have no label. A `CustomMessage` is shown as its text.
 - **Location.** ` --> name:line:column`, or ` --> line:column` for a source with no name. Lines and columns start at 1, and columns count Unicode scalar values, as [`LineMap`](spans.md) does.
-- **Notes.** One `= note:` line per context line, innermost first.
+- **Notes.** One `= note:` line per context line, innermost first, ending with where the construct started, as `starting at line:column`. The start may lie in another source, such as the file an embedded script sits in.
 - **Order.** Errors come in span order, so they are grouped by source, in the order the `SourceRegistry` issued the ids, with `SourceId.Unnamed` first. A blank line separates errors, and lines are joined by `\n`.
 
 #### `SourceText`
@@ -143,7 +152,7 @@ A `SourceText` holds a source's full text with the id and name to show it under.
 | `new SourceText(text, name)` | A source with no registry id (`SourceId.Unnamed`). `name` may be omitted or null. |
 | `new SourceText(id, name, text)` | A source with an id from a `SourceRegistry`. `name` is usually `registry.GetName(id)`. |
 
-`Render(sources)` throws `ArgumentException` if an error points into a source with no text, if two texts have the same id, if a text is null, or if an error's span ends past the end of its text. That last one usually means the wrong text was passed.
+`Render(sources)` throws `ArgumentException` if an error or one of its context lines points into a source with no text, if two texts have the same id, if a text is null, or if an error's span ends, or a context line starts, past the end of its text. That last one usually means the wrong text was passed.
 
 #### Caret alignment
 
@@ -181,10 +190,10 @@ The width table comes from Unicode 16.0.0, the version .NET 11 uses. `scripts/ge
 
 ```text
 error[lexer] at 4..7: number too large
-error[parser] at 15..21: unexpected string "host"; expected ',' or '}'; in object starting at 2:1
-error[parser] at 30..30: unexpected end of input; expected value, '[' or end of input; in array; in object starting at 1:1
+error[parser] at 15..21: unexpected string "host"; expected ',' or '}'; in object starting at 2
+error[parser] at 30..30: unexpected end of input; expected value, '[' or end of input; in array starting at 25; in object starting at 0
 ```
 
 - The offsets are character offsets, `CharStart..CharEnd`.
-- The expected part is left out when nothing was expected. Context lines follow, innermost first.
+- The expected part is left out when nothing was expected. Context lines follow, innermost first, each with the character offset where its construct started.
 - `Render()` shows no file names, lines or columns. Use it when the source text is not at hand.

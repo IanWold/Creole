@@ -57,7 +57,7 @@ public class DiagnosticsTests
         gen.List[0, 20].Sample(spans =>
         {
             var arrived = spans
-                .Select((span, i) => new ParseError(new SourceSpan(sources[span.source], span.start, span.end), layers[span.layer], new EndOfInput(), [], [$"{i}"]))
+                .Select((span, i) => new ParseError(new SourceSpan(sources[span.source], span.start, span.end), layers[span.layer], new EndOfInput(), [], [new ContextLine($"{i}", default)]))
                 .ToList();
 
             var expected = arrived
@@ -92,16 +92,16 @@ public class DiagnosticsTests
     public void RenderWritesOneLinePerErrorInSpanOrder()
     {
         var diagnostics = new Diagnostics([
-            new ParseError(new SourceSpan(SourceId.Unnamed, 15, 21), "parser", new UnexpectedItem("string \"host\""), [new ExpectedItem("','"), new ExpectedItem("'}'")], ["in object starting at 2:1"]),
-            new ParseError(new SourceSpan(SourceId.Unnamed, 30, 30), "parser", new EndOfInput(), [new Label("value"), new ExpectedItem("'['"), new EndOfInput()], ["in array", "in object starting at 1:1"]),
+            new ParseError(new SourceSpan(SourceId.Unnamed, 15, 21), "parser", new UnexpectedItem("string \"host\""), [new ExpectedItem("','"), new ExpectedItem("'}'")], [new ContextLine("in object", new SourceSpan(SourceId.Unnamed, 2, 3))]),
+            new ParseError(new SourceSpan(SourceId.Unnamed, 30, 30), "parser", new EndOfInput(), [new Label("value"), new ExpectedItem("'['"), new EndOfInput()], [new ContextLine("in array", new SourceSpan(SourceId.Unnamed, 25, 26)), new ContextLine("in object", new SourceSpan(SourceId.Unnamed, 0, 1))]),
             new ParseError(new SourceSpan(SourceId.Unnamed, 4, 7), "lexer", new CustomMessage("number too large"), [], []),
         ]);
 
         Assert.Equal(
             """
                 error[lexer] at 4..7: number too large
-                error[parser] at 15..21: unexpected string "host"; expected ',' or '}'; in object starting at 2:1
-                error[parser] at 30..30: unexpected end of input; expected value, '[' or end of input; in array; in object starting at 1:1
+                error[parser] at 15..21: unexpected string "host"; expected ',' or '}'; in object starting at 2
+                error[parser] at 30..30: unexpected end of input; expected value, '[' or end of input; in array starting at 25; in object starting at 0
                 """
                 .ReplaceLineEndings("\n"),
             diagnostics.Render()
