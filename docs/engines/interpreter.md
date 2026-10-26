@@ -13,6 +13,8 @@ Lowering rewrites four shapes of grammar. A rewrite never changes a parse's resu
 | `Or` and `OneOf` | Only the alternatives that can start with the next character or token kind are tried | Start each alternative with a literal: see below. |
 | `Longest` over characters, when every alternative is regular | One automaton that reads each character once, however many alternatives there are | Build each alternative from the combinators listed in [When a Longest compiles](#when-a-longest-compiles). For more than 16 alternatives, nest `Longest` directly, `Longest(a, …, Longest(p, …))`: a `Longest` that is itself an alternative joins the outer one. |
 
+A single test of a character class, such as `Char(',')`, `Range('a', 'f')` or `Digit`, looks an ASCII character up in a table and searches the class's ranges for any other. `Satisfy` calls its predicate for every character instead, so prefer a class wherever one fits.
+
 ### How a choice picks its alternatives
 
 For each alternative, lowering looks for the first thing it reads. It looks through `Select`, `As`, `Ignore`, `Named`, `Context`, `Slice`, `Text`, `Atomic`, `Where`, the first parser of `Seq`, `Then`, `Before` and `Between`, and the first `from` of a query. If it finds one of these, the alternative is tried only when the next item can start it:

@@ -9,7 +9,7 @@ internal sealed partial class PlanBuilder
         new CasePlan<TToken, TCase>(expected);
 
     public static Plan<char, char> CharClass(CharSet set, Expected expected) =>
-        new ItemPlan<char>(set.Contains, expected);
+        new CharClassPlan(set, expected);
 
     public static Plan<TIn, TOut> Custom<TIn, TOut>(IScanner<TIn, TOut> scanner, Expected? expected) =>
         new CustomPlan<TIn, TOut>(scanner, expected);
