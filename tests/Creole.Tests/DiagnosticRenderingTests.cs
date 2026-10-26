@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using CsCheck;
 
@@ -391,6 +392,88 @@ public class DiagnosticRenderingTests
     }
 
     [Fact]
+    public void AHeldSourceRendersAsIfItWereGiven()
+    {
+        var source = new SourceText("[\n1 2]", "a.json");
+        var diagnostics = new Diagnostics([Error(4, 5, new UnexpectedItem("'2'"), [new ExpectedItem("','")])], source);
+
+        Assert.Equal(
+            Lines("""
+                error[parser]: expected ','
+                 --> a.json:2:3
+                  |
+                2 | 1 2]
+                  |   ^ unexpected '2'
+                """
+            ),
+            diagnostics.Render()
+        );
+
+        Assert.Equal(diagnostics.Render(source), diagnostics.Render());
+    }
+
+    [Fact]
+    public void ErrorsRenderOneLineEachWhenTheHeldSourcesDoNotCoverThem()
+    {
+        var registry = new SourceRegistry();
+        var other = registry.Add("b.json");
+        var held = new SourceText("abc", "a.json");
+        Diagnostics[] uncovered =
+        [
+            new([Error(0, 1, new EndOfInput()), Error(0, 1, new EndOfInput(), source: other)], held),
+            new([Error(0, 1, new EndOfInput(), context: [new ContextLine("in b", new SourceSpan(other, 0, 1))])], held),
+            new([Error(2, 5, new EndOfInput())], held),
+            new([Error(0, 1, new EndOfInput())]),
+        ];
+
+        Assert.All(uncovered, diagnostics => Assert.Equal(string.Join('\n', diagnostics), diagnostics.Render()));
+    }
+
+    [Fact]
+    public void ACopyOfACollectionHoldsNoSources()
+    {
+        var held = new Diagnostics([Error(1, 2, new EndOfInput())], new SourceText("abc"));
+        var copy = new Diagnostics(held);
+
+        Assert.Equal("error[parser] at 1..2: unexpected end of input", copy.Render());
+    }
+
+    [Fact]
+    public void GivenSourcesReplaceHeldOnes()
+    {
+        var diagnostics = new Diagnostics([Error(1, 2, new EndOfInput())], new SourceText("abc", "held.json"));
+
+        Assert.Contains(" --> given.json:1:2", diagnostics.Render(new SourceText("xyz", "given.json")), StringComparison.Ordinal);
+        Assert.Throws<ArgumentException>("sources", () => diagnostics.Render(new SourceText("x")));
+    }
+
+    [Fact]
+    public void TextOverMemoryRendersAsTheSameString()
+    {
+        var text = "[\n  1 2\n]";
+        var buffer = $"xx{text}yy".ToCharArray();
+        var error = Error(6, 7, new UnexpectedItem("'2'"), [new ExpectedItem("','")], [new ContextLine("in array", new SourceSpan(SourceId.Unnamed, 0, 1))]);
+        var diagnostics = new Diagnostics([error]);
+
+        Assert.Equal(
+            diagnostics.Render(new SourceText(text, "a.json")),
+            diagnostics.Render(new SourceText(SourceId.Unnamed, "a.json", buffer.AsMemory(2, text.Length)))
+        );
+    }
+
+    [Fact]
+    public void SourceTextHoldsItsTextWithoutCopying()
+    {
+        var text = "abc";
+        var memory = "xabcx".ToCharArray().AsMemory(1, 3);
+
+        Assert.True(MemoryMarshal.TryGetString(new SourceText(text).Text, out var held, out var start, out var length));
+        Assert.Same(text, held);
+        Assert.Equal((0, 3), (start, length));
+        Assert.True(new SourceText(SourceId.Unnamed, null, memory).Text.Equals(memory));
+    }
+
+    [Fact]
     public void SourceTextBuildsItsLineMapOnce()
     {
         var source = new SourceText("a\nb", "x.txt");
@@ -400,6 +483,7 @@ public class DiagnosticRenderingTests
         Assert.Same(source.LineMap, source.LineMap);
         Assert.Equal(2, source.LineMap.LineCount);
         Assert.Throws<ArgumentNullException>(() => new SourceText(null!));
+        Assert.Throws<ArgumentNullException>(() => new SourceText(SourceId.Unnamed, null, (string)null!));
     }
 
     [Fact]

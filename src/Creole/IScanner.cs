@@ -16,6 +16,10 @@ namespace Creole;
 /// <para>
 /// Analysis and engines trust <see cref="Info"/>. A scanner that breaks its declaration makes analysis wrong.
 /// </para>
+/// <para>
+/// <see cref="Scan"/> must be deterministic: at the same position in the same input it gives the same answer every time, because an engine may call it more than once there.
+/// It should keep no state between calls; state a parse needs belongs in the grammar.
+/// </para>
 /// </remarks>
 public interface IScanner<TIn, TOut>
 {

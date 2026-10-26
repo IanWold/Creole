@@ -19,6 +19,7 @@ One parse produces many diagnostics without cascades.
 - Starved propagates through `Recover` unchanged.
 - `Recover` does not catch a depth abort. It passes through, and the parse ends ([ADR-0020](../../docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md)).
 - `Recover` takes a light mark before running `p`: if `p` fails without consuming, the cut flag is restored ([ADR-0011](../../docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md)). `Recover` is not a cut boundary.
+- A parse's first run has no failure log, so the first failure a `Recover` would catch ends that run, and the parse runs again with the log ([ADR-0027](../../docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)). Tests cover a parse that recovers giving the same diagnostics as one run with the log.
 
 ## Acceptance criteria
 
@@ -29,6 +30,7 @@ One parse produces many diagnostics without cascades.
 - [ERR-02 Furthest-failure tracking and labels](../04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md)
 - [ERR-04 Diagnostic withdrawal](../04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md)
 - [LAY-04 Layer-local state](../06-layers-and-pipelines/LAY-04-layer-local-state.md)
+- [LAY-08 Per-layer parse state](../06-layers-and-pipelines/LAY-08-per-layer-parse-state.md)
 - [MODE-02 Invalidation rule](../07-mode-channels/MODE-02-invalidation-rule.md)
 - [STRM-01 Starved outcome](../08-streaming/STRM-01-starved-outcome.md)
 
@@ -40,3 +42,7 @@ One parse produces many diagnostics without cascades.
 ## Whitepaper references
 
 - [§ Recovery](../../../whitepaper.md#recovery)
+
+## Artifacts
+
+- [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements

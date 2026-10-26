@@ -19,6 +19,7 @@ Each layer boundary is a memoizing buffer, so a rewind is an index reset and ups
 - Back `Cursor<TIn>` with the buffer, keeping the in-segment fast path.
 - A slice taken over the buffer is a copy, never a view of a pooled segment ([ADR-0013](../../docs/decisions/0013-slices-view-in-memory-input-and-copy-streamed-input.md)).
 - A `Context` frame captures the span of its first item by value when it is entered, because the buffer may release that item before an error is built ([ADR-0021](../../docs/decisions/0021-how-failures-are-recorded-and-merged.md) point 4). So do a filter, for the start of the value it may reject, and a chained non-associative operator, for its start and end ([ADR-0014](../../docs/decisions/0014-a-rejected-filter-reports-at-the-start-of-the-value.md) point 6). ERR-02 records positions: a filter and a chained operator capture their first item by value, a `Context` records only where it started, and `FailureLog<T>` maps positions to spans when it builds the error. That is exact for in-memory input, which holds every item until the parse ends.
+- Design the capture of a construct's first item (built in ERR-02) and of its span (above) as one mechanism, and make both obey mode invalidation. A construct that begins with `SetMode` must not keep an item that invalidation discards; Example C's `Operand` begins that way. This refines ADR-0014 point 6 and ADR-0021 point 4, so it needs a decision record ([Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 16).
 
 ## Acceptance criteria
 
@@ -39,3 +40,7 @@ Each layer boundary is a memoizing buffer, so a rewind is an index reset and ups
 
 - [§ The stream buffer](../../../whitepaper.md#the-stream-buffer)
 - [§ Guarantees](../../../whitepaper.md#guarantees)
+
+## Artifacts
+
+- [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements

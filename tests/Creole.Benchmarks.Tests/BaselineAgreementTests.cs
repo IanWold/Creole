@@ -5,16 +5,17 @@ namespace Creole.Benchmarks.Tests;
 
 public class BaselineAgreementTests
 {
-    private static readonly string[] _jsonParsers = ["Parlot", "Pidgin", "Superpower", "Sprache"];
+    private static readonly string[] _jsonParsers = ["Creole", "Parlot", "Pidgin", "Superpower", "Sprache"];
 
     public static TheoryData<string> ArithmeticParsers =>
-        ["Parlot", "Pidgin", "PidginFolds"];
+        ["Creole", "Parlot", "Pidgin", "PidginFolds"];
 
     public static TheoryData<string, string> JsonCases =>
         [.. from input in JsonInputs.Names from parser in _jsonParsers select (input, parser)];
 
     private static double EvaluateArithmetic(string parser, string expression) => parser switch
     {
+        "Creole" => CreoleArithmetic.Evaluate(expression),
         "Parlot" => ParlotArithmetic.Evaluate(ParlotArithmetic.Interpreted, expression),
         "Pidgin" => PidginArithmetic.Evaluate(PidginArithmetic.OperatorTable, expression),
         "PidginFolds" => PidginArithmetic.Evaluate(PidginArithmetic.Folds, expression),
@@ -26,6 +27,7 @@ public class BaselineAgreementTests
 
     private static JsonValue ParseJson(string parser, string text) => parser switch
     {
+        "Creole" => CreoleJson.Parse(text),
         "Parlot" => ParlotJson.Parse(ParlotJson.Interpreted, text),
         "Pidgin" => PidginJson.Parse(text),
         "Superpower" => SuperpowerJson.Parse(text),
@@ -102,24 +104,29 @@ public class BaselineAgreementTests
 
         Assert.Equal(LoweringInputs.Digits.Length, benchmarks.ChainWithCollapse());
         Assert.Equal(LoweringInputs.Digits.Length, benchmarks.ChainWithoutCollapse());
-        Assert.Equal(LoweringInputs.Json.Length, benchmarks.CharTokensCompiled());
-        Assert.Equal(LoweringInputs.Json.Length, benchmarks.CharTokensInterpreted());
         Assert.Equal(LoweringInputs.Json.Length, benchmarks.CharsWithDispatch());
         Assert.Equal(LoweringInputs.Json.Length, benchmarks.CharsWithoutDispatch());
-        Assert.Equal(LoweringInputs.CSharp.Length, benchmarks.CSharpLexerWithDfa());
-        Assert.Equal(LoweringInputs.CSharp.Length, benchmarks.CSharpLexerWithoutDfa());
         Assert.Equal(LoweringInputs.Words.Length, benchmarks.FourKeysLastWithDispatch());
         Assert.Equal(LoweringInputs.Words.Length, benchmarks.FourKeysLastWithoutDispatch());
         Assert.Equal(LoweringInputs.Words.Length, benchmarks.FourKeysSkippedWithDispatch());
         Assert.Equal(LoweringInputs.Words.Length, benchmarks.FourKeysSkippedWithoutDispatch());
         Assert.Equal(LoweringInputs.JsonTokens.Length, benchmarks.KindsWithDispatch());
         Assert.Equal(LoweringInputs.JsonTokens.Length, benchmarks.KindsWithoutDispatch());
-        Assert.Equal(LoweringInputs.Json.Length, benchmarks.JsonLexerWithDfa());
-        Assert.Equal(LoweringInputs.Json.Length, benchmarks.JsonLexerWithoutDfa());
         Assert.Equal(LoweringInputs.Strings.Length, benchmarks.LongRunsWithoutScan());
         Assert.Equal(LoweringInputs.Strings.Length, benchmarks.LongRunsWithScan());
         Assert.Equal(LoweringInputs.Words.Length, benchmarks.ShortRunsWithoutScan());
         Assert.Equal(LoweringInputs.Words.Length, benchmarks.ShortRunsWithScan());
+    }
+
+    [Fact]
+    public void LoweringBenchmarksTokenizeAlikeWithAndWithoutTheAutomaton()
+    {
+        var benchmarks = new LoweringBenchmarks();
+
+        Assert.NotEqual(-1, benchmarks.CharTokensInterpreted());
+        Assert.Equal(benchmarks.CharTokensInterpreted(), benchmarks.CharTokensCompiled());
+        Assert.Equal(benchmarks.CSharpLexerWithoutDfa(), benchmarks.CSharpLexerWithDfa());
+        Assert.Equal(benchmarks.JsonLexerWithoutDfa(), benchmarks.JsonLexerWithDfa());
     }
 
     [Fact]

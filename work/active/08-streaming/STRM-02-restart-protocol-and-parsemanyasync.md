@@ -16,6 +16,7 @@ Async record streams parse one top-level item at a time and restart that item wh
 - On Starved, await at least double the buffered data, rewind and retry.
 - `ParseManyAsync` over `PipeReader` and `Stream`, returning `IAsyncEnumerable<ParseResult<T>>`.
 - Large JSON-lines peak-memory test.
+- A streamed parse records failures as it goes. Measure whether an item that fails can run again from its bookmark with a log instead, as in-memory parses do, and adopt it only for a measured gain ([ADR-0027](../../docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)).
 
 ## Acceptance criteria
 
@@ -25,6 +26,7 @@ Async record streams parse one top-level item at a time and restart that item wh
 
 - [SPAN-06 Byte sources and the decoding layer](../05-source-spans/SPAN-06-byte-sources-and-the-decoding-layer.md)
 - [LAY-05 Pipeline API and sources](../06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md)
+- [LAY-08 Per-layer parse state](../06-layers-and-pipelines/LAY-08-per-layer-parse-state.md)
 - [STRM-01 Starved outcome](../08-streaming/STRM-01-starved-outcome.md)
 
 ## Unblocks

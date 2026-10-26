@@ -131,6 +131,87 @@ file sealed partial class JsonGrammar : TokenGrammar<JTok, J>
     }
 }
 
+file static class HandLexer
+{
+    private static readonly Dictionary<char, J> _punctuation = new()
+    {
+        ['{'] = J.LBrace,
+        ['}'] = J.RBrace,
+        ['['] = J.LBracket,
+        [']'] = J.RBracket,
+        [':'] = J.Colon,
+        [','] = J.Comma,
+    };
+
+    private static readonly Dictionary<string, J> _words = new()
+    {
+        ["true"] = J.True,
+        ["false"] = J.False,
+        ["null"] = J.Null,
+    };
+
+    public static JTok[] Lex(string json)
+    {
+        var tokens = new List<JTok>();
+        var i = 0;
+
+        while (i < json.Length)
+        {
+            var start = i;
+            var c = json[i];
+
+            if (char.IsWhiteSpace(c))
+            {
+                i++;
+                continue;
+            }
+
+            if (_punctuation.TryGetValue(c, out var kind))
+            {
+                i++;
+            }
+            else if (c == '"')
+            {
+                i++;
+
+                while (json[i] != '"')
+                {
+                    i += json[i] == '\\'
+                        ? 2
+                        : 1;
+                }
+
+                i++;
+                kind = J.String;
+            }
+            else if (c == '-' || char.IsAsciiDigit(c))
+            {
+                i++;
+
+                while (i < json.Length && (char.IsAsciiDigit(json[i]) || json[i] == '.'))
+                {
+                    i++;
+                }
+
+                kind = J.Number;
+            }
+            else
+            {
+                while (i < json.Length && char.IsAsciiLetter(json[i]))
+                {
+                    i++;
+                }
+
+                kind = _words[json[start..i]];
+            }
+
+            tokens.Add(new JTok(kind, json.AsMemory(start, i - start)));
+        }
+
+        return [.. tokens];
+    }
+}
+
 file static class JsonExample
 {
     public static readonly Parser<char, IReadOnlyList<JTok>> Tokens =
@@ -203,6 +284,33 @@ file static class JsonExample
 
 public class WorkedExampleATests
 {
+    [Fact]
+    public void AMalformedDocumentReportsTheTokenError()
+    {
+        var result = JsonGrammar.Document.Parse(HandLexer.Lex("""{ "port": 8080 "host": "x" }"""));
+        var error = Assert.Single(Assert.IsType<Failed>(result.Value).Diagnostics);
+
+        Assert.Equal(new SourceSpan(SourceId.Unnamed, 4, 5), error.Span);
+        Assert.Equal(new UnexpectedItem("string \"host\""), error.Unexpected.Value);
+        Assert.Equal([new ExpectedItem("','"), new ExpectedItem("'}'")], error.Expected);
+        Assert.Equal([new ContextLine("in object", new SourceSpan(SourceId.Unnamed, 0, 1))], error.Context);
+        Assert.Equal("error[parser] at 4..5: unexpected string \"host\"; expected ',' or '}'; in object starting at 0", result.Diagnostics.Render());
+    }
+
+    [Fact]
+    public void TheGrammarParsesTokensFromAHandWrittenLexer()
+    {
+        var tokens = HandLexer.Lex("""{ "name": "Cre\"ole", "tags": ["parser", "dotnet"], "version": -0.1, "stable": false, "next": null, "empty": {} }""");
+        var summary = JsonGrammar.Document.Parse(tokens) switch
+        {
+            Parsed<JsonValue> parsed => JsonExample.Render(parsed.Value),
+            Recovered<JsonValue> recovered => $"recovered: {recovered.Diagnostics.Render()}",
+            Failed failed => failed.Diagnostics.Render(),
+        };
+
+        Assert.Equal("{\"name\":\"Cre\"ole\",\"tags\":[\"parser\",\"dotnet\"],\"version\":-0.1,\"stable\":false,\"next\":null,\"empty\":{}}", summary);
+    }
+
     [Fact]
     public void TheLexerReadsTokensAndSkipsWhitespace()
     {

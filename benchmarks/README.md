@@ -1,6 +1,6 @@
 # Benchmarks
 
-`Creole.Benchmarks` is the BenchmarkDotNet harness behind every phase gate (§ [Benchmark plan](../whitepaper.md#benchmark-plan)). It holds the shared inputs and the competitor baselines. Creole's own engines join each benchmark class as they are built ([BENCH-02](../work/active/13-benchmarks/BENCH-02-full-benchmark-suite.md)).
+`Creole.Benchmarks` is the BenchmarkDotNet harness behind every phase gate (§ [Benchmark plan](../whitepaper.md#benchmark-plan)). It holds the shared inputs and the competitor baselines. Creole's interpreter runs in `JsonBenchmarks` and `ArithmeticBenchmarks` for the Phase 0 gate ([BENCH-01](../work/active/13-benchmarks/BENCH-01-phase-0-speed-gate.md)). Its other engines join each benchmark class as they are built ([BENCH-02](../work/active/13-benchmarks/BENCH-02-full-benchmark-suite.md)).
 
 ## Running
 
@@ -10,22 +10,30 @@
 | One class | `dotnet run -c Release --project benchmarks/Creole.Benchmarks -- --filter '*Json*'` |
 | Quick, less precise | add `--job short` |
 | Check that it runs | add `--job dry` (one cold iteration; the numbers mean nothing) |
+| Only the gate benchmarks | `dotnet run -c Release --project benchmarks/Creole.Benchmarks -- --anyCategories Gate` |
 | Compare two runs | `python3 scripts/bench-compare.py <old-run> <new-run>` |
+| Check the Phase 0 gate | `python3 scripts/bench-gate.py <run> <run> <run>` |
 
 Without `--filter` the program runs every benchmark. Other arguments go to BenchmarkDotNet unchanged.
 
-Each run writes to a new folder under the current directory, `BenchmarkDotNet.Artifacts/runs/<UTC yyyyMMdd-HHmmss>/`, with full JSON, GitHub Markdown, CSV and HTML reports per class. The folder is git-ignored. `bench-compare.py` matches benchmarks by full name and prints mean time and allocation with new/old ratios. It warns when the two runs used different hardware or runtimes.
+Each run writes to a new folder under the current directory, `BenchmarkDotNet.Artifacts/runs/<UTC yyyyMMdd-HHmmss>/`, with full JSON, GitHub Markdown, CSV and HTML reports per class. Its `run.json` records the commit, whether the working tree had uncommitted changes, the Parlot and Pidgin versions, and the arguments. The folder is git-ignored. `bench-compare.py` matches benchmarks by full name and prints mean time and allocation with new/old ratios. It warns when the two runs used different hardware or runtimes.
 
 ## Gate runs
 
 Phase gates compare Creole with its baselines as ratios ([ADR-0003](../work/docs/decisions/0003-numeric-gate-thresholds.md); thresholds in § [Roadmap](../whitepaper.md#roadmap)). A gate run:
 
-- runs on the maintainer's laptop, on AC power, with no other heavy load;
-- uses the default job, with Creole and its baselines in the same invocation;
-- repeats the full run three times and takes each benchmark's median ratio, then the geometric mean over the gate's benchmarks;
-- records the Parlot version.
+- runs on the maintainer's laptop, on AC power, with no other heavy load, from a working tree with no uncommitted changes;
+- runs the gate benchmarks three times with the default job, Creole and its baselines in the same invocation:
 
-Single runs on this machine vary by up to 1.3× per benchmark, so one run decides nothing. Allocations do not vary and can be compared directly. Hosted CI runners only catch regressions of 10% or more and do not decide gates.
+  ```sh
+  for i in 1 2 3; do dotnet run -c Release --project benchmarks/Creole.Benchmarks -- --anyCategories Gate; done
+  ```
+
+- is checked with `python3 scripts/bench-gate.py <run> <run> <run>`. For each benchmark the script takes the median over the three runs of Creole's ratio to each baseline, then the geometric mean over the gate's benchmarks, and compares them with the Phase 0 thresholds. It stops if the runs measured different commits or Parlot versions, and warns about uncommitted changes, a job other than the default, or a different host.
+
+The gate benchmarks carry the `Gate` category: `Creole`, `Pidgin` and `Parlot` in `JsonBenchmarks`, and `Creole`, `PidginFolds` and `Parlot` in `ArithmeticBenchmarks`. Each run's `run.json` records the commit and the Parlot version, as ADR-0003 requires. The other benchmarks decide no gate, so a gate run leaves them out.
+
+Single runs on this machine vary by up to 1.3× per benchmark, so one run decides nothing. Allocations do not vary and can be compared directly. No CI workflow runs the benchmarks.
 
 ## What is measured
 
@@ -38,7 +46,7 @@ Single runs on this machine vary by up to 1.3× per benchmark, so one run decide
 
 Every run uses the memory diagnoser.
 
-`LoweringBenchmarks` decides no gate. It runs interpreter plans directly, through `InternalsVisibleTo`, until INT-08 adds the public `Parse`. Each category compares one rewrite on and off, with every other rewrite on in both. A rewrite stays if the median of three runs is at least 5% faster on its target and no other category is more than 5% slower.
+`LoweringBenchmarks` decides no gate. It runs interpreter plans directly, through `InternalsVisibleTo`, until INT-08 adds the public `Parse`. Each category compares one rewrite on and off, with every other rewrite on in both. A rewrite stays if the median of three runs is at least 5% faster on its target and no other category is more than 5% slower. The lexer categories (`DfaCharTokens`, `DfaJsonLexer`, `DfaCSharpLexer`) return a fingerprint of each token's end and value, and `BaselineAgreementTests` checks that the compiled and interpreted lexers give the same one.
 
 `FourKeysSkipped` and `FourKeysLast` measure dispatch at its threshold of four keyed alternatives ([INT-05](../work/active/03-interpreter/INT-05-interpreter-lowering-rewrites.md)). In the first, the keyed alternatives come first and never match, which is dispatch's best case. In the second, they come after the alternatives that match, so dispatch skips nothing and only adds its cost. The second is slower by design; re-measure both after changing `DispatchPlan`.
 
@@ -55,6 +63,7 @@ Known differences:
 | System.Text.Json | Reads UTF-8 bytes; the combinator baselines read a `string`. |
 | Parlot | Its string literal rejects the JSON `\/` escape, so the inputs leave that escape out. `Separated` fails on an empty list unless given a minimum of zero, so the grammar passes `min: 0`. |
 | Pidgin | Arithmetic has two Pidgin baselines. `Pidgin` uses `ExpressionParser`, the idiomatic choice; `PidginFolds` folds `Many` by hand and is faster. The Phase 0 gate uses the faster one. |
+| Creole | Arithmetic uses `Expression.Build`, Creole's own tool; the Phase 0 gate compares it with `PidginFolds`. The JSON grammar is built like the Pidgin one: a string is a list of unescaped runs and escapes, concatenated. `Parse` runs with its depth limit on (the default, 1,000), while Parlot runs with its own limit off (its default) ([ADR-0020](../work/docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md)). |
 | Parlot | The harness pins Parlot 2.0.0 and measures its interpreted (Fluent) parsers, which the Phase 0 gate uses ([ADR-0003](../work/docs/decisions/0003-numeric-gate-thresholds.md)). 2.0.0 was the fastest stable release measured: faster than 1.5.12 on medium and large JSON (0.86–0.88×) and level elsewhere, and level with 1.6.0 within noise ([research note](../work/docs/research/2026-10-24-parlot-2-0-baselines-and-generator.md)). Parlot 2.0 removes `Compile()`. Its generated parsers, which the Phase 3 gate uses, join with [BENCH-03](../work/active/13-benchmarks/BENCH-03-phase-3-speed-gate.md). |
 
 ## Adding a benchmark

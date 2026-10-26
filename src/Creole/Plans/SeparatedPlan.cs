@@ -37,7 +37,8 @@ internal sealed class SeparatedPlan<TIn, T, TSep>(Plan<TIn, T> item, Plan<TIn, T
             return true;
         }
 
-        List<T> items = [value];
+        List<T> items = [];
+        items.Add(value);
         TSep separator = default!;
 
         while (true)

@@ -54,11 +54,13 @@ Regular character subtrees and `Longest` over regular alternatives compile to DF
 ## Unblocks
 
 - [INT-09 Cheaper automaton construction](../03-interpreter/INT-09-cheaper-automaton-construction.md)
+- [INT-10 Dispatched Longest, measured against the automaton](INT-10-dispatched-longest-measured-against-the-automaton.md)
 - [ANA-01 Grammar property analysis](../09-static-analysis/ANA-01-grammar-property-analysis.md)
 - [ANA-04 Choice checks](../09-static-analysis/ANA-04-choice-checks.md)
 - [ANA-07 Linear maximal munch](../09-static-analysis/ANA-07-linear-maximal-munch.md)
 - [GEN-05 Generated DFAs, scans and jump tables](../11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md)
 - [BENCH-01 Phase 0 speed gate](../13-benchmarks/BENCH-01-phase-0-speed-gate.md)
+- [INT-12 Close the interpreter test gaps BENCH-01 left](INT-12-close-the-interpreter-test-gaps-bench-01-left.md)
 
 ## Whitepaper references
 

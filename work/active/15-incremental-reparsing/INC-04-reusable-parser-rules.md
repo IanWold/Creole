@@ -14,6 +14,7 @@ Reuse whole rule results, incremental-packrat style, for rules that opt in.
 
 - `.Reusable()` memoizes result, indexes, examined extent and entry state.
 - Reuse requires matching entry mode stack; `Bind` disables reuse; recovered items are never reused.
+- A reused result runs none of its rule's functions, which [ADR-0026](../../docs/decisions/0026-engines-may-skip-unused-values-and-repeat-user-functions.md) allows: unused value functions may be skipped, and a reused result holds the outcome of each decision function.
 - The memo records whether a cut escaped the rule, and a reuse replays it, or an enclosing `Atomic` could rewind on re-parse where a fresh parse keeps the failure. A cut escapes a rule that succeeds, that fails after consuming, or that fails without consuming outside any attempt ([ADR-0011](../../docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md)).
 
 ## Acceptance criteria
@@ -22,6 +23,7 @@ Reuse whole rule results, incremental-packrat style, for rules that opt in.
 
 ## Blocked by
 
+- [LAY-08 Per-layer parse state](../06-layers-and-pipelines/LAY-08-per-layer-parse-state.md)
 - [INC-03 Layer item reuse](../15-incremental-reparsing/INC-03-layer-item-reuse.md)
 
 ## Unblocks
@@ -33,3 +35,7 @@ Reuse whole rule results, incremental-packrat style, for rules that opt in.
 
 - [§ Reusing parser results](../../../whitepaper.md#reusing-parser-results)
 - [§ Limits](../../../whitepaper.md#limits)
+
+## Artifacts
+
+- [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements

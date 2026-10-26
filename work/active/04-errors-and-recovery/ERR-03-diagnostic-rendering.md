@@ -27,6 +27,7 @@ Render diagnostics against the original text in the format shown in the whitepap
 
 ## Unblocks
 
+- [ERR-08 Bound rendered diagnostics](ERR-08-bound-rendered-diagnostics.md)
 - [STRM-03 Streaming diagnostics](../08-streaming/STRM-03-streaming-diagnostics.md)
 - [TOOL-01 Creole.Testing assertions](../12-grammar-author-tooling/TOOL-01-creoletesting-assertions.md)
 

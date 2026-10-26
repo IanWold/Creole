@@ -74,6 +74,8 @@ public class AllocationTests
         ["a kind over struct tokens"] = () => Allocated(TokenGrammar<SymbolToken, Symbol>.Kind(Symbol.Plus), [new SymbolToken(Symbol.Number)], recording: true, succeeds: false),
     };
 
+    private static object? _sink;
+
     public static TheoryData<string> Cases => [.. _cases.Keys];
 
     public static TheoryData<string> Failures => [.. _failures.Keys];
@@ -132,9 +134,79 @@ public class AllocationTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AFailedParseAllocatesTheSameWhateverTheLengthOfItsInput(bool inMemory)
+    {
+        var letters = Letter.SkipMany().Before(End);
+
+        long AllocatedFor(int length)
+        {
+            var text = new string('a', length) + "1";
+            var memory = text.ToCharArray().AsMemory();
+
+            return Allocated(() =>
+                (
+                    inMemory
+                    ? letters.Parse(memory)
+                    : letters.Parse(text)
+                )
+                .Value is Failed
+            );
+        }
+
+        Assert.Equal(AllocatedFor(1_000), AllocatedFor(100_000));
+    }
+
+    [Fact]
+    public void AFailedTokenParseAllocatesTheSameWhateverTheLengthOfItsInput()
+    {
+        var numbers = TokenGrammar<SymbolToken, Symbol>.Kind(Symbol.Number).SkipMany().Before(Grammar<SymbolToken>.End);
+
+        long AllocatedFor(int length)
+        {
+            SymbolToken[] tokens = [.. Enumerable.Repeat(new SymbolToken(Symbol.Number), length), new(Symbol.Plus)];
+
+            for (var i = 0; i < 10; i++)
+            {
+                Assert.True(numbers.Parse(tokens).Value is Failed);
+            }
+
+            return Allocation.Fewest(() => numbers.Parse(tokens), attempts: 20);
+        }
+
+        Assert.Equal(AllocatedFor(100), AllocatedFor(10_000));
+    }
+
+    [Theory]
     [MemberData(nameof(Cases))]
     public void AParseOfValueTypesAllocatesNothing(string name) =>
         Assert.Equal(0, _cases[name](false));
+
+    [Fact]
+    public void ASeparatedListAllocatesWhatManyDoesForTheSameItems() =>
+        Assert.Equal(
+            Allocated(Digit.Many(), "123", recording: false),
+            Allocated(Digit.SepBy(Char(',')), "1,2,3", recording: false)
+        );
+
+    [Fact]
+    public void ASuccessfulParseAllocatesOnlyItsResult() =>
+        Assert.Equal(
+            Allocated(() => (_sink = new Parsed<int>(-9)) is not null),
+            Allocated(() => Arithmetic.Expr.Parse("-(1+2)*3").Value is Parsed<int> { Value: -9 })
+        );
+
+    [Fact]
+    public void ASuccessfulTokenParseAllocatesOnlyItsResult()
+    {
+        SymbolToken[] tokens = [new(Symbol.Number), new(Symbol.Plus), new(Symbol.Number)];
+
+        Assert.Equal(
+            Allocated(() => (_sink = new Parsed<Unit>(default)) is not null),
+            Allocated(() => Arithmetic.Tokens.Parse(tokens).Value is Parsed<Unit>)
+        );
+    }
 
     [Theory]
     [MemberData(nameof(Cases))]

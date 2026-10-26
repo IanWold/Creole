@@ -17,12 +17,13 @@ namespace Creole;
 /// <para>
 /// Lowering also applies the rewrites in <see cref="LoweringOptions"/> that the builder was given, all of them by default.
 /// An <c>Or</c> dispatches when at least <paramref name="dispatchThreshold"/> of its alternatives have keys; tests lower with a threshold of one so that every such <c>Or</c> dispatches.
-/// A <c>Longest</c> compiles to an automaton only if it has at most <paramref name="dfaStateCap"/> states.
+/// A <c>Longest</c> compiles to an automaton only if it has at most <paramref name="dfaStateCap"/> states and building it steps at most <paramref name="dfaWorkBudget"/> paths.
 /// </para>
 /// </remarks>
-internal sealed partial class PlanBuilder(LoweringOptions options = LoweringOptions.All, int dispatchThreshold = PlanBuilder.DispatchThreshold, int dfaStateCap = PlanBuilder.DfaStateCap)
+internal sealed partial class PlanBuilder(LoweringOptions options = LoweringOptions.All, int dispatchThreshold = PlanBuilder.DispatchThreshold, int dfaStateCap = PlanBuilder.DfaStateCap, long dfaWorkBudget = PlanBuilder.DfaWorkBudget)
 {
     private readonly int _dfaStateCap = dfaStateCap;
+    private readonly long _dfaWorkBudget = dfaWorkBudget;
     private readonly int _dispatchThreshold = dispatchThreshold;
     private readonly Dictionary<INode, object?> _inProgress = new(ReferenceEqualityComparer.Instance);
     private readonly LoweringOptions _options = options;

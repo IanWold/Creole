@@ -20,7 +20,7 @@ Full feature parity: everything the interpreter supports must run in generated c
 
 ## Acceptance criteria
 
-- [ ] All interpreter test suites pass when run against the generated engine.
+- [ ] All interpreter test suites pass when run against the generated engine, with each suite's grammars emitted as source in `partial` grammar classes and staged with zero CRL0301. A suite that builds its grammars at run time passes through interpreter fallback and does not count ([Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 13).
 
 ## Blocked by
 
@@ -45,3 +45,7 @@ Full feature parity: everything the interpreter supports must run in generated c
 ## Whitepaper references
 
 - [§ Execution engines](../../../whitepaper.md#execution-engines)
+
+## Artifacts
+
+- [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements

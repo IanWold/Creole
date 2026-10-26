@@ -17,7 +17,9 @@ Chain layers into a parser and run it over in-memory or reader input.
 - `TextReader` sources with blocking pulls.
 - Slices follow [ADR-0013](../../docs/decisions/0013-slices-view-in-memory-input-and-copy-streamed-input.md): `Parse(text)` builds its root cursor over the caller's memory, so slices are views; over a `TextReader` they are copies.
 - Immutable, thread-shareable pipelines; each call owns its buffers and state.
-- Make Example A's `result.Diagnostics.Render()` show the full format. That format needs the source text (`Diagnostics.Render(SourceText)`, from [ERR-03](../04-errors-and-recovery/ERR-03-diagnostic-rendering.md)), so either results carry their `SourceText` or the example passes it in. Decide which.
+- `SourceRegistry` has no producer: `Parse` always uses `SourceId.Unnamed`, and a source's name is held both in the registry and in `SourceText.Name`. Decide whether pipelines take registry ids or the registry goes ([Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 25).
+- A pipeline's result holds its root source text, as [INT-08](../03-interpreter/INT-08-single-layer-parse-api.md)'s does, so Example A's `result.Diagnostics.Render()` shows the full format ([ADR-0024](../../docs/decisions/0024-a-parses-diagnostics-hold-their-source-text.md) points 1 and 5).
+- A pipeline over in-memory input runs without failure logs and, when it fails, runs again whole with them ([ADR-0027](../../docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)). Decide whether the second run reuses items already buffered or produces them again.
 
 ## Acceptance criteria
 
@@ -42,3 +44,7 @@ Chain layers into a parser and run it over in-memory or reader input.
 
 - [§ Running pipelines](../../../whitepaper.md#running-pipelines)
 - [§ Sources](../../../whitepaper.md#sources)
+
+## Artifacts
+
+- [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements

@@ -2,7 +2,7 @@
 
 `Expression.Build` parses operator expressions from an atom and a table of operators, so a grammar never needs left recursion for `a + b * c`. It builds one grammar node that holds the whole table. The design is in the [whitepaper's § Expressions](../../whitepaper.md#expressions) and [ADR-0004](../../work/docs/decisions/0004-expression-build-operator-table-and-semantics.md).
 
-> The interpreter parses expressions as this page describes. The public method that runs a parser on your input arrives with INT-08.
+> The interpreter parses expressions as this page describes. Run a parser with `Parse` ([Running a parser](parsing.md)).
 
 ## Writing a table
 

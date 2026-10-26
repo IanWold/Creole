@@ -16,6 +16,23 @@ if (Tokens.Describe<Tok>(K.Comma) != "','" || Tokens.Describe<Plain>(K.Comma) !=
     return 1;
 }
 
+var parsed = Lists.Depth.Parse("[[x]]") switch
+{
+    Parsed<int> result => result.Value,
+    Recovered<int> => -1,
+    Failed => -1,
+};
+
+if (parsed != 2
+    || !Lists.Depth.Parse("[[y]]".AsMemory(), source: "smoke.txt").Diagnostics.Render().Contains(" --> smoke.txt:1:3", StringComparison.Ordinal)
+    || Lists.Depth.Parse("[[x]]", options: new ParseOptions { MaxDepth = 1 }).Value is not Failed
+    || TokenLists.Count.Parse(new[] { new Tok(K.Word, "a"), new Tok(K.Comma, ","), new Tok(K.Word, "b") }).Value is not Parsed<int> { Value: 2 }
+    || TokenLists.Count.Parse(new[] { new Tok(K.Word, "a"), new Tok(K.Word, "b") }).Diagnostics.Render() != "error[parser] at 1..2: unexpected word b; expected ',' or end of input"
+)
+{
+    return 1;
+}
+
 Console.WriteLine("Creole AOT smoke: OK");
 return 0;
 
@@ -68,6 +85,12 @@ internal class Queries : CharGrammar
         select c.Count + b.Length;
 }
 
+internal class Lists : CharGrammar
+{
+    public static readonly Parser<char, int> Depth =
+        Char('[').Then(Rec(() => Depth)).Before(Char(']')).Select(static depth => depth + 1).Or(Char('x').As(0));
+}
+
 internal enum K
 {
     Comma,
@@ -82,6 +105,12 @@ internal readonly record struct Tok(K Kind, string Text) : IKinded<K>
 }
 
 internal readonly record struct Plain(K Kind) : IKinded<K>;
+
+internal class TokenLists : TokenGrammar<Tok, K>
+{
+    public static readonly Parser<Tok, int> Count =
+        Kind(K.Word).SepBy(Kind(K.Comma)).Before(End).Select(static words => words.Count);
+}
 
 internal static class Tokens
 {

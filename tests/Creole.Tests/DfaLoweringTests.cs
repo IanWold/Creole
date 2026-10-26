@@ -29,11 +29,13 @@ file static class Alternatives
 
 public class DfaLoweringTests
 {
+    private const long MaxFallbackBytes = 140_000_000;
+
     private static Gen<int?> SegmentSizes =>
         Gen.Int[0, 3].Select(static size => size == 0 ? (int?)null : size);
 
-    private static Plan<TIn, T> Lower<TIn, T>(Parser<TIn, T> parser, int dfaStateCap = PlanBuilder.DfaStateCap) =>
-        new PlanBuilder(LoweringOptions.All, dfaStateCap: dfaStateCap).Lower(parser);
+    private static Plan<TIn, T> Lower<TIn, T>(Parser<TIn, T> parser, int dfaStateCap = PlanBuilder.DfaStateCap, long dfaWorkBudget = PlanBuilder.DfaWorkBudget) =>
+        new PlanBuilder(LoweringOptions.All, dfaStateCap: dfaStateCap, dfaWorkBudget: dfaWorkBudget).Lower(parser);
 
     private static (bool Ok, string? Value, long Position) Run(Plan<char, string> plan, string text, int position, bool segmented)
     {
@@ -78,8 +80,34 @@ public class DfaLoweringTests
     }
 
     [Fact]
+    public void ALongestOverTheWorkBudgetRunsOnTheInterpreter()
+    {
+        var parser = LexerSamples.Longest([.. LexerSamples.CSharp().Select(static (rule, index) => rule.Text().Select(token => $"{index}:{token}"))]);
+        var interpreted = new PlanBuilder(LoweringOptions.None).Lower(parser);
+        var budgeted = Lower(parser, dfaWorkBudget: 1_000);
+
+        Assert.IsType<LongestPlan<char, string>>(budgeted);
+
+        for (var position = 0; position < LexerSamples.CSharpText.Length; position++)
+        {
+            Assert.Equal(Run(interpreted, LexerSamples.CSharpText, position, segmented: false), Run(budgeted, LexerSamples.CSharpText, position, segmented: false));
+        }
+    }
+
+    [Fact]
     public void ALongestOverTokensRunsOnTheInterpreter() =>
         Assert.IsType<LongestPlan<int, int>>(Lower(Grammar<int>.Longest(Grammar<int>.Token(1), Grammar<int>.Token(2))));
+
+    [Fact]
+    public void ALongestThatOutgrowsTheStateCapFallsBackCheaply()
+    {
+        var parser = LexerSamples.Longest([.. LexerSamples.Keywords(400).Select(static (rule, index) => rule.As(index))]);
+        Plan<char, int>? plan = null;
+        var allocated = Allocation.Fewest(() => plan = Lower(parser));
+
+        Assert.IsType<LongestPlan<char, int>>(plan);
+        Assert.InRange(allocated, 0, MaxFallbackBytes);
+    }
 
     [Fact]
     public void ALongestWithAChoiceOutsideFragmentEPrimeRunsOnTheInterpreter()
@@ -138,6 +166,22 @@ public class DfaLoweringTests
             iter: 2_000,
             print: static t => $"{string.Join(" | ", t.Item1.Select(static alternative => alternative.Text))} on \"{new string(t.Item2)}\", segments {t.Item3}, cut {t.Item4}"
         );
+
+    [Theory]
+    [InlineData("JSON")]
+    [InlineData("C#")]
+    [InlineData("300 keywords")]
+    public void TheLexersAndThreeHundredKeywordsCompile(string rules)
+    {
+        var alternatives = rules switch
+        {
+            "JSON" => LexerSamples.Json(),
+            "C#" => LexerSamples.CSharp(),
+            _ => LexerSamples.Keywords(300),
+        };
+
+        Assert.IsType<DfaLongestPlan<int>>(Lower(LexerSamples.Longest([.. alternatives.Select(static (rule, index) => rule.As(index))])));
+    }
 
     [Fact]
     public void WithoutTheRewriteALongestRunsOnTheInterpreter() =>

@@ -131,6 +131,35 @@ internal static class LexerSamples
     }
 
     /// <summary>
+    /// <paramref name="count"/> distinct lowercase words of two to nine letters as <c>String</c> rules, in ordinal order, then an identifier rule.
+    /// The words come from a fixed linear congruential sequence, so every run builds the same rules.
+    /// </summary>
+    public static Parser<char, Unit>[] Keywords(int count)
+    {
+        var words = new SortedSet<string>(StringComparer.Ordinal);
+        var state = 1u;
+
+        int Next(int bound)
+        {
+            state = (state * 1_664_525) + 1_013_904_223;
+
+            return (int)((state >> 16) % (uint)bound);
+        }
+
+        while (words.Count < count)
+        {
+            var length = 2 + Next(8);
+
+            words.Add(new string([.. Enumerable.Range(0, length).Select(_ => (char)('a' + Next(26)))]));
+        }
+
+        var letter = CharSet.Range('a', 'z').Union(CharSet.Range('A', 'Z')).Union(CharSet.Of('_'));
+        var identifier = Seq(Of(letter), Of(letter.Union(CharSet.Range('0', '9'))).SkipMany()).Ignore();
+
+        return [.. words.Select(static word => String(word).Ignore()), identifier];
+    }
+
+    /// <summary>
     /// <c>Longest</c> over any number of alternatives, nested 16 to a level as the docs advise beyond 16.
     /// </summary>
     public static Parser<char, T> Longest<T>(Parser<char, T>[] alternatives)

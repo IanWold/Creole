@@ -125,6 +125,23 @@ internal sealed class FailureLog<T>
             : _remap[_context];
     }
 
+    private List<ContextLine> ContextLines(int innermost, long position, Func<long, long, SourceSpan> spanOf)
+    {
+        var context = new List<ContextLine>();
+
+        for (var i = innermost; i >= 0; i = _frames[i].Parent)
+        {
+            var frame = _frames[i];
+
+            if (frame.Start < position)
+            {
+                context.Add(new ContextLine(frame.Text, spanOf(frame.Start, frame.Start + 1)));
+            }
+        }
+
+        return context;
+    }
+
     private bool Reaches(long position)
     {
         if (position < Position)
@@ -169,6 +186,14 @@ internal sealed class FailureLog<T>
         _records = 0;
         _protected = 0;
     }
+
+    /// <summary>
+    /// The context lines in force now, for an error at <paramref name="position"/>: innermost first, leaving out contexts that started there.
+    /// </summary>
+    /// <param name="position">Where the error is.</param>
+    /// <param name="spanOf">The source span of the items from a start position up to an end position.</param>
+    public List<ContextLine> ContextAt(long position, Func<long, long, SourceSpan> spanOf) =>
+        ContextLines(_current, position, spanOf);
 
     /// <summary>
     /// Enters a context with <paramref name="text"/> whose parser starts at <paramref name="start"/>.
@@ -388,18 +413,6 @@ internal sealed class FailureLog<T>
             }
         }
 
-        var context = new List<ContextLine>();
-
-        for (var i = _context; i >= 0; i = _frames[i].Parent)
-        {
-            var frame = _frames[i];
-
-            if (frame.Start < Position)
-            {
-                context.Add(new ContextLine(frame.Text, spanOf(frame.Start, frame.Start + 1)));
-            }
-        }
-
-        return new ParseError(span, layer, unexpected, expected, context);
+        return new ParseError(span, layer, unexpected, expected, ContextLines(_context, Position, spanOf));
     }
 }

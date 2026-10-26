@@ -94,6 +94,18 @@ public class TokenPrimitiveTests
         );
 
     [Fact]
+    public void KindAndCaseRunThroughParse()
+    {
+        JTok[] comma = [new(J.Comma, ",")];
+        Tok[] name = [new Ident("x")];
+        Tok[] number = [new Number(1)];
+
+        Assert.Equal(comma[0], Assert.IsType<Parsed<JTok>>(JsonTokens.Comma.Parse(comma).Value).Value);
+        Assert.Equal(new Ident("x"), Assert.IsType<Parsed<Ident>>(UnionTokens.Name.Parse(name).Value).Value);
+        Assert.Equal("error[parser] at 0..1: unexpected Number; expected Ident", UnionTokens.Name.Parse(number).Diagnostics.Render());
+    }
+
+    [Fact]
     public void KindHoldsItsKindAndStartsWithIt()
     {
         var node = Assert.IsType<KindNode<JTok, J>>(JsonTokens.Comma);

@@ -13,6 +13,7 @@ namespace Creole;
 /// <para>
 /// The scan stops at the end of the input without taking the automaton's end-of-input transition: the paths still reading can only die there, which removes no match.
 /// When nothing matches, the interpreter's <see cref="LongestPlan{TIn, T}"/> runs instead, so a failure never comes from the tables.
+/// It also runs when the winner, run again, does not match the input the automaton gave it, which would mean the automaton is wrong; Debug builds assert instead.
 /// A match records no failure, as the interpreter's plan records none once it has a winner; running the winner again puts the furthest failure back afterwards.
 /// A Regular alternative contains no <c>Cut</c>, so a match leaves the cut flag as it found it.
 /// </para>
@@ -37,12 +38,19 @@ internal sealed class DfaLongestPlan<T>(CommitAutomaton automaton, Plan<char, T>
         cursor.Reset(start);
         cursor.Cut = false;
 
-        var matched = alternatives[winner].TryParse(ref cursor, ref result);
-        Debug.Assert(matched && cursor.Position == end, "The automaton and the interpreter disagree on the winning alternative.");
+        var agrees = alternatives[winner].TryParse(ref cursor, ref result) && cursor.Position == end;
+        Debug.Assert(agrees, "The automaton and the interpreter disagree on the winning alternative.");
 
         cursor.RestoreFailures(in failures);
         cursor.Cut = outerCut;
-        return true;
+
+        if (agrees)
+        {
+            return true;
+        }
+
+        cursor.Reset(start);
+        return _fallback.TryParse(ref cursor, ref result);
     }
 
     public override bool TryParse(ref Cursor<char> cursor, ref T result)

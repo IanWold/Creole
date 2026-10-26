@@ -5,7 +5,8 @@ namespace Creole;
 /// Otherwise, or at the end of the input, fails without consuming and records <c>expected</c>.
 /// </summary>
 /// <remarks>
-/// Every primitive that matches one item and produces it lowers to this plan: <c>Any</c>, <c>Token</c>, <c>Satisfy</c>, character classes and <c>Kind</c>.
+/// Every primitive that matches one item and produces it lowers to this plan: <c>Any</c>, <c>Token</c>, <c>Satisfy</c> and <c>Kind</c>.
+/// Character classes lower to <see cref="CharClassPlan"/> instead.
 /// </remarks>
 internal sealed class ItemPlan<TIn>(Func<TIn, bool> accepts, Expected? expected) : Plan<TIn, TIn>
 {

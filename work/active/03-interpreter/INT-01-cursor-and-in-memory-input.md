@@ -29,6 +29,7 @@ The allocation-free cursor every engine reads through.
 
 - [INT-02 Plan lowering and cache](../03-interpreter/INT-02-plan-lowering-and-cache.md)
 - [LAY-01 StreamBuffer and pulling cursor](../06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md)
+- [LAY-08 Per-layer parse state](../06-layers-and-pipelines/LAY-08-per-layer-parse-state.md)
 
 ## Whitepaper references
 

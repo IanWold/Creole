@@ -30,6 +30,7 @@ Build-time analysis and code generation both start by reading grammars from synt
 - [CORE-10 Bind and LINQ query syntax](../02-core-combinators/CORE-10-bind-and-linq-query-syntax.md)
 - [CORE-11 Expression.Build](../02-core-combinators/CORE-11-expressionbuild.md)
 - [CORE-12 Custom primitives](../02-core-combinators/CORE-12-custom-primitives.md)
+- [CORE-14 Choices beyond 16 alternatives](../02-core-combinators/CORE-14-choices-beyond-16-alternatives.md)
 - [LAY-03 Layer abstraction and Emit](../06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md)
 - [MODE-01 Mode channels and Layer.Modal](../07-mode-channels/MODE-01-mode-channels-and-layermodal.md)
 
