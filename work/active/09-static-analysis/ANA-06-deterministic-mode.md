@@ -23,7 +23,7 @@
 
 ## Blocked by
 
-- [INT-05 Interpreter lowering rewrites](../../complete/03-interpreter/INT-05-interpreter-lowering-rewrites.md)
+- [INT-05 Interpreter lowering rewrites](../03-interpreter/INT-05-interpreter-lowering-rewrites.md)
 - [LAY-02 Marks and retention](../06-layers-and-pipelines/LAY-02-marks-and-retention.md)
 - [MODE-01 Mode channels and Layer.Modal](../07-mode-channels/MODE-01-mode-channels-and-layermodal.md)
 - [ANA-01 Grammar property analysis](../09-static-analysis/ANA-01-grammar-property-analysis.md)

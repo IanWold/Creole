@@ -35,7 +35,7 @@ Every combinator call builds an immutable node in a grammar tree. This item esta
 - [CORE-02 Grammar base classes and authoring surface](../02-core-combinators/CORE-02-grammar-base-classes-and-authoring-surface.md)
 - [CORE-07 Repetition nodes](../02-core-combinators/CORE-07-repetition-nodes.md)
 - [CORE-11 Expression.Build](../02-core-combinators/CORE-11-expressionbuild.md)
-- [INT-02 Plan lowering and cache](../../complete/03-interpreter/INT-02-plan-lowering-and-cache.md)
+- [INT-02 Plan lowering and cache](../03-interpreter/INT-02-plan-lowering-and-cache.md)
 
 ## Whitepaper references
 

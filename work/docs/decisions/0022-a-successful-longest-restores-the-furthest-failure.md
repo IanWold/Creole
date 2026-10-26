@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | Accepted |
 | Date | 2026-10-25 |
-| Cards | [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [INT-06](../../complete/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [GEN-05](../../active/11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md) |
+| Cards | [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [INT-06](../../active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [GEN-05](../../active/11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md) |
 | Whitepaper | [§ Longest match](../../../whitepaper.md#longest-match), [§ The error model](../../../whitepaper.md#the-error-model), [§ Interpreted engine](../../../whitepaper.md#interpreted-engine) |
 | Research | [DFA compilation under commit semantics](../research/2026-10-23-dfa-compilation-under-commit-semantics.md), finding 31 |
 | Supersedes | — |
@@ -13,7 +13,7 @@
 
 [ADR-0017](0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md) point 6 says that a compiled subtree that succeeds must contribute the same expectations as the interpreter (G7). It leaves to ERR-02 how to do that, and how far each scan read. It names two candidates: re-running the subtree lazily, and labelling automaton states with expectations (research note, finding 31). A compiled subtree that fails already re-runs on the interpreter (ADR-0017 point 5), so its errors are exact.
 
-Only `Longest` compiles today. [INT-06](../../complete/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md) measured the one other candidate, a character-level JSON token choice, at about 0.6× the speed of dispatch and scans. The compiled `Longest` tokenized 3.31× faster with a 12-rule JSON lexer and 13.58× faster with a 138-rule C#-like lexer.
+Only `Longest` compiles today. [INT-06](../../active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md) measured the one other candidate, a character-level JSON token choice, at about 0.6× the speed of dispatch and scans. The compiled `Longest` tokenized 3.31× faster with a 12-rule JSON lexer and 13.58× faster with a 138-rule C#-like lexer.
 
 **What the interpreter records today.** `Longest` runs every alternative atomically from the same position. Under [ADR-0021](0021-how-failures-are-recorded-and-merged.md), every failure those runs record stands, whichever alternative wins:
 

@@ -26,12 +26,12 @@ Untrusted input must never cause a stack overflow.
 ## Blocked by
 
 - [INT-03 Execute the core combinators](../03-interpreter/INT-03-execute-the-core-combinators.md)
-- [ERR-01 Error and result types](../../active/04-errors-and-recovery/ERR-01-error-and-result-types.md)
+- [ERR-01 Error and result types](../04-errors-and-recovery/ERR-01-error-and-result-types.md)
 
 ## Unblocks
 
 - [INT-08 Single-layer Parse API](../03-interpreter/INT-08-single-layer-parse-api.md)
-- [GEN-06 Generated layers, modes, recovery and streaming](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md)
+- [GEN-06 Generated layers, modes, recovery and streaming](../11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md)
 
 ## Whitepaper references
 

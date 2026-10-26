@@ -49,7 +49,7 @@ Delivered:
 Calls made during the build (no decision record needed):
 
 - Queries of three or more clauses build nested two-step sequences, not one flat `Seq`. Analysis results are the same, and flattening would need the `select` lambda as an expression tree too.
-- What a rejected filter reports is left to [INT-04](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md), whose scope now includes the filter node.
+- What a rejected filter reports is left to [INT-04](../03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md), whose scope now includes the filter node.
 
 ## Blocked by
 
@@ -57,7 +57,7 @@ Calls made during the build (no decision record needed):
 
 ## Unblocks
 
-- [INT-04 Execute Bind, Expression.Build and Custom](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md)
+- [INT-04 Execute Bind, Expression.Build and Custom](../03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md)
 - [ANA-01 Grammar property analysis](../09-static-analysis/ANA-01-grammar-property-analysis.md)
 - [RSLN-01 Roslyn grammar reader](../10-roslyn-analyzers/RSLN-01-roslyn-grammar-reader.md)
 - [GEN-03 Lambda and helper inlining](../11-source-generator/GEN-03-lambda-and-helper-inlining.md)

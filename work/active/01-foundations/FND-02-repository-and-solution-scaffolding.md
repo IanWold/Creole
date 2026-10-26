@@ -34,7 +34,7 @@ Nothing. This item can start immediately.
 - [FND-05 Benchmark harness](../01-foundations/FND-05-benchmark-harness.md)
 - [FND-07 Validate C# 15 features and decide `ParseResult<T>`](../01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md)
 - [CORE-01 Grammar node model](../02-core-combinators/CORE-01-grammar-node-model.md)
-- [INT-01 Cursor and in-memory input](../../complete/03-interpreter/INT-01-cursor-and-in-memory-input.md)
+- [INT-01 Cursor and in-memory input](../03-interpreter/INT-01-cursor-and-in-memory-input.md)
 - [SPAN-01 SourceSpan, SourceId and LineMap](../05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md)
 - [RSLN-01 Roslyn grammar reader](../10-roslyn-analyzers/RSLN-01-roslyn-grammar-reader.md)
 - [RSLN-04 CRL0004 forward field reference analyzer](../10-roslyn-analyzers/RSLN-04-crl0004-forward-field-reference-analyzer.md)

@@ -12,7 +12,7 @@ In streaming mode, running out of buffered data is neither success nor failure.
 
 ## Scope
 
-- Sticky Starved flag on parse state.
+- Sticky Starved flag on parse state, held behind the reference the cursor already holds (as `Failures` is), so a custom scanner that scans a copy of the cursor and discards it cannot lose it ([Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 19).
 - `Or`, `Atomic`, `Not`, `Lookahead` and `Recover` check it before acting on a failure.
 - `End` and root reads report Starved at the end of buffered data before the true end of the stream.
 
@@ -34,3 +34,7 @@ In streaming mode, running out of buffered data is neither success nor failure.
 
 - [§ Results](../../../whitepaper.md#results)
 - [§ The restart protocol](../../../whitepaper.md#the-restart-protocol)
+
+## Artifacts
+
+- [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements

@@ -36,7 +36,7 @@ Lowering builds a compiled `Longest`'s automaton in full, and for a large lexer 
 
 ## Unblocks
 
-Nothing directly.
+- [INT-10 Dispatched Longest, measured against the automaton](INT-10-dispatched-longest-measured-against-the-automaton.md)
 
 ## Whitepaper references
 

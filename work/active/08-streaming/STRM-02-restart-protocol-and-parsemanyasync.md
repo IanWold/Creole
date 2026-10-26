@@ -25,6 +25,7 @@ Async record streams parse one top-level item at a time and restart that item wh
 
 - [SPAN-06 Byte sources and the decoding layer](../05-source-spans/SPAN-06-byte-sources-and-the-decoding-layer.md)
 - [LAY-05 Pipeline API and sources](../06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md)
+- [LAY-08 Per-layer parse state](../06-layers-and-pipelines/LAY-08-per-layer-parse-state.md)
 - [STRM-01 Starved outcome](../08-streaming/STRM-01-starved-outcome.md)
 
 ## Unblocks

@@ -20,6 +20,10 @@ public class JsonBenchmarks
         JsonInputs.Utf8Length((string)benchmarkCase.Parameters[nameof(Input)]!);
 
     [Benchmark]
+    public JsonValue Creole() =>
+        CreoleJson.Parse(_text);
+
+    [Benchmark]
     public JsonValue Parlot() =>
         ParlotJson.Parse(ParlotJson.Interpreted, _text);
 

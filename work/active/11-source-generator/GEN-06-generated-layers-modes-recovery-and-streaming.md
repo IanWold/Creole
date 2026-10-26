@@ -20,12 +20,12 @@ Full feature parity: everything the interpreter supports must run in generated c
 
 ## Acceptance criteria
 
-- [ ] All interpreter test suites pass when run against the generated engine.
+- [ ] All interpreter test suites pass when run against the generated engine, with each suite's grammars emitted as source in `partial` grammar classes and staged with zero CRL0301. A suite that builds its grammars at run time passes through interpreter fallback and does not count ([Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 13).
 
 ## Blocked by
 
-- [INT-04 Execute Bind, Expression.Build and Custom](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md)
-- [INT-07 Recursion depth limit](../../complete/03-interpreter/INT-07-recursion-depth-limit.md)
+- [INT-04 Execute Bind, Expression.Build and Custom](../03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md)
+- [INT-07 Recursion depth limit](../03-interpreter/INT-07-recursion-depth-limit.md)
 - [ERR-05 Recover combinator and strategies](../04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md)
 - [ERR-06 OrInsert for missing items](../04-errors-and-recovery/ERR-06-orinsert-for-missing-items.md)
 - [ERR-07 Lexer recovery and cascade suppression](../04-errors-and-recovery/ERR-07-lexer-recovery-and-cascade-suppression.md)
@@ -45,3 +45,7 @@ Full feature parity: everything the interpreter supports must run in generated c
 ## Whitepaper references
 
 - [§ Execution engines](../../../whitepaper.md#execution-engines)
+
+## Artifacts
+
+- [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements

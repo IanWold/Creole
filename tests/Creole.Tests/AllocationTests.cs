@@ -164,6 +164,13 @@ public class AllocationTests
         Assert.Equal(0, _cases[name](false));
 
     [Fact]
+    public void ASeparatedListAllocatesWhatManyDoesForTheSameItems() =>
+        Assert.Equal(
+            Allocated(Digit.Many(), "123", recording: false),
+            Allocated(Digit.SepBy(Char(',')), "1,2,3", recording: false)
+        );
+
+    [Fact]
     public void ASuccessfulParseAllocatesOnlyItsResult() =>
         Assert.Equal(
             Allocated(() => (_sink = new Parsed<int>(-9)) is not null),

@@ -13,6 +13,7 @@ Generated code for every core node, with semantics and error tracking identical 
 ## Scope
 
 - `Seq` as straight-line code, `Or` as a `switch`, `Many` as a loop, `Rec` as direct (possibly mutually recursive) calls.
+- `Match` over a value-type union boxes in the interpreter (`MatchPlan` reads `union.Value`), which is [ADR-0007](../../docs/decisions/0007-maybe-as-a-non-boxing-union.md)'s revisit trigger and contradicts § Design choices. Decide whether both engines avoid it before generated code copies the pattern ([idea](../../ideas/match-over-non-boxing-unions.md); [Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 25).
 - Control nodes, `Switch`, `Match` and commit semantics. A dispatched `Or`, `Optional` or loop saves and restores the cut flag as the interpreter's light marks do, so dispatch is exact. Generated code does not fail early on any other node that can reach a `Cut` without consuming inside an `Atomic` ([ADR-0011](../../docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md)). Compare against CORE-08's reference model.
 - Expectation-set tracking identical to ERR-02, as [ADR-0021](../../docs/decisions/0021-how-failures-are-recorded-and-merged.md) says. That includes the per-gap records for alternatives a dispatched `Or` skips, the restores in `Lookahead` and `Not`, and `Named`'s relabelling. Display strings come from `IKinded<TKind>.Describe` and `Detail`, called only when an error is built, and tokens show through them by the interpreter's rule, once a token grammar over the type is initialised ([ADR-0023](../../docs/decisions/0023-token-types-describe-their-kinds.md) point 3).
 
@@ -22,9 +23,10 @@ Generated code for every core node, with semantics and error tracking identical 
 
 ## Blocked by
 
-- [INT-03 Execute the core combinators](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md)
+- [INT-03 Execute the core combinators](../03-interpreter/INT-03-execute-the-core-combinators.md)
 - [ERR-02 Furthest-failure tracking and labels](../04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md)
 - [GEN-01 Generator skeleton and registration](../11-source-generator/GEN-01-generator-skeleton-and-registration.md)
+- [GEN-11 Runtime support surface for generated code](GEN-11-runtime-support-surface-for-generated-code.md)
 
 ## Unblocks
 
@@ -38,3 +40,7 @@ Generated code for every core node, with semantics and error tracking identical 
 
 - [§ Source-generated engine](../../../whitepaper.md#source-generated-engine)
 - [§ Equivalence](../../../whitepaper.md#equivalence)
+
+## Artifacts
+
+- [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements

@@ -13,6 +13,7 @@ Give users the same agreement check the library's CI uses.
 ## Scope
 
 - `Creole.Testing.EngineAgreement.Check(grammar, inputs)`.
+- Compare against the interpreter with and without its lowering rewrites, as GEN-08 does. `LoweringOptions` is internal, so `Creole.Testing` needs a way to choose ([Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 13).
 
 ## Acceptance criteria
 
@@ -29,3 +30,7 @@ Give users the same agreement check the library's CI uses.
 ## Whitepaper references
 
 - [§ Equivalence](../../../whitepaper.md#equivalence)
+
+## Artifacts
+
+- [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements

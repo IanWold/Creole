@@ -22,7 +22,7 @@ See what the parser did.
 
 ## Blocked by
 
-- [INT-03 Execute the core combinators](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md)
+- [INT-03 Execute the core combinators](../03-interpreter/INT-03-execute-the-core-combinators.md)
 - [LAY-05 Pipeline API and sources](../06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md)
 
 ## Unblocks

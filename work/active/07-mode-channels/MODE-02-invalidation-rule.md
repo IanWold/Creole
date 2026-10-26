@@ -25,6 +25,7 @@ A mode change discards items lexed under the old mode and re-produces them corre
 
 - [ERR-04 Diagnostic withdrawal](../04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md)
 - [LAY-02 Marks and retention](../06-layers-and-pipelines/LAY-02-marks-and-retention.md)
+- [LAY-08 Per-layer parse state](../06-layers-and-pipelines/LAY-08-per-layer-parse-state.md)
 - [MODE-01 Mode channels and Layer.Modal](../07-mode-channels/MODE-01-mode-channels-and-layermodal.md)
 
 ## Unblocks

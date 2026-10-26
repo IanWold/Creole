@@ -13,6 +13,7 @@ Analysis results are available in tests and enforced on first use in Debug build
 ## Scope
 
 - `grammar.Analyze()` returning a report with errors, warnings and infos.
+- Decide by decision record how a packaged library knows it is in a Debug build. Creole ships as one Release package, `[Conditional("DEBUG")]` acts only at call sites compiled in the consumer's project, and reading `DebuggableAttribute` is reflection (G8). ANA-08's CRL0206 needs the same switch ([Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 19).
 - On first use in Debug builds, errors throw `GrammarException` naming the rule path. Names come from GEN-01's name table and from `Rec` ([ADR-0009](../../docs/decisions/0009-where-rule-names-come-from.md)); unnamed nodes are left out of the path. Before GEN-01, only `Rec`s are named, so Example A's path shows `Value` but not `Document` or `ObjectValue`.
 
 ## Acceptance criteria
@@ -35,3 +36,7 @@ Analysis results are available in tests and enforced on first use in Debug build
 ## Whitepaper references
 
 - [§ Where analysis runs](../../../whitepaper.md#where-analysis-runs)
+
+## Artifacts
+
+- [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements

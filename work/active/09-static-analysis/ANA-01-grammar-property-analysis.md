@@ -16,6 +16,7 @@ A fixpoint over the grammar graph computes the properties every check builds on.
 - Regular comes from INT-06's predicate in `src/Creole/Analysis/`, not a second implementation ([ADR-0017](../../docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md) point 7).
 - `Custom` uses its declared `ScannerInfo`; a null `First` is ⊤ and makes the node opaque ([ADR-0012](../../docs/decisions/0012-custom-scanner-metadata.md)). Union token case types count as kinds.
 - `Expression.Build`, `Switch`, `Match` and layers handled precisely. `Expression.Build` is read through its table view; operators that succeed without consuming input are reported ([ADR-0004](../../docs/decisions/0004-expression-build-operator-table-and-semantics.md)).
+- Decide union-token `Case<T>()` before building on it. § Authoring ergonomics and § Where unions are not used leave open whether union tokens need `IKinded`, and the code requires it. FIRST's separate case part makes any choice that mixes `Kind(k)` and `Case<T>()` look overlapping, a false-positive risk for the Phase 2 gate ([idea](../../ideas/union-tokens-and-ikinded.md); [Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 25).
 - Write the analysis so it can be shared with the Roslyn component (RSLN-02).
 - Interpreter lowering may take `Or` dispatch keys from these properties instead of its leading-item walk ([ADR-0016](../../docs/decisions/0016-or-dispatches-on-each-alternatives-leading-item.md) point 5).
 
@@ -36,7 +37,7 @@ A fixpoint over the grammar graph computes the properties every check builds on.
 - [CORE-11 Expression.Build](../02-core-combinators/CORE-11-expressionbuild.md)
 - [CORE-12 Custom primitives](../02-core-combinators/CORE-12-custom-primitives.md)
 - [LAY-03 Layer abstraction and Emit](../06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md)
-- [INT-06 DFA compiler for regular subtrees](../../complete/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md)
+- [INT-06 DFA compiler for regular subtrees](../03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md)
 
 ## Unblocks
 
@@ -54,3 +55,4 @@ A fixpoint over the grammar graph computes the properties every check builds on.
 
 - [Research: DFA compilation under commit semantics](../../docs/research/2026-10-23-dfa-compilation-under-commit-semantics.md) How regular subtrees can compile to DFAs that agree with commit semantics; construction, errors, alphabet, backup and prior art
 - [Research: commit-aware automaton prototypes](../../docs/research/2026-10-23-commit-aware-automaton-prototypes.md) Differential prototypes: the commit rule, lexer sizes, speed, proof sketches, Option B's condition, backup, blow-ups and a wider eager fragment
+- [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements

@@ -29,6 +29,7 @@ One parse produces many diagnostics without cascades.
 - [ERR-02 Furthest-failure tracking and labels](../04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md)
 - [ERR-04 Diagnostic withdrawal](../04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md)
 - [LAY-04 Layer-local state](../06-layers-and-pipelines/LAY-04-layer-local-state.md)
+- [LAY-08 Per-layer parse state](../06-layers-and-pipelines/LAY-08-per-layer-parse-state.md)
 - [MODE-02 Invalidation rule](../07-mode-channels/MODE-02-invalidation-rule.md)
 - [STRM-01 Starved outcome](../08-streaming/STRM-01-starved-outcome.md)
 
@@ -40,3 +41,7 @@ One parse produces many diagnostics without cascades.
 ## Whitepaper references
 
 - [§ Recovery](../../../whitepaper.md#recovery)
+
+## Artifacts
+
+- [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements

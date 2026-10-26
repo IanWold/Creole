@@ -7,6 +7,18 @@ public class ArithmeticBenchmarks
 {
     private readonly IReadOnlyList<string> _expressions = ArithmeticInputs.Expressions;
 
+    [Benchmark(OperationsPerInvoke = ArithmeticInputs.Count)]
+    public double Creole()
+    {
+        var sum = 0.0;
+        foreach (var expression in _expressions)
+        {
+            sum += CreoleArithmetic.Evaluate(expression);
+        }
+
+        return sum;
+    }
+
     [Benchmark(Baseline = true, OperationsPerInvoke = ArithmeticInputs.Count)]
     public double HandWritten()
     {

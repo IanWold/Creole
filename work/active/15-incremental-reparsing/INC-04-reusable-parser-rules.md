@@ -22,6 +22,7 @@ Reuse whole rule results, incremental-packrat style, for rules that opt in.
 
 ## Blocked by
 
+- [LAY-08 Per-layer parse state](../06-layers-and-pipelines/LAY-08-per-layer-parse-state.md)
 - [INC-03 Layer item reuse](../15-incremental-reparsing/INC-03-layer-item-reuse.md)
 
 ## Unblocks
@@ -33,3 +34,7 @@ Reuse whole rule results, incremental-packrat style, for rules that opt in.
 
 - [§ Reusing parser results](../../../whitepaper.md#reusing-parser-results)
 - [§ Limits](../../../whitepaper.md#limits)
+
+## Artifacts
+
+- [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements

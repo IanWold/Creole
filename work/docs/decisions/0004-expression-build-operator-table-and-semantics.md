@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | Accepted |
 | Date | 2026-10-18 |
-| Cards | [CORE-11](../../active/02-core-combinators/CORE-11-expressionbuild.md), [INT-04](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md), [ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md) |
+| Cards | [CORE-11](../../active/02-core-combinators/CORE-11-expressionbuild.md), [INT-04](../../active/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md), [ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md) |
 | Whitepaper | [§ Expressions](../../../whitepaper.md#expressions) |
 | Research | — (prior art read for this record, cited inline) |
 | Supersedes | — |
@@ -110,7 +110,7 @@ public sealed class Calc : CharGrammar
 - An operator that consumed input commits. If its operand then fails, the failure is committed and the expression does not fall back to the shorter parse. An author who wants `a -` to stop before the `-` wraps that operator in `Atomic`.
 - `Named` on the whole expression replaces its expected set only for empty failures, as for any node.
 - Operand recursion, and the right recursion of InfixR, count against `ParseOptions.MaxDepth` ([§ Limits for untrusted input](../../../whitepaper.md#limits-for-untrusted-input)).
-- An operator that succeeds without consuming input would loop forever. Engines treat it as `Many` treats a body that does. That rule is not decided yet: CORE-07 left it to [INT-03](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md), whose criterion covers the rows where Pidgin throws. The expression node follows whatever INT-03 decides, and ANA-01 reports such operators statically.
+- An operator that succeeds without consuming input would loop forever. Engines treat it as `Many` treats a body that does. That rule is not decided yet: CORE-07 left it to [INT-03](../../active/03-interpreter/INT-03-execute-the-core-combinators.md), whose criterion covers the rows where Pidgin throws. The expression node follows whatever INT-03 decides, and ANA-01 reports such operators statically.
 
 **6. Node and structural view.**
 
@@ -152,5 +152,5 @@ What would change this:
 - **Whitepaper:** [§ Expressions](../../../whitepaper.md#expressions) rewritten to describe the factory API, the table rules, precedence climbing, non-associative chains and commit behaviour, linking this record. No other section changed: the code-fix row in § Developer experience, the general-parsing spike and Example C stay correct as written.
 - **Cards:**
   - [CORE-11](../../active/02-core-combinators/CORE-11-expressionbuild.md): scope and criterion rewritten to construction, the table view and the checks; moved to Building.
-  - [INT-04](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md): scope names the semantics in points 3 to 5; gains the arithmetic parsing criterion from point 7.
+  - [INT-04](../../active/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md): scope names the semantics in points 3 to 5; gains the arithmetic parsing criterion from point 7.
   - [ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md): reads the table view; reports operators that succeed without consuming input.

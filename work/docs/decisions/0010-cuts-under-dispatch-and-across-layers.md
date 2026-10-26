@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | Superseded by 0011 |
 | Date | 2026-10-19 |
-| Cards | [CORE-08](../../active/02-core-combinators/CORE-08-control-nodes.md), [INT-03](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md), [GEN-02](../../active/11-source-generator/GEN-02-emit-the-core-combinators.md), [ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md), [LAY-02](../../active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) |
+| Cards | [CORE-08](../../active/02-core-combinators/CORE-08-control-nodes.md), [INT-03](../../active/03-interpreter/INT-03-execute-the-core-combinators.md), [GEN-02](../../active/11-source-generator/GEN-02-emit-the-core-combinators.md), [ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md), [LAY-02](../../active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) |
 | Whitepaper | [§ Choice and backtracking](../../../whitepaper.md#choice-and-backtracking), [§ Bookmarks and retention](../../../whitepaper.md#bookmarks-and-retention), [§ Source-generated engine](../../../whitepaper.md#source-generated-engine) |
 | Research | — (follows an independent review of CORE-08) |
 | Supersedes | [ADR-0008](0008-control-node-semantics.md); its points other than 3 stand (see Decision) |
@@ -177,7 +177,7 @@ What would change this:
   - [§ Guarantees](../../../whitepaper.md#guarantees) point 4: a layer's cuts are private too.
 - **Cards:**
   - [CORE-08](../../active/02-core-combinators/CORE-08-control-nodes.md): back to Building. Table rows 25 to 27 change to empty failures, new rows are added, and the docs and XML docs follow.
-  - [INT-03](../../complete/03-interpreter/INT-03-execute-the-core-combinators.md): the cut rule, and the cut bit in light marks.
+  - [INT-03](../../active/03-interpreter/INT-03-execute-the-core-combinators.md): the cut rule, and the cut bit in light marks.
   - [GEN-02](../../active/11-source-generator/GEN-02-emit-the-core-combinators.md): `Or` as a `switch` must carry the cut bit; dispatch is exact.
   - [LAY-02](../../active/06-layers-and-pipelines/LAY-02-marks-and-retention.md): the permanent-cut release rule.
   - [INC-04](../../active/15-incremental-reparsing/INC-04-reusable-parser-rules.md): a reused rule replays an escaped cut.

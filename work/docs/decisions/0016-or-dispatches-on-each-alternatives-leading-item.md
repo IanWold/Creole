@@ -4,7 +4,7 @@
 | --- | --- |
 | Status | Accepted |
 | Date | 2026-10-22 |
-| Cards | [INT-05](../../complete/03-interpreter/INT-05-interpreter-lowering-rewrites.md), [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md) |
+| Cards | [INT-05](../../active/03-interpreter/INT-05-interpreter-lowering-rewrites.md), [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md) |
 | Whitepaper | [§ Interpreted engine](../../../whitepaper.md#interpreted-engine), [§ Choice and backtracking](../../../whitepaper.md#choice-and-backtracking) |
 | Research | — |
 | Supersedes | — |
@@ -105,6 +105,6 @@ What would change this: INT-05's benchmarks showing that a candidate list per ke
 
 - **Whitepaper:** [§ Interpreted engine](../../../whitepaper.md#interpreted-engine): the `Or` bullet describes dispatch on each alternative's leading item, with candidates per key, and links this record. [§ Choice and backtracking](../../../whitepaper.md#choice-and-backtracking) already states that dispatch on FIRST sets is exact and is unchanged.
 - **Cards:**
-  - [INT-05](../../complete/03-interpreter/INT-05-interpreter-lowering-rewrites.md): the scope bullet for `Or` follows point 2, and the card returns to Building.
+  - [INT-05](../../active/03-interpreter/INT-05-interpreter-lowering-rewrites.md): the scope bullet for `Or` follows point 2, and the card returns to Building.
   - [ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md): the scope notes that lowering may take key sets from its properties (point 5).
   - [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md): unchanged; its scope already covers what a skipped attempt records (point 4).

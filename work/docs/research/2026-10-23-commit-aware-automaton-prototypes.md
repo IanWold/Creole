@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | Date | 2026-10-23 |
-| Cards | [INT-06](../../complete/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md), [ANA-04](../../active/09-static-analysis/ANA-04-choice-checks.md), [ANA-07](../../active/09-static-analysis/ANA-07-linear-maximal-munch.md), [GEN-05](../../active/11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md) |
+| Cards | [INT-06](../../active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md), [ANA-04](../../active/09-static-analysis/ANA-04-choice-checks.md), [ANA-07](../../active/09-static-analysis/ANA-07-linear-maximal-munch.md), [GEN-05](../../active/11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md) |
 | Whitepaper | [§ Longest match](../../../whitepaper.md#longest-match), [§ Interpreted engine](../../../whitepaper.md#interpreted-engine), [§ Properties](../../../whitepaper.md#properties), [§ Deterministic mode](../../../whitepaper.md#deterministic-mode) |
 | Confidence | Medium to high for what was measured: every claim below is a differential test against the real interpreter or a measurement on this machine. Medium for generality: the random terms use a three-letter alphabet and depth up to 5, and `Lookahead`, `Not`, `Cut`, values and errors are not covered. The two proofs are sketches, and the wider fragment of finding 19 is tested but not proved. |
 

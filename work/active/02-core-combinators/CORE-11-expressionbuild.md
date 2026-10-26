@@ -30,7 +30,7 @@ An operator-precedence node, so grammars never need left recursion for operators
 
 ## Unblocks
 
-- [INT-04 Execute Bind, Expression.Build and Custom](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md)
+- [INT-04 Execute Bind, Expression.Build and Custom](../03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md)
 - [ANA-01 Grammar property analysis](../09-static-analysis/ANA-01-grammar-property-analysis.md)
 - [RSLN-01 Roslyn grammar reader](../10-roslyn-analyzers/RSLN-01-roslyn-grammar-reader.md)
 - [TOOL-05 EBNF and railroad diagram export](../12-grammar-author-tooling/TOOL-05-ebnf-and-railroad-diagram-export.md)
@@ -53,7 +53,7 @@ An operator-precedence node, so grammars never need left recursion for operators
 
 ## Outcome
 
-Delivered `Expression.Build` as one grammar node over an operator table, as decided in [ADR-0004](../../docs/decisions/0004-expression-build-operator-table-and-semantics.md). Nothing executes it yet; [INT-04](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md) adds precedence climbing.
+Delivered `Expression.Build` as one grammar node over an operator table, as decided in [ADR-0004](../../docs/decisions/0004-expression-build-operator-table-and-semantics.md). Nothing executes it yet; [INT-04](../03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md) adds precedence climbing.
 
 | Path | Contents |
 | --- | --- |
@@ -77,4 +77,4 @@ Deviations: none from the whitepaper or ADR-0004. Calls made during Build:
 - Error messages count levels and operators from 0.
 - docs/ describes construction only, because the docs rules forbid documenting behaviour that does not run yet. The parsing rules are in the XML docs.
 
-Follow-ups: [INT-04](../../complete/03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md) adds the parsing rules and the behavioural differences from Pidgin to docs/concepts/expressions.md (added to its scope).
+Follow-ups: [INT-04](../03-interpreter/INT-04-execute-bind-expressionbuild-and-custom.md) adds the parsing rules and the behavioural differences from Pidgin to docs/concepts/expressions.md (added to its scope).

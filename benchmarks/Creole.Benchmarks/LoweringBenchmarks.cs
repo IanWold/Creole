@@ -119,6 +119,12 @@ public class LoweringBenchmarks
         return new DfaLongestPlan<T>(automaton, [Lower(parser, LoweringOptions.All)], [parser.ValueOfMatch()]);
     }
 
+    /// <summary>
+    /// Folds one token's end and value into a tokenizer's running fingerprint, so lexers that split the input differently or pick different winners give different results.
+    /// </summary>
+    private static long Fingerprint<T>(long fingerprint, long end, T value) =>
+        unchecked((((fingerprint * 31) + end) * 31) + EqualityComparer<T>.Default.GetHashCode(value!));
+
     private static Plan<TIn, T> Lower<TIn, T>(Parser<TIn, T> parser, LoweringOptions options) =>
         new PlanBuilder(options).Lower(parser);
 
@@ -145,6 +151,8 @@ public class LoweringBenchmarks
         var skipped = default(Unit);
         _ = whitespace.TryParse(ref cursor, ref skipped);
 
+        var fingerprint = 0L;
+
         while (!cursor.IsAtEnd)
         {
             if (!token.TryParse(ref cursor, ref result))
@@ -152,10 +160,11 @@ public class LoweringBenchmarks
                 return -1;
             }
 
+            fingerprint = Fingerprint(fingerprint, cursor.Position, result);
             _ = whitespace.TryParse(ref cursor, ref skipped);
         }
 
-        return cursor.Position;
+        return fingerprint;
     }
 
     private static long Tokenize<T>(Plan<char, T> lexer, string input)
@@ -163,15 +172,22 @@ public class LoweringBenchmarks
         var cursor = new Cursor<char>(input);
         T result = default!;
 
+        var fingerprint = 0L;
+
         while (!cursor.IsAtEnd)
         {
-            if (!lexer.TryParse(ref cursor, ref result))
+            if (lexer.TryParse(ref cursor, ref result))
+            {
+                fingerprint = Fingerprint(fingerprint, cursor.Position, result);
+            }
+            else
             {
                 cursor.Advance(1);
+                fingerprint = Fingerprint(fingerprint, -cursor.Position, 0);
             }
         }
 
-        return cursor.Position;
+        return fingerprint;
     }
 
     [Benchmark, BenchmarkCategory(CollapseSelect)]

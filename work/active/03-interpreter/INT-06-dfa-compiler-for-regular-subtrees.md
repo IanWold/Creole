@@ -54,11 +54,12 @@ Regular character subtrees and `Longest` over regular alternatives compile to DF
 ## Unblocks
 
 - [INT-09 Cheaper automaton construction](../03-interpreter/INT-09-cheaper-automaton-construction.md)
-- [ANA-01 Grammar property analysis](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md)
-- [ANA-04 Choice checks](../../active/09-static-analysis/ANA-04-choice-checks.md)
-- [ANA-07 Linear maximal munch](../../active/09-static-analysis/ANA-07-linear-maximal-munch.md)
-- [GEN-05 Generated DFAs, scans and jump tables](../../active/11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md)
-- [BENCH-01 Phase 0 speed gate](../../active/13-benchmarks/BENCH-01-phase-0-speed-gate.md)
+- [INT-10 Dispatched Longest, measured against the automaton](INT-10-dispatched-longest-measured-against-the-automaton.md)
+- [ANA-01 Grammar property analysis](../09-static-analysis/ANA-01-grammar-property-analysis.md)
+- [ANA-04 Choice checks](../09-static-analysis/ANA-04-choice-checks.md)
+- [ANA-07 Linear maximal munch](../09-static-analysis/ANA-07-linear-maximal-munch.md)
+- [GEN-05 Generated DFAs, scans and jump tables](../11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md)
+- [BENCH-01 Phase 0 speed gate](../13-benchmarks/BENCH-01-phase-0-speed-gate.md)
 
 ## Whitepaper references
 
@@ -107,6 +108,6 @@ A `Longest` over characters whose alternatives are all Regular now runs as one e
   - The three measured runs used a build that passed the fallback plan as a constructor parameter, since folded back into a field with identical behaviour.
 - **Follow-ups:**
   - [INT-09](INT-09-cheaper-automaton-construction.md): cheaper construction and bounding its cost.
-  - [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md): expected sets from compiled subtrees, and the scan extent.
+  - [ERR-02](../04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md): expected sets from compiled subtrees, and the scan extent.
   - The ideas [`SearchValues`-accelerated self-loops](../../ideas/searchvalues-accelerated-self-loops.md) and [Commit versus regex reading diagnostic](../../ideas/commit-versus-regex-reading-diagnostic.md).
   - ANA-04 and ANA-07 build the product construction, backup analysis and memoization over these automata.

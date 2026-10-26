@@ -24,14 +24,14 @@ On first use a grammar is lowered to an immutable execution plan and cached.
 
 ## Blocked by
 
-- [CORE-01 Grammar node model](../../active/02-core-combinators/CORE-01-grammar-node-model.md)
+- [CORE-01 Grammar node model](../02-core-combinators/CORE-01-grammar-node-model.md)
 - [INT-01 Cursor and in-memory input](../03-interpreter/INT-01-cursor-and-in-memory-input.md)
 
 ## Unblocks
 
 - [INT-03 Execute the core combinators](../03-interpreter/INT-03-execute-the-core-combinators.md)
-- [GEN-01 Generator skeleton and registration](../../active/11-source-generator/GEN-01-generator-skeleton-and-registration.md)
-- [CORE-09 Recursion with Rec](../../active/02-core-combinators/CORE-09-recursion-with-rec.md)
+- [GEN-01 Generator skeleton and registration](../11-source-generator/GEN-01-generator-skeleton-and-registration.md)
+- [CORE-09 Recursion with Rec](../02-core-combinators/CORE-09-recursion-with-rec.md)
 
 ## Whitepaper references
 
@@ -67,4 +67,4 @@ Delivered the interpreter's plan layer: lowering, the per-grammar cache and the 
 
 Evidence for the criterion (2026-10-18, commit 3b5a6b2): `ConcurrentFirstUseLowersEachGrammarOnceAndParsesCorrectly` runs 64 threads behind a `Barrier` over 20 rounds of 100 fresh grammars and asserts one lowering per grammar, one shared plan instance and the right parse result on every thread. It passed in 5 of 5 extra runs. A mutant cache that lowers inside the `GetValue` callback failed it in 3 of 3 runs, with lower counts of 2 and 4. Only `Return` and `Fail` execute so far, so "correct results" covers those plans and staged code; INT-03 extends execution. `dotnet build` has 0 warnings, `dotnet test` passes 195, and the AOT smoke publish has 0 warnings.
 
-Deviations: none from the whitepaper or ADR-0001. Scope changes agreed with the maintainer: lowering `Rec` cycles moved to [CORE-09](../../active/02-core-combinators/CORE-09-recursion-with-rec.md), which is now blocked by this card. Calls made during Build: leaf builder methods are static (CA1822); only root nodes are cached, children are shared within one lowering; registering a rule twice throws; registering after first use leaves the cached plan alone. No docs page, since nothing public changed; INT-08 documents thread safety and first-use cost with the Parse API. Follow-ups: [INT-03](INT-03-execute-the-core-combinators.md) replaces every `NotYetExecutable` call (in its scope); [GEN-01](../../active/11-source-generator/GEN-01-generator-skeleton-and-registration.md) makes `Staging` public.
+Deviations: none from the whitepaper or ADR-0001. Scope changes agreed with the maintainer: lowering `Rec` cycles moved to [CORE-09](../02-core-combinators/CORE-09-recursion-with-rec.md), which is now blocked by this card. Calls made during Build: leaf builder methods are static (CA1822); only root nodes are cached, children are shared within one lowering; registering a rule twice throws; registering after first use leaves the cached plan alone. No docs page, since nothing public changed; INT-08 documents thread safety and first-use cost with the Parse API. Follow-ups: [INT-03](INT-03-execute-the-core-combinators.md) replaces every `NotYetExecutable` call (in its scope); [GEN-01](../11-source-generator/GEN-01-generator-skeleton-and-registration.md) makes `Staging` public.

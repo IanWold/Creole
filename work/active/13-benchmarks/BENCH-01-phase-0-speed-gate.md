@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Benchmarks](../../README.md#bench--benchmarks) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 | Gate | Phase 0 gate |
 
 ## Summary
@@ -16,18 +16,23 @@ The Phase 0 gate: core tests green, and the interpreter at least as fast as Pidg
 - Character-level JSON and arithmetic grammars on the interpreter.
 - Compare against the FND-05 Pidgin (`PidginFolds` for arithmetic) and stable Parlot baselines in the same run; median of three runs on the gate machine ([ADR-0003](../../docs/decisions/0003-numeric-gate-thresholds.md)).
 - Creole runs with its depth limit on (the default, 1,000), and Parlot with its limit off (its default). benchmarks/README.md's known differences say so ([ADR-0020](../../docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md)).
+- Before the gate runs, draft two decision records with `/decide`, from the [Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md):
+  - **Value-function purity** (findings 3 and 7). A compiled `Longest` skips value functions the interpreter runs, so the engine choice can change a result. The record sets which user functions must be pure and total and may run any number of times, including zero, and which must be deterministic and may only be skipped where the outcome is already known. It amends § Equivalence and [ADR-0025](../../docs/decisions/0025-automaton-construction-stops-at-a-state-cap-or-a-work-budget.md).
+  - **When failures are recorded** (finding 3). Either a successful in-memory parse runs without a failure log and re-runs with one on failure, or recording itself gets cheaper. The record is decided on measurements of three configurations: always recording, log-free with a re-run, and a cheaper-recording prototype.
+- Gate runs record the commit and the Parlot version, and run only the gate classes (review finding 6).
 
 ## Acceptance criteria
 
+- [ ] The decision records on value-function purity and on when failures are recorded are drafted, and the gate is measured in the configuration the accepted record on recording chooses.
 - [ ] The Phase 0 speed thresholds in [ADR-0003](../../docs/decisions/0003-numeric-gate-thresholds.md) are met (time: geometric mean ≤ 1.0× Pidgin, no benchmark above 1.25× Pidgin, geometric mean ≤ 1.5× Parlot; allocations ≤ Pidgin's on every benchmark), or the gap is understood and recorded.
 
 ## Blocked by
 
 - [FND-06 Fix numeric gate thresholds](../01-foundations/FND-06-fix-numeric-gate-thresholds.md)
 - [FND-10 Move the Parlot baselines to 2.0.0](../01-foundations/FND-10-move-the-parlot-baselines-to-200.md)
-- [INT-05 Interpreter lowering rewrites](../../complete/03-interpreter/INT-05-interpreter-lowering-rewrites.md)
-- [INT-06 DFA compiler for regular subtrees](../../complete/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md)
-- [INT-08 Single-layer Parse API](../../complete/03-interpreter/INT-08-single-layer-parse-api.md)
+- [INT-05 Interpreter lowering rewrites](../03-interpreter/INT-05-interpreter-lowering-rewrites.md)
+- [INT-06 DFA compiler for regular subtrees](../03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md)
+- [INT-08 Single-layer Parse API](../03-interpreter/INT-08-single-layer-parse-api.md)
 - [ERR-02 Furthest-failure tracking and labels](../04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md)
 
 ## Unblocks
@@ -38,3 +43,16 @@ Nothing directly.
 
 - [§ Performance design and benchmark plan](../../../whitepaper.md#performance-design-and-benchmark-plan)
 - [§ Roadmap](../../../whitepaper.md#roadmap)
+
+## Artifacts
+
+- [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements
+
+## Progress notes
+
+- 2026-10-25 (Building): Started, ahead of the Phase 0 review, to give the review gate numbers. Added the interpreter to `JsonBenchmarks` (`CreoleJson`, character level, built like the Pidgin grammar) and `ArithmeticBenchmarks` (`CreoleArithmetic`, on `Expression.Build`), with agreement cases in `BaselineAgreementTests` (27 of 27 pass). One `--job short` run is indicative only. Next: after the review's simplifications land, run the gate three times on the gate machine and record the ratios.
+- 2026-10-25 (Building): The Phase 0 review measured the gate in a scratch copy (short jobs, indicative). As built: 0.35× Pidgin, 2.00× Parlot, JSON allocation 1.07× Pidgin. With `SepBy` lists sized by default (one line in `SeparatedPlan`): allocation 0.996× Pidgin. With that and no failure log on successful parses: 1.52× Parlot. Next: land the `SepBy` fix and the review's other pre-gate fixes as separate changes, then measure a log-free configuration and a cheaper-recording prototype before the three gate runs ([review](../../docs/research/2026-10-25-phase-0-review.md), findings 1–6).
+- 2026-10-25 (Building): Fixed `SepBy` lists starting at capacity 1 (`SeparatedPlan` now starts them empty, as `RepeatPlan` does). `AllocationTests.ASeparatedListAllocatesWhatManyDoesForTheSameItems` failed before (128 against 64 bytes per parse) and passes now; 1,497 of 1,497 tests pass. The review measured the same change at 0.996× Pidgin's allocation on all three JSON inputs. Next: the `Rerun` fallback and the lexer benchmark check.
+- 2026-10-25 (Building): A compiled `Longest` whose winner, run again, disagrees with the automaton now falls back to the interpreter's `LongestPlan` instead of returning success; Debug builds still assert. Checked once in Release with a throwaway test (an automaton for `"ab"` over an alternative `"xy"`): it failed before the change and passes after. No test is kept, because in Debug the assertion fires first. 1,497 of 1,497 tests pass. Next: the lexer benchmark check.
+- 2026-10-25 (Building): The lexer benchmarks' agreement check could not fail: `Tokenize` skipped a character on each failure and the test asserted only the input length. The lexers now return a fingerprint of each token's end and value, and `LoweringBenchmarksTokenizeAlikeWithAndWithoutTheAutomaton` compares the compiled and interpreted lexers. A throwaway mutation (ties going to the later alternative) failed the new test, and the old check would have passed it; 28 of 28 benchmark tests pass. Next: scope the ADRs this card drafts.
+- 2026-10-25 (Building): Scope widened with the maintainer: before the gate runs, this card drafts the decision records on value-function purity and on when failures are recorded, and makes gate runs record their commit and Parlot version. Next: `/decide` on value-function purity, then measure the three recording configurations for the second record.
