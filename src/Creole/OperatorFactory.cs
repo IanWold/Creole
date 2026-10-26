@@ -31,7 +31,7 @@ public sealed class OperatorFactory<TIn, T>
     /// </summary>
     /// <typeparam name="TOp">The type the operator parser produces.</typeparam>
     /// <param name="op">The parser that matches the operator.</param>
-    /// <param name="combine">Combines the left operand, the operator's value and the right operand.</param>
+    /// <param name="combine">Combines the left operand, the operator's value and the right operand. It must be pure: an engine may run it more than once, or not at all when the parse does not use the result.</param>
     /// <param name="opExpression">Filled in by the compiler with the expression passed as <paramref name="op"/>.</param>
     /// <param name="combineExpression">Filled in by the compiler with the expression passed as <paramref name="combine"/>.</param>
     /// <returns>The operator, to place in a level of the table.</returns>
@@ -49,7 +49,7 @@ public sealed class OperatorFactory<TIn, T>
     /// </summary>
     /// <typeparam name="TOp">The type the operator parser produces.</typeparam>
     /// <param name="op">The parser that matches the operator.</param>
-    /// <param name="combine">Combines the left operand, the operator's value and the right operand.</param>
+    /// <param name="combine">Combines the left operand, the operator's value and the right operand. It must be pure: an engine may run it more than once, or not at all when the parse does not use the result.</param>
     /// <param name="opExpression">Filled in by the compiler with the expression passed as <paramref name="op"/>.</param>
     /// <param name="combineExpression">Filled in by the compiler with the expression passed as <paramref name="combine"/>.</param>
     /// <returns>The operator, to place in a level of the table.</returns>
@@ -71,7 +71,7 @@ public sealed class OperatorFactory<TIn, T>
     /// </summary>
     /// <typeparam name="TOp">The type the operator parser produces.</typeparam>
     /// <param name="op">The parser that matches the operator.</param>
-    /// <param name="combine">Combines the left operand, the operator's value and the right operand.</param>
+    /// <param name="combine">Combines the left operand, the operator's value and the right operand. It must be pure: an engine may run it more than once, or not at all when the parse does not use the result.</param>
     /// <param name="opExpression">Filled in by the compiler with the expression passed as <paramref name="op"/>.</param>
     /// <param name="combineExpression">Filled in by the compiler with the expression passed as <paramref name="combine"/>.</param>
     /// <returns>The operator, to place in a level of the table.</returns>
@@ -89,7 +89,7 @@ public sealed class OperatorFactory<TIn, T>
     /// </summary>
     /// <typeparam name="TOp">The type the operator parser produces.</typeparam>
     /// <param name="op">The parser that matches the operator.</param>
-    /// <param name="combine">Combines the operand and the operator's value.</param>
+    /// <param name="combine">Combines the operand and the operator's value. It must be pure: an engine may run it more than once, or not at all when the parse does not use the result.</param>
     /// <param name="opExpression">Filled in by the compiler with the expression passed as <paramref name="op"/>.</param>
     /// <param name="combineExpression">Filled in by the compiler with the expression passed as <paramref name="combine"/>.</param>
     /// <returns>The operator, to place in a level of the table.</returns>
@@ -110,7 +110,7 @@ public sealed class OperatorFactory<TIn, T>
     /// </summary>
     /// <typeparam name="TOp">The type the operator parser produces.</typeparam>
     /// <param name="op">The parser that matches the operator.</param>
-    /// <param name="combine">Combines the operator's value and the operand.</param>
+    /// <param name="combine">Combines the operator's value and the operand. It must be pure: an engine may run it more than once, or not at all when the parse does not use the result.</param>
     /// <param name="opExpression">Filled in by the compiler with the expression passed as <paramref name="op"/>.</param>
     /// <param name="combineExpression">Filled in by the compiler with the expression passed as <paramref name="combine"/>.</param>
     /// <returns>The operator, to place in a level of the table.</returns>

@@ -88,7 +88,7 @@ static readonly Parser<JTok, KeyValuePair<string, JsonValue>> Member =
 Each `from` clause after the first is classified once, when the grammar is built:
 
 - **A clause that does not use an earlier range variable** is evaluated once, and its parser becomes the next step of a sequence. `Member` builds the same kind of node as `Seq`, so analysis sees every step.
-- **A clause that uses an earlier range variable** is a bind: the parser to run depends on a parsed value, so it is chosen once per match. Analysis cannot see past a bind.
+- **A clause that uses an earlier range variable** is a bind: the parser to run depends on a parsed value, so it is chosen each time the earlier clauses match. Analysis cannot see past a bind.
 
 ```csharp
 static readonly Parser<byte, byte[]> Blob =
@@ -131,6 +131,28 @@ static readonly Parser<char, string> Name = Atomic(Identifier.Where(name => !Key
 ```
 
 `Where` judges a value, so its error points at the value. `Bind` with `Fail(message)` fails where `p` stopped, which suits a construct that goes wrong at its end, such as an unterminated string (see [Custom scanners](custom-scanners.md#reporting-errors-from-a-scanner)). The reasons are in [ADR-0014](../../work/docs/decisions/0014-a-rejected-filter-reports-at-the-start-of-the-value.md).
+
+## How often your functions run
+
+Creole may run a function you put in a grammar more than once, and may skip a call whose result it does not need. A parse that fails, for one, runs the grammar a second time to collect its error ([Running a parser](parsing.md#what-it-returns)). Write each function so that its result depends only on its arguments. How Creole treats a function depends on its role:
+
+| Role | Functions | Creole may |
+| --- | --- | --- |
+| Produces a value | `Select`, on one value and on a `Seq` tuple; a query's `select`; a `Match` case's combine function; `Expression.Build`'s operator functions | Run it more than once, and skip it when the parse does not use the value |
+| Decides the parse | `Where`, `Bind` and a query's dependent `from`, `Satisfy`, a custom scanner's `Scan`, and `Equals` and `Kind` on your token and key types | Run it more than once, and skip it only when it already knows the answer |
+
+A value is unused when it is discarded: the value of a `Longest` alternative that loses, of a parser inside `Lookahead` or `Not`, of a parser under `As`, `Ignore` or a skip form, or of an attempt that backtracks. A compiled `Longest`, for example, runs only the winner's functions, while the interpreter's `Longest` runs every alternative's (see [Interpreter](../engines/interpreter.md#when-a-longest-compiles)). Both are correct, and both give the same result for a grammar that follows these rules.
+
+So a function should not count, log or collect anything the grammar relies on. A value function should also not throw on a value its parser can match. In this grammar, `integer`'s function throws on a number too large for a `long`:
+
+```csharp
+var digits = Range('0', '9').SkipAtLeastOnce();
+var integer = digits.Text().Select(s => (double)long.Parse(s, CultureInfo.InvariantCulture));
+var real = Seq(digits, Char('.'), digits).Text().Select(s => double.Parse(s, CultureInfo.InvariantCulture));
+var number = Longest(integer, real);
+```
+
+On `99999999999999999999.5`, `real` wins. Whether `integer`'s function runs, and so whether `Parse` throws, depends on how the `Longest` is run. Use `double.Parse` in `integer` too, or reject a number that is too long with `Where`, whose predicate runs each time `digits` matches there. The rules are in [ADR-0026](../../work/docs/decisions/0026-engines-may-skip-unused-values-and-repeat-user-functions.md).
 
 ## Null arguments
 

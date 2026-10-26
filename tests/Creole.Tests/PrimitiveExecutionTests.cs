@@ -69,6 +69,51 @@ public class PrimitiveExecutionTests
     }
 
     [Fact]
+    public void CharacterClassesMatchExactlyTheirSetOnEveryCharacter()
+    {
+        Parser<char, char>[] classes =
+        [
+            CharGrammar.Char('a'),
+            CharGrammar.Range('a', 'f'),
+            CharGrammar.Range('~', '\u0081'),
+            CharGrammar.NoneOf('"', '\\'),
+            new CharClassNode(CharSet.Of('\u007f', '\u0080', '\u00e9', '\uffff'), null),
+            CharGrammar.Digit,
+            CharGrammar.Letter,
+            CharGrammar.LetterOrDigit,
+            CharGrammar.Whitespace,
+        ];
+
+        var buffer = new char[1];
+
+        foreach (var parser in classes)
+        {
+            var set = Assert.IsType<CharClassNode>(parser).Set;
+
+            for (var c = char.MinValue; ; c++)
+            {
+                buffer[0] = c;
+
+                var cursor = new Cursor<char>(buffer);
+                var (ok, value) = Execution.Run(parser, ref cursor);
+
+                Assert.True(ok == set.Contains(c), $"{set} on U+{(int)c:X4}: matched {ok}");
+                Assert.Equal(ok ? 1 : 0, cursor.Position);
+
+                if (ok)
+                {
+                    Assert.Equal(c, value);
+                }
+
+                if (c == char.MaxValue)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void CharacterClassesReadOneMatchingCharacter()
     {
         Assert.Equal(Ok("a", 1), Execution.Outcome(CharGrammar.Char('a'), "ab"));

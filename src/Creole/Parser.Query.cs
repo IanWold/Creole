@@ -9,7 +9,7 @@ public abstract partial class Parser<TIn, TOut>
     /// A parser that runs this parser, passes its result to <paramref name="next"/> to choose the parser to run after it, and produces that parser's result.
     /// </summary>
     /// <typeparam name="TNext">The type of value the chosen parser produces.</typeparam>
-    /// <param name="next">Chooses the parser to run from this parser's result. It runs once per match.</param>
+    /// <param name="next">Chooses the parser to run from this parser's result. It runs each time this parser matches, and must be deterministic: an engine may run it more than once for the same result.</param>
     /// <param name="nextExpression">Filled in by the compiler with the expression passed as <paramref name="next"/>.</param>
     /// <returns>A bind node over this parser.</returns>
     /// <exception cref="GrammarException"><paramref name="next"/> is null.</exception>
@@ -34,7 +34,7 @@ public abstract partial class Parser<TIn, TOut>
     /// <typeparam name="TNext">The type of value the clause's parser produces.</typeparam>
     /// <typeparam name="TResult">The type of value <paramref name="resultSelector"/> produces.</typeparam>
     /// <param name="selector">The clause: an expression giving the parser to run next, which may use this parser's result.</param>
-    /// <param name="resultSelector">Combines the two results. It runs once per match.</param>
+    /// <param name="resultSelector">Combines the two results. It must be pure: an engine may run it more than once, or not at all when the parse does not use the result.</param>
     /// <param name="selectorExpression">Filled in by the compiler with the expression passed as <paramref name="selector"/>; in a query, the clause's text.</param>
     /// <param name="resultSelectorExpression">Filled in by the compiler with the expression passed as <paramref name="resultSelector"/>.</param>
     /// <returns>
@@ -48,7 +48,7 @@ public abstract partial class Parser<TIn, TOut>
     /// <para>
     /// The clause is classified once, here.
     /// If it does not mention its parameter, it is evaluated once now and its parser becomes the second step of a sequence.
-    /// If it does, it is compiled once now and runs once per match, like <see cref="Bind{TNext}"/>.
+    /// If it does, it is compiled once now and runs each time this parser matches, like <see cref="Bind{TNext}"/>.
     /// Parsing never touches the expression tree.
     /// </para>
     /// <para>
@@ -80,7 +80,7 @@ public abstract partial class Parser<TIn, TOut>
     /// A parser that runs this parser and fails if <paramref name="predicate"/> rejects its result.
     /// C# calls it for the <c>where</c> clause of a query.
     /// </summary>
-    /// <param name="predicate">Accepts or rejects this parser's result. It runs once per match and should not have side effects.</param>
+    /// <param name="predicate">Accepts or rejects this parser's result. It runs each time this parser matches, and must be deterministic: an engine may run it more than once for the same result.</param>
     /// <param name="message">What a rejection reports, such as <c>"number out of range"</c>. Leave it out to report the rejected input as unexpected.</param>
     /// <param name="predicateExpression">Filled in by the compiler with the expression passed as <paramref name="predicate"/>.</param>
     /// <returns>A parser that matches the same input as this parser when <paramref name="predicate"/> accepts the result.</returns>

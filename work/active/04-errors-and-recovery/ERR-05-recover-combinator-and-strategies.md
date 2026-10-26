@@ -19,6 +19,7 @@ One parse produces many diagnostics without cascades.
 - Starved propagates through `Recover` unchanged.
 - `Recover` does not catch a depth abort. It passes through, and the parse ends ([ADR-0020](../../docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md)).
 - `Recover` takes a light mark before running `p`: if `p` fails without consuming, the cut flag is restored ([ADR-0011](../../docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md)). `Recover` is not a cut boundary.
+- A parse's first run has no failure log, so the first failure a `Recover` would catch ends that run, and the parse runs again with the log ([ADR-0027](../../docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)). Tests cover a parse that recovers giving the same diagnostics as one run with the log.
 
 ## Acceptance criteria
 

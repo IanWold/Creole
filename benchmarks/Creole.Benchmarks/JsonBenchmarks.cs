@@ -19,14 +19,17 @@ public class JsonBenchmarks
     public static long InputBytes(BenchmarkCase benchmarkCase) =>
         JsonInputs.Utf8Length((string)benchmarkCase.Parameters[nameof(Input)]!);
 
+    [BenchmarkCategory("Gate")]
     [Benchmark]
     public JsonValue Creole() =>
         CreoleJson.Parse(_text);
 
+    [BenchmarkCategory("Gate")]
     [Benchmark]
     public JsonValue Parlot() =>
         ParlotJson.Parse(ParlotJson.Interpreted, _text);
 
+    [BenchmarkCategory("Gate")]
     [Benchmark]
     public JsonValue Pidgin() =>
         PidginJson.Parse(_text);

@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Creole is a proposed parser-combinator library for .NET 11 and C# 15: layered streaming pipelines with feedback, grammars as inspectable data with build-time analysis, and staged compilation through a Roslyn source generator. Phase 0 is built except its gate: the node model, primitives, sequencing, choice, repetition, `Longest`, control nodes, `Rec` with cycle lowering, `Expression.Build`, `Bind` and query syntax, plan lowering, the error model, furthest-failure reporting (ERR-02), and the whole interpreter epic: the core combinators, `Bind`, `Where`, `Expression.Build` and `Custom`, the lowering rewrites, the `Longest` DFA compiler and its bounded construction (INT-06, INT-09), the recursion depth limit and the public `Parse` API over text and tokens (INT-08, INT-11). The Phase 0 speed gate (BENCH-01) is next.
+Creole is a proposed parser-combinator library for .NET 11 and C# 15: layered streaming pipelines with feedback, grammars as inspectable data with build-time analysis, and staged compilation through a Roslyn source generator. Phase 0 is complete: the node model, primitives, sequencing, choice, repetition, `Longest`, control nodes, `Rec` with cycle lowering, `Expression.Build`, `Bind` and query syntax, plan lowering, the error model, furthest-failure reporting (ERR-02), and the whole interpreter epic: the core combinators, `Bind`, `Where`, `Expression.Build` and `Custom`, the lowering rewrites, the `Longest` DFA compiler and its bounded construction (INT-06, INT-09), the recursion depth limit and the public `Parse` API over text and tokens (INT-08, INT-11). Its speed gate passed (BENCH-01: 0.24× Pidgin, 1.37× Parlot), after ADR-0026 on how often user functions run, ADR-0027 on recording failures only when a parse fails, and table-driven character tests. Phase 1, layers, is next.
 
 ## How you work here
 
@@ -83,6 +83,7 @@ The SDK is pinned in `global.json` (.NET 11 RC 2). On this machine the system `d
 | One test | `dotnet test --project tests/Creole.Tests --filter-method "*TestName"` |
 | Benchmarks | `dotnet run -c Release --project benchmarks/Creole.Benchmarks` (`-- --filter '*Json*' --job short` to narrow; see benchmarks/README.md) |
 | Compare benchmark runs | `python3 scripts/bench-compare.py <old-run> <new-run>` |
+| Phase 0 gate | Three runs of `dotnet run -c Release --project benchmarks/Creole.Benchmarks -- --anyCategories Gate`, then `python3 scripts/bench-gate.py <run> <run> <run>` |
 | Pack | `dotnet pack src/Creole -c Release` |
 | AOT smoke | `dotnet publish tests/Creole.AotSmoke -c Release` |
 

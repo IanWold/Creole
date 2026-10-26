@@ -14,6 +14,7 @@ The Phase 3 release gate: both engines agree on value, consumed position, every 
 ## Scope
 
 - Random grammar generator plus input generator (valid inputs and near misses, reusing TOOL-04).
+- Generated grammars use only pure value functions and deterministic decision functions, and the comparison ignores how often a function runs ([ADR-0026](../../docs/decisions/0026-engines-may-skip-unused-values-and-repeat-user-functions.md)).
 - Generated-engine compilation of random grammars inside tests.
 - Random pipelines with layer state and a mode channel beside single-layer grammars, reusing MODE-06's reference re-lexer, so generated layers and mode rollback are compared too ([Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 13).
 - Compare against the interpreter lowered with no rewrites (`LoweringOptions.None`) as well as with all of them, so a bug in code both engines share, such as `CommitAutomaton`, still shows ([Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 13).

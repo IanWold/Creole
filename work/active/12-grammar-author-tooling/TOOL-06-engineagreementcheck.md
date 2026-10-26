@@ -13,6 +13,7 @@ Give users the same agreement check the library's CI uses.
 ## Scope
 
 - `Creole.Testing.EngineAgreement.Check(grammar, inputs)`.
+- Engines agree only on grammars whose functions follow [ADR-0026](../../docs/decisions/0026-engines-may-skip-unused-values-and-repeat-user-functions.md). A mismatch on a user's grammar can mean an impure function, so the report says so.
 - Compare against the interpreter with and without its lowering rewrites, as GEN-08 does. `LoweringOptions` is internal, so `Creole.Testing` needs a way to choose ([Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 13).
 
 ## Acceptance criteria
