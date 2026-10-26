@@ -490,7 +490,7 @@ public class DiagnosticRenderingTests
     public void AnySpanRendersInTheSameShape()
     {
         var gen =
-            from parts in Gen.OneOfConst("a", " ", "\t", "\r", "\n", "\r\n", "\u4E2D", "e\u0301", "\U0001F44D", "\u200D", "\u001B", "\uD800").Array[0, 30]
+            from parts in Gen.OneOf("a", " ", "\t", "\r", "\n", "\r\n", "\u4E2D", "e\u0301", "\U0001F44D", "\u200D", "\u001B", "\uD800").Array[0, 30]
             let text = string.Concat(parts)
             from start in Gen.Int[0, text.Length]
             from end in Gen.Int[start, text.Length]

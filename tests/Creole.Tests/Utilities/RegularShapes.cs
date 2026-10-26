@@ -26,7 +26,7 @@ internal static class RegularShapes
 
     public static Gen<Shape> Of(int depth, int atomicWeight = 1)
     {
-        var leaf = Gen.OneOfConst(
+        var leaf = Gen.OneOf(
             new Shape(Char('a').Ignore(), "a"),
             new Shape(Char('b').Ignore(), "b"),
             new Shape(Char('c').Ignore(), "c"),

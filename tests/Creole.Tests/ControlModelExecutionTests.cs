@@ -50,7 +50,7 @@ public class ControlModelExecutionTests
 
     private static Gen<ControlShape> Shapes(int depth)
     {
-        var leaf = Gen.OneOfConst<ControlShape>(new ControlShape.Chars("a"), new ControlShape.Chars("b"), new ControlShape.Chars("ab"), new ControlShape.Cut());
+        var leaf = Gen.OneOf<ControlShape>(new ControlShape.Chars("a"), new ControlShape.Chars("b"), new ControlShape.Chars("ab"), new ControlShape.Cut());
 
         if (depth <= 1)
         {
