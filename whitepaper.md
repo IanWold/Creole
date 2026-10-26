@@ -461,7 +461,7 @@ Two-pass designs that tokenize everything first hold the whole token list in mem
 
 ### Failure positions
 
-Each layer records its furthest failure as a buffer index plus an expectation-set handle, without allocating. A `ParseError` is built only for the failure that is finally reported. A failure reported behind the cursor, such as a rejected filter or a chained non-associative operator, captures the item its error needs by value and records the positions its span covers. A `Context` records the position of its first item. A layer over in-memory input maps those positions to source spans when it builds the error, which is exact because it holds every item until the parse ends. A streamed layer may have released those items by then, so it captures their spans by value when they are recorded. `Lookahead`, `Not`, `Longest`, filters and `Named` save the record on entry, so they can restore or relabel it on exit ([ADR-0021](work/docs/decisions/0021-how-failures-are-recorded-and-merged.md)).
+Each layer records its furthest failure as a buffer index plus references to the expectations recorded there, without allocating. A `ParseError` is built only for the failure that is finally reported. Over in-memory input, recording happens only in a second run: the first runs without a log, and only if it fails does the parse run again from the start with one. Decision functions are deterministic (§ Functions in grammars), so the second run takes the same path ([ADR-0027](work/docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)). A streamed parse records as it goes. A failure reported behind the cursor, such as a rejected filter or a chained non-associative operator, captures the item its error needs by value and records the positions its span covers. A `Context` records the position of its first item. A layer over in-memory input maps those positions to source spans when it builds the error, which is exact because it holds every item until the parse ends. A streamed layer may have released those items by then, so it captures their spans by value when they are recorded. `Lookahead`, `Not`, `Longest`, filters and `Named` save the record on entry, so they can restore or relabel it on exit ([ADR-0021](work/docs/decisions/0021-how-failures-are-recorded-and-merged.md)).
 
 ## Feedback between layers
 
@@ -597,7 +597,7 @@ error[parser]: expected ',' or '}'
 
 ### Recovery
 
-`p.Recover(strategy, fallback)` catches any failure of `p`, records a diagnostic, repairs the input position and returns `fallback`, often an explicit error node. It never re-runs `p`. A depth limit is not a failure it can catch (§ Limits for untrusted input). Before skipping, it restores the mode stack and layer state that held when `p` started, because a half-parsed construct's mode changes no longer apply. The restore is an ordinary mode change at the current position, so any lookahead lexed under the abandoned mode is invalidated. Strategies follow chumsky's catalogue:
+`p.Recover(strategy, fallback)` catches any failure of `p`, records a diagnostic, repairs the input position and returns `fallback`, often an explicit error node. It never re-runs `p`. It needs the failure log to build its diagnostic, so in a parse's first run, which has no log, the first failure it would catch ends that run, and the parse runs again with the log ([ADR-0027](work/docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)). A depth limit is not a failure it can catch (§ Limits for untrusted input). Before skipping, it restores the mode stack and layer state that held when `p` started, because a half-parsed construct's mode changes no longer apply. The restore is an ordinary mode change at the current position, so any lookahead lexed under the abandoned mode is invalidated. Strategies follow chumsky's catalogue:
 
 | Strategy | Behavior | Typical use |
 | --- | --- | --- |
@@ -626,6 +626,7 @@ The collection holds the text of the sources its errors point into, so `Diagnost
 - **Default.** `MaxDepth` defaults to 1,000 levels. `int.MaxValue` leaves only the stack check.
 - **The stack.** A count alone cannot promise that the stack never overflows, because the stack used per level depends on the grammar, the JIT tier and the thread. Past depth 20, each counted entry also calls `RuntimeHelpers.TryEnsureSufficientExecutionStack()`, as Roslyn's `StackGuard` does.
 - **Ending the parse.** Exceeding the depth or the stack ends the whole parse. No combinator inside it catches that, including `Not`, `Atomic` and `Recover`, so the limit never changes what a grammar accepts. The result is `Failed`. The depth diagnostic covers the item where the level would have started and names the cause: `MaxDepth` and its value, or the thread's stack.
+- **Failed parses.** A failed parse over in-memory input runs twice, first without a failure log and then with one ([ADR-0027](work/docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)), so it costs up to about twice a successful parse of the same input. The bound stays linear in the input.
 
 Recursion in user code is not counted. That includes `Select` and `Where` functions, custom scanners and code that builds grammars.
 
@@ -928,7 +929,7 @@ The interpreted engine must be at least as fast as Pidgin and within 1.5× of Pa
 - **Struct tokens with enum kinds**, so dispatch is a `switch` and tokens never box.
 - **Out-of-band spans**: 32-bit offsets relative to the segment base, stored beside each buffered item (two per item, four when the root is bytes) and widened to the public `long` `SourceSpan` only when read; no wrapper objects (§ Source spans).
 - **Pooled, segmented buffers** released at the bookmark horizon.
-- **Lazy errors**: failures record a position and an interned expectation-set handle; a `ParseError` object exists only for the reported failure.
+- **Lazy errors**: a parse over in-memory input records no failures until it has failed. It then runs again with a failure log and reports from that run, so a successful parse never pays for errors ([ADR-0027](work/docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)). The log holds a position and references to expectations each node creates once, in arrays each thread reuses. A `ParseError` object exists only for the reported failure.
 - **Vectorized character classes** through `SearchValues<char>`.
 - **Slices, not strings**: `Slice()` returns `ReadOnlyMemory<char>`; `Text()` is opt-in. Over in-memory input a slice is a view and allocates nothing; over streamed input it is a copy and costs about as much as `Text()` (§ Text capture).
 - **Value-type results** flow through generic plan nodes without boxing; skipped results use `Unit`.

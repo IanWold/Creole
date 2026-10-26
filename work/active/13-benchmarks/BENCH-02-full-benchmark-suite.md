@@ -15,6 +15,7 @@ The published benchmark suite across every engine.
 - JSON small to large, arithmetic expressions, indentation-sensitive language, large JSON-lines stream, inputs with many errors.
 - Every Creole engine (interpreted, generated) against the competitors in the plan.
 - Each benchmark grammar written side by side in Sprache for the migration guide.
+- The inputs-with-many-errors benchmark reports the cost of a failed parse, which runs twice over in-memory input ([ADR-0027](../../docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)).
 
 ## Acceptance criteria
 

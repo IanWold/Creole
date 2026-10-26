@@ -16,6 +16,7 @@ Decide the public surface that generated code calls to agree with the interprete
   - the cursor's cut flag, depth counting, `Reset` and `Since`;
   - failure recording: `Fail`, `FailAll`, `Reject`, `Relabel`, the save and restore marks, and context frames;
   - `Expected`, `FailureMark`, `DepthExceededException`, `StagedParse` and `Staging`.
+- Generated code runs with no failure log as well as with one, and behaves alike in both, because a parse's first run has none ([ADR-0027](../../docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)).
 
   The public `Cursor<T>` offers only `Advance`, `TryPeek`, `TryRead`, `Available`, `IsAtEnd` and `Position`.
 - Choose the granularity: raw cursor hooks, or coarser helpers hidden from IntelliSense (`[EditorBrowsable(Never)]`). Whatever is chosen becomes 1.0 contract at REL-04. Exposing today's internals as they stand would freeze [ADR-0021](../../docs/decisions/0021-how-failures-are-recorded-and-merged.md)'s recording protocol.
