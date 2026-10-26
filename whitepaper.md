@@ -269,7 +269,7 @@ An `Atomic` keeps a failure if a cut passed inside it is still in force; a cut p
 
 ### Longest match
 
-`Longest(p1, ..., pn)` runs every alternative atomically from the same position and keeps the one that consumed the most input; ties go to the earliest. This is the maximal-munch rule lexers need (`<=` beats `<`, `iffy` beats `if`), expressed as an ordinary combinator that also works at token level. When all alternatives are regular (§ Properties), engines compile it to a single DFA instead of n attempts.
+`Longest(p1, ..., pn)` runs every alternative atomically from the same position and keeps the one that consumed the most input; ties go to the earliest. This is the maximal-munch rule lexers need (`<=` beats `<`, `iffy` beats `if`), expressed as an ordinary combinator that also works at token level. When all alternatives are regular (§ Properties), engines compile it to a single DFA instead of n attempts. The DFA computes only the winner's value, so value functions on the other alternatives may not run (§ Functions in grammars).
 
 The DFA agrees with the interpreter, and that is not always what an alternative's regex reading suggests. On `1.x`, `Seq(Digits, Optional(Seq(Char('.'), Digits)))` does not match at all, because `Optional` fails once its item has consumed the `.`. A regex would match `1`. Writing the fraction as `Optional(Atomic(Seq(Char('.'), Digits)))` gives the regex behaviour ([ADR-0017](work/docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md)).
 
@@ -349,6 +349,19 @@ static readonly Parser<char, ReadOnlyMemory<char>> RawStringToken = Custom(new R
 A failed `Custom` expects its `Name`, or failing that its `First` set, as one expectation. With neither, it records a failure with no expectation, as `Satisfy` does ([ADR-0021](work/docs/decisions/0021-how-failures-are-recorded-and-merged.md)). `Scan` only says yes or no, so it cannot explain a failure such as an unterminated raw string. A scanner that wants to succeeds instead: it consumes the malformed text and returns a value that marks it. The grammar then binds that value and calls `Fail(message)`, which is committed because input was consumed.
 
 Analysis trusts the declaration. Debug builds and the tracing interpreter check it on every call and report CRL0206 when a scanner breaks it. Inside a `Longest`, engines run the scanner alongside the DFA whenever the next character is in its declared FIRST set, so a lexer with one custom token can still be fused. `Custom` is a single node kind like any other, so every engine still handles every node (§ Types).
+
+### Functions in grammars
+
+User code in a grammar has one of two roles, and engines treat them differently ([ADR-0026](work/docs/decisions/0026-engines-may-skip-unused-values-and-repeat-user-functions.md)):
+
+| Role | Members | An engine may | The function must be |
+| --- | --- | --- | --- |
+| Value function | `Select`, on one value and on a `Seq` tuple; a query's result selector; a `Match` case's combine function; `Expression.Build`'s operator functions | Run it more than once, and run or skip it for a value the parse does not use | Pure: its result depends only on its arguments |
+| Decision function | `Where`, `Bind`, `Satisfy`, a custom scanner's `Scan`, the function of a layer's `p.Scan` (it returns layer state), and the members of item and key types that Creole calls, such as `Equals` and a token's `Kind` | Run it more than once, and skip it only where the outcome is already known | Deterministic: the same arguments give the same result, within a parse and when the parse runs again |
+
+Engines compute every value the parse uses: one that reaches the result, or one that a decision function, `Switch` or `Match` reads. Values the parse does not use include a losing `Longest` alternative's, those inside `Lookahead` and `Not`, those that `As`, `Ignore` or a skip form discards, and those from an attempt that is rolled back. So a compiled `Longest` computes only the winner's value, generated code need not compute values nobody reads, and a reused result (§ Incremental re-parsing) runs none of its rule's functions. A decision function is skipped only where dispatch has ruled out its alternative or a reused result already holds its outcome.
+
+No engine promises how many times a function runs, and a grammar must not rely on side effects in either role. State that a parse needs belongs in layer-local state (§ Feedback between layers), which backtracking restores. A value function should not throw on a value its parser can produce. If one does, `Parse` throws whenever an engine runs it, and whether an engine runs it for an unused value is not specified. Members that display items in errors, `Describe` and `ToString`, must be deterministic too. Code that builds a grammar, such as `Rec`'s reference, `Expression.Build`'s table and a scanner's `Info`, runs when its member says and is outside these rules.
 
 ## Layers, streams and pipelines
 
@@ -736,8 +749,8 @@ On first use, a grammar is lowered to an execution plan and cached in a `Conditi
 - A `Longest` over regular character alternatives (§ Properties) compiles to DFA tables that follow commit semantics, not regex semantics ([ADR-0017](work/docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md)). A match records no failure, because a successful `Longest` restores the furthest failure. When nothing matches, the alternatives run again on the interpreter, which records their failures ([ADR-0022](work/docs/decisions/0022-a-successful-longest-restores-the-furthest-failure.md)). Other regular subtrees compile only where a measurement shows a gain. None has yet: as one automaton, a character-level JSON token choice ran about 0.6× as fast as with dispatch and scans.
   - **How choices resolve.** A choice resolves as soon as a path through its first branch consumes input outside any `Atomic`, or finishes the branch. A match discards every lower-priority path.
   - **`Longest`.** It becomes one automaton with a register per alternative, and ties go to the earliest.
-  - **Size limits.** Lowering builds the tables in full. A subtree runs on the interpreter instead when its automaton would exceed a state cap, or when building it would exceed a work budget, a count of the paths the construction steps ([ADR-0025](work/docs/decisions/0025-automaton-construction-stops-at-a-state-cap-or-a-work-budget.md)). Either limit decides only which engine runs, never the result.
-  - **Values.** A value that is a function of the matched span is computed from the span: an `As` constant, a skip form's `Unit`, `Slice`, `Text`, or a `Select` over one of these. Any other value comes from re-running the winning alternative.
+  - **Size limits.** Lowering builds the tables in full. A subtree runs on the interpreter instead when its automaton would exceed a state cap, or when building it would exceed a work budget, a count of the paths the construction steps ([ADR-0025](work/docs/decisions/0025-automaton-construction-stops-at-a-state-cap-or-a-work-budget.md)). Either limit decides only which engine runs. For a grammar whose functions follow § Functions in grammars, that never changes the result.
+  - **Values.** A value that is a function of the matched span is computed from the span: an `As` constant, a skip form's `Unit`, `Slice`, `Text`, or a `Select` over one of these. Any other value comes from re-running the winning alternative. Only the winner's value functions run; the interpreter's `Longest` also runs the losers' ([ADR-0026](work/docs/decisions/0026-engines-may-skip-unused-values-and-repeat-user-functions.md)).
   - **Failures.** When the automaton finds no match, the interpreter re-runs the subtree and reports the failure, so errors never come from the tables.
 - Runs of a character class (`Letter.SkipMany()`, identifiers, whitespace) become a `SearchValues<char>` scan with `IndexOfAnyExcept`, which the runtime vectorizes.
 
@@ -780,7 +793,7 @@ private static bool Parse_Value(ref Cursor<JTok> c, out JsonValue result) { /* s
 
 ### Equivalence
 
-Both engines must agree on the value, the consumed position, every diagnostic's span and every expected set. They count depth at the same points, so they agree on a parse that `MaxDepth` ends. Where the stack check ends a parse depends on the thread and on each engine's frame sizes, so those parses are not compared (§ Limits for untrusted input). The library's CI runs property-based differential tests over randomly generated grammars and inputs. Users get the same check as `Creole.Testing.EngineAgreement.Check(grammar, inputs)`.
+Both engines must agree on the value, the consumed position, every diagnostic's span and every expected set, for every grammar whose functions follow § Functions in grammars. How often a function runs is not part of the agreement ([ADR-0026](work/docs/decisions/0026-engines-may-skip-unused-values-and-repeat-user-functions.md)). They count depth at the same points, so they agree on a parse that `MaxDepth` ends. Where the stack check ends a parse depends on the thread and on each engine's frame sizes, so those parses are not compared (§ Limits for untrusted input). The library's CI runs property-based differential tests over randomly generated grammars and inputs. Users get the same check as `Creole.Testing.EngineAgreement.Check(grammar, inputs)`.
 
 ### Considered and deferred
 

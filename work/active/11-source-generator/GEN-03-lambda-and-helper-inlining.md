@@ -13,6 +13,7 @@ No delegates on the hot path in generated code.
 ## Scope
 
 - Inline non-capturing lambdas passed to `Select`.
+- An inlined value function may be left out where its value is unused, and a decision function only where its outcome is known ([ADR-0026](../../docs/decisions/0026-engines-may-skip-unused-values-and-repeat-user-functions.md)).
 - Inline expression-bodied static helpers such as `Lexeme`.
 - Remove LINQ transparent-identifier allocations.
 

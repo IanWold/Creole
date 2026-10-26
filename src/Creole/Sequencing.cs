@@ -22,7 +22,7 @@ public static class Sequencing
         /// A parser that combines this parser's two results with <paramref name="selector"/>.
         /// </summary>
         /// <typeparam name="TResult">The type of value <paramref name="selector"/> produces. It is inferred; see the remarks.</typeparam>
-        /// <param name="selector">Combines the results, one parameter per element of the tuple.</param>
+        /// <param name="selector">Combines the results, one parameter per element of the tuple. It must be pure: an engine may run it more than once, or not at all when the parse does not use the result.</param>
         /// <param name="selectorExpression">Filled in by the compiler with the expression passed as <paramref name="selector"/>.</param>
         /// <param name="parserExpression">Filled in by the compiler with the expression this method is called on.</param>
         /// <returns>
@@ -55,7 +55,7 @@ public static class Sequencing
         /// A parser that combines this parser's three results with <paramref name="selector"/>.
         /// </summary>
         /// <typeparam name="TResult">The type of value <paramref name="selector"/> produces. It is inferred; see the remarks.</typeparam>
-        /// <param name="selector">Combines the results, one parameter per element of the tuple.</param>
+        /// <param name="selector">Combines the results, one parameter per element of the tuple. It must be pure: an engine may run it more than once, or not at all when the parse does not use the result.</param>
         /// <param name="selectorExpression">Filled in by the compiler with the expression passed as <paramref name="selector"/>.</param>
         /// <param name="parserExpression">Filled in by the compiler with the expression this method is called on.</param>
         /// <returns>
@@ -88,7 +88,7 @@ public static class Sequencing
         /// A parser that combines this parser's four results with <paramref name="selector"/>.
         /// </summary>
         /// <typeparam name="TResult">The type of value <paramref name="selector"/> produces. It is inferred; see the remarks.</typeparam>
-        /// <param name="selector">Combines the results, one parameter per element of the tuple.</param>
+        /// <param name="selector">Combines the results, one parameter per element of the tuple. It must be pure: an engine may run it more than once, or not at all when the parse does not use the result.</param>
         /// <param name="selectorExpression">Filled in by the compiler with the expression passed as <paramref name="selector"/>.</param>
         /// <param name="parserExpression">Filled in by the compiler with the expression this method is called on.</param>
         /// <returns>
@@ -121,7 +121,7 @@ public static class Sequencing
         /// A parser that combines this parser's five results with <paramref name="selector"/>.
         /// </summary>
         /// <typeparam name="TResult">The type of value <paramref name="selector"/> produces. It is inferred; see the remarks.</typeparam>
-        /// <param name="selector">Combines the results, one parameter per element of the tuple.</param>
+        /// <param name="selector">Combines the results, one parameter per element of the tuple. It must be pure: an engine may run it more than once, or not at all when the parse does not use the result.</param>
         /// <param name="selectorExpression">Filled in by the compiler with the expression passed as <paramref name="selector"/>.</param>
         /// <param name="parserExpression">Filled in by the compiler with the expression this method is called on.</param>
         /// <returns>
@@ -154,7 +154,7 @@ public static class Sequencing
         /// A parser that combines this parser's six results with <paramref name="selector"/>.
         /// </summary>
         /// <typeparam name="TResult">The type of value <paramref name="selector"/> produces. It is inferred; see the remarks.</typeparam>
-        /// <param name="selector">Combines the results, one parameter per element of the tuple.</param>
+        /// <param name="selector">Combines the results, one parameter per element of the tuple. It must be pure: an engine may run it more than once, or not at all when the parse does not use the result.</param>
         /// <param name="selectorExpression">Filled in by the compiler with the expression passed as <paramref name="selector"/>.</param>
         /// <param name="parserExpression">Filled in by the compiler with the expression this method is called on.</param>
         /// <returns>
@@ -187,7 +187,7 @@ public static class Sequencing
         /// A parser that combines this parser's seven results with <paramref name="selector"/>.
         /// </summary>
         /// <typeparam name="TResult">The type of value <paramref name="selector"/> produces. It is inferred; see the remarks.</typeparam>
-        /// <param name="selector">Combines the results, one parameter per element of the tuple.</param>
+        /// <param name="selector">Combines the results, one parameter per element of the tuple. It must be pure: an engine may run it more than once, or not at all when the parse does not use the result.</param>
         /// <param name="selectorExpression">Filled in by the compiler with the expression passed as <paramref name="selector"/>.</param>
         /// <param name="parserExpression">Filled in by the compiler with the expression this method is called on.</param>
         /// <returns>
@@ -220,7 +220,7 @@ public static class Sequencing
         /// A parser that combines this parser's eight results with <paramref name="selector"/>.
         /// </summary>
         /// <typeparam name="TResult">The type of value <paramref name="selector"/> produces. It is inferred; see the remarks.</typeparam>
-        /// <param name="selector">Combines the results, one parameter per element of the tuple.</param>
+        /// <param name="selector">Combines the results, one parameter per element of the tuple. It must be pure: an engine may run it more than once, or not at all when the parse does not use the result.</param>
         /// <param name="selectorExpression">Filled in by the compiler with the expression passed as <paramref name="selector"/>.</param>
         /// <param name="parserExpression">Filled in by the compiler with the expression this method is called on.</param>
         /// <returns>

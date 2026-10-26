@@ -13,6 +13,8 @@ A scanner has two members:
 | `ScannerInfo Info` | Declares whether the scanner can match empty input, which characters it can start with, and what error messages call it. |
 | `bool Scan(ref Cursor<TIn> cursor, out TOut value)` | Reads one token. On success it moves the cursor past the token and returns `true`. On failure it returns `false` and leaves the cursor where it was. |
 
+`Scan` must give the same answer every time it is called at the same position, because Creole may call it more than once there. Keep no state in the scanner between calls (see [How often your functions run](sequencing.md#how-often-your-functions-run)).
+
 This scanner reads Rust-style raw strings: `r`, any number of `#`, a quote, the text, then a quote followed by the same number of `#`. It is taken from the tests ([RawStringSampleTests.cs](../../tests/Creole.Tests/Samples/RawStringSampleTests.cs)).
 
 ```csharp

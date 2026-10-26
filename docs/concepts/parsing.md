@@ -37,7 +37,7 @@ A parser can be run from several threads at once. Each parse keeps its own state
 - `Parse` never returns `Recovered<T>` yet. Recovery arrives with ERR-05.
 - `Parse` never returns `default(ParseResult<T>)`, so a switch over its result needs no `null` arm.
 
-`Parse` throws `GrammarException` if the parser is null, which happens when a rule refers to one declared later in the class without `Rec`, or if the grammar is not valid, which is found when it first runs. It throws `ArgumentNullException` for a null string. Exceptions from your own code, such as a `Select` function or a custom scanner, pass through.
+`Parse` throws `GrammarException` if the parser is null, which happens when a rule refers to one declared later in the class without `Rec`, or if the grammar is not valid, which is found when it first runs. It throws `ArgumentNullException` for a null string. Exceptions from your own code, such as a `Select` function or a custom scanner, pass through. A `Select` function whose value the parse does not use may not run at all, so whether its exception is thrown can depend on how the grammar is run (see [How often your functions run](sequencing.md#how-often-your-functions-run)).
 
 ## Showing errors
 

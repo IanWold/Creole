@@ -11,7 +11,7 @@ public abstract partial class Grammar<TIn>
     /// <typeparam name="TBranch">The type <paramref name="branch"/> produces.</typeparam>
     /// <typeparam name="TOut">The type the <c>Match</c> produces.</typeparam>
     /// <param name="branch">The parser to run after the scrutinee when this case applies.</param>
-    /// <param name="combine">Combines the union's case value and the branch's result into the result of the <c>Match</c>.</param>
+    /// <param name="combine">Combines the union's case value and the branch's result into the result of the <c>Match</c>. It must be pure: an engine may run it more than once, or not at all when the parse does not use the result.</param>
     /// <param name="branchExpression">
     /// The caller's expression for <paramref name="branch"/>, used in the error message.
     /// The compiler fills it in; do not pass it.

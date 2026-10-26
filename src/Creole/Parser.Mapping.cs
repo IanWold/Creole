@@ -27,7 +27,7 @@ public abstract partial class Parser<TIn, TOut>
     /// The type of value <paramref name="selector"/> produces.
     /// Give it explicitly to let a union's implicit conversion apply: <c>Kind(J.String).Select&lt;JsonValue&gt;(t =&gt; new JsonString(t.Text))</c>.
     /// </typeparam>
-    /// <param name="selector">Transforms this parser's result. It runs once per match and should not have side effects.</param>
+    /// <param name="selector">Transforms this parser's result. It must be pure: an engine may run it more than once, or not at all when the parse does not use the result.</param>
     /// <param name="selectorExpression">Filled in by the compiler with the expression passed as <paramref name="selector"/>.</param>
     /// <returns>A parser that matches the same input as this parser.</returns>
     /// <exception cref="GrammarException"><paramref name="selector"/> is null.</exception>
