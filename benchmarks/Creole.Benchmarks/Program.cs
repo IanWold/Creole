@@ -10,6 +10,10 @@ using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
 using Creole.Benchmarks;
 
+var artifacts = Path.Combine("BenchmarkDotNet.Artifacts", "runs", DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture));
+
+RunManifest.Create(args).Write(artifacts);
+
 BenchmarkSwitcher
     .FromAssembly(typeof(ThroughputColumn).Assembly)
     .Run(
@@ -22,5 +26,5 @@ BenchmarkSwitcher
             .AddExporter(JsonExporter.Full, MarkdownExporter.GitHub, CsvExporter.Default)
             .WithSummaryStyle(SummaryStyle.Default.WithRatioStyle(RatioStyle.Trend))
             .WithOrderer(new DefaultOrderer(SummaryOrderPolicy.Declared))
-            .WithArtifactsPath(Path.Combine("BenchmarkDotNet.Artifacts", "runs", DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)))
+            .WithArtifactsPath(artifacts)
     );

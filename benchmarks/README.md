@@ -10,22 +10,30 @@
 | One class | `dotnet run -c Release --project benchmarks/Creole.Benchmarks -- --filter '*Json*'` |
 | Quick, less precise | add `--job short` |
 | Check that it runs | add `--job dry` (one cold iteration; the numbers mean nothing) |
+| Only the gate benchmarks | `dotnet run -c Release --project benchmarks/Creole.Benchmarks -- --anyCategories Gate` |
 | Compare two runs | `python3 scripts/bench-compare.py <old-run> <new-run>` |
+| Check the Phase 0 gate | `python3 scripts/bench-gate.py <run> <run> <run>` |
 
 Without `--filter` the program runs every benchmark. Other arguments go to BenchmarkDotNet unchanged.
 
-Each run writes to a new folder under the current directory, `BenchmarkDotNet.Artifacts/runs/<UTC yyyyMMdd-HHmmss>/`, with full JSON, GitHub Markdown, CSV and HTML reports per class. The folder is git-ignored. `bench-compare.py` matches benchmarks by full name and prints mean time and allocation with new/old ratios. It warns when the two runs used different hardware or runtimes.
+Each run writes to a new folder under the current directory, `BenchmarkDotNet.Artifacts/runs/<UTC yyyyMMdd-HHmmss>/`, with full JSON, GitHub Markdown, CSV and HTML reports per class. Its `run.json` records the commit, whether the working tree had uncommitted changes, the Parlot and Pidgin versions, and the arguments. The folder is git-ignored. `bench-compare.py` matches benchmarks by full name and prints mean time and allocation with new/old ratios. It warns when the two runs used different hardware or runtimes.
 
 ## Gate runs
 
 Phase gates compare Creole with its baselines as ratios ([ADR-0003](../work/docs/decisions/0003-numeric-gate-thresholds.md); thresholds in § [Roadmap](../whitepaper.md#roadmap)). A gate run:
 
-- runs on the maintainer's laptop, on AC power, with no other heavy load;
-- uses the default job, with Creole and its baselines in the same invocation;
-- repeats the full run three times and takes each benchmark's median ratio, then the geometric mean over the gate's benchmarks;
-- records the Parlot version.
+- runs on the maintainer's laptop, on AC power, with no other heavy load, from a working tree with no uncommitted changes;
+- runs the gate benchmarks three times with the default job, Creole and its baselines in the same invocation:
 
-Single runs on this machine vary by up to 1.3× per benchmark, so one run decides nothing. Allocations do not vary and can be compared directly. Hosted CI runners only catch regressions of 10% or more and do not decide gates.
+  ```sh
+  for i in 1 2 3; do dotnet run -c Release --project benchmarks/Creole.Benchmarks -- --anyCategories Gate; done
+  ```
+
+- is checked with `python3 scripts/bench-gate.py <run> <run> <run>`. For each benchmark the script takes the median over the three runs of Creole's ratio to each baseline, then the geometric mean over the gate's benchmarks, and compares them with the Phase 0 thresholds. It stops if the runs measured different commits or Parlot versions, and warns about uncommitted changes, a job other than the default, or a different host.
+
+The gate benchmarks carry the `Gate` category: `Creole`, `Pidgin` and `Parlot` in `JsonBenchmarks`, and `Creole`, `PidginFolds` and `Parlot` in `ArithmeticBenchmarks`. Each run's `run.json` records the commit and the Parlot version, as ADR-0003 requires. The other benchmarks decide no gate, so a gate run leaves them out.
+
+Single runs on this machine vary by up to 1.3× per benchmark, so one run decides nothing. Allocations do not vary and can be compared directly. No CI workflow runs the benchmarks.
 
 ## What is measured
 

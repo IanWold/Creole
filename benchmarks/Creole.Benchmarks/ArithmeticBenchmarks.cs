@@ -7,6 +7,7 @@ public class ArithmeticBenchmarks
 {
     private readonly IReadOnlyList<string> _expressions = ArithmeticInputs.Expressions;
 
+    [BenchmarkCategory("Gate")]
     [Benchmark(OperationsPerInvoke = ArithmeticInputs.Count)]
     public double Creole()
     {
@@ -31,6 +32,7 @@ public class ArithmeticBenchmarks
         return sum;
     }
 
+    [BenchmarkCategory("Gate")]
     [Benchmark(OperationsPerInvoke = ArithmeticInputs.Count)]
     public double Parlot()
     {
@@ -55,6 +57,7 @@ public class ArithmeticBenchmarks
         return sum;
     }
 
+    [BenchmarkCategory("Gate")]
     [Benchmark(OperationsPerInvoke = ArithmeticInputs.Count)]
     public double PidginFolds()
     {
