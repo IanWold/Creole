@@ -25,6 +25,7 @@ public class ParseResultTests
     [
         "Creole.Parsing: Creole.ParseResult`1[TOut] Parse[TOut](Creole.Parser`2[System.Char,TOut], System.String, System.String, Creole.ParseOptions, System.String)",
         "Creole.Parsing: Creole.ParseResult`1[TOut] Parse[TOut](Creole.Parser`2[System.Char,TOut], System.ReadOnlyMemory`1[System.Char], System.String, Creole.ParseOptions, System.String)",
+        "Creole.Parsing: Creole.ParseResult`1[TOut] Parse[TIn,TOut](Creole.Parser`2[TIn,TOut], System.ReadOnlyMemory`1[TIn], Creole.ParseOptions, System.String)",
     ];
     private static readonly Diagnostics _oneError = new([new ParseError(new SourceSpan(SourceId.Unnamed, 3, 4), "parser", new UnexpectedItem("'x'"), [new ExpectedItem("','")], [])]);
 
@@ -154,6 +155,11 @@ public class ParseResultTests
     {
         Parser<char, char> nested = null!;
         nested = CharGrammar.Char('[').Then(Grammar<char>.Rec(() => nested)).Or(CharGrammar.Char('x'));
+        Parser<int, int> nestedItems = null!;
+        nestedItems = Grammar<int>.Token(0).Then(Grammar<int>.Rec(() => nestedItems)).Or(Grammar<int>.Token(1));
+        int[] one = [1];
+        int[] two = [2];
+        int[] deep = [0, 0, 1];
         var shallow = new ParseOptions { MaxDepth = 1 };
         ParseResult<char>[] results =
         [
@@ -164,8 +170,15 @@ public class ParseResultTests
             nested.Parse("y".AsMemory()),
             nested.Parse("[[x".AsMemory(), options: shallow),
         ];
+        ParseResult<int>[] itemResults =
+        [
+            nestedItems.Parse(one),
+            nestedItems.Parse(two),
+            nestedItems.Parse(deep, options: shallow),
+        ];
 
         Assert.All(results, result => Assert.NotNull(result.Value));
+        Assert.All(itemResults, result => Assert.NotNull(result.Value));
     }
 
     [Fact]

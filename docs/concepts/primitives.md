@@ -115,6 +115,8 @@ public sealed class JsonTokens : TokenGrammar<JTok, J>
 }
 ```
 
+Run a token rule on an array of tokens with `Parse`, as in `JsonTokens.Comma.Parse(tokens)` ([Running a parser § Token input](parsing.md#token-input)).
+
 - Both fail without consuming input on a token of another kind or case, or at the end of input.
 - Kinds make analysis precise: two `Kind` parsers with different kinds never match the same token.
 - `Case<T>()` is for tokens declared as a C# union, and it throws a `GrammarException` if `TToken` is not a union. It does not check that `T` is one of the union's cases; a parser for a type that is not a case never matches.

@@ -26,6 +26,8 @@ var parsed = Lists.Depth.Parse("[[x]]") switch
 if (parsed != 2
     || !Lists.Depth.Parse("[[y]]".AsMemory(), source: "smoke.txt").Diagnostics.Render().Contains(" --> smoke.txt:1:3", StringComparison.Ordinal)
     || Lists.Depth.Parse("[[x]]", options: new ParseOptions { MaxDepth = 1 }).Value is not Failed
+    || TokenLists.Count.Parse(new[] { new Tok(K.Word, "a"), new Tok(K.Comma, ","), new Tok(K.Word, "b") }).Value is not Parsed<int> { Value: 2 }
+    || TokenLists.Count.Parse(new[] { new Tok(K.Word, "a"), new Tok(K.Word, "b") }).Diagnostics.Render() != "error[parser] at 1..2: unexpected word b; expected ',' or end of input"
 )
 {
     return 1;
@@ -103,6 +105,12 @@ internal readonly record struct Tok(K Kind, string Text) : IKinded<K>
 }
 
 internal readonly record struct Plain(K Kind) : IKinded<K>;
+
+internal class TokenLists : TokenGrammar<Tok, K>
+{
+    public static readonly Parser<Tok, int> Count =
+        Kind(K.Word).SepBy(Kind(K.Comma)).Before(End).Select(static words => words.Count);
+}
 
 internal static class Tokens
 {
