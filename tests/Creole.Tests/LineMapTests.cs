@@ -155,7 +155,7 @@ public class LineMapTests
 
     [Fact]
     public void MatchesALineByLineModelForAnyChunking() =>
-        Gen.OneOfConst("a", "b", "\r", "\n", "\r\n", "\U0001F600", "\uD800", "\uDC00")
+        Gen.OneOf("a", "b", "\r", "\n", "\r\n", "\U0001F600", "\uD800", "\uDC00")
             .Array[0, 40]
             .Select(Gen.Int[1, 7])
             .Sample((parts, chunkSize) =>
