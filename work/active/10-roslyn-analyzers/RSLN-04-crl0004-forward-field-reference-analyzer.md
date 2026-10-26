@@ -24,6 +24,7 @@ The most common bug in Sprache and Pidgin grammars: a field initializer reads a 
 ## Blocked by
 
 - [FND-02 Repository and solution scaffolding](../01-foundations/FND-02-repository-and-solution-scaffolding.md)
+- [FND-09 Move to the .NET 11 GA SDK](../01-foundations/FND-09-move-to-the-net-11-ga-sdk.md)
 - [CORE-09 Recursion with Rec](../02-core-combinators/CORE-09-recursion-with-rec.md)
 
 ## Unblocks
@@ -34,3 +35,7 @@ The most common bug in Sprache and Pidgin grammars: a field initializer reads a 
 ## Whitepaper references
 
 - [§ Diagnostics](../../../whitepaper.md#diagnostics)
+
+## Progress notes
+
+- 2026-10-26 (Not started): Now blocked by FND-09, by the maintainer, so the analyzer is written against the GA Roslyn packages rather than RC 2. Moved from Phase 2, wave 1, to wave 2. Next: start when FND-09 is done.

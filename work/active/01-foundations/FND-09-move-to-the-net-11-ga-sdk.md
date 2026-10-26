@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | Epic | [Foundations](../../README.md#fnd--foundations) |
-| Phase | Phase 1 — Layers |
+| Phase | Phase 2 — Analysis |
 | Status | Not started |
 
 ## Summary
@@ -37,6 +37,7 @@ Creole is built and tested on the .NET 11 RC 2 SDK. When .NET 11 and C# 15 reach
 
 ## Unblocks
 
+- [RSLN-04 CRL0004 forward field reference analyzer](../10-roslyn-analyzers/RSLN-04-crl0004-forward-field-reference-analyzer.md)
 - [REL-04 Public API review and freeze](../14-release/REL-04-public-api-review-and-freeze.md)
 
 ## Whitepaper references
@@ -48,3 +49,4 @@ Creole is built and tested on the .NET 11 RC 2 SDK. When .NET 11 and C# 15 reach
 
 - 2026-10-19 (Not started): Moved from Phase 0 to Phase 1, wave 1, by the maintainer: GA is unlikely before Phase 0 ends, and no Phase 0 card depends on this one. Phase 0 work continues on RC 2. Next: start when .NET 11 GA ships.
 - 2026-10-19 (Not started): Correction to the note above: the card is in Phase 1, wave 3, not wave 1. Waves count dependency depth across phases, and CORE-04 puts this card at the same depth as SPAN-04. Next: start when .NET 11 GA ships.
+- 2026-10-26 (Not started): Moved from Phase 1 to Phase 2, wave 1, by the maintainer. Its depth (5) matches CORE-14, the shallowest Phase 2 card. It now blocks RSLN-04, so the first Roslyn analyzer is written against the GA Roslyn packages, not RC 2. REL-04 in Phase 3 still depends on it. Next: start when .NET 11 GA ships.
