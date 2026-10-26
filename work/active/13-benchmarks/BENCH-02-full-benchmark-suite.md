@@ -28,6 +28,7 @@ The published benchmark suite across every engine.
 - [STRM-02 Restart protocol and ParseManyAsync](../08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md)
 - [GEN-05 Generated DFAs, scans and jump tables](../11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md)
 - [GEN-06 Generated layers, modes, recovery and streaming](../11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md)
+- [BENCH-04 Revisit string handling in the JSON benchmark grammar](BENCH-04-revisit-string-handling-in-the-json-benchmark-grammar.md)
 
 ## Unblocks
 
