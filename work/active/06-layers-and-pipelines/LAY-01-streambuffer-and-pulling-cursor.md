@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Layers, buffers and pipelines](../../README.md#lay--layers-buffers-and-pipelines) |
 | Phase | Phase 1 — Layers |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -18,13 +18,14 @@ Each layer boundary is a memoizing buffer, so a rewind is an index reset and ups
 - Release segments below the retention horizon back to the pool.
 - Back `Cursor<TIn>` with the buffer, keeping the in-segment fast path.
 - A slice taken over the buffer is a copy, never a view of a pooled segment ([ADR-0013](../../docs/decisions/0013-slices-view-in-memory-input-and-copy-streamed-input.md)).
-- A `Context` frame captures the span of its first item by value when it is entered, because the buffer may release that item before an error is built ([ADR-0021](../../docs/decisions/0021-how-failures-are-recorded-and-merged.md) point 4). So do a filter, for the start of the value it may reject, and a chained non-associative operator, for its start and end ([ADR-0014](../../docs/decisions/0014-a-rejected-filter-reports-at-the-start-of-the-value.md) point 6). ERR-02 records positions: a filter and a chained operator capture their first item by value, a `Context` records only where it started, and `FailureLog<T>` maps positions to spans when it builds the error. That is exact for in-memory input, which holds every item until the parse ends.
-- Design the capture of a construct's first item (built in ERR-02) and of its span (above) as one mechanism, and make both obey mode invalidation. A construct that begins with `SetMode` must not keep an item that invalidation discards; Example C's `Operand` begins that way. This refines ADR-0014 point 6 and ADR-0021 point 4, so it needs a decision record ([Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 16).
+- Before a segment is released, copy the item and span at each position the reading layer's failure log still refers to in it: the start of each open filter and chained operator, each `Context` frame's start, and the furthest failure's position and end ([ADR-0028](../../docs/decisions/0028-an-errors-items-are-copied-when-the-buffer-releases-them.md)). Over in-memory input nothing is released, so nothing is copied.
+- Constructs record positions only. `FilterPlan` and `ExpressionPlan` register their start with the failure log instead of peeking at it. `FailureLog<T>` and `FailureMark<T>` keep their item fields as the copy taken at release, and a `Context` frame gains room for a copied span. This changes ERR-02's code: behaviour over in-memory input does not change, and its tests pass unchanged.
 
 ## Acceptance criteria
 
 - [ ] Each upstream item is produced exactly once per parse in tests without mode changes (guarantee 1).
 - [ ] A slice taken over the buffer keeps its text after its segment is released to the pool and reused (ADR-0013).
+- [ ] Over a buffer that has released the items involved, a rejected filter, a chained operator, a `Context` line and the furthest failure each report the same error as over in-memory input, including the furthest failure an `Atomic` rewound past in `Atomic(p).Or(q.Where(pred))` (ADR-0028).
 
 ## Blocked by
 
@@ -40,7 +41,16 @@ Each layer boundary is a memoizing buffer, so a rewind is an index reset and ups
 
 - [§ The stream buffer](../../../whitepaper.md#the-stream-buffer)
 - [§ Guarantees](../../../whitepaper.md#guarantees)
+- [§ Failure positions](../../../whitepaper.md#failure-positions)
 
 ## Artifacts
 
 - [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements
+- [ADR-0028](../../docs/decisions/0028-an-errors-items-are-copied-when-the-buffer-releases-them.md) The items an error needs behind the cursor are copied when the buffer releases them, not when a construct starts
+
+## Progress notes
+
+- 2026-10-26 (Design): Started. The capture of a construct's first item and span (filters, chained operators, `Context`) needs a decision record that obeys mode invalidation before the buffer is built (Phase 0 review finding 16). Next: `/decide` on when and how the capture is taken; then Build.
+- 2026-10-26 (Design): Drafted ADR-0028 (Proposed). It recommends recording positions only and copying items and spans when the buffer releases their segment, which no mode change can make stale. Drafting also found that the furthest failure's own item has no rule on streamed input: `Atomic(p).Or(q.Where(pred))` reads a released item when the error is built. The record covers that case too. Next: the maintainer accepts, rejects or revises; on acceptance, update the whitepaper and LAY-01, MODE-02, LAY-08 and GEN-06, then Build.
+- 2026-10-26 (Design): ADR-0028 accepted. Whitepaper § Failure positions, § The stream buffer and § Mode channels updated; scope and criteria of LAY-01, MODE-02, LAY-08 and GEN-06 updated.
+- 2026-10-26 (Build): Started. Next: `/build` plans the buffer, the pulling cursor and the release-time copies. Before LAY-02 adds pins, the release horizon is the cursor, so the `Atomic` case of the new criterion needs `p` to stay within one segment or a horizon the test controls.

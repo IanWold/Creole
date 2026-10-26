@@ -20,6 +20,7 @@ A mode change discards items lexed under the old mode and re-produces them corre
 ## Acceptance criteria
 
 - [ ] Example C lexes `/` correctly in both `(a) / 2` and `if (ok) /x/.test(s)`.
+- [ ] A filter and a `Context` around Example C's `Operand`, which starts with `SetMode`, each report the item lexed under the new mode ([ADR-0028](../../docs/decisions/0028-an-errors-items-are-copied-when-the-buffer-releases-them.md)).
 
 ## Blocked by
 
