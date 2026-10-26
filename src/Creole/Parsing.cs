@@ -16,7 +16,7 @@ namespace Creole;
 /// </para>
 /// <para>
 /// A parse runs the grammar without recording failures. Only if it fails does it run the grammar again from the start, recording them, to build its error.
-/// So a successful parse pays nothing for errors, a failed parse costs up to about twice as much, and the grammar's functions run again when a parse fails.
+/// So a successful parse pays nothing for errors, a failed parse costs up to about two and a half times as much, and the grammar's functions run again when a parse fails.
 /// </para>
 /// </remarks>
 public static class Parsing

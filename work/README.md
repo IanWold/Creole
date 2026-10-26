@@ -6,7 +6,7 @@ This folder breaks the [Creole whitepaper](../whitepaper.md) into epics and work
 - Every work item lists what blocks it and what it unblocks. Blockers are hard dependencies: an item should not start until its blockers are done.
 - Phases follow the whitepaper's [Roadmap](../whitepaper.md#roadmap). An item can start as soon as its blockers are done, even if earlier phases still have unrelated work open.
 
-**Totals:** 18 epics, 128 work items.
+**Totals:** 18 epics, 129 work items.
 
 ## Roadmap
 
@@ -66,7 +66,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 7 | ✅ [INT-08](active/03-interpreter/INT-08-single-layer-parse-api.md) Single-layer Parse API | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [INT-07](active/03-interpreter/INT-07-recursion-depth-limit.md), [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) |
 | 7 | ✅ [INT-09](active/03-interpreter/INT-09-cheaper-automaton-construction.md) Cheaper automaton construction | [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md) |
 | 8 | ✅ [INT-11](active/03-interpreter/INT-11-single-layer-parse-over-token-input.md) Single-layer Parse over token input | [INT-08](active/03-interpreter/INT-08-single-layer-parse-api.md) |
-| 8 | [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) Phase 0 speed gate **(Phase 0 gate)** | [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md), [FND-10](active/01-foundations/FND-10-move-the-parlot-baselines-to-200.md), [INT-05](active/03-interpreter/INT-05-interpreter-lowering-rewrites.md), [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [INT-08](active/03-interpreter/INT-08-single-layer-parse-api.md), [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) |
+| 8 | ✅ [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) Phase 0 speed gate **(Phase 0 gate)** | [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md), [FND-10](active/01-foundations/FND-10-move-the-parlot-baselines-to-200.md), [INT-05](active/03-interpreter/INT-05-interpreter-lowering-rewrites.md), [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [INT-08](active/03-interpreter/INT-08-single-layer-parse-api.md), [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) |
 
 ### Phase 1 — Layers
 
@@ -97,6 +97,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 6 | [MODE-05](active/07-mode-channels/MODE-05-mode-payloads.md) Mode payloads | [MODE-01](active/07-mode-channels/MODE-01-mode-channels-and-layermodal.md) |
 | 6 | [STRM-02](active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md) Restart protocol and ParseManyAsync | [SPAN-06](active/05-source-spans/SPAN-06-byte-sources-and-the-decoding-layer.md), [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md), [STRM-01](active/08-streaming/STRM-01-starved-outcome.md) |
 | 6 | [STRM-04](active/08-streaming/STRM-04-huge-single-documents.md) Huge single documents | [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) |
+| 7 | [INT-12](active/03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md) Close the interpreter test gaps BENCH-01 left | [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) |
 | 7 | [MODE-03](active/07-mode-channels/MODE-03-rollback-rule.md) Rollback rule | [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) |
 | 7 | [MODE-04](active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md) Multi-layer invalidation cascade | [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) |
 | 7 | [STRM-03](active/08-streaming/STRM-03-streaming-diagnostics.md) Streaming diagnostics | [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md), [STRM-02](active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md) |
@@ -209,7 +210,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) Phase 0 speed gate (Building)
+None yet.
 
 ### Can start now
 
@@ -217,10 +218,12 @@ These items have all their blockers done:
 
 - [CORE-14](active/02-core-combinators/CORE-14-choices-beyond-16-alternatives.md) Choices beyond 16 alternatives
 - [INT-10](active/03-interpreter/INT-10-dispatched-longest-measured-against-the-automaton.md) Dispatched Longest, measured against the automaton
+- [INT-12](active/03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md) Close the interpreter test gaps BENCH-01 left
 - [ERR-08](active/04-errors-and-recovery/ERR-08-bound-rendered-diagnostics.md) Bound rendered diagnostics
 - [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) StreamBuffer and pulling cursor
 - [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md) Per-layer parse state
 - [RSLN-04](active/10-roslyn-analyzers/RSLN-04-crl0004-forward-field-reference-analyzer.md) CRL0004 forward field reference analyzer
+- [BENCH-04](active/13-benchmarks/BENCH-04-revisit-string-handling-in-the-json-benchmark-grammar.md) Revisit string handling in the JSON benchmark grammar
 
 ## Epics
 
@@ -279,6 +282,7 @@ Lowering grammar trees to cached execution plans and running them; the reference
 | ✅ [INT-09](active/03-interpreter/INT-09-cheaper-automaton-construction.md) Cheaper automaton construction | 0 | [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md) |
 | [INT-10](active/03-interpreter/INT-10-dispatched-longest-measured-against-the-automaton.md) Dispatched Longest, measured against the automaton | 2 | [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [INT-09](active/03-interpreter/INT-09-cheaper-automaton-construction.md) |
 | ✅ [INT-11](active/03-interpreter/INT-11-single-layer-parse-over-token-input.md) Single-layer Parse over token input | 0 | [INT-08](active/03-interpreter/INT-08-single-layer-parse-api.md) |
+| [INT-12](active/03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md) Close the interpreter test gaps BENCH-01 left | 1 | [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) |
 
 ### ERR — Errors, diagnostics and recovery
 
@@ -414,7 +418,7 @@ Phase gates and the published benchmark suite. Folder: [`active/13-benchmarks/`]
 
 | Work item | Phase | Blocked by |
 | --- | --- | --- |
-| [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) Phase 0 speed gate | 0 | [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md), [FND-10](active/01-foundations/FND-10-move-the-parlot-baselines-to-200.md), [INT-05](active/03-interpreter/INT-05-interpreter-lowering-rewrites.md), [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [INT-08](active/03-interpreter/INT-08-single-layer-parse-api.md), [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) |
+| ✅ [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) Phase 0 speed gate | 0 | [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md), [FND-10](active/01-foundations/FND-10-move-the-parlot-baselines-to-200.md), [INT-05](active/03-interpreter/INT-05-interpreter-lowering-rewrites.md), [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [INT-08](active/03-interpreter/INT-08-single-layer-parse-api.md), [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) |
 | [BENCH-02](active/13-benchmarks/BENCH-02-full-benchmark-suite.md) Full benchmark suite | 3 | [FND-05](active/01-foundations/FND-05-benchmark-harness.md), [ERR-07](active/04-errors-and-recovery/ERR-07-lexer-recovery-and-cascade-suppression.md), [STRM-02](active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md), [GEN-05](active/11-source-generator/GEN-05-generated-dfas-scans-and-jump-tables.md), [GEN-06](active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md), [BENCH-04](active/13-benchmarks/BENCH-04-revisit-string-handling-in-the-json-benchmark-grammar.md) |
 | [BENCH-03](active/13-benchmarks/BENCH-03-phase-3-speed-gate.md) Phase 3 speed gate | 3 | [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md), [FND-10](active/01-foundations/FND-10-move-the-parlot-baselines-to-200.md), [BENCH-02](active/13-benchmarks/BENCH-02-full-benchmark-suite.md) |
 | [BENCH-04](active/13-benchmarks/BENCH-04-revisit-string-handling-in-the-json-benchmark-grammar.md) Revisit string handling in the JSON benchmark grammar | 1 | [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) |

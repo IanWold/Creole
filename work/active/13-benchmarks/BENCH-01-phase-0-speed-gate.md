@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Benchmarks](../../README.md#bench--benchmarks) |
 | Phase | Phase 0 — Core |
-| Status | Building |
+| Status | Done |
 | Gate | Phase 0 gate |
 
 ## Summary
@@ -23,8 +23,8 @@ The Phase 0 gate: core tests green, and the interpreter at least as fast as Pidg
 
 ## Acceptance criteria
 
-- [ ] The decision records on value-function purity and on when failures are recorded are drafted, and the gate is measured in the configuration the accepted record on recording chooses.
-- [ ] The Phase 0 speed thresholds in [ADR-0003](../../docs/decisions/0003-numeric-gate-thresholds.md) are met (time: geometric mean ≤ 1.0× Pidgin, no benchmark above 1.25× Pidgin, geometric mean ≤ 1.5× Parlot; allocations ≤ Pidgin's on every benchmark), or the gap is understood and recorded.
+- [x] The decision records on value-function purity and on when failures are recorded are drafted, and the gate is measured in the configuration the accepted record on recording chooses.
+- [x] The Phase 0 speed thresholds in [ADR-0003](../../docs/decisions/0003-numeric-gate-thresholds.md) are met (time: geometric mean ≤ 1.0× Pidgin, no benchmark above 1.25× Pidgin, geometric mean ≤ 1.5× Parlot; allocations ≤ Pidgin's on every benchmark), or the gap is understood and recorded.
 
 ## Blocked by
 
@@ -38,6 +38,7 @@ The Phase 0 gate: core tests green, and the interpreter at least as fast as Pidg
 ## Unblocks
 
 - [BENCH-04 Revisit string handling in the JSON benchmark grammar](BENCH-04-revisit-string-handling-in-the-json-benchmark-grammar.md)
+- [INT-12 Close the interpreter test gaps BENCH-01 left](../03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md)
 
 ## Whitepaper references
 
@@ -70,3 +71,58 @@ The Phase 0 gate: core tests green, and the interpreter at least as fast as Pidg
 - 2026-10-26 (Building): The maintainer chose to build H2, the table-driven character-class plan, in this card as increment 7, and to keep the gate's JSON grammar, with its chunked strings, for Phase 0. Added [BENCH-04](BENCH-04-revisit-string-handling-in-the-json-benchmark-grammar.md) in Phase 1 to revisit the string handling; it blocks BENCH-02. Next: increment 7, build `CharClassPlan` with its tests and docs, then three gate runs.
 - 2026-10-26 (Building): Increment 7, H2 built. Character classes now lower to a sealed `CharClassPlan`, which looks an ASCII character up in a 128-entry table built with the plan and searches the set's ranges for any other. `ItemPlan` keeps `Any`, `Token`, `Satisfy` and `Kind`. A new exhaustive test, `PrimitiveExecutionTests.CharacterClassesMatchExactlyTheirSetOnEveryCharacter`, checks nine classes against their own sets on all 65,536 characters, including ranges that cross U+007F and U+0080. A throwaway mutation that leaves U+007F out of the table fails it. 1,523 of 1,523 tests pass. docs/engines/interpreter.md says how a class test runs and to prefer a class over `Satisfy`. `LoweringBenchmarks`' scan categories now compare against this faster plan, not the delegate. Next: three gate runs at the commit that holds this; if they pass, every criterion appears met.
 - 2026-10-26 (Building): The gate at 461a854, clean tree, Parlot 2.0.0, Pidgin 3.5.1: three default-job runs (20261026-202440, -202844, -203235), checked with `bench-gate.py`. **It passes.** Medians to Pidgin are 0.24 arithmetic and 0.20, 0.23 and 0.29 JSON small, medium and large: geometric mean 0.24, worst 0.29. Medians to Parlot are 1.00, 1.46, 1.45 and 1.70: geometric mean **1.37**. Allocation is 0.996× Pidgin's on JSON and 0.067× on arithmetic. The configuration is ADR-0027's (no failure log until a parse fails) with `CharClassPlan`. Creole runs with its depth limit on and Parlot with its own off, as benchmarks/README.md's known differences say. JSON large, at 1.70× Parlot, stays the widest gap; BENCH-04 revisits its string handling. Core tests: 1,523 of 1,523 pass on this content. Every acceptance criterion now appears met; next: the maintainer opens the PR and runs `/complete`.
+- 2026-10-26 (Building): ADR-0003's stale sentence about hosted runners now has a home: BENCH-03 drafts a record that supersedes ADR-0003 before the Phase 3 gate runs. Next: unchanged; the maintainer opens the PR and runs `/complete`.
+- 2026-10-26 (Done): Completed. A critic subagent recomputed the gate from the raw reports and checked the run protocol independently; it agreed on both criteria. Its finding that a failed parse costs more than "about twice" a successful one was right: 2.30× on medium JSON broken at its end. The whitepaper, docs and `Parsing`'s remarks now say "about two and a half times". The ADR-0026 and ADR-0027 index rows were completed.
+
+## Outcome
+
+The Phase 0 speed gate passes. The interpreter beats Pidgin by a wide margin and is within 1.5× of Parlot, in the configuration [ADR-0027](../../docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md) chose.
+
+**Gate evidence.** The runs were made at commit 461a854 from a clean tree, on the gate machine (i9-13900H, on AC power, checked before the runs), with .NET 11.0.0-rc.2, Parlot 2.0.0 and Pidgin 3.5.1. There were three default-job runs of the `Gate` benchmarks: 20261026-202440, 20261026-202844 and 20261026-203235, each with a `run.json`. `scripts/bench-gate.py` summarized them. A critic subagent recomputed the same figures from the raw reports.
+
+| Threshold ([ADR-0003](../../docs/decisions/0003-numeric-gate-thresholds.md)) | Measured | Result |
+| --- | --- | --- |
+| Time: geometric mean ≤ 1.0× Pidgin | 0.24 (arithmetic 0.24; JSON small, medium and large 0.20, 0.23, 0.29) | Pass |
+| Time: no benchmark above 1.25× Pidgin | 0.29 (JSON large) | Pass |
+| Time: geometric mean ≤ 1.5× Parlot | 1.37 (arithmetic 1.00; JSON 1.46, 1.45, 1.70) | Pass |
+| Allocations ≤ Pidgin's on every benchmark | 0.996× on JSON, 0.067× on arithmetic | Pass |
+
+Core tests are green: 1,523 of 1,523.
+
+**Delivered.**
+
+- **Gate benchmarks.** `CreoleJson` and `CreoleArithmetic` join `JsonBenchmarks` and `ArithmeticBenchmarks`, with agreement tests in `BaselineAgreementTests`.
+- **Fixes made before the gate ran** ([Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md)):
+  - `SepBy` lists start empty.
+  - A compiled `Longest` falls back to the interpreter when the automaton and the interpreter disagree.
+  - The lexer benchmarks return a token fingerprint and are checked with the automaton on and off.
+- **[ADR-0026](../../docs/decisions/0026-engines-may-skip-unused-values-and-repeat-user-functions.md).** Value functions are pure and may be skipped when their value is unused; decision functions are deterministic. The whitepaper gains § Functions in grammars. docs/concepts/sequencing.md gains "How often your functions run", and the XML docs follow.
+- **ADR-0027.** `Parse` runs without a failure log and runs again with one only if the parse fails (`src/Creole/Parsing.cs`). Increment 3 measured the decision on three configurations:
+
+  | Configuration | ÷ Parlot |
+  | --- | ---: |
+  | Always record | 1.93 |
+  | Re-run on failure | 1.53 |
+  | Cheaper recording | 1.86 |
+
+  `Execution.Error` checks every error test against one logged run, and `ParsingTests` covers every control shape to depth 3.
+- **`CharClassPlan`** (`src/Creole/Plans/CharClassPlan.cs`). A character class is tested through a 128-entry ASCII table. An exhaustive test covers all 65,536 characters. On its own this took arithmetic from 1.13× to about 1.0× Parlot, and the gate from 1.53× to 1.37×.
+- **Gate tooling.**
+  - Each run folder gets a `run.json` with its commit, whether the tree was clean, and the baseline versions (`RunManifest.cs`).
+  - The gate benchmarks carry a `Gate` category.
+  - `scripts/bench-gate.py` checks a gate from three run folders.
+  - benchmarks/README.md § Gate runs describes the procedure.
+
+**Deviations.**
+
+- **None from the whitepaper** beyond ADR-0026 and ADR-0027, which it now reflects.
+- **The gate's JSON grammar keeps its chunked strings**, by the maintainer's choice on 2026-10-26.
+- **ADR-0027's estimate was low.** It says a failed parse costs "about twice" a successful one; it measured 2.30×. The whitepaper and docs give the measured figure. The record is accepted and stays as written.
+
+**Follow-ups.**
+
+- [BENCH-04](BENCH-04-revisit-string-handling-in-the-json-benchmark-grammar.md) revisits the JSON grammar's string handling. Sliced strings ran 0.80–0.95× as long, and JSON large, at 1.70× Parlot, is the widest remaining gap.
+- [BENCH-03](BENCH-03-phase-3-speed-gate.md) drafts a record superseding ADR-0003, whose consequence about hosted runners is stale.
+- **Gaps the critic found:**
+  - [INT-12](../03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md) keeps a test of the fallback in `DfaLongestPlan.Rerun`. It also compares where runs with and without a failure log stop, which `Execution.Disagreement` cannot do through `Parse`.
+  - BENCH-03 makes `bench-gate.py` refuse a verdict on runs that break the protocol, instead of printing "pass" with warnings.
