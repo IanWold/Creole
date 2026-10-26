@@ -37,6 +37,8 @@ A parser can be run from several threads at once. Each parse keeps its own state
 - `Parse` never returns `Recovered<T>` yet. Recovery arrives with ERR-05.
 - `Parse` never returns `default(ParseResult<T>)`, so a switch over its result needs no `null` arm.
 
+A parse runs the grammar without keeping track of failures. If it fails, it runs the grammar again from the start, recording them, and reports the error from that second run. So a successful parse pays nothing for error reporting, and a failed one costs up to about twice as much, in time and in the values the grammar builds. The functions in the grammar run again in the second run, which is one reason they must not rely on side effects (see [How often your functions run](sequencing.md#how-often-your-functions-run)). The reasons are in [ADR-0027](../../work/docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md).
+
 `Parse` throws `GrammarException` if the parser is null, which happens when a rule refers to one declared later in the class without `Rec`, or if the grammar is not valid, which is found when it first runs. It throws `ArgumentNullException` for a null string. Exceptions from your own code, such as a `Select` function or a custom scanner, pass through. A `Select` function whose value the parse does not use may not run at all, so whether its exception is thrown can depend on how the grammar is run (see [How often your functions run](sequencing.md#how-often-your-functions-run)).
 
 ## Showing errors

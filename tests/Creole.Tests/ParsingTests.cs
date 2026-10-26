@@ -149,6 +149,20 @@ public class ParsingTests
         Failed failed => failed.Diagnostics.Render(),
     };
 
+    private static string? ShapeDisagreement(ControlShape shape, string input)
+    {
+        try
+        {
+            return Execution.Disagreement(ControlTable.Build(shape), input.AsMemory(), ParseOptions.Default) is { } disagreement
+                ? $"{ControlModel.Describe(shape)} {disagreement}"
+                : null;
+        }
+        catch (GrammarException)
+        {
+            return null;
+        }
+    }
+
     [Fact]
     public void ACharacterLevelJsonDocumentParses()
     {
@@ -220,6 +234,29 @@ public class ParsingTests
             result.Diagnostics.Render()
         );
         Assert.Equal(result.Diagnostics.Render(new SourceText(text, "config.json")), result.Diagnostics.Render());
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("tru")]
+    [InlineData("[1, 2")]
+    [InlineData("[1,,2]")]
+    [InlineData("{\"a\" 1}")]
+    [InlineData("{\"a\": [1, 2}")]
+    [InlineData("{\n  \"port\": 8080 \"host\": \"x\"\n}")]
+    public void AFailedJsonParseReportsWhatOneRunWithTheLogReports(string input) =>
+        Assert.Null(Execution.Disagreement(CharJson.Document, input.AsMemory(), ParseOptions.Default));
+
+    [Fact]
+    public void AFailedParseReportsWhatOneRunWithTheLogReports()
+    {
+        var shallow = new ParseOptions { MaxDepth = 3 };
+
+        Assert.Null(Execution.Disagreement(Digit.SkipAtLeastOnce().Slice().Where(static digits => digits.Length < 3, "number too long"), "1234".AsMemory(), ParseOptions.Default));
+        Assert.Null(Execution.Disagreement(Longest(String("<"), String("<="), String("<<")).Before(End), "<=x".AsMemory(), ParseOptions.Default));
+        Assert.Null(Execution.Disagreement(Nesting.Lists, Nested(4).AsMemory(), shallow));
+        Assert.Null(Execution.Disagreement(TokenNesting.Lists, TokenNesting.Lex(Nested(4)), shallow));
+        Assert.Null(Execution.Disagreement(TokenNesting.Lists.Before(TokenGrammar<BracketToken, Bracket>.End), TokenNesting.Lex("[[x]"), ParseOptions.Default));
     }
 
     [Fact]
@@ -351,6 +388,17 @@ public class ParsingTests
         Assert.Equal(new SourceSpan(SourceId.Unnamed, 1, 2), error.Span);
         Assert.Equal("parser", error.Layer);
         Assert.Equal([new ExpectedItem("'b'")], error.Expected);
+    }
+
+    [Fact]
+    public void EveryControlShapeToDepthThreeFailsAsOneRunWithTheLogDoes()
+    {
+        var inputs = ControlModel.AllInputs(3).ToArray();
+        var disagreement = ControlModel.AllShapes(3)
+            .SelectMany(shape => inputs.Select(input => ShapeDisagreement(shape, input)))
+            .FirstOrDefault(static difference => difference is not null);
+
+        Assert.Null(disagreement);
     }
 
     [Fact]

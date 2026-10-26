@@ -14,6 +14,10 @@ namespace Creole;
 /// <para>
 /// A parser can be run from several threads at once. Each parse keeps its own state.
 /// </para>
+/// <para>
+/// A parse runs the grammar without recording failures. Only if it fails does it run the grammar again from the start, recording them, to build its error.
+/// So a successful parse pays nothing for errors, a failed parse costs up to about twice as much, and the grammar's functions run again when a parse fails.
+/// </para>
 /// </remarks>
 public static class Parsing
 {
@@ -151,9 +155,49 @@ public static class Parsing
     private static SourceSpan SpanOf(long start, long end) =>
         new(SourceId.Unnamed, start, end);
 
-    private static bool TryParse<TIn, TOut>(FailureLog<TIn> log, Parser<TIn, TOut> parser, ReadOnlyMemory<TIn> input, ParseOptions options, out TOut value, [NotNullWhen(false)] out ParseError? error)
+    private static bool TryRun<TIn, TOut>(Parser<TIn, TOut> parser, ReadOnlyMemory<TIn> input, ParseOptions options, out TOut value, [NotNullWhen(false)] out ParseError? error)
     {
         var plan = PlanCache.Get(parser);
+
+        if (TrySucceed(plan, input, options, out value))
+        {
+            error = null;
+            return true;
+        }
+
+        var log = SpareLog<TIn>.Take();
+
+        try
+        {
+            return TryParse(log, plan, input, options, out value, out error);
+        }
+        finally
+        {
+            SpareLog<TIn>.Return(log);
+        }
+    }
+
+    private static bool TrySucceed<TIn, TOut>(Plan<TIn, TOut> plan, ReadOnlyMemory<TIn> input, ParseOptions options, out TOut value)
+    {
+        var cursor = Cursor<TIn>.FromMemory(input) with { MaxDepth = options.MaxDepth };
+        value = default!;
+
+        try
+        {
+            return plan.TryParse(ref cursor, ref value);
+        }
+        catch (DepthExceededException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Runs <paramref name="plan"/> once over <paramref name="input"/>, recording failures into <paramref name="log"/>, as a failed parse's second run does.
+    /// </summary>
+    /// <returns>Whether the plan succeeded. If not, <paramref name="error"/> is the furthest failure's error, or the depth error.</returns>
+    internal static bool TryParse<TIn, TOut>(FailureLog<TIn> log, Plan<TIn, TOut> plan, ReadOnlyMemory<TIn> input, ParseOptions options, out TOut value, [NotNullWhen(false)] out ParseError? error)
+    {
         var cursor = Cursor<TIn>.FromMemory(input) with { Failures = log, MaxDepth = options.MaxDepth };
         value = default!;
         error = null;
@@ -173,20 +217,6 @@ public static class Parsing
         }
 
         return false;
-    }
-
-    private static bool TryRun<TIn, TOut>(Parser<TIn, TOut> parser, ReadOnlyMemory<TIn> input, ParseOptions options, out TOut value, [NotNullWhen(false)] out ParseError? error)
-    {
-        var log = SpareLog<TIn>.Take();
-
-        try
-        {
-            return TryParse(log, parser, input, options, out value, out error);
-        }
-        finally
-        {
-            SpareLog<TIn>.Return(log);
-        }
     }
 }
 

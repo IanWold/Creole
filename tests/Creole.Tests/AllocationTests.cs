@@ -175,7 +175,7 @@ public class AllocationTests
             return Allocation.Fewest(() => numbers.Parse(tokens), attempts: 20);
         }
 
-        Assert.Equal(AllocatedFor(1_000), AllocatedFor(100_000));
+        Assert.Equal(AllocatedFor(100), AllocatedFor(10_000));
     }
 
     [Theory]

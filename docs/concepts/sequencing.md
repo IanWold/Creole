@@ -134,7 +134,7 @@ static readonly Parser<char, string> Name = Atomic(Identifier.Where(name => !Key
 
 ## How often your functions run
 
-Creole may run a function you put in a grammar more than once, and may skip a call whose result it does not need. Write each function so that its result depends only on its arguments. How Creole treats a function depends on its role:
+Creole may run a function you put in a grammar more than once, and may skip a call whose result it does not need. A parse that fails, for one, runs the grammar a second time to collect its error ([Running a parser](parsing.md#what-it-returns)). Write each function so that its result depends only on its arguments. How Creole treats a function depends on its role:
 
 | Role | Functions | Creole may |
 | --- | --- | --- |
