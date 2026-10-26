@@ -29,7 +29,7 @@ The constructor throws `ArgumentNullException` if `Layer`, `Expected` or `Contex
 
 ### Context lines
 
-A `ContextLine` names a construct the parse was inside when it failed, such as `in object`, and holds `Start`, the span of the first item that construct read. Renderers show where it started: `in object starting at 2:1` against the source text, or `in object starting at 2` (a character offset) on one line.
+A `ContextLine` names a construct the parse was inside when it failed, such as `in object`, and holds `Start`, the span of the first item that construct read. Renderers show where it started: `in object starting at 2:1` against the source text, or `in object starting at 2` (an offset into the input) on one line.
 
 - `Text` is the text given to `p.Context(text)`. A null `Text` throws `ArgumentNullException`, and an empty one throws `ArgumentException`, in the constructor and in a `with` expression.
 - Two lines are equal when their text and start are equal.
@@ -156,7 +156,7 @@ The reasons are in [ADR-0002](../../work/docs/decisions/0002-parseresult-as-a-pl
 - Errors are ordered by source, then start offset, then end offset. Errors with equal spans keep the order they were given in. Sources are ordered as their `SourceRegistry` issued them, with `SourceId.Unnamed` first.
 - `Diagnostics.Empty` has no errors.
 - `new Diagnostics(errors)` sorts `errors`. It throws `ArgumentException` if one is null.
-- A collection can also hold the text of the sources its errors point into, so that `Render()` can show the errors against it. The errors from `Parse` hold the text of its input. A collection made with `new Diagnostics(errors)` holds none.
+- A collection can also hold the text of the sources its errors point into, so that `Render()` can show the errors against it. The errors from `Parse` over text hold that text; those from a token parse hold none. A collection made with `new Diagnostics(errors)` holds none.
 - Two collections are equal when they hold equal errors in the same order, whatever source texts they hold.
 
 ### Rendering against the source
@@ -185,7 +185,7 @@ error[parser]: expected ',' or '}'
 - **Notes.** One `= note:` line per context line, innermost first, ending with where the construct started, as `starting at line:column`. The start may lie in another source, such as the file an embedded script sits in.
 - **Order.** Errors come in span order, so they are grouped by source, in the order the `SourceRegistry` issued the ids, with `SourceId.Unnamed` first. A blank line separates errors, and lines are joined by `\n`.
 
-`Render()`, with no arguments, writes the same as `Render(sources)` when the collection holds a text for every source its errors and their context lines point into, and each text is long enough for its spans. Otherwise it writes [one line per error](#one-line-per-error). It never throws. The errors from `Parse` hold the text of its input, so `result.Diagnostics.Render()` shows them against it.
+`Render()`, with no arguments, writes the same as `Render(sources)` when the collection holds a text for every source its errors and their context lines point into, and each text is long enough for its spans. Otherwise it writes [one line per error](#one-line-per-error). It never throws. The errors from `Parse` over text hold that text, so `result.Diagnostics.Render()` shows them against it.
 
 #### `SourceText`
 
@@ -240,6 +240,6 @@ error[parser] at 15..21: unexpected string "host"; expected ',' or '}'; in objec
 error[parser] at 30..30: unexpected end of input; expected value, '[' or end of input; in array starting at 25; in object starting at 0
 ```
 
-- The offsets are character offsets, `CharStart..CharEnd`.
-- The expected part is left out when nothing was expected. Context lines follow, innermost first, each with the character offset where its construct started.
+- The offsets are `CharStart..CharEnd`. They count characters in text, and tokens in a [token parse](parsing.md#token-input), whose errors always render this way because it holds no text.
+- The expected part is left out when nothing was expected. Context lines follow, innermost first, each with the offset where its construct started.
 - A line shows no file name, line or column. Use it when the source text is not at hand.

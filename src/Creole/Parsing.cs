@@ -1,10 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
 namespace Creole;
 
 /// <summary>
-/// Runs a parser on text, called as a method on the parser: <c>parser.Parse(text)</c>.
+/// Runs a parser on text or on items in memory, called as a method on the parser: <c>parser.Parse(text)</c>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -17,9 +18,6 @@ namespace Creole;
 public static class Parsing
 {
     private const string Layer = "parser";
-
-    [ThreadStatic]
-    private static FailureLog<char>? _spareLog;
 
     extension<TOut>(Parser<char, TOut> parser)
     {
@@ -80,13 +78,46 @@ public static class Parsing
         /// The result and the slices in its value refer to <paramref name="input"/> and copy none of it.
         /// Render the result and finish with the slices before reusing the memory.
         /// </para>
+        /// <para>
+        /// A character parser given memory or a <see langword="char"/> array always runs through this overload, never the one for items of any type, so its errors render against the text.
+        /// </para>
         /// </remarks>
         /// <exception cref="GrammarException">This parser is null, or its grammar is not valid.</exception>
+        [OverloadResolutionPriority(1)]
         public ParseResult<TOut> Parse(ReadOnlyMemory<char> input, string? source = null, ParseOptions? options = null, [CallerArgumentExpression(nameof(parser))] string parserExpression = "") =>
             Run(Guard.NotNull(parser, parserExpression), input, source, options ?? ParseOptions.Default);
     }
 
-    private static ParseError DepthError(DepthExceededException exception, ref readonly Cursor<char> cursor, FailureLog<char> log)
+    extension<TIn, TOut>(Parser<TIn, TOut> parser)
+    {
+        /// <summary>
+        /// Parses <paramref name="input"/>, such as the tokens from a lexer, with this parser.
+        /// </summary>
+        /// <param name="input">The items to parse. An array converts to this type.</param>
+        /// <param name="options">The settings for the parse, or <see langword="null"/> for <see cref="ParseOptions.Default"/>.</param>
+        /// <param name="parserExpression">
+        /// The caller's expression for this parser, used in the error message.
+        /// The compiler fills it in; do not pass it.
+        /// </param>
+        /// <returns>
+        /// <see cref="Parsed{T}"/> with the parser's value if it succeeded.
+        /// Otherwise <see cref="Failed"/> with one error.
+        /// </returns>
+        /// <remarks>
+        /// <para>
+        /// The error is the parse's furthest failure, from layer <c>parser</c>, with spans that are item offsets in <paramref name="input"/> and the source <see cref="SourceId.Unnamed"/>: the span of the third token is 2..3.
+        /// The input is not text, so the result holds no source and <see cref="Diagnostics.Render()"/> writes one line per error.
+        /// A parse that goes deeper than <see cref="ParseOptions.MaxDepth"/>, or runs short of stack, fails with one error where the level would have started, whose message names the cause.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="GrammarException">This parser is null, or its grammar is not valid.</exception>
+        public ParseResult<TOut> Parse(ReadOnlyMemory<TIn> input, ParseOptions? options = null, [CallerArgumentExpression(nameof(parser))] string parserExpression = "") =>
+            TryRun(Guard.NotNull(parser, parserExpression), input, options ?? ParseOptions.Default, out var value, out var error)
+            ? new Parsed<TOut>(value)
+            : new Failed(new Diagnostics([error]));
+    }
+
+    private static ParseError DepthError<TIn>(DepthExceededException exception, ref readonly Cursor<TIn> cursor, FailureLog<TIn> log)
     {
         var position = exception.Position;
         var end = cursor.TryPeekAt(position, out _)
@@ -99,11 +130,11 @@ public static class Parsing
         return new ParseError(SpanOf(position, end), Layer, new CustomMessage(message), [], log.ContextAt(position, SpanOf));
     }
 
-    private static ParseError NothingRecorded(ref readonly Cursor<char> cursor)
+    private static ParseError NothingRecorded<TIn>(ref readonly Cursor<TIn> cursor)
     {
         var atItem = cursor.TryPeekAt(0, out var item);
         Unexpected unexpected = atItem
-            ? new UnexpectedItem(Display<char>.Item(item))
+            ? new UnexpectedItem(Display<TIn>.Item(item))
             : new EndOfInput();
         var end = atItem
             ? 1
@@ -112,18 +143,26 @@ public static class Parsing
         return new ParseError(SpanOf(0, end), Layer, unexpected, [], []);
     }
 
-    private static ParseResult<TOut> ParseWith<TOut>(FailureLog<char> log, Parser<char, TOut> parser, ReadOnlyMemory<char> input, string? source, ParseOptions options)
+    private static ParseResult<TOut> Run<TOut>(Parser<char, TOut> parser, ReadOnlyMemory<char> input, string? source, ParseOptions options) =>
+        TryRun(parser, input, options, out var value, out var error)
+        ? new Parsed<TOut>(value)
+        : new Failed(new Diagnostics([error], new SourceText(SourceId.Unnamed, source, input)));
+
+    private static SourceSpan SpanOf(long start, long end) =>
+        new(SourceId.Unnamed, start, end);
+
+    private static bool TryParse<TIn, TOut>(FailureLog<TIn> log, Parser<TIn, TOut> parser, ReadOnlyMemory<TIn> input, ParseOptions options, out TOut value, [NotNullWhen(false)] out ParseError? error)
     {
         var plan = PlanCache.Get(parser);
-        var cursor = Cursor<char>.FromMemory(input) with { Failures = log, MaxDepth = options.MaxDepth };
-        TOut value = default!;
-        ParseError error;
+        var cursor = Cursor<TIn>.FromMemory(input) with { Failures = log, MaxDepth = options.MaxDepth };
+        value = default!;
+        error = null;
 
         try
         {
             if (plan.TryParse(ref cursor, ref value))
             {
-                return new Parsed<TOut>(value);
+                return true;
             }
 
             error = log.ToError(in cursor, Layer, SpanOf) ?? NothingRecorded(in cursor);
@@ -133,25 +172,46 @@ public static class Parsing
             error = DepthError(exception, in cursor, log);
         }
 
-        return new Failed(new Diagnostics([error], new SourceText(SourceId.Unnamed, source, input)));
+        return false;
     }
 
-    private static ParseResult<TOut> Run<TOut>(Parser<char, TOut> parser, ReadOnlyMemory<char> input, string? source, ParseOptions options)
+    private static bool TryRun<TIn, TOut>(Parser<TIn, TOut> parser, ReadOnlyMemory<TIn> input, ParseOptions options, out TOut value, [NotNullWhen(false)] out ParseError? error)
     {
-        var log = _spareLog ?? new FailureLog<char>();
-        _spareLog = null;
+        var log = SpareLog<TIn>.Take();
 
         try
         {
-            return ParseWith(log, parser, input, source, options);
+            return TryParse(log, parser, input, options, out value, out error);
         }
         finally
         {
-            log.Clear();
-            _spareLog = log;
+            SpareLog<TIn>.Return(log);
         }
     }
+}
 
-    private static SourceSpan SpanOf(long start, long end) =>
-        new(SourceId.Unnamed, start, end);
+/// <summary>
+/// The failure log each thread keeps for parses over items of type <typeparamref name="T"/>, so that a parse allocates none.
+/// </summary>
+/// <remarks>
+/// A parse takes the log and leaves none in its place, so a parse that runs inside another, such as one called from a <c>Select</c> function, makes its own.
+/// </remarks>
+file static class SpareLog<T>
+{
+    [ThreadStatic]
+    private static FailureLog<T>? _log;
+
+    public static void Return(FailureLog<T> log)
+    {
+        log.Clear();
+        _log = log;
+    }
+
+    public static FailureLog<T> Take()
+    {
+        var log = _log ?? new FailureLog<T>();
+        _log = null;
+
+        return log;
+    }
 }

@@ -74,7 +74,7 @@ public class AllocationTests
         ["a kind over struct tokens"] = () => Allocated(TokenGrammar<SymbolToken, Symbol>.Kind(Symbol.Plus), [new SymbolToken(Symbol.Number)], recording: true, succeeds: false),
     };
 
-    private static Parsed<int>? _sink;
+    private static object? _sink;
 
     public static TheoryData<string> Cases => [.. _cases.Keys];
 
@@ -158,6 +158,26 @@ public class AllocationTests
         Assert.Equal(AllocatedFor(1_000), AllocatedFor(100_000));
     }
 
+    [Fact]
+    public void AFailedTokenParseAllocatesTheSameWhateverTheLengthOfItsInput()
+    {
+        var numbers = TokenGrammar<SymbolToken, Symbol>.Kind(Symbol.Number).SkipMany().Before(Grammar<SymbolToken>.End);
+
+        long AllocatedFor(int length)
+        {
+            SymbolToken[] tokens = [.. Enumerable.Repeat(new SymbolToken(Symbol.Number), length), new(Symbol.Plus)];
+
+            for (var i = 0; i < 10; i++)
+            {
+                Assert.True(numbers.Parse(tokens).Value is Failed);
+            }
+
+            return Allocation.Fewest(() => numbers.Parse(tokens), attempts: 20);
+        }
+
+        Assert.Equal(AllocatedFor(1_000), AllocatedFor(100_000));
+    }
+
     [Theory]
     [MemberData(nameof(Cases))]
     public void AParseOfValueTypesAllocatesNothing(string name) =>
@@ -176,6 +196,17 @@ public class AllocationTests
             Allocated(() => (_sink = new Parsed<int>(-9)) is not null),
             Allocated(() => Arithmetic.Expr.Parse("-(1+2)*3").Value is Parsed<int> { Value: -9 })
         );
+
+    [Fact]
+    public void ASuccessfulTokenParseAllocatesOnlyItsResult()
+    {
+        SymbolToken[] tokens = [new(Symbol.Number), new(Symbol.Plus), new(Symbol.Number)];
+
+        Assert.Equal(
+            Allocated(() => (_sink = new Parsed<Unit>(default)) is not null),
+            Allocated(() => Arithmetic.Tokens.Parse(tokens).Value is Parsed<Unit>)
+        );
+    }
 
     [Theory]
     [MemberData(nameof(Cases))]

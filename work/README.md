@@ -209,6 +209,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 Cards whose Status is Researching, Designing or Building:
 
 - [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) Phase 0 speed gate (Building)
+- [INT-11](active/03-interpreter/INT-11-single-layer-parse-over-token-input.md) Single-layer Parse over token input (Building)
 
 ### Can start now
 
@@ -216,7 +217,6 @@ These items have all their blockers done:
 
 - [CORE-14](active/02-core-combinators/CORE-14-choices-beyond-16-alternatives.md) Choices beyond 16 alternatives
 - [INT-10](active/03-interpreter/INT-10-dispatched-longest-measured-against-the-automaton.md) Dispatched Longest, measured against the automaton
-- [INT-11](active/03-interpreter/INT-11-single-layer-parse-over-token-input.md) Single-layer Parse over token input
 - [ERR-08](active/04-errors-and-recovery/ERR-08-bound-rendered-diagnostics.md) Bound rendered diagnostics
 - [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) StreamBuffer and pulling cursor
 - [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md) Per-layer parse state

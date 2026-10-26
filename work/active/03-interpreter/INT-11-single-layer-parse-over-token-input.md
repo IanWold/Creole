@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Interpreted engine](../../README.md#int--interpreted-engine) |
 | Phase | Phase 0 — Core |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -42,3 +42,8 @@ Nothing directly.
 ## Artifacts
 
 - [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements
+
+## Progress notes
+
+- 2026-10-25 (Build): Started. Blocker INT-08 is Done. Build, since the card and ADR-0024 point 1 (non-text input holds no source) pin the behaviour; this reverses INT-08's agreed call to leave token input to LAY-05. Approach: a `Parse` over `ReadOnlyMemory<TIn>` for any `Parser<TIn, TOut>` that shares `Run` with the character overloads, holds no source, and keeps a spare failure log per thread and item type. Next: `/build` plans the increments.
+- 2026-10-25 (Build): Plan approved: one increment; `Parse(ReadOnlyMemory<TIn> input, ParseOptions? options = null)` with no `source:`; a test pins that character parsers keep the character overloads; criterion 1 uses a hand-written lexer. Increment done. `Parsing` has an extension block on `Parser<TIn, TOut>` with that overload. The character and token overloads share a generic `TryRun`, and only the character path holds a `SourceText`. On RC 2 the generic overload made every `Parse(ReadOnlyMemory<char>)` call ambiguous (CS0121, checked in a scratch project), so that overload carries `[OverloadResolutionPriority(1)]`. The spare failure log is now one per thread and item type (`file static class SpareLog<T>`). Tests (15 new): `WorkedExampleATests` gains a hand-written lexer, `TheGrammarParsesTokensFromAHandWrittenLexer` and `AMalformedDocumentReportsTheTokenError`, which renders `error[parser] at 4..5: unexpected string "host"; expected ',' or '}'; in object starting at 0` (criterion 1). `ParsingTests` has token mirrors of the five depth tests, a nested parse, parses on 8 threads, memory slices of an array, token offsets with one-line rendering, and character memory and `char[]` still rendering against the text. `AllocationTests` has a successful token parse allocating only its result and a failed one allocating the same at 1,000 and 100,000 tokens (criterion 2). `ParseResultTests` covers the new overload. `TokenPrimitiveTests` runs the docs' `Kind` and `Case` samples. The failed-token allocation test read high only in the full parallel run: GCs forced from another thread add about 440 bytes per collection to the test thread's count whatever the input length. It now measures one parse per attempt over 20 attempts, and `Allocation.Fewest` takes an `attempts` count. Token slices were dropped from the plan: `Slice()` exists only for character parsers. Four mutations each failed tests or the build: a new log for every token parse, `MaxDepth` ignored for tokens, the priority attribute removed (CS0121), and the spare log left in place while in use. `dotnet build` with 0 warnings; `dotnet test` with 1,513 passed (1,484 in Creole.Tests) three runs in a row; the AOT smoke publishes with 0 warnings and prints OK, now including a token parse that succeeds and one that fails. Docs: parsing.md (overload table, Token input section), errors.md (offsets count items; a token parse holds no text), primitives.md (running a token rule), interpreter.md (one set of buffers per item type). Both criteria appear met; none ticked until `/complete`. Next: maintainer review, then `/complete INT-11`.

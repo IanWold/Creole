@@ -1,6 +1,6 @@
 # Running a parser
 
-`parser.Parse(input)` runs a character parser on text and returns a [`ParseResult<T>`](errors.md): the value, or the error that stopped the parse. The samples use `CharJson`, the character-level JSON grammar in [ParsingTests.cs](../../tests/Creole.Tests/ParsingTests.cs), whose tests check the output shown here.
+`parser.Parse(input)` runs a parser on text, or on tokens in memory, and returns a [`ParseResult<T>`](errors.md): the value, or the error that stopped the parse. The samples use `CharJson`, the character-level JSON grammar in [ParsingTests.cs](../../tests/Creole.Tests/ParsingTests.cs), whose tests check the output shown here.
 
 ```csharp
 var result = CharJson.Document.Parse(File.ReadAllText(path), source: path);
@@ -15,25 +15,25 @@ string report = result switch
 
 ## `Parse`
 
-`Parse` is an extension member on `Parser<char, TOut>`, so it runs any rule of a `CharGrammar`.
+`Parse` is an extension member on parsers. A character parser, such as a rule of a `CharGrammar`, runs on text. Any parser, such as a rule of a `TokenGrammar`, runs on items in memory.
 
-| Overload | Input |
-| --- | --- |
-| `Parse(string input, string? source = null, ParseOptions? options = null)` | A string. |
-| `Parse(ReadOnlyMemory<char> input, string? source = null, ParseOptions? options = null)` | Characters in memory, such as part of a buffer. |
+| Overload | On | Input |
+| --- | --- | --- |
+| `Parse(string input, string? source = null, ParseOptions? options = null)` | `Parser<char, TOut>` | A string. |
+| `Parse(ReadOnlyMemory<char> input, string? source = null, ParseOptions? options = null)` | `Parser<char, TOut>` | Characters in memory, such as part of a buffer, or a `char[]`. |
+| `Parse(ReadOnlyMemory<TIn> input, ParseOptions? options = null)` | `Parser<TIn, TOut>` | Items in memory, such as an array of tokens ([Token input](#token-input)). |
 
 - `source` is the name to show the input under when errors are rendered, such as a file name. It may be omitted or null.
 - `options` holds settings such as the depth limit. Omitted or null, it is `ParseOptions.Default`.
-- The second parameter is `source`, so pass options by name: `Parse(text, options: limits)`.
-
-Token parsers, such as the rules of a `TokenGrammar`, run on the output of a lexer. Pipelines that connect the two arrive with LAY-05.
+- For text the second parameter is `source`, so pass options by name: `Parse(text, options: limits)`.
+- A character parser always takes a character overload, even for a `char[]`, so its errors render against the text.
 
 A parser can be run from several threads at once. Each parse keeps its own state.
 
 ## What it returns
 
 - **`Parsed<T>`** when the parser succeeds. The parse does not have to reach the end of the input. To require that, end the grammar with `End`, as in `Value.Before(End)`.
-- **`Failed`** otherwise, with one error: the parse's furthest failure, as described in [Errors](errors.md#what-a-failure-reports). Its layer is `parser`. Its spans are character offsets into the input, in the source `SourceId.Unnamed`.
+- **`Failed`** otherwise, with one error: the parse's furthest failure, as described in [Errors](errors.md#what-a-failure-reports). Its layer is `parser`. Its spans are offsets into the input, in the source `SourceId.Unnamed`: characters for text, items for [token input](#token-input).
 - `Parse` never returns `Recovered<T>` yet. Recovery arrives with ERR-05.
 - `Parse` never returns `default(ParseResult<T>)`, so a switch over its result needs no `null` arm.
 
@@ -64,6 +64,27 @@ This grammar reads characters, so its error names a character and the whitespace
 `Parse` copies none of its input. `Slice` values are views of the string or memory it was given, and a failed result refers to the same text to render it. If the input is a buffer you reuse, finish with the slices and render the errors before you reuse it.
 
 Beyond its result and what the grammar builds, a parse allocates nothing: each thread reuses the buffers that record failures. [The interpreter § What allocates](../engines/interpreter.md#what-allocates) lists what does allocate.
+
+## Token input
+
+A token parser runs on the tokens a lexer produced, held in an array or other memory. The sample uses the JSON grammar of [Worked Example A](../../whitepaper.md#a-json-in-two-layers) and the hand-written lexer in [WorkedExampleATests.cs](../../tests/Creole.Tests/WorkedExampleATests.cs), whose tests check the output shown here.
+
+```csharp
+JTok[] tokens = HandLexer.Lex("""{ "port": 8080 "host": "x" }""");
+var result = JsonGrammar.Document.Parse(tokens);
+Console.Error.WriteLine(result.Diagnostics.Render());
+```
+
+```text
+error[parser] at 4..5: unexpected string "host"; expected ',' or '}'; in object starting at 0
+```
+
+Errors show tokens as their type describes them ([How errors show tokens](primitives.md#how-errors-show-tokens)). They point into the input differently from errors in text:
+
+- Spans count tokens, not characters. The fifth token, `"host"`, is at `4..5`, and the object started at token 0. Until pipelines give each token a span in the text it came from (LAY-05 and SPAN-02), a token parse cannot point into that text.
+- The input is not text, so the result holds none, and `Render()` writes [one line per error](errors.md#one-line-per-error).
+
+Everything else works as it does for text: the result, the [options](#options), the depth limit, and what a parse allocates. To lex with a `CharGrammar`, parse the text with a rule that returns a list of tokens, then pass them on as an array.
 
 ## Options
 

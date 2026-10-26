@@ -93,6 +93,47 @@ file sealed class Nesting : CharGrammar
         .Or(Char('x').As(0));
 }
 
+file enum Bracket
+{
+    Open,
+    Close,
+    X,
+    Other,
+}
+
+file readonly record struct BracketToken(Bracket Kind) : IKinded<Bracket>
+{
+    static string IKinded<Bracket>.Describe(Bracket kind) => kind switch
+    {
+        Bracket.Open => "'['",
+        Bracket.Close => "']'",
+        Bracket.X => "'x'",
+        _ => kind.ToString(),
+    };
+}
+
+file sealed class TokenNesting : TokenGrammar<BracketToken, Bracket>
+{
+    public static readonly Parser<BracketToken, int> Brackets =
+        Kind(Bracket.Open).Then(Rec(() => Brackets)).Before(Kind(Bracket.Close)).Select(static depth => depth + 1)
+        .Or(Kind(Bracket.X).As(0));
+
+    public static readonly Parser<BracketToken, int> Lists =
+        Kind(Bracket.Open).Then(Rec(() => Lists)).Before(Kind(Bracket.Close)).Select(static depth => depth + 1).Context("in list")
+        .Or(Kind(Bracket.X).As(0));
+
+    public static BracketToken[] Lex(string text) =>
+    [
+        .. text.Select(static c => new BracketToken(c switch
+        {
+            '[' => Bracket.Open,
+            ']' => Bracket.Close,
+            'x' => Bracket.X,
+            _ => Bracket.Other,
+        })),
+    ];
+}
+
 public class ParsingTests
 {
     private static string Nested(int levels) =>
@@ -100,6 +141,13 @@ public class ParsingTests
 
     private static ParseError OnlyError<T>(ParseResult<T> result) =>
         Assert.Single(Assert.IsType<Failed>(result.Value).Diagnostics);
+
+    private static string Outcome(ParseResult<int> result) => result switch
+    {
+        Parsed<int> parsed => parsed.Value.ToString(CultureInfo.InvariantCulture),
+        Recovered<int> recovered => recovered.Diagnostics.Render(),
+        Failed failed => failed.Diagnostics.Render(),
+    };
 
     [Fact]
     public void ACharacterLevelJsonDocumentParses()
@@ -114,6 +162,19 @@ public class ParsingTests
         };
 
         Assert.Equal("""{"a":[1,-2.5,true,false,null],"b":"x\"y","c":{}}""", summary);
+    }
+
+    [Fact]
+    public void ACharacterParserGivenMemoryOrAnArrayRendersAgainstTheText()
+    {
+        var parser = Char('a');
+        var expected = parser.Parse("b").Diagnostics.Render();
+
+        Assert.Contains(" --> 1:1", expected, StringComparison.Ordinal);
+        Assert.Equal(expected, parser.Parse("b".AsMemory()).Diagnostics.Render());
+        Assert.Equal(expected, parser.Parse("b".AsMemory(), options: ParseOptions.Default).Diagnostics.Render());
+        Assert.Equal(expected, parser.Parse("b".AsMemory(), null).Diagnostics.Render());
+        Assert.Equal(expected, parser.Parse("b".ToCharArray()).Diagnostics.Render());
     }
 
     [Fact]
@@ -173,6 +234,20 @@ public class ParsingTests
     }
 
     [Fact]
+    public void ANestedTokenParseKeepsItsOwnFailures()
+    {
+        var inner = TokenNesting.Brackets;
+        var outer = TokenGrammar<BracketToken, Bracket>.Kind(Bracket.Open)
+            .Then(TokenGrammar<BracketToken, Bracket>.Kind(Bracket.Open).Optional())
+            .Select(_ => inner.Parse(TokenNesting.Lex("y")).Value is Failed)
+            .Then(TokenGrammar<BracketToken, Bracket>.Kind(Bracket.Close));
+
+        _ = TokenNesting.Brackets.Parse(TokenNesting.Lex("x"));
+
+        Assert.Equal([new ExpectedItem("'['"), new ExpectedItem("']'")], OnlyError(outer.Parse(TokenNesting.Lex("[y"))).Expected);
+    }
+
+    [Fact]
     public void AnInputWithoutASourceRendersWithoutAName()
     {
         var result = Char('a').Parse("b");
@@ -194,6 +269,53 @@ public class ParsingTests
         Assert.Equal('a', Assert.IsType<Parsed<char>>(Char('a').Parse("ab").Value).Value);
 
     [Fact]
+    public void ATokenDepthErrorAtTheEndOfInputIsZeroWidth()
+    {
+        var error = OnlyError(TokenNesting.Brackets.Parse(TokenNesting.Lex("[[[["), options: new ParseOptions { MaxDepth = 3 }));
+
+        Assert.Equal(new SourceSpan(SourceId.Unnamed, 4, 4), error.Span);
+    }
+
+    [Fact]
+    public void ATokenDepthErrorKeepsTheContextInForce()
+    {
+        var error = OnlyError(TokenNesting.Lists.Parse(TokenNesting.Lex(Nested(4)), options: new ParseOptions { MaxDepth = 3 }));
+
+        Assert.Equal(
+            [
+                new ContextLine("in list", new SourceSpan(SourceId.Unnamed, 3, 4)),
+                new ContextLine("in list", new SourceSpan(SourceId.Unnamed, 2, 3)),
+                new ContextLine("in list", new SourceSpan(SourceId.Unnamed, 1, 2)),
+                new ContextLine("in list", new SourceSpan(SourceId.Unnamed, 0, 1)),
+            ],
+            error.Context
+        );
+    }
+
+    [Fact]
+    public void ATokenParseCountsTokensAndRendersOneLinePerError()
+    {
+        var parser = TokenGrammar<BracketToken, Bracket>.Kind(Bracket.Open).Then(TokenGrammar<BracketToken, Bracket>.Kind(Bracket.Close));
+        var result = parser.Parse(TokenNesting.Lex("[y"));
+        var error = OnlyError(result);
+
+        Assert.Equal(new SourceSpan(SourceId.Unnamed, 1, 2), error.Span);
+        Assert.Equal("parser", error.Layer);
+        Assert.Equal(new UnexpectedItem("Other"), error.Unexpected.Value);
+        Assert.Equal([new ExpectedItem("']'")], error.Expected);
+        Assert.Equal("error[parser] at 1..2: unexpected Other; expected ']'", result.Diagnostics.Render());
+    }
+
+    [Fact]
+    public void ATokenParseReadsOnlyTheMemoryItIsGiven()
+    {
+        var tokens = TokenNesting.Lex("y[x]y");
+
+        Assert.Equal(1, Assert.IsType<Parsed<int>>(TokenNesting.Brackets.Parse(tokens.AsMemory(1, 3)).Value).Value);
+        Assert.Equal(new SourceSpan(SourceId.Unnamed, 2, 2), OnlyError(TokenNesting.Brackets.Parse(tokens.AsMemory(1, 2))).Span);
+    }
+
+    [Fact]
     public void ATooDeepParseFailsWithOneDepthError()
     {
         var result = Nesting.Brackets.Parse(Nested(4), options: new ParseOptions { MaxDepth = 3 });
@@ -205,6 +327,20 @@ public class ParsingTests
         Assert.Empty(error.Expected);
         Assert.Empty(error.Context);
         Assert.Equal("error[parser] at 4..5: nesting exceeds ParseOptions.MaxDepth of 3", error.ToString());
+    }
+
+    [Fact]
+    public void ATooDeepTokenParseFailsWithOneDepthError()
+    {
+        var result = TokenNesting.Brackets.Parse(TokenNesting.Lex(Nested(4)), options: new ParseOptions { MaxDepth = 3 });
+        var error = OnlyError(result);
+
+        Assert.Equal(new SourceSpan(SourceId.Unnamed, 4, 5), error.Span);
+        Assert.Equal("parser", error.Layer);
+        Assert.Equal(new CustomMessage("nesting exceeds ParseOptions.MaxDepth of 3"), error.Unexpected.Value);
+        Assert.Empty(error.Expected);
+        Assert.Empty(error.Context);
+        Assert.Equal("error[parser] at 4..5: nesting exceeds ParseOptions.MaxDepth of 3", result.Diagnostics.Render());
     }
 
     [Fact]
@@ -248,6 +384,7 @@ public class ParsingTests
         Assert.Throws<GrammarException>(() => ((Parser<char, char>)null!).Parse("a"));
         Assert.Throws<GrammarException>(() => ((Parser<char, char>)null!).Parse("a".AsMemory()));
         Assert.Throws<ArgumentNullException>("input", () => Char('a').Parse((string)null!));
+        Assert.Throws<GrammarException>(() => ((Parser<BracketToken, int>)null!).Parse(TokenNesting.Lex("x")));
     }
 
     [Fact]
@@ -270,6 +407,27 @@ public class ParsingTests
 
         Assert.Contains(expected, outcome => outcome.StartsWith("error[parser]", StringComparison.Ordinal));
         Assert.Equal(0, mismatches);
+    }
+
+    [Fact]
+    public void RunningShortOfStackFailsATokenParseWithADepthError()
+    {
+        var deep = TokenNesting.Lex(new string('[', 100_000));
+        ParseResult<int> result = default;
+
+        var thread = new Thread(
+            () => result = TokenNesting.Brackets.Parse(deep, options: new ParseOptions { MaxDepth = int.MaxValue }),
+            256 * 1024
+        );
+
+        thread.Start();
+        thread.Join();
+
+        var error = OnlyError(result);
+
+        Assert.Equal(new CustomMessage("nesting is too deep for the thread's stack"), error.Unexpected.Value);
+        Assert.Empty(error.Expected);
+        Assert.InRange(error.Span.Start, 21, 99_999);
     }
 
     [Fact]
@@ -309,5 +467,40 @@ public class ParsingTests
     {
         Assert.Equal(1000, Assert.IsType<Parsed<int>>(Nesting.Brackets.Parse(Nested(1000)).Value).Value);
         Assert.Equal("nesting exceeds ParseOptions.MaxDepth of 1000", Assert.IsType<CustomMessage>(OnlyError(Nesting.Brackets.Parse(Nested(1001))).Unexpected.Value).Text);
+    }
+
+    [Fact]
+    public void TheDefaultLimitAllowsAThousandLevelsOfTokens()
+    {
+        Assert.Equal(1000, Assert.IsType<Parsed<int>>(TokenNesting.Brackets.Parse(TokenNesting.Lex(Nested(1000))).Value).Value);
+        Assert.Equal("nesting exceeds ParseOptions.MaxDepth of 1000", Assert.IsType<CustomMessage>(OnlyError(TokenNesting.Brackets.Parse(TokenNesting.Lex(Nested(1001)))).Unexpected.Value).Text);
+    }
+
+    [Fact]
+    public void TokenParsesOnManyThreadsAgreeWithParsesOnOne()
+    {
+        BracketToken[][] inputs = [..
+            Enumerable.Range(0, 200).Select(static i =>
+                TokenNesting.Lex(
+                    i % 2 == 0
+                    ? Nested(i % 30)
+                    : $"{new string('[', i % 30)}y"
+                )
+            )
+        ];
+
+        var expected = inputs.Select(static tokens => Outcome(TokenNesting.Brackets.Parse(tokens))).ToArray();
+        var mismatches = 0;
+
+        Parallel.For(0, inputs.Length * 20, new ParallelOptions { MaxDegreeOfParallelism = 8 }, i =>
+        {
+            if (Outcome(TokenNesting.Brackets.Parse(inputs[i % inputs.Length])) != expected[i % inputs.Length])
+            {
+                Interlocked.Increment(ref mismatches);
+            }
+        });
+
+        Assert.Contains(expected, outcome => outcome.StartsWith("error[parser]", StringComparison.Ordinal));
+        Assert.Equal(0, mismatches);
     }
 }
