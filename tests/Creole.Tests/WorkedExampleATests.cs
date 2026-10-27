@@ -381,4 +381,29 @@ public class WorkedExampleATests
             new Diagnostics([error]).Render(new SourceText(config, "config.json", text))
         );
     }
+
+    [Fact]
+    public void ATokenWithALongDetailRendersWithinTheWidth()
+    {
+        var text = $"{{ \"port\": 8080 \"{new string('h', 600_000)}\": \"x\" }}";
+        var shown = $"string \"{new string('h', 111)}…";
+        var error = JsonExample.Error(text, SourceId.Unnamed);
+
+        Assert.Equal(
+            $"error[parser] at 4..5: unexpected {shown}; expected ',' or '}}'; in object starting at 0",
+            JsonGrammar.Document.Parse(HandLexer.Lex(text)).Diagnostics.Render()
+        );
+        Assert.NotNull(error);
+        Assert.Equal(
+            [
+                "error[parser]: expected ',' or '}'",
+                " --> 1:16",
+                "  |",
+                $"1 | …\"{new string('h', 117)}…",
+                $"  |  {new string('^', 118)} unexpected {shown}",
+                "  = note: in object starting at 1:1",
+            ],
+            new Diagnostics([error]).Render(new SourceText(text)).Split('\n')
+        );
+    }
 }

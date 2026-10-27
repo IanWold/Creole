@@ -100,6 +100,20 @@ public class DiagnosticsTests
     }
 
     [Fact]
+    public void TheOneLineFormLimitsNotesAsItsOptionsSay()
+    {
+        var context = Enumerable.Range(0, 5).Reverse().Select(start => new ContextLine("in list", new SourceSpan(SourceId.Unnamed, start, start + 1))).ToArray();
+        var diagnostics = new Diagnostics([new ParseError(new SourceSpan(SourceId.Unnamed, 5, 6), "parser", new UnexpectedItem("'x'"), [], context)]);
+
+        Assert.Equal(
+            "error[parser] at 5..6: unexpected 'x'; in list starting at 4; in list starting at 3; … 2 more; in list starting at 0",
+            diagnostics.Render(new RenderOptions { MaxNotes = 3 })
+        );
+        Assert.Equal("error[parser] at 5..6: unexpected 'x'; … 5 more", diagnostics.Render(new RenderOptions { MaxNotes = 0 }));
+        Assert.Equal(diagnostics[0].ToString(), diagnostics.Render(new RenderOptions { MaxNotes = 5 }));
+    }
+
+    [Fact]
     public void RenderWritesOneLinePerErrorInSpanOrder()
     {
         var diagnostics = new Diagnostics([

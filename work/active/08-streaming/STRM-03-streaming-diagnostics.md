@@ -13,7 +13,7 @@ Streaming parses discard text, so diagnostics resolve their position and snippet
 ## Scope
 
 - Line counter updated by the root layer as segments are released.
-- Capture line, column and a snippet capped at a configurable length.
+- Capture line, column and a snippet: the window rendering would show ([ADR-0029](../../docs/decisions/0029-rendered-errors-bound-text-from-input-with-caller-set-limits.md) point 4), at a width from the parse's options. `Render` narrows it further when its `MaxWidth` is smaller (point 8).
 - Whole-input parses still resolve lazily.
 - `Diagnostics.Render()` uses the captured lines, so streamed and whole-input results render with the same call ([ADR-0024](../../docs/decisions/0024-a-parses-diagnostics-hold-their-source-text.md) point 5).
 

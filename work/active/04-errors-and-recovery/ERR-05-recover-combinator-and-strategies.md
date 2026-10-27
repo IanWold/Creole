@@ -20,6 +20,7 @@ One parse produces many diagnostics without cascades.
 - `Recover` does not catch a depth abort. It passes through, and the parse ends ([ADR-0020](../../docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md)).
 - `Recover` takes a light mark before running `p`: if `p` fails without consuming, the cut flag is restored ([ADR-0011](../../docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md)). `Recover` is not a cut boundary.
 - A parse's first run has no failure log, so the first failure a `Recover` would catch ends that run, and the parse runs again with the log ([ADR-0027](../../docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)). Tests cover a parse that recovers giving the same diagnostics as one run with the log.
+- Rendering bounds each error but not how many there are ([ADR-0029](../../docs/decisions/0029-rendered-errors-bound-text-from-input-with-caller-set-limits.md) point 9). A parse that recovers can report one error per recovery, so decide here whether to cap the count.
 - `Recover` builds its diagnostic from the furthest failure, then clears it. The diagnostic keeps that failure, and if a mark of the same layer withdraws the diagnostic, the failure is recorded again. If a strategy can fail, `Recover` then withdraws its own diagnostic and fails ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 8).
 
 ## Acceptance criteria

@@ -41,7 +41,8 @@ internal static class DiagnosticRenderer
     /// <param name="error">An error whose span ends within <paramref name="source"/>'s text.</param>
     /// <param name="source">The text of the source the error points into.</param>
     /// <param name="sources">The texts by id, holding every source the error's context lines start in.</param>
-    public static void Append(StringBuilder builder, ParseError error, SourceText source, IReadOnlyDictionary<SourceId, SourceText> sources)
+    /// <param name="options">The limits on what is shown.</param>
+    public static void Append(StringBuilder builder, ParseError error, SourceText source, IReadOnlyDictionary<SourceId, SourceText> sources, RenderOptions options)
     {
         var span = error.Span;
         var map = source.LineMap;
@@ -51,7 +52,8 @@ internal static class DiagnosticRenderer
         var (shown, caretColumn, caretCount) = DisplayWidth.ShowLine(
             source.Text.Span.Slice((int)lineStart, (int)(lineEnd - lineStart)),
             (int)(span.CharStart - lineStart),
-            (int)(span.CharEnd - lineStart)
+            (int)(span.CharEnd - lineStart),
+            options.MaxWidth
         );
 
         var number = Format(position.Line);
@@ -59,7 +61,7 @@ internal static class DiagnosticRenderer
         var hasExpected = error.Expected.Count > 0;
 
         builder.Append("error[").Append(error.Layer).Append("]: ");
-        builder.Append(hasExpected ? $"expected {error.DescribeExpected()}" : error.DescribeUnexpected()).Append('\n');
+        builder.Append(hasExpected ? $"expected {error.DescribeExpected()}" : error.DescribeUnexpected(options)).Append('\n');
 
         builder.Append(gutter).Append("--> ");
 
@@ -82,14 +84,51 @@ internal static class DiagnosticRenderer
 
         if (hasExpected)
         {
-            builder.Append(' ').Append(error.DescribeUnexpected());
+            builder.Append(' ').Append(error.DescribeUnexpected(options));
         }
 
-        foreach (var line in error.Context)
+        foreach (var (line, omitted) in Notes(error.Context, options))
         {
+            builder.Append('\n').Append(gutter).Append(" = note: ");
+
+            if (line is null)
+            {
+                builder.Append("… ").Append(Format(omitted)).Append(" more");
+                continue;
+            }
+
             var start = sources[line.Start.Source].LineMap.GetPosition(line.Start.CharStart);
 
-            builder.Append('\n').Append(gutter).Append(" = note: ").Append(line.Text).Append(" starting at ").Append(Format(start.Line)).Append(':').Append(Format(start.Column));
+            builder.Append(line.Text).Append(" starting at ").Append(Format(start.Line)).Append(':').Append(Format(start.Column));
+        }
+    }
+
+    /// <summary>
+    /// Returns the context lines to show, innermost first, as <see cref="RenderOptions.MaxNotes"/> allows.
+    /// </summary>
+    /// <returns>
+    /// Each line to show with an <c>Omitted</c> of 0.
+    /// When lines are left out, one entry between the innermost and outermost lines has a null <c>Line</c> and the number left out.
+    /// </returns>
+    public static IEnumerable<(ContextLine? Line, int Omitted)> Notes(IReadOnlyList<ContextLine> context, RenderOptions options)
+    {
+        var shown = Math.Min(context.Count, options.MaxNotes);
+        var innermost = shown - shown / 2;
+        var outermost = shown / 2;
+
+        for (var i = 0; i < innermost; i++)
+        {
+            yield return (context[i], 0);
+        }
+
+        if (context.Count > shown)
+        {
+            yield return (null, context.Count - shown);
+        }
+
+        for (var i = context.Count - outermost; i < context.Count; i++)
+        {
+            yield return (context[i], 0);
         }
     }
 }

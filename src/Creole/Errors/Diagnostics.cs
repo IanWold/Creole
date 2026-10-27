@@ -102,7 +102,7 @@ public sealed class Diagnostics : IReadOnlyList<ParseError>, IEquatable<Diagnost
     /// <summary>
     /// Writes each error against its source, which <paramref name="byId"/> covers.
     /// </summary>
-    private string RenderAgainst(Dictionary<SourceId, SourceText> byId)
+    private string RenderAgainst(Dictionary<SourceId, SourceText> byId, RenderOptions options)
     {
         var builder = new StringBuilder();
 
@@ -113,7 +113,7 @@ public sealed class Diagnostics : IReadOnlyList<ParseError>, IEquatable<Diagnost
                 builder.Append("\n\n");
             }
 
-            DiagnosticRenderer.Append(builder, error, byId[error.Span.Source], byId);
+            DiagnosticRenderer.Append(builder, error, byId[error.Span.Source], byId, options);
         }
 
         return builder.ToString();
@@ -202,23 +202,37 @@ public sealed class Diagnostics : IReadOnlyList<ParseError>, IEquatable<Diagnost
     /// Errors are written one per line when the collection holds no text for a source that an error or one of its context lines points into, or when a text is too short for a span.
     /// </para>
     /// <para>
-    /// A line is the error's <see cref="ParseError.ToString"/>, such as <c>error[parser] at 15..21: unexpected string "host"; expected ',' or '}'; in object starting at 2</c>, and lines are joined by <c>\n</c>.
+    /// A line is the error's <see cref="ParseError.ToString()"/>, such as <c>error[parser] at 15..21: unexpected string "host"; expected ',' or '}'; in object starting at 2</c>, and lines are joined by <c>\n</c>.
     /// Offsets are character offsets (<see cref="SourceSpan.CharStart"/> to <see cref="SourceSpan.CharEnd"/>), and a context line shows the character offset where its construct started.
     /// </para>
+    /// <para>
+    /// What is shown is limited as <see cref="RenderOptions.Default"/> limits it.
+    /// </para>
     /// </remarks>
-    public string Render()
+    public string Render() =>
+        Render(RenderOptions.Default);
+
+    /// <summary>
+    /// Writes the errors as <see cref="Render()"/> does, within the limits in <paramref name="options"/>.
+    /// </summary>
+    /// <param name="options">The limits on what is shown, such as how many context lines an error shows.</param>
+    /// <returns>The errors in span order, or an empty string when there are no errors.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+    public string Render(RenderOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
+
         if (_sources.Length > 0)
         {
             var byId = ById(_sources);
 
             if (Uncovered(byId) is null)
             {
-                return RenderAgainst(byId);
+                return RenderAgainst(byId, options);
             }
         }
 
-        return string.Join('\n', (IEnumerable<ParseError>)_errors);
+        return string.Join('\n', _errors.Select(error => error.ToString(options)));
     }
 
     /// <summary>
@@ -237,16 +251,32 @@ public sealed class Diagnostics : IReadOnlyList<ParseError>, IEquatable<Diagnost
     /// <remarks>
     /// Columns count Unicode scalar values. Carets are aligned for a terminal: by grapheme cluster, with wide characters as two columns and tabs expanded to stops of four.
     /// Only <paramref name="sources"/> are used, not the texts this collection holds.
+    /// What is shown is limited as <see cref="RenderOptions.Default"/> limits it.
     /// </remarks>
     /// <exception cref="ArgumentException">
     /// <paramref name="sources"/> contains a null or a repeated id, lacks a source an error or its context points into, or has a text shorter than an error's span or than where a context line starts.
     /// </exception>
-    public string Render(params ReadOnlySpan<SourceText> sources)
+    public string Render(params ReadOnlySpan<SourceText> sources) =>
+        Render(RenderOptions.Default, sources);
+
+    /// <summary>
+    /// Writes each error against the line of source text it points into, as <see cref="Render(ReadOnlySpan{SourceText})"/> does, within the limits in <paramref name="options"/>.
+    /// </summary>
+    /// <param name="options">The limits on what is shown, such as how many context lines an error shows.</param>
+    /// <param name="sources">The text of every source the errors point into, each with a different <see cref="SourceText.Id"/>.</param>
+    /// <returns>The errors in span order, separated by blank lines, or an empty string when there are no errors.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="sources"/> contains a null or a repeated id, lacks a source an error or its context points into, or has a text shorter than an error's span or than where a context line starts.
+    /// </exception>
+    public string Render(RenderOptions options, params ReadOnlySpan<SourceText> sources)
     {
+        ArgumentNullException.ThrowIfNull(options);
+
         var byId = ById(sources);
 
         return Uncovered(byId) is { } problem
             ? throw new ArgumentException(problem, nameof(sources))
-            : RenderAgainst(byId);
+            : RenderAgainst(byId, options);
     }
 }

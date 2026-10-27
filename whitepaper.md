@@ -601,6 +601,8 @@ error[parser]: expected ',' or '}'
   = note: in object starting at 2:1
 ```
 
+A long source line is shown as a window around the span, and a long run of notes is cut to its innermost and outermost lines (§ Limits for untrusted input).
+
 ### Recovery
 
 `p.Recover(strategy, fallback)` catches any failure of `p`, records a diagnostic, repairs the input position and returns `fallback`, often an explicit error node. It never re-runs `p`. It needs the failure log to build its diagnostic, so in a parse's first run, which has no log, the first failure it would catch ends that run, and the parse runs again with the log ([ADR-0027](work/docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)). A depth limit is not a failure it can catch (§ Limits for untrusted input). Before skipping, it restores the mode stack and layer state that held when `p` started, because a half-parsed construct's mode changes no longer apply. The restore is an ordinary mode change at the current position, so any lookahead lexed under the abandoned mode is invalidated. It builds its diagnostic from the furthest failure and then clears it, so a failure it has reported is not reported again. The diagnostic keeps that failure, and if a mark later withdraws the diagnostic, the failure is recorded again ([ADR-0030](work/docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md)). Strategies follow chumsky's catalogue:
@@ -622,7 +624,7 @@ Lexer layers recover the same way. `Layer.Tokens(..., onError: Recover.SkipChar(
 
 `ParseResult<T>` is a union of Parsed, Recovered and Failed (§ Using C# 15 unions). Recovered and Failed carry a `Diagnostics` collection ordered by span. `Parsed<T>` means no errors were recorded. After recovery a value can exist alongside errors, which is what editors and linters want, and the Recovered case makes that state impossible to overlook.
 
-The collection holds the text of the sources its errors point into, so `Diagnostics.Render()` shows them as in § The error model. `Parse(text, source: path)` names the source. The result refers to the caller's string or memory and copies nothing, so a caller that reuses a buffer renders first, as it would read slices first. A collection without those texts, such as one built from bare errors, renders one line per error. Equality ignores the held texts ([ADR-0024](work/docs/decisions/0024-a-parses-diagnostics-hold-their-source-text.md)).
+The collection holds the text of the sources its errors point into, so `Diagnostics.Render()` shows them as in § The error model. `Parse(text, source: path)` names the source. The result refers to the caller's string or memory and copies nothing, so a caller that reuses a buffer renders first, as it would read slices first. A collection without those texts, such as one built from bare errors, renders one line per error. Equality ignores the held texts ([ADR-0024](work/docs/decisions/0024-a-parses-diagnostics-hold-their-source-text.md)). `Render` also takes a `RenderOptions` that bounds what it shows (§ Limits for untrusted input).
 
 ### Limits for untrusted input
 
@@ -635,6 +637,18 @@ The collection holds the text of the sources its errors point into, so `Diagnost
 - **Failed parses.** A failed parse over in-memory input runs twice, first without a failure log and then with one ([ADR-0027](work/docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)), and the second run also records, so it costs up to about two and a half times a successful parse of the same input. A medium JSON document broken at its end took 2.3 times as long as the valid one. The bound stays linear in the input.
 
 Recursion in user code is not counted. That includes `Select` and `Where` functions, custom scanners and code that builds grammars.
+
+**Rendered errors.** An error on hostile input must also render small. `Render`, and `ParseError.ToString()` for the one-line form, bound the text that comes from input. The errors themselves keep everything, so engines and tools see exact data ([ADR-0029](work/docs/decisions/0029-rendered-errors-bound-text-from-input-with-caller-set-limits.md)).
+
+| `RenderOptions` | Default | Bounds |
+| --- | --- | --- |
+| `MaxWidth` | 120 columns | The excerpt of a source line, and an unexpected item's display, such as a token's `Detail` |
+| `MaxNotes` | 10 | The context lines shown for one error |
+
+- **The excerpt.** A line wider than `MaxWidth` is shown as a window centred on the span, with `…` where text is left out. A span wider than the window shows its start, with carets to the edge. The location line keeps the true line and column.
+- **Columns.** Text is measured as carets are. A cluster counts as at least one column, so zero-width characters cannot pile up, and shows at most its first 32 scalar values. An unexpected item's display is cut to `MaxWidth` with a trailing `…`, and its control characters are replaced as a source line's are.
+- **Notes.** Past `MaxNotes`, the innermost half and the outermost half are kept, with one line between them that counts the rest. The innermost notes name the construct that failed, and the outermost say where the nesting began.
+- **What is bounded.** With finite limits, each rendered line has a maximum length that depends only on the grammar and the options. `int.MaxValue` lifts either limit. The number of errors is not bounded, so a parse that recovers can still render many errors.
 
 ## Static analysis
 
@@ -879,7 +893,7 @@ Parsing is synchronous over buffered data; asynchrony lives only at the source. 
 
 Byte sources decode through a `Layer<byte, char>`, so decoding is just another layer. Spans then carry both byte offsets into the root source and character offsets into the decoded text (§ Source spans).
 
-**Diagnostics from streams.** A streaming parse discards text behind the bookmark horizon, so it cannot render a diagnostic later. Instead, each diagnostic raised in streaming mode is resolved at once. It captures its line and column, from a line counter the root layer updates as it releases segments, and a snippet of the offending line capped at a configurable length. Whole-input parses still resolve lazily, from the source text their result holds (§ Results). Either way, `Diagnostics.Render()` shows the format in § The error model.
+**Diagnostics from streams.** A streaming parse discards text behind the bookmark horizon, so it cannot render a diagnostic later. Instead, each diagnostic raised in streaming mode is resolved at once. It captures its line and column, from a line counter the root layer updates as it releases segments, and a snippet of the offending line: the window that rendering would show (§ Limits for untrusted input), at a width set in the parse's options. `Render` narrows it further if its own `MaxWidth` is smaller. Whole-input parses still resolve lazily, from the source text their result holds (§ Results). Either way, `Diagnostics.Render()` shows the format in § The error model.
 
 ### The restart protocol
 
