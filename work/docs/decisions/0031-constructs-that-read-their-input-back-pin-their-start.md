@@ -19,9 +19,10 @@
 | `String` of more than one character | `Reset(start)` after a partial match ([StringPlan.cs](../../../src/Creole/Plans/StringPlan.cs)) | The literal's length less one |
 | `CIString` | The same, and `Since(start)` on a match | The literal's length |
 | Compiled `Longest` | Reads past the match, backs up, and may run the winner or the interpreter again from the start ([DfaLongestPlan.cs](../../../src/Creole/Plans/DfaLongestPlan.cs)) | The token plus its backup. Already pinned |
+| `Custom` | Its scanner may scan a copy of the cursor and assign it back only on success, as [custom-scanners.md](../../../docs/concepts/custom-scanners.md) tells authors to. The original stays at the start while the copy reads ahead | The scanner's token |
 | Filters, chained operators, `Context`, custom scanners | Read one position behind the cursor when an error is built | One position each. Covered by [ADR-0028](0028-an-errors-items-are-copied-when-the-buffer-releases-them.md) |
 
-A custom scanner cannot go back. The public `Cursor<T>` offers `Available`, `Advance`, `TryPeek`, `TryRead` and `IsAtEnd`, and no way to rewind or slice.
+A custom scanner has no method that rewinds or slices. The public `Cursor<T>` offers only `Available`, `Advance`, `TryPeek`, `TryRead` and `IsAtEnd`. But `Cursor<T>` is a struct, and a copy is an independent position over the same input ([cursor.md](../../../docs/engines/cursor.md)). A scanner goes back by keeping the original while a copy reads ahead. A release computed from the copy's position can free the segment the original still holds, and the original then reads pooled memory without any error.
 
 Over a stream buffer, `Since` and `Reset` throw when the start's segment has been released ([Cursor.cs](../../../src/Creole/Cursor.cs)). Nothing calls `Release` yet (LAY-01's outcome), so no test fails today. Once LAY-02 computes the horizon, a `Text` whose range crosses a released segment throws. The Phase 0 review found this with the gate's own `NoneOf(...).SkipAtLeastOnce().Text()` (finding 17). `StreamBuffer.Release` keeps the segment holding the item just below the horizon (ADR-0028 point 3). So a window of one item never fails, and a one-character `String` is safe. Longer windows fail when segments are small, and the tests use segments of one and two items.
 
@@ -107,7 +108,7 @@ The layer's pin moves to the start of each step as the step begins. It stays at 
 
 ## Decision
 
-Options **1B and 2C**. Accepted by the maintainer on 2026-10-27, as written.
+Options **1B and 2C**. Accepted by the maintainer on 2026-10-27, as written, and edited in place before merge to pin `Custom` (see the note after Changes made).
 
 **1. Constructs that pin.** These pin their start while they run:
 
@@ -116,13 +117,14 @@ Options **1B and 2C**. Accepted by the maintainer on 2026-10-27, as written.
 | `Atomic`, `Lookahead`, `Not`, every `Longest`, compiled or not | They may rewind (unchanged) |
 | `Slice`, `Text` | They read their range back |
 | `String` or `CIString` of more than one character | They rewind into their range after a partial match. `CIString` also reads the range back |
+| `Custom` | Its scanner may keep the cursor at its start while a copy reads ahead |
 
 A one-character `String` need not pin, because the buffer keeps the item below the horizon (ADR-0028 point 3). A construct added later follows the same rule:
 
 - If it reads its range back or rewinds into it, it pins its start.
 - If it needs only certain positions, it holds them under ADR-0028.
 
-Custom scanners take no pin while `Cursor` offers no way back. If REL-04 adds one, a scanner that uses it must pin.
+A copy of the cursor made inside a pinned construct carries the floor (point 3), so it never releases below the construct's start. The engine's own copies that may move ahead of the cursor keep a floor at the cursor's position for the same reason.
 
 **2. The layer's own pin.** A producing layer pins its input at the start of the step it is running from the moment the step begins. When the step ends, the pin moves to the `stepStart` of the oldest output the layer still holds, or to the next step's start if it holds none. A restart keeps the pin (ADR-0030 point 1).
 
@@ -142,7 +144,7 @@ So pins cost time only in the last layer of a pipeline over streamed input. That
 
 **5. § Guarantees point 2 becomes:**
 
-> **Bounded memory.** Memory at a boundary is proportional to the longest window held open by a pin in the layer above, plus the input of the step that layer is running and of the steps that produced the items it still holds. `Atomic`, `Lookahead`, `Not`, `Longest`, `Slice`, `Text` and a longer `String` or `CIString` pin (§ Bookmarks and retention). `Or` and repetition add nothing, so a large document keeps a constant number of items per boundary, however deeply its `Or`s nest, as long as no pin in the last layer spans it.
+> **Bounded memory.** Memory at a boundary is proportional to the longest window held open by a pin in the layer above, plus the input of the step that layer is running and of the steps that produced the items it still holds. `Atomic`, `Lookahead`, `Not`, `Longest`, `Slice`, `Text`, `Custom` and a longer `String` or `CIString` pin (§ Bookmarks and retention). `Or` and repetition add nothing, so a large document keeps a constant number of items per boundary, however deeply its `Or`s nest, as long as no pin in the last layer spans it.
 
 **6. What LAY-02 builds.** LAY-02 keeps:
 
@@ -202,12 +204,14 @@ What would change this:
 ## Changes made
 
 - **Whitepaper:**
-  - [§ Bookmarks and retention](../../../whitepaper.md#bookmarks-and-retention): the pinning bookmarks list gains `Slice`, `Text`, and a `String` or `CIString` of more than one character, with the rule for constructs added later (point 1). The retention paragraph gives the horizon's four inputs and the single floor (point 3), the producing layer's pin from the start of each step (point 2), and where engines may skip pins (point 4).
+  - [§ Bookmarks and retention](../../../whitepaper.md#bookmarks-and-retention): the pinning bookmarks list gains `Slice`, `Text`, a `String` or `CIString` of more than one character, and `Custom`, with the rule for constructs added later (point 1). The retention paragraph gives the horizon's four inputs and the single floor (point 3), the producing layer's pin from the start of each step (point 2), and where engines may skip pins (point 4).
   - [§ Guarantees](../../../whitepaper.md#guarantees) point 2, as in point 5.
   - [§ Text capture](../../../whitepaper.md#text-capture): while `Slice` or `Text` runs over streamed input, its start is pinned.
-  - Checked and unchanged: § Guarantees point 3 and § Deterministic mode, which speak of token layers, where none of the new pinning constructs exist; § The restart protocol, which already keeps the layers' pins.
+  - Checked and unchanged: § Guarantees point 3 and § Deterministic mode. They speak of token layers, which have no `Slice`, `Text`, `String` or `CIString`, and rule 4 of § Deterministic mode excludes opaque nodes such as `Custom`. Also § The restart protocol, which already keeps the layers' pins.
 - **Cards:**
   - [LAY-02](../../active/06-layers-and-pipelines/LAY-02-marks-and-retention.md): scope narrowed as point 6 says, "reference-counted" replaced by point 3, and a new criterion for read-back constructs across released segments and the step pin.
   - [MODE-03](../../active/07-mode-channels/MODE-03-rollback-rule.md) and [ERR-04](../../active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md): each gains ADR-0030 point 9's rule and point 6's re-run for its part.
   - [GEN-06](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md): generated code pins as the interpreter does, and may skip pins where point 4 allows.
   - No new cards.
+
+This record was edited in place before its branch merged. LAY-02's build plan found that the Context's "a custom scanner cannot go back" was wrong: the documented way to write a scanner keeps the original cursor at its start while a copy reads ahead. `Custom` now pins its start (point 1), and the Context, point 5's guarantee text and Changes made say so.
