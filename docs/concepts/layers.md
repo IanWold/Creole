@@ -1,10 +1,65 @@
 # Layers
 
-A layer turns a stream of one item type into a stream of another, such as characters into tokens, or tokens into tokens with INDENT and DEDENT added. The design is in the [whitepaper's § Layers, streams and pipelines](../../whitepaper.md#layers-streams-and-pipelines).
+A layer turns a stream of one item type into a stream of another, such as characters into tokens, or tokens into tokens with INDENT and DEDENT added. A `Layer<TIn, TOut>` is data, as a parser is: building one runs nothing, and one layer can be shared between threads and used in any number of chains. The design is in the [whitepaper's § Layers, streams and pipelines](../../whitepaper.md#layers-streams-and-pipelines).
+
+This version builds and chains layers, but has no public way to run them yet.
+
+## Making layers
+
+| Method | Produces |
+| --- | --- |
+| `Layer.Tokens(item)` | The value of `item`, run repeatedly to the end of the input |
+| `Layer.Tokens(item, skip)` | The same, running `skip` before each item, such as whitespace between tokens |
+| `Layer.Where<T>(predicate)` | The items for which `predicate` is true |
+| `Layer.Select<TIn, TOut>(selector)` | `selector` applied to each item |
+| `Layer.Identity<T>()` | Its input, unchanged |
+
+A layer runs in steps. It runs a step only when the layer above it needs another item, so it never reads further ahead than that. Every item carries a span in the original source, so an error at any layer points at the characters behind it ([Source spans](spans.md#spans-of-a-layers-items)).
+
+## `Layer.Tokens`
+
+`Layer.Tokens` is the usual lexer. Each step runs `skip`, stops if the input has ended, and otherwise runs `item` and produces its value:
+
+```csharp
+Layer<char, string> lexer = Layer.Tokens(
+    Longest(Letter.AtLeastOnce().Text(), Digit.AtLeastOnce().Text(), String("<"), String("<="), String("<<")),
+    skip: Whitespace.SkipMany()
+);
+```
+
+Over `"  ab 12\t<=x "` this produces `ab`, `12`, `<=` and `x`, with the spans 2..4, 5..7, 8..10 and 10..11. A token's span runs from the first character `item` consumed to the last, so it never includes the whitespace before it.
+
+- `skip` must succeed, so it usually repeats, as `SkipMany` does. A `skip` that fails ends the parse like a failed item.
+- An `item` that succeeds without consuming input, such as `Digit.Many()` before a letter, would never let the layer reach the end of its input, so the step throws `GrammarException`.
+- Each step runs on its own. Backtracking, cuts and the depth count inside a step stay inside it, so the layer above sees only finished items, and rewinding over them never runs the layer again.
+
+If `item` or `skip` fails, the parse ends with an error from this layer. The error is the furthest failure the layer's steps recorded, from all its steps together, merged as [Errors § What a failure reports](errors.md#what-a-failure-reports) describes. So `skip` stopping where `item` then failed adds its expectation:
+
+```text
+error[lexer] at 3..4: unexpected '?'; expected whitespace, letter, digit, "<", "<=" or "<<"
+```
+
+The error's `Layer` is `lexer` unless the layer is given a name: `Layer.Tokens(item, skip, name: "words")`. A step that goes deeper than `ParseOptions.MaxDepth` ends the parse with the depth error, also named for the layer.
+
+## `Where` and `Select`
+
+`Layer.Where` and `Layer.Select` apply a function to each item, with no parsing. Each item keeps its span. Each function runs once for each item, when the layer above first needs the result.
+
+```csharp
+Layer<char, string> noLessThan = lexer.Then(Layer.Where<string>(static token => token != "<"));
+Layer<char, int> lengths = lexer.Then(Layer.Select<string, int>(static token => token.Length));
+```
+
+## Chaining layers: `Then`
+
+`a.Then(b)` runs `b` over the items `a` produces. The items of `a` are held in a buffer between the two, so `b` can rewind over them without `a` running again.
+
+- Chaining is associative: `a.Then(b).Then(c)` and `a.Then(b.Then(c))` produce the same items with the same spans.
+- `Layer.Identity<T>()` is its unit: `a.Then(Layer.Identity<T>())` and `Layer.Identity<T>().Then(a)` return `a` itself.
 
 ## A step's outputs: `Emit<T>`
 
-A layer runs in steps. A step that can produce any number of items returns them as an `Emit<T>`: an ordered list of outputs, each either derived from the input the step consumed or synthetic.
+A step that can produce any number of items returns them as an `Emit<T>`: an ordered list of outputs, each either derived from the input the step consumed or synthetic.
 
 | Output | Means | Its span |
 | --- | --- | --- |
