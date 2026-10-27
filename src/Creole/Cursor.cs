@@ -174,6 +174,11 @@ public ref struct Cursor<T>
     }
 
     /// <summary>
+    /// Stops holding the start that the matching <see cref="HoldStart"/> held.
+    /// </summary>
+    internal readonly void DropStart() => Failures?.DropStart();
+
+    /// <summary>
     /// Enters a context with <paramref name="text"/> at the cursor, for the failures recorded until <see cref="LeaveContext"/>.
     /// </summary>
     internal readonly void EnterContext(string text) => Failures?.Enter(text, Position);
@@ -224,6 +229,11 @@ public ref struct Cursor<T>
     internal static Cursor<T> FromMemory(ReadOnlyMemory<T> input) => new(input.Span) { _segment = input };
 
     /// <summary>
+    /// Holds the cursor's position in the failure log until <see cref="DropStart"/>, as the start of a filter, a chained operator or a custom scanner that may record a failure there after the cursor has moved on.
+    /// </summary>
+    internal readonly void HoldStart() => Failures?.HoldStart(Position);
+
+    /// <summary>
     /// The item at <paramref name="position"/>, which must be a position this cursor has already passed and the input still holds. The cursor does not move.
     /// </summary>
     internal readonly T ItemAt(long position)
@@ -236,7 +246,7 @@ public ref struct Cursor<T>
     /// <summary>
     /// Ends a <see cref="SaveFailures"/> and keeps the furthest failure as it is now.
     /// </summary>
-    internal readonly void KeepFailures(in FailureMark<T> mark) => Failures?.Keep(in mark);
+    internal readonly void KeepFailures(in FailureMark mark) => Failures?.Keep(in mark);
 
     /// <summary>
     /// Leaves the context the matching <see cref="EnterContext"/> entered.
@@ -251,23 +261,21 @@ public ref struct Cursor<T>
     /// <summary>
     /// The furthest failure as it is now, for <see cref="Relabel"/>.
     /// </summary>
-    internal readonly FailureMark<T> NoteFailures() => Failures?.Note() ?? default;
+    internal readonly FailureMark NoteFailures() => Failures?.Note() ?? default;
 
     /// <summary>
     /// Records a failure behind the cursor at <paramref name="start"/>, naming the input from there to the cursor: a rejected filter with <paramref name="message"/>, or a chained operator with <paramref name="chain"/>.
     /// </summary>
-    /// <param name="start">Where the named input starts.</param>
-    /// <param name="hasItem">Whether <paramref name="item"/> holds the item at <paramref name="start"/>.</param>
-    /// <param name="item">That item, captured before it was consumed.</param>
+    /// <param name="start">Where the named input starts, which the innermost <see cref="HoldStart"/> holds.</param>
     /// <param name="message">The filter's message, or null.</param>
     /// <param name="chain">The chained operator's message, or null.</param>
-    internal readonly void Reject(long start, bool hasItem, T item, string? message, ChainMessage? chain) =>
-        Failures?.Reject(start, Position, hasItem, item, message, chain);
+    internal readonly void Reject(long start, string? message, ChainMessage? chain) =>
+        Failures?.Reject(start, Position, message, chain);
 
     /// <summary>
     /// Replaces the expectations recorded at <paramref name="start"/> since <paramref name="note"/> with <paramref name="label"/>, as <c>Named</c> does.
     /// </summary>
-    internal readonly void Relabel(in FailureMark<T> note, long start, Expected label) => Failures?.Relabel(in note, start, label);
+    internal readonly void Relabel(in FailureMark note, long start, Expected label) => Failures?.Relabel(in note, start, label);
 
     /// <summary>
     /// Moves the cursor to <paramref name="position"/>, which must be a position this cursor has already reached and the input still holds.
@@ -303,12 +311,12 @@ public ref struct Cursor<T>
     /// <summary>
     /// Ends a <see cref="SaveFailures"/> and puts the furthest failure back as it was then.
     /// </summary>
-    internal readonly void RestoreFailures(in FailureMark<T> mark) => Failures?.Restore(in mark);
+    internal readonly void RestoreFailures(in FailureMark mark) => Failures?.Restore(in mark);
 
     /// <summary>
     /// Saves the furthest failure until <see cref="RestoreFailures"/> or <see cref="KeepFailures"/>, as <c>Lookahead</c>, <c>Not</c> and <c>Longest</c> do.
     /// </summary>
-    internal readonly FailureMark<T> SaveFailures() => Failures?.Save() ?? default;
+    internal readonly FailureMark SaveFailures() => Failures?.Save() ?? default;
 
     /// <summary>
     /// The items from <paramref name="start"/> up to the cursor, which must be a position this cursor has already reached and the input still holds.

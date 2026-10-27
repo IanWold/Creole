@@ -106,7 +106,7 @@ What each primitive expects when it fails:
 
 A `Match` whose value has no case expects nothing in particular, where its branch would have started.
 
-Two failures are reported before the cursor, at the start of the input they name: a value that `Where` rejects ([Sequencing](sequencing.md)) and a chained non-associative operator ([Expressions](expressions.md)). Each keeps what its error needs, such as the first item of the rejected value, when it is recorded, so building the error never reads input the parse has already moved past.
+Two failures are reported before the cursor, at the start of the input they name: a value that `Where` rejects ([Sequencing](sequencing.md)) and a chained non-associative operator ([Expressions](expressions.md)). Each is recorded as a position, and the error reads what it needs there, such as the first item of the rejected value, when it is built. The design, including how streamed input keeps those items, is in the [whitepaper's § Failure positions](../../whitepaper.md#failure-positions).
 
 How items show:
 

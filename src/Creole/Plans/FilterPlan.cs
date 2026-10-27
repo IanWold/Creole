@@ -10,7 +10,7 @@ namespace Creole;
 /// <para>
 /// It is reported where the source started, over the input the source consumed.
 /// The failures the source recorded are dropped first, so they cannot outrank it, and then the rejection is recorded with the message if there is one.
-/// The source's first item is captured before the source runs, so the error never reads it back from behind the cursor.
+/// The source's start is held in the failure log while the source runs, so a stream buffer that releases it first copies the item there.
 /// </para>
 /// </remarks>
 internal sealed class FilterPlan<TIn, T>(Plan<TIn, T> source, Func<T, bool> predicate, string? message) : Plan<TIn, T>
@@ -22,12 +22,14 @@ internal sealed class FilterPlan<TIn, T>(Plan<TIn, T> source, Func<T, bool> pred
     public override bool TryParse(ref Cursor<TIn> cursor, ref T result)
     {
         var start = cursor.Position;
-        var hasFirst = cursor.TryPeek(out var first);
         var failures = cursor.SaveFailures();
         T value = default!;
 
+        cursor.HoldStart();
+
         if (!_source.TryParse(ref cursor, ref value))
         {
+            cursor.DropStart();
             cursor.KeepFailures(in failures);
             return false;
         }
@@ -35,10 +37,12 @@ internal sealed class FilterPlan<TIn, T>(Plan<TIn, T> source, Func<T, bool> pred
         if (!_predicate(value))
         {
             cursor.RestoreFailures(in failures);
-            cursor.Reject(start, hasFirst, first, _message, null);
+            cursor.Reject(start, _message, null);
+            cursor.DropStart();
             return false;
         }
 
+        cursor.DropStart();
         cursor.KeepFailures(in failures);
         result = value;
         return true;

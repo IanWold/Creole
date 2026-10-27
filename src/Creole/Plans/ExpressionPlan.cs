@@ -16,7 +16,7 @@ namespace Creole;
 /// </para>
 /// <para>
 /// A second operator from a non-associative level fails the expression after consuming, reported where that operator starts with its chain message.
-/// Its first item is captured before it is matched, so the error never reads it back from behind the cursor.
+/// Its start is held in the failure log while it is matched, so a stream buffer that releases it first copies the item there.
 /// </para>
 /// </remarks>
 internal sealed class ExpressionPlan<TIn, T>(Plan<TIn, T> atom, OperatorPlan<TIn, T>[] prefixes, OperatorPlan<TIn, T>[] operators, int loosest) : Plan<TIn, T>
@@ -90,13 +90,16 @@ internal sealed class ExpressionPlan<TIn, T>(Plan<TIn, T> atom, OperatorPlan<TIn
 
                 if (op.Level == chained)
                 {
-                    var hasFirst = cursor.TryPeek(out var first);
+                    cursor.HoldStart();
 
                     if (op.TryMatch(ref cursor))
                     {
-                        cursor.Reject(mark.Position, hasFirst, first, null, op.Chain ?? ChainMessage.Unnamed);
+                        cursor.Reject(mark.Position, null, op.Chain ?? ChainMessage.Unnamed);
+                        cursor.DropStart();
                         return false;
                     }
+
+                    cursor.DropStart();
 
                     if (!mark.FailedEmpty(ref cursor))
                     {
