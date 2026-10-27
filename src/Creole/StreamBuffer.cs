@@ -19,7 +19,7 @@ namespace Creole;
 /// </para>
 /// <para>
 /// <see cref="Release"/> returns whole segments below a position to the pool, which may hand their arrays to anything else.
-/// Nothing may read a released position afterwards.
+/// Nothing may read a released position afterwards, so the layer above first copies out what its pending errors need.
 /// </para>
 /// </remarks>
 /// <param name="upstream">The layer that produces the items.</param>
@@ -64,6 +64,16 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
 
     private int IndexOf(long position) => (int)(position / _segmentSize - _released);
 
+    private (int Segment, int Offset) Locate(long position)
+    {
+        if (position < Start || position >= Filled)
+        {
+            throw new ArgumentOutOfRangeException(nameof(position), position, "The buffer does not hold this position.");
+        }
+
+        return (IndexOf(position), (int)(position % _segmentSize));
+    }
+
     /// <summary>
     /// Adds <paramref name="item"/> at the end of the filled items, with <paramref name="slot"/> beside it. Called by the upstream during a step.
     /// </summary>
@@ -84,12 +94,25 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     }
 
     /// <summary>
-    /// Returns to the pool every segment whose items all lie below <paramref name="horizon"/>.
+    /// The item at <paramref name="position"/>.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The buffer does not hold an item at <paramref name="position"/>: it was released or has not been produced.</exception>
+    public T ItemAt(long position)
+    {
+        var (segment, offset) = Locate(position);
+
+        return _items[segment][offset];
+    }
+
+    /// <summary>
+    /// Returns to the pool every segment whose items all lie below <paramref name="horizon"/>, after <paramref name="failures"/> has copied what its errors need from them.
     /// </summary>
     /// <remarks>
     /// A segment that still holds an item at or past <paramref name="horizon"/>, or that is not yet full, is kept.
     /// </remarks>
-    public void Release(long horizon)
+    /// <param name="horizon">The position below which nothing will be read again.</param>
+    /// <param name="failures">The failure log of the layer that reads this buffer, or null if it keeps none.</param>
+    public void Release(long horizon, FailureLog<T>? failures = null)
     {
         var count = (int)(Math.Min(horizon, Filled) / _segmentSize - _released);
 
@@ -97,6 +120,8 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
         {
             return;
         }
+
+        failures?.Preserve(this, Start, Start + (long)count * _segmentSize);
 
         for (var i = 0; i < count; i++)
         {
@@ -115,12 +140,9 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     /// <exception cref="ArgumentOutOfRangeException">The buffer does not hold an item at <paramref name="position"/>: it was released or has not been produced.</exception>
     public StreamSlot SlotAt(long position)
     {
-        if (position < Start || position >= Filled)
-        {
-            throw new ArgumentOutOfRangeException(nameof(position), position, "The buffer does not hold this position.");
-        }
+        var (segment, offset) = Locate(position);
 
-        return _slots[IndexOf(position)][(int)(position % _segmentSize)];
+        return _slots[segment][offset];
     }
 
     /// <summary>

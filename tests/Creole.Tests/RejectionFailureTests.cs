@@ -64,15 +64,15 @@ public class RejectionFailureTests
     private static ParseError? ErrorAfterRelease<T>(Parser<char, T> parser, string text)
     {
         var plan = new PlanBuilder(LoweringOptions.All).Lower(parser);
-        var source = new ReleasingSource(text);
+        var buffer = new StreamBuffer<char>(new ArrayUpstream<char>(text.ToCharArray()), segmentSize: 1);
         var log = new FailureLog<char>();
-        var cursor = new Cursor<char>(source) { Failures = log };
+        var cursor = new Cursor<char>(buffer) { Failures = log };
         T value = default!;
 
         _ = plan.TryParse(ref cursor, ref value);
-        source.Release(cursor.Position);
+        buffer.Release(cursor.Position, log);
 
-        return log.ToError(in cursor, "parser", static (start, end) => new SourceSpan(SourceId.Unnamed, start, end));
+        return log.ToError(in cursor, "parser", buffer.SpanOf);
     }
 
     private static bool ReadsBehindAfterRelease(string text)

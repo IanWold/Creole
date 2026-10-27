@@ -10,9 +10,14 @@ namespace Creole;
 /// The first failure at a position keeps its context stack.
 /// </para>
 /// <para>
-/// A rejected filter and a chained non-associative operator are reported behind the cursor, at the start of the input they name.
-/// They capture that position's item by value and the end of their span, so building the error reads nothing behind the cursor, and the span covers the longest of them.
+/// A rejected filter and a chained non-associative operator are reported behind the cursor, at the start of the input they name, and the span covers the longest of them.
 /// A chained operator's message is built only when the error is.
+/// </para>
+/// <para>
+/// The log records positions, not items. An error reads the items and spans it needs when it is built, from input that still holds them.
+/// A stream buffer may release input before that, so it first calls <see cref="Preserve"/>, which copies the item and span at each position an error may still read:
+/// the furthest failure's position and the end of the input it names, the same for each saved failure, the start of each context frame, and each start that <see cref="HoldStart"/> holds.
+/// A buffer releases only consumed items, which a mode change never discards, so no copy is of an item lexed under an abandoned mode.
 /// </para>
 /// <para>
 /// <c>Lookahead</c>, <c>Not</c> and <c>Longest</c> take a <see cref="Save"/> and may put the failure back as it was with <see cref="Restore"/>.
@@ -32,21 +37,33 @@ namespace Creole;
 /// </remarks>
 internal sealed class FailureLog<T>
 {
+    private readonly record struct HeldStart(long Position, ItemCopy? Copy);
+
+    private readonly record struct ItemCopy(T Item, SourceSpan Span);
+
+    private readonly record struct SavedFailure(long Position, long End, ItemCopy? At, SourceSpan? EndSpan);
+
+    private ItemCopy? _at;
     private ChainMessage? _chain;
     private int _context = -1;
     private int _count;
     private int _current = -1;
     private long _end = -1;
+    private SourceSpan? _endSpan;
     private Expected[] _expected = new Expected[8];
     private int _frameCount;
     private int _frameFloor;
     private ContextFrame[] _frames = new ContextFrame[8];
-    private bool _hasItem;
-    private T _item = default!;
+    private int _heldCount;
+    private HeldStart[] _heldStarts = new HeldStart[8];
+    private long _lastReleased = -1;
+    private SourceSpan _lastReleasedSpan;
     private string? _message;
     private int _protected;
     private int _records;
     private int[] _remap = [];
+    private int _saveCount;
+    private SavedFailure[] _saves = new SavedFailure[8];
     private int _start;
 
     /// <summary>
@@ -135,7 +152,7 @@ internal sealed class FailureLog<T>
 
             if (frame.Start < position)
             {
-                context.Add(new ContextLine(frame.Text, spanOf(frame.Start, frame.Start + 1)));
+                context.Add(new ContextLine(frame.Text, frame.StartSpan ?? spanOf(frame.Start, frame.Start + 1)));
             }
         }
 
@@ -157,8 +174,8 @@ internal sealed class FailureLog<T>
             _message = null;
             _chain = null;
             _end = -1;
-            _hasItem = false;
-            _item = default!;
+            _endSpan = null;
+            _at = null;
             _context = _current;
         }
 
@@ -177,14 +194,18 @@ internal sealed class FailureLog<T>
         _message = null;
         _chain = null;
         _end = -1;
-        _hasItem = false;
-        _item = default!;
+        _endSpan = null;
+        _at = null;
         _context = -1;
         _current = -1;
         _frameCount = 0;
         _frameFloor = 0;
+        _heldCount = 0;
+        _lastReleased = -1;
+        _lastReleasedSpan = default;
         _records = 0;
         _protected = 0;
+        _saveCount = 0;
     }
 
     /// <summary>
@@ -194,6 +215,11 @@ internal sealed class FailureLog<T>
     /// <param name="spanOf">The source span of the items from a start position up to an end position.</param>
     public List<ContextLine> ContextAt(long position, Func<long, long, SourceSpan> spanOf) =>
         ContextLines(_current, position, spanOf);
+
+    /// <summary>
+    /// Stops holding the start that the matching <see cref="HoldStart"/> held.
+    /// </summary>
+    public void DropStart() => _heldCount--;
 
     /// <summary>
     /// Enters a context with <paramref name="text"/> whose parser starts at <paramref name="start"/>.
@@ -215,10 +241,27 @@ internal sealed class FailureLog<T>
     }
 
     /// <summary>
+    /// Holds <paramref name="position"/>, where a filter or a chained operator starts, until the matching <see cref="DropStart"/>.
+    /// </summary>
+    /// <remarks>
+    /// A rejection reported there may come after a stream buffer has released the item, and <see cref="Preserve"/> copies it first.
+    /// </remarks>
+    public void HoldStart(long position)
+    {
+        if (_heldCount == _heldStarts.Length)
+        {
+            Array.Resize(ref _heldStarts, _heldCount * 2);
+        }
+
+        _heldStarts[_heldCount++] = new HeldStart(position, null);
+    }
+
+    /// <summary>
     /// Ends a <see cref="Save"/> and keeps the furthest failure as it is now.
     /// </summary>
-    public void Keep(in FailureMark<T> mark)
+    public void Keep(in FailureMark mark)
     {
+        _saveCount--;
         _protected = mark.Protected;
         _frameFloor = mark.FrameFloor;
     }
@@ -241,8 +284,67 @@ internal sealed class FailureLog<T>
     /// <summary>
     /// The furthest failure as it is now, for <see cref="Relabel"/>. Unlike <see cref="Save"/>, it protects nothing and needs no ending.
     /// </summary>
-    public FailureMark<T> Note() =>
-        new(Position, _start, _count, _message, _chain, _end, _hasItem, _item, _context, _records, _protected, _frameFloor);
+    public FailureMark Note() =>
+        new(Position, _start, _count, _message, _chain, _end, _context, _records, _protected, _frameFloor);
+
+    /// <summary>
+    /// Copies the item and span at each position an error may still read from <paramref name="start"/> up to <paramref name="end"/>, which <paramref name="buffer"/> is about to release.
+    /// </summary>
+    /// <remarks>
+    /// It also keeps the span of the last item released, which a rejection recorded later may end at.
+    /// </remarks>
+    public void Preserve(StreamBuffer<T> buffer, long start, long end)
+    {
+        bool Within(long position) => position >= start && position < end;
+
+        ItemCopy CopyAt(long position) => new(buffer.ItemAt(position), buffer.SpanOf(position, position + 1));
+
+        if (_at is null && Within(Position))
+        {
+            _at = CopyAt(Position);
+        }
+
+        if (_endSpan is null && Within(_end - 1))
+        {
+            _endSpan = buffer.SpanOf(_end - 1, _end);
+        }
+
+        for (var i = 0; i < _saveCount; i++)
+        {
+            var saved = _saves[i];
+
+            saved = saved with
+            {
+                At = saved.At is null && Within(saved.Position)
+                    ? CopyAt(saved.Position)
+                    : saved.At,
+                EndSpan = saved.EndSpan is null && Within(saved.End - 1)
+                    ? buffer.SpanOf(saved.End - 1, saved.End)
+                    : saved.EndSpan
+            };
+
+            _saves[i] = saved;
+        }
+
+        for (var i = 0; i < _heldCount; i++)
+        {
+            if (_heldStarts[i] is { Copy: null } held && Within(held.Position))
+            {
+                _heldStarts[i] = held with { Copy = CopyAt(held.Position) };
+            }
+        }
+
+        for (var i = 0; i < _frameCount; i++)
+        {
+            if (_frames[i] is { StartSpan: null } frame && Within(frame.Start))
+            {
+                _frames[i] = frame with { StartSpan = buffer.SpanOf(frame.Start, frame.Start + 1) };
+            }
+        }
+
+        _lastReleased = end - 1;
+        _lastReleasedSpan = buffer.SpanOf(end - 1, end);
+    }
 
     /// <summary>
     /// Records a failure at <paramref name="position"/> that expected <paramref name="expected"/>, or nothing in particular when it is null.
@@ -285,13 +387,14 @@ internal sealed class FailureLog<T>
     /// <summary>
     /// Records a failure reported behind the cursor at <paramref name="position"/>, naming the input up to <paramref name="end"/>: a rejected filter, with <paramref name="message"/> if it has one, or a chained operator, with <paramref name="chain"/>.
     /// </summary>
+    /// <remarks>
+    /// <paramref name="position"/> must be the start the innermost <see cref="HoldStart"/> holds, and <paramref name="end"/> the cursor's position.
+    /// </remarks>
     /// <param name="position">Where the input the failure names starts.</param>
     /// <param name="end">Where that input ends.</param>
-    /// <param name="hasItem">Whether <paramref name="item"/> holds the item at <paramref name="position"/>.</param>
-    /// <param name="item">The item at <paramref name="position"/>, captured before it was consumed.</param>
     /// <param name="message">The filter's message, or null.</param>
     /// <param name="chain">The chained operator's message, or null.</param>
-    public void Reject(long position, long end, bool hasItem, T item, string? message, ChainMessage? chain)
+    public void Reject(long position, long end, string? message, ChainMessage? chain)
     {
         if (!Reaches(position))
         {
@@ -307,12 +410,17 @@ internal sealed class FailureLog<T>
         if (end > _end)
         {
             _end = end;
+            _endSpan = _lastReleased >= 0 && end - 1 == _lastReleased
+                ? _lastReleasedSpan
+                : null;
         }
 
-        if (hasItem && !_hasItem)
+        if (_at is null
+            && _heldCount > 0
+            && _heldStarts[_heldCount - 1] is { Copy: { } copy } held
+            && held.Position == position)
         {
-            _item = item;
-            _hasItem = true;
+            _at = copy;
         }
     }
 
@@ -324,7 +432,7 @@ internal sealed class FailureLog<T>
     /// A failure that expected nothing in particular counts. Expectations recorded at <paramref name="start"/> before the note stay, ahead of the label.
     /// A message is never removed.
     /// </remarks>
-    public void Relabel(in FailureMark<T> note, long start, Expected label)
+    public void Relabel(in FailureMark note, long start, Expected label)
     {
         if (Position != start || _records == note.Records)
         {
@@ -341,16 +449,18 @@ internal sealed class FailureLog<T>
     /// <summary>
     /// Ends a <see cref="Save"/> and puts the furthest failure back as it was then.
     /// </summary>
-    public void Restore(in FailureMark<T> mark)
+    public void Restore(in FailureMark mark)
     {
+        var saved = _saves[--_saveCount];
+
         Position = mark.Position;
         _start = mark.Start;
         _count = mark.Count;
         _message = mark.Message;
         _chain = mark.Chain;
         _end = mark.End;
-        _hasItem = mark.HasItem;
-        _item = mark.Item;
+        _endSpan = saved.EndSpan;
+        _at = saved.At;
         _context = mark.Context;
         _records = mark.Records;
         _protected = mark.Protected;
@@ -360,10 +470,16 @@ internal sealed class FailureLog<T>
     /// <summary>
     /// Saves the furthest failure so that <see cref="Restore"/> can put it back, protecting its expectations and context frames until <see cref="Restore"/> or <see cref="Keep"/> ends the save.
     /// </summary>
-    public FailureMark<T> Save()
+    public FailureMark Save()
     {
         var mark = Note();
 
+        if (_saveCount == _saves.Length)
+        {
+            Array.Resize(ref _saves, _saveCount * 2);
+        }
+
+        _saves[_saveCount++] = new SavedFailure(Position, _end, _at, _endSpan);
         _protected = _count;
         _frameFloor = _frameCount;
 
@@ -373,13 +489,13 @@ internal sealed class FailureLog<T>
     /// <summary>
     /// The error for the furthest failure, or null if none was recorded.
     /// </summary>
-    /// <param name="cursor">A cursor over the input the failures were recorded in, which still holds the item at <see cref="Position"/>.</param>
+    /// <param name="cursor">A cursor over the input the failures were recorded in, which still holds every item the log needs and has not copied.</param>
     /// <param name="layer">The name of the layer, such as <c>parser</c>.</param>
     /// <param name="spanOf">The source span of the items from a start position up to an end position; for an empty range, a zero-width span there.</param>
     /// <remarks>
     /// The span covers the item at the position, or is zero-width at the end of the input, widened to cover the input a failure reported behind the cursor named.
     /// What was found is the message if one was recorded, otherwise that item or the end of input.
-    /// An item captured by a failure reported behind the cursor is used rather than read.
+    /// An item or span copied before a stream buffer released it is used rather than read.
     /// Expected items that show the same are listed once, in the order first recorded.
     /// Context lines come from the stack of the first failure at the position, innermost first, leaving out contexts that started there.
     /// </remarks>
@@ -390,10 +506,25 @@ internal sealed class FailureLog<T>
             return null;
         }
 
-        var item = _item;
-        var atItem = _hasItem || cursor.TryPeekAt(Position, out item);
-        var span = spanOf(Position, Math.Max(atItem ? Position + 1 : Position, _end));
-        var message = _message ?? _chain?.Text(_hasItem, _item);
+        T item;
+        bool atItem;
+
+        if (_at is { } copy)
+        {
+            item = copy.Item;
+            atItem = true;
+        }
+        else
+        {
+            atItem = cursor.TryPeekAt(Position, out item);
+        }
+
+        var first = _at?.Span ?? spanOf(Position, atItem ? Position + 1 : Position);
+        var last = _end > (atItem ? Position + 1 : Position)
+            ? _endSpan ?? spanOf(_end - 1, _end)
+            : first;
+        var span = new SourceSpan(first.Source, first.Start, last.End, first.CharStart, last.CharEnd);
+        var message = _message ?? _chain?.Text(atItem, item);
 
         Unexpected unexpected = message is not null
             ? new CustomMessage(message)
