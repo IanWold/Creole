@@ -77,7 +77,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | --- | --- | --- |
 | 1 | ✅ [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) StreamBuffer and pulling cursor | [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) |
 | 2 | ✅ [SPAN-02](active/05-source-spans/SPAN-02-out-of-band-span-storage.md) Out-of-band span storage | [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md), [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) |
-| 3 | [ERR-08](active/04-errors-and-recovery/ERR-08-bound-rendered-diagnostics.md) Bound rendered diagnostics | [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) |
+| 3 | ✅ [ERR-08](active/04-errors-and-recovery/ERR-08-bound-rendered-diagnostics.md) Bound rendered diagnostics | [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) |
 | 3 | [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md) Per-layer parse state | [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md), [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) |
 | 4 | [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) Marks and retention | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md) |
 | 4 | [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) Layer abstraction and Emit | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) |
@@ -210,7 +210,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- [ERR-08](active/04-errors-and-recovery/ERR-08-bound-rendered-diagnostics.md) Bound rendered diagnostics — Building
+None yet.
 
 ### Can start now
 
@@ -295,7 +295,7 @@ The error model, furthest-failure reporting, rendering, withdrawal and recovery.
 | [ERR-05](active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md) Recover combinator and strategies | [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md), [LAY-04](active/06-layers-and-pipelines/LAY-04-layer-local-state.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md), [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md), [STRM-01](active/08-streaming/STRM-01-starved-outcome.md) |
 | [ERR-06](active/04-errors-and-recovery/ERR-06-orinsert-for-missing-items.md) OrInsert for missing items | 2 | [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [SPAN-03](active/05-source-spans/SPAN-03-synthetic-items.md) |
 | [ERR-07](active/04-errors-and-recovery/ERR-07-lexer-recovery-and-cascade-suppression.md) Lexer recovery and cascade suppression | 2 | [ERR-05](active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md), [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) |
-| [ERR-08](active/04-errors-and-recovery/ERR-08-bound-rendered-diagnostics.md) Bound rendered diagnostics | 1 | [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) |
+| ✅ [ERR-08](active/04-errors-and-recovery/ERR-08-bound-rendered-diagnostics.md) Bound rendered diagnostics | 1 | [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) |
 
 ### SPAN — Source spans and provenance
 
