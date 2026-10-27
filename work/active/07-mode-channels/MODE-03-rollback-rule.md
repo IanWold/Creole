@@ -13,6 +13,7 @@ Rewinding any mark undoes mode changes made after it.
 ## Scope
 
 - Bookmarks and light marks record the mode log length.
+- Marks save the mode log length only in a layer whose grammar contains `SetMode`, `PushMode`, `PopMode` or `Bind`. A `Longest` whose winner can change the mode log runs the winner again when another alternative ran after it ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) points 6 and 9; [ADR-0031](../../docs/decisions/0031-constructs-that-read-their-input-back-pin-their-start.md) point 6).
 - Undo log entries newest first, applying invalidation at each entry's index.
 - `Or` undoes zero-width mode changes when an alternative fails without consuming.
 - An undo lowers the furthest failure at the entry's index, as a change does. A rewind withdraws diagnostics, then undoes mode changes, then restores any saved failure, which is lowered by the changes still in effect ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) points 2 and 3).

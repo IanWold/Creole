@@ -210,7 +210,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-None yet.
+- [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) Marks and retention — Building
 
 ### Can start now
 
@@ -219,7 +219,6 @@ These items have all their blockers done:
 - [CORE-14](active/02-core-combinators/CORE-14-choices-beyond-16-alternatives.md) Choices beyond 16 alternatives
 - [INT-10](active/03-interpreter/INT-10-dispatched-longest-measured-against-the-automaton.md) Dispatched Longest, measured against the automaton
 - [INT-12](active/03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md) Close the interpreter test gaps BENCH-01 left
-- [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) Marks and retention
 - [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) Layer abstraction and Emit
 - [GEN-11](active/11-source-generator/GEN-11-runtime-support-surface-for-generated-code.md) Runtime support surface for generated code
 - [BENCH-04](active/13-benchmarks/BENCH-04-revisit-string-handling-in-the-json-benchmark-grammar.md) Revisit string handling in the JSON benchmark grammar

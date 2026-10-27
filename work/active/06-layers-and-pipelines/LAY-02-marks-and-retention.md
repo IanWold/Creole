@@ -4,28 +4,28 @@
 | --- | --- |
 | Epic | [Layers, buffers and pipelines](../../README.md#lay--layers-buffers-and-pipelines) |
 | Phase | Phase 1 — Layers |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
-Pinning bookmarks keep what may be rewound; light marks pin nothing, so `Or` and repetition do not grow memory.
+Pinning bookmarks keep what may be rewound or read back; light marks pin nothing, so `Or` and repetition do not grow memory.
 
 ## Scope
 
-- Pinning bookmarks taken by `Atomic`, `Lookahead`, `Not` and every `Longest`, compiled or not: a compiled `Longest` re-runs the winner or the interpreter from its token's start ([ADR-0017](../../docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md) Consequences; § Bookmarks and retention). Reference-counted.
+- Pinning bookmarks taken by `Atomic`, `Lookahead`, `Not` and every `Longest`, compiled or not: a compiled `Longest` re-runs the winner or the interpreter from its token's start ([ADR-0017](../../docs/decisions/0017-regular-subtrees-compile-to-an-eager-commit-aware-automaton.md) Consequences; § Bookmarks and retention).
+- Pinning bookmarks taken by constructs that read their input back or rewind into it: `Slice`, `Text`, and a `String` or `CIString` of more than one character. A one-character `String` takes none ([ADR-0031](../../docs/decisions/0031-constructs-that-read-their-input-back-pin-their-start.md) point 1; [Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 17).
+- Pinning bookmarks nest, so the layer keeps one floor that each lowers to its start and restores on exit, not a count ([ADR-0031](../../docs/decisions/0031-constructs-that-read-their-input-back-pin-their-start.md) point 3).
 - An `Atomic` releases its bookmark at its exit. It may release earlier once a cut inside it is permanent: no open attempt between the cut and the `Atomic` can still fail without consuming, and no `Lookahead`, `Not` or `Longest` alternative lies between them. The engine gets no call when `Cut` runs, so earlier release needs the stack of open bookmarks and light marks; build it only if a measurement shows release at exit holds too much ([ADR-0010](../../docs/decisions/0010-cuts-under-dispatch-and-across-layers.md) point 2, which stands under [ADR-0011](../../docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md); an attempt is as ADR-0011 point 3 defines it; [Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 20).
-- Constructs that read behind the cursor also need their start retained: `Slice`, `Text`, `CIString`, a multi-character `String` (which resets after a partial read) and a compiled `Longest`. Streamed with nothing pinned, a `Text` across a segment boundary makes `Since` throw. This changes § Guarantees point 2, so it needs a decision record before the build ([Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 17).
-- Light marks taken before each attempt of `Or`, `Optional`, repetition (items, separators, terminators), `Expression.Build` (operators and atoms) and `Recover`: cursor position, mode log length, diagnostic count, layer-state reference, cut flag.
-- Horizon is the minimum of the cursor and the oldest pin; each layer pins its own input at the `stepStart` of its oldest retained output.
-- Light marks keep the furthest failure and withdraw only the diagnostics their own layer raised. A rewind withdraws diagnostics, then undoes mode changes, then restores any saved failure ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) points 2 and 4).
-- A layer whose grammar cannot change the mode, raise diagnostics or change layer state leaves those parts out of its marks, and a layer with a `Bind` saves every part ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 9).
-- `Longest` restores every restorable part between alternatives and leaves the winner's state after a match. It runs the winner again when another alternative ran after it and the winner can change the mode log, diagnostics or layer state ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 6).
-- The layer's pin at the `stepStart` of its oldest retained output belongs to the layer, not to a node, and a restart keeps it ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 1).
+- A producing layer pins its input at the start of the step it is running, from the moment the step begins, and then at the `stepStart` of its oldest retained output. The pin belongs to the layer, not to a node, and a restart keeps it ([ADR-0031](../../docs/decisions/0031-constructs-that-read-their-input-back-pin-their-start.md) point 2; [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 1).
+- The horizon is the minimum of the cursor, the floor, the layer's pin and the restart bookmark. The layer calls `Release` with its failure log ([ADR-0031](../../docs/decisions/0031-constructs-that-read-their-input-back-pin-their-start.md) point 3).
+- Engines may skip node pins inside a producing layer's step and over input held whole in memory, so in-memory parses keep Phase 0's hot path ([ADR-0031](../../docs/decisions/0031-constructs-that-read-their-input-back-pin-their-start.md) point 4).
+- Light marks, taken before each attempt of `Or`, `Optional`, repetition (items, separators, terminators), `Expression.Build` (operators and atoms) and `Recover`, keep their two fields: the cursor position and the cut flag. The cards that add the other parts add them to marks: MODE-03 the mode log length, ERR-04 the diagnostic count and LAY-04 the layer-state reference, each with [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 9's rule for leaving it out and point 6's re-run of a `Longest` winner ([ADR-0031](../../docs/decisions/0031-constructs-that-read-their-input-back-pin-their-start.md) point 6).
 
 ## Acceptance criteria
 
 - [ ] Property test of guarantee 2: deeply nested `Or` without `Atomic` keeps a constant number of items per boundary.
 - [ ] A layer with no modes, layer state or diagnostics takes two-field light marks, and the Phase 0 tests still pass. None of [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md)'s counterexamples can arise before those parts exist (point 11).
+- [ ] Over a stream buffer with segments of one and two items, `Slice`, `Text`, `String` and `CIString` give the in-memory result when their range crosses a released segment, and a producing layer's horizon never passes the start of the step it is running ([ADR-0031](../../docs/decisions/0031-constructs-that-read-their-input-back-pin-their-start.md)).
 
 ## Blocked by
 
@@ -51,7 +51,11 @@ Pinning bookmarks keep what may be rewound; light marks pin nothing, so `Or` and
 
 - [Research: Parlot 2.0 baselines and generator](../../docs/research/2026-10-24-parlot-2-0-baselines-and-generator.md) Prior art: Parlot 2.0.0 pins only where a parser can move back, and `Commit()` releases buffered text (finding 23)
 - [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements
+- [ADR-0031: Constructs that read their input back pin their start, and a producing layer pins the step it is running](../../docs/decisions/0031-constructs-that-read-their-input-back-pin-their-start.md) Accepted. `Slice`, `Text` and longer `String` and `CIString` pin; the layer pins its running step; node pins may be skipped in producing layers and over in-memory input
 
 ## Progress notes
 
 - 2026-10-24 (Not started): FND-10 research found Parlot 2.0.0 already bounds a streamed parse's buffer with pins and a backtrack floor (note, finding 23). Read it before designing retention. Next: unchanged.
+- 2026-10-27 (Designing): Started. Blockers INT-03, LAY-01 and LAY-08 are Done. Design first because the scope's read-behind retention (Phase 0 review finding 17) changes § Guarantees point 2 and needs a decision record before the build. Next: draft the ADR with `/decide`.
+- 2026-10-27 (Designing): Drafted ADR-0031 (Proposed): read-back constructs pin their start (1B over copy at release), a producing layer pins the step it is running from its start (2C, closing a gap where a mid-step release could free an emitted item's `stepStart`), one floor per layer instead of a count, pins skippable in producing layers and over in-memory input, guarantee 2 restated, and the ADR-0030 mark parts moved to MODE-03 and ERR-04. Next: the maintainer accepts, rejects or revises it; on acceptance, apply its Changes made and move to Building.
+- 2026-10-27 (Building): The maintainer accepted ADR-0031 as written. The whitepaper (§ Bookmarks and retention, § Guarantees point 2, § Text capture), this card's scope and criteria, MODE-03, ERR-04 and GEN-06 now follow it. LAY-03 is not done, so the build gives the layer's step pin a hook tested with test upstreams, as LAY-01's tests do; whichever of LAY-02 and LAY-03 lands second wires `Layer.Tokens` and `Transduce` to it. Next: `/build` to plan against the three criteria.
