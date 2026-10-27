@@ -69,7 +69,7 @@ Two maybes are equal if both are `Nothing` or both hold equal values. When `T` i
 
 At character layers, `p.Slice()` produces the characters `p` consumed as a `ReadOnlyMemory<char>`, and `p.Text()` produces them as a new `string`. Both discard `p`'s own result. Tokens should normally carry slices. If `p` fails, both fail the same way.
 
-When the input is held whole in memory, as a `string` is, a slice is a view of it and copies nothing. When the input is streamed, a slice is a copy, because the buffer that held those characters is reused once the parse moves on. Either way, a slice keeps its text for as long as you hold it. The design is in the [whitepaper's § Text capture](../../whitepaper.md#text-capture) and [ADR-0013](../../work/docs/decisions/0013-slices-view-in-memory-input-and-copy-streamed-input.md).
+When the input is held whole in memory, as a `string` is, a slice is a view of it and copies nothing. When the input is streamed, a slice is a copy, because the buffer that held those characters is reused once the parse moves on. Either way, a slice keeps its text for as long as you hold it. While a `Slice` or `Text` runs over streamed input, the buffer keeps every character from where it started, so memory grows with the longest text a parse captures. The design is in the [whitepaper's § Text capture](../../whitepaper.md#text-capture), [ADR-0013](../../work/docs/decisions/0013-slices-view-in-memory-input-and-copy-streamed-input.md) and [ADR-0031](../../work/docs/decisions/0031-constructs-that-read-their-input-back-pin-their-start.md).
 
 `Slice` and `Text` are extension members in the `TextCapture` class, so they apply to any `Parser<char, TOut>`, not only inside a `CharGrammar`.
 

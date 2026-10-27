@@ -124,7 +124,7 @@ A one-character `String` need not pin, because the buffer keeps the item below t
 - If it reads its range back or rewinds into it, it pins its start.
 - If it needs only certain positions, it holds them under ADR-0028.
 
-A copy of the cursor made inside a pinned construct carries the floor (point 3), so it never releases below the construct's start. The engine's own copies that may move ahead of the cursor keep a floor at the cursor's position for the same reason.
+A copy of the cursor made inside a pinned construct carries the floor (point 3), so it never releases below the construct's start.
 
 **2. The layer's own pin.** A producing layer pins its input at the start of the step it is running from the moment the step begins. When the step ends, the pin moves to the `stepStart` of the oldest output the layer still holds, or to the next step's start if it holds none. A restart keeps the pin (ADR-0030 point 1).
 

@@ -108,7 +108,7 @@ public class StreamBufferTests
     private static Cursor<char> Over(string text, int segmentSize, out ArrayUpstream<char> upstream, out StreamBuffer<char> buffer)
     {
         upstream = new ArrayUpstream<char>(text.ToCharArray());
-        buffer = new StreamBuffer<char>(upstream, segmentSize);
+        buffer = new StreamBuffer<char>(upstream, segmentSize, new OverwritingPool<char>('#'));
 
         return new Cursor<char>(buffer);
     }
@@ -243,7 +243,7 @@ public class StreamBufferTests
     {
         var state = new object();
         var buffer = new StreamBuffer<char>(new GroupUpstream([['a', 'b', 'c'], [], ['d']], [null, state, state]), segmentSize: 2);
-        var cursor = new Cursor<char>(buffer);
+        var cursor = new Cursor<char>(buffer) { Floor = 0 };
         var read = new List<char>();
 
         while (cursor.TryRead(out var item))
@@ -342,7 +342,7 @@ public class StreamBufferTests
     [Fact]
     public void RereadingAfterARewindNeverRunsTheUpstream()
     {
-        var cursor = Over("abcdef", 2, out var upstream, out _);
+        var cursor = Over("abcdef", 2, out var upstream, out _) with { Floor = 0 };
         var read = new List<char>();
 
         cursor.Advance(5);
@@ -398,7 +398,7 @@ public class StreamBufferTests
 
         var buffer = new StreamBuffer<string>(new SpanUpstream(["ab", "c", "de"], [At(0, 2), At(3, 4), At(5, 7)]), segmentSize: 2);
         var empty = new StreamBuffer<string>(new SpanUpstream([], []));
-        var cursor = new Cursor<string>(buffer);
+        var cursor = new Cursor<string>(buffer) { Floor = 0 };
 
         while (cursor.TryRead(out _)) { }
 

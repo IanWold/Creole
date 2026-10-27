@@ -6,6 +6,13 @@ namespace Creole;
 internal interface ICursorSource<T>
 {
     /// <summary>
+    /// Lets the source discard what lies below <paramref name="horizon"/>, which nothing will read again, after <paramref name="failures"/> has copied what its errors need.
+    /// </summary>
+    /// <param name="horizon">The minimum of the cursor and its floor.</param>
+    /// <param name="failures">The failure log of the layer that reads the source, or null if it keeps none.</param>
+    void Release(long horizon, FailureLog<T>? failures);
+
+    /// <summary>
     /// Gets the segment holding the item at <paramref name="position"/>, pulling more input if needed.
     /// </summary>
     /// <param name="position">An absolute position in the input.</param>

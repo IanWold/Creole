@@ -2,6 +2,8 @@ namespace Creole.Tests;
 
 internal class SegmentedSource<T>(T[] items, int segmentSize) : ICursorSource<T>
 {
+    public void Release(long horizon, FailureLog<T>? failures) { }
+
     public bool TryGetSegment(long position, out ReadOnlyMemory<T> segment, out long segmentStart)
     {
         if (position < 0 || position >= items.Length)

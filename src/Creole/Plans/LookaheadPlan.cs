@@ -6,6 +6,7 @@ namespace Creole;
 /// </summary>
 /// <remarks>
 /// A cut passed inside does not survive leaving it (ADR-0011 point 4).
+/// Its start is pinned while it runs, so a stream buffer keeps the input it may rewind to.
 /// </remarks>
 internal sealed class LookaheadPlan<TIn, T>(Plan<TIn, T> item) : Plan<TIn, T>
 {
@@ -15,6 +16,7 @@ internal sealed class LookaheadPlan<TIn, T>(Plan<TIn, T> item) : Plan<TIn, T>
     {
         var outerCut = cursor.Cut;
         var start = cursor.Position;
+        var floor = cursor.Pin();
         var failures = cursor.SaveFailures();
         cursor.Cut = false;
 
@@ -30,6 +32,7 @@ internal sealed class LookaheadPlan<TIn, T>(Plan<TIn, T> item) : Plan<TIn, T>
             cursor.KeepFailures(in failures);
         }
 
+        cursor.Unpin(floor);
         cursor.Cut = outerCut;
         return ok;
     }

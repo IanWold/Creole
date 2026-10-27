@@ -7,6 +7,7 @@ namespace Creole;
 /// </summary>
 /// <remarks>
 /// A cut passed inside does not survive leaving it (ADR-0011 point 4).
+/// Its start is pinned while it runs, so a stream buffer keeps the input it rewinds to.
 /// </remarks>
 internal sealed class NotPlan<TIn, T>(Plan<TIn, T> item) : Plan<TIn, Unit>
 {
@@ -16,6 +17,7 @@ internal sealed class NotPlan<TIn, T>(Plan<TIn, T> item) : Plan<TIn, Unit>
     {
         var outerCut = cursor.Cut;
         var start = cursor.Position;
+        var floor = cursor.Pin();
         var failures = cursor.SaveFailures();
         cursor.Cut = false;
         T value = default!;
@@ -23,6 +25,7 @@ internal sealed class NotPlan<TIn, T>(Plan<TIn, T> item) : Plan<TIn, Unit>
         var ok = _item.TryParse(ref cursor, ref value);
 
         cursor.Reset(start);
+        cursor.Unpin(floor);
         cursor.RestoreFailures(in failures);
         cursor.Cut = outerCut;
 
