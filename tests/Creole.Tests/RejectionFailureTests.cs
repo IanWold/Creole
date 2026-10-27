@@ -11,6 +11,8 @@ file sealed class ReleasingSource(string text) : ICursorSource<char>
     public void Release(long below) =>
         _released = below;
 
+    public void Release(long horizon, FailureLog<char>? failures) { }
+
     public bool TryGetSegment(long position, out ReadOnlyMemory<char> segment, out long segmentStart)
     {
         if (position < _released || position >= text.Length)

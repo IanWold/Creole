@@ -14,6 +14,7 @@ Diagnostics raised on paths that are later abandoned must disappear, so every er
 
 - Every diagnostic records the layer and the step that raised it.
 - Marks record their own layer's diagnostic count. Rewinding a mark withdraws the diagnostics its own layer raised after it, never another layer's ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 4).
+- Marks save the diagnostic count only in a layer whose grammar contains `Recover`, `OrInsert`, `Embed` or `Bind`. A `Longest` whose winner can raise diagnostics runs the winner again when another alternative ran after it ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) points 6 and 9; [ADR-0031](../../docs/decisions/0031-constructs-that-read-their-input-back-pin-their-start.md) point 6).
 - A hook for mode invalidation and restarts to withdraw the diagnostics raised by steps that are run again or whose outputs are discarded (used by MODE-02 and STRM-02).
 - A withdrawn diagnostic that was built from the furthest failure gives that failure back, before the rewind undoes mode changes ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 8).
 

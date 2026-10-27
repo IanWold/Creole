@@ -16,6 +16,7 @@ namespace Creole;
 /// It also runs when the winner, run again, does not match the input the automaton gave it, which would mean the automaton is wrong; Debug builds assert instead.
 /// A match records no failure, as the interpreter's plan records none once it has a winner; running the winner again puts the furthest failure back afterwards.
 /// A Regular alternative contains no <c>Cut</c>, so a match leaves the cut flag as it found it.
+/// Its start is pinned while it runs, so a stream buffer keeps the input it reads past and backs up over.
 /// </para>
 /// </remarks>
 internal sealed class DfaLongestPlan<T>(CommitAutomaton automaton, Plan<char, T>[] alternatives, MatchValue<T>?[] values) : Plan<char, T>
@@ -56,6 +57,7 @@ internal sealed class DfaLongestPlan<T>(CommitAutomaton automaton, Plan<char, T>
     public override bool TryParse(ref Cursor<char> cursor, ref T result)
     {
         var start = cursor.Position;
+        var floor = cursor.Pin();
         var classOf = _classOf;
         var ends = _ends;
         var live = _live;
@@ -113,7 +115,10 @@ internal sealed class DfaLongestPlan<T>(CommitAutomaton automaton, Plan<char, T>
         if (winner < 0)
         {
             cursor.Reset(start);
-            return _fallback.TryParse(ref cursor, ref result);
+
+            var fallback = _fallback.TryParse(ref cursor, ref result);
+            cursor.Unpin(floor);
+            return fallback;
         }
 
         cursor.Reset(start + best);
@@ -121,9 +126,12 @@ internal sealed class DfaLongestPlan<T>(CommitAutomaton automaton, Plan<char, T>
         if (values[winner] is { } value)
         {
             result = value(ref cursor, start);
+            cursor.Unpin(floor);
             return true;
         }
 
-        return Rerun(ref cursor, winner, start, ref result);
+        var rerun = Rerun(ref cursor, winner, start, ref result);
+        cursor.Unpin(floor);
+        return rerun;
     }
 }

@@ -90,7 +90,7 @@ sealed class RawStringScanner : IScanner<char, RawStringLiteral>
 
 The rules a scanner must follow:
 
-- **Fail without consuming input.** Creole tells an empty failure from a committed one by whether the cursor moved ([The cursor](../engines/cursor.md)). Scan a copy of the cursor, as above, and assign it back only on success.
+- **Fail without consuming input.** Creole tells an empty failure from a committed one by whether the cursor moved ([The cursor](../engines/cursor.md)). Scan a copy of the cursor, as above, and assign it back only on success. Over streamed input, Creole keeps the input from where the scanner started until it returns, so the copy may read as far ahead as it needs.
 - **Copy text that may cross segments.** Input can arrive in several segments, and the cursor exposes only spans, so a token's text cannot be returned as a slice of the input. Copy it, as the `StringBuilder` does above.
 - **Keep the declaration true.** Analysis trusts `Info`. A scanner that matches empty input after declaring `Nullable: false`, or starts with a character outside `First`, makes analysis wrong.
 

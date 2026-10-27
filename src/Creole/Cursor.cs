@@ -53,6 +53,17 @@ public ref struct Cursor<T>
     internal FailureLog<T>? Failures { get; init; }
 
     /// <summary>
+    /// The lowest position this layer's parse may still go back to, or <see cref="long.MaxValue"/> when nothing is pinned.
+    /// </summary>
+    /// <remarks>
+    /// Each construct that may go back to its start lowers the floor to its start with <see cref="Pin"/> and puts it back with <see cref="Unpin"/>.
+    /// A producing layer starts each step's cursor with a floor at the start of the oldest step whose outputs it still holds.
+    /// When the cursor moves on to its next segment, its source may release what lies below both the floor and the cursor.
+    /// A copy of the cursor keeps the floor, so a copy taken inside a pin never releases what the original may still read.
+    /// </remarks>
+    internal long Floor { get; set; } = long.MaxValue;
+
+    /// <summary>
     /// The most levels this layer's parse may be inside at once. <see cref="int.MaxValue"/> leaves only the stack check.
     /// </summary>
     internal int MaxDepth { get; init; } = int.MaxValue;
@@ -145,9 +156,18 @@ public ref struct Cursor<T>
     {
         var position = Position;
 
-        if (_source is not null && _source.TryGetSegment(position, out var segment, out var start))
+        if (_source is null || !_source.TryGetSegment(position, out var segment, out var start))
         {
-            SetSegment(segment, start, position);
+            return;
+        }
+
+        var entered = start != _segmentStart;
+
+        SetSegment(segment, start, position);
+
+        if (entered)
+        {
+            _source.Release(Math.Min(position, Floor), Failures);
         }
     }
 
@@ -264,6 +284,18 @@ public ref struct Cursor<T>
     internal readonly FailureMark NoteFailures() => Failures?.Note() ?? default;
 
     /// <summary>
+    /// Keeps the input from the cursor on until the matching <see cref="Unpin"/>, for a construct that may go back to where it started.
+    /// </summary>
+    /// <returns>The floor before this pin, to pass to <see cref="Unpin"/>.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal long Pin()
+    {
+        var floor = Floor;
+        Floor = Math.Min(floor, Position);
+        return floor;
+    }
+
+    /// <summary>
     /// Records a failure behind the cursor at <paramref name="start"/>, naming the input from there to the cursor: a rejected filter with <paramref name="message"/>, or a chained operator with <paramref name="chain"/>.
     /// </summary>
     /// <param name="start">Where the named input starts, which the innermost <see cref="HoldStart"/> holds.</param>
@@ -368,6 +400,12 @@ public ref struct Cursor<T>
 
         return at.TryPeek(out item);
     }
+
+    /// <summary>
+    /// Ends the matching <see cref="Pin"/>, putting back the floor it returned.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void Unpin(long floor) => Floor = floor;
 
     /// <summary>
     /// Moves past <paramref name="count"/> items, which may span several segments.

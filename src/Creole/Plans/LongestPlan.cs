@@ -8,6 +8,7 @@ namespace Creole;
 /// <remarks>
 /// Each alternative starts with no cut in force, and a cut passed inside one does not survive leaving it (ADR-0011 point 4).
 /// When every alternative is Regular, <see cref="DfaLongestPlan{T}"/> replaces this plan (<see cref="LoweringOptions.Dfa"/>).
+/// Its start is pinned while it runs, so a stream buffer keeps the input every alternative starts from.
 /// </remarks>
 internal sealed class LongestPlan<TIn, T>(Plan<TIn, T>[] alternatives) : Plan<TIn, T>
 {
@@ -17,6 +18,7 @@ internal sealed class LongestPlan<TIn, T>(Plan<TIn, T>[] alternatives) : Plan<TI
     {
         var outerCut = cursor.Cut;
         var start = cursor.Position;
+        var floor = cursor.Pin();
         var failures = cursor.SaveFailures();
         var bestEnd = -1L;
 
@@ -34,6 +36,7 @@ internal sealed class LongestPlan<TIn, T>(Plan<TIn, T>[] alternatives) : Plan<TI
         }
 
         cursor.Cut = outerCut;
+        cursor.Unpin(floor);
 
         if (bestEnd < 0)
         {
