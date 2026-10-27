@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Creole;
 
@@ -10,7 +11,12 @@ namespace Creole;
 /// <remarks>
 /// <para>
 /// Items are indexed by absolute position and held in segments of a fixed size, rented from a pool.
-/// Beside each item the buffer keeps a <see cref="StreamSlot"/>: the item's span, and what is needed to produce it again.
+/// Beside each item the buffer keeps what a <see cref="StreamSlot"/> holds: the item's span, and what is needed to produce it again.
+/// </para>
+/// <para>
+/// A span is stored as two 32-bit numbers: its start as an offset from its segment's base, which is the start of the segment's first span, and its length.
+/// A span that does not fit is kept whole in a list beside its segment: one whose offset or length is out of range, one from another source than the segment's first span, or one whose character offsets differ from its root offsets.
+/// So every span reads back exactly as it was added, and over a text root nothing is allocated per item.
 /// </para>
 /// <para>
 /// A <see cref="Cursor{T}"/> reads the buffer as its <see cref="ICursorSource{T}"/>.
@@ -27,15 +33,39 @@ namespace Creole;
 /// <param name="pool">Where segments are rented from and returned to; <see cref="ArrayPool{T}.Shared"/> if null.</param>
 internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1024, ArrayPool<T>? pool = null) : ICursorSource<T>
 {
+    /// <summary>
+    /// One segment: its items and slots, and what its spans are stored relative to.
+    /// </summary>
+    /// <param name="Items">The items, rented from the buffer's pool.</param>
+    /// <param name="Slots">The slot beside each item.</param>
+    /// <param name="SpanBase">The start of the segment's first span, from which its spans' offsets count.</param>
+    /// <param name="Source">The source of the segment's first span, which every span stored in its slots shares.</param>
+    /// <param name="Wide">The spans kept whole because they do not fit in a <see cref="PackedSpan"/>, or null if there are none.</param>
+    private record struct Segment(T[] Items, PackedSlot[] Slots, long SpanBase, SourceId Source, List<SourceSpan>? Wide);
+
+    /// <summary>
+    /// A <see cref="StreamSlot"/> as the buffer stores it, with its span packed.
+    /// </summary>
+    internal readonly record struct PackedSlot(PackedSpan Span, long StepStart, object? StateBefore, int GroupIndex);
+
+    /// <summary>
+    /// A span as the buffer stores it: <paramref name="Offset"/> from its segment's base, and <paramref name="Length"/>.
+    /// </summary>
+    /// <remarks>
+    /// A <paramref name="Length"/> of <see cref="WideLength"/> marks a span kept whole, and <paramref name="Offset"/> is then its index in the segment's list of wide spans.
+    /// </remarks>
+    internal readonly record struct PackedSpan(int Offset, int Length);
+
+    private const int WideLength = -1;
+
     private bool _ended;
-    private readonly List<T[]> _items = [];
     private SourceSpan _lastSpan;
     private readonly ArrayPool<T> _pool = pool ?? ArrayPool<T>.Shared;
     private long _released;
+    private readonly List<Segment> _segments = [];
     private readonly int _segmentSize = segmentSize > 0
         ? segmentSize
         : throw new ArgumentOutOfRangeException(nameof(segmentSize), segmentSize, "A segment must hold at least one item.");
-    private readonly List<StreamSlot[]> _slots = [];
     private readonly IUpstream<T> _upstream = upstream;
 
     /// <summary>
@@ -74,6 +104,39 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
         return (IndexOf(position), (int)(position % _segmentSize));
     }
 
+    private static PackedSpan Pack(ref Segment segment, SourceSpan span)
+    {
+        var offset = span.Start - segment.SpanBase;
+
+        if (span.Source == segment.Source
+            && span.CharStart == span.Start
+            && span.CharEnd == span.End
+            && offset is >= int.MinValue and <= int.MaxValue
+            && span.Length <= int.MaxValue
+        )
+        {
+            return new PackedSpan((int)offset, (int)span.Length);
+        }
+
+        segment.Wide ??= [];
+        segment.Wide.Add(span);
+
+        return new PackedSpan(segment.Wide.Count - 1, WideLength);
+    }
+
+    private SourceSpan SpanAt(long position)
+    {
+        var (index, offset) = Locate(position);
+        var segment = _segments[index];
+
+        return Unpack(in segment, segment.Slots[offset].Span);
+    }
+
+    private static SourceSpan Unpack(in Segment segment, PackedSpan span) =>
+        span.Length == WideLength
+        ? segment.Wide![span.Offset]
+        : new SourceSpan(segment.Source, segment.SpanBase + span.Offset, segment.SpanBase + span.Offset + span.Length);
+
     /// <summary>
     /// Adds <paramref name="item"/> at the end of the filled items, with <paramref name="slot"/> beside it. Called by the upstream during a step.
     /// </summary>
@@ -83,12 +146,13 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
 
         if (offset == 0)
         {
-            _items.Add(_pool.Rent(_segmentSize));
-            _slots.Add(ArrayPool<StreamSlot>.Shared.Rent(_segmentSize));
+            _segments.Add(new Segment(_pool.Rent(_segmentSize), ArrayPool<PackedSlot>.Shared.Rent(_segmentSize), slot.Span.Start, slot.Span.Source, Wide: null));
         }
 
-        _items[^1][offset] = item;
-        _slots[^1][offset] = slot;
+        ref var segment = ref CollectionsMarshal.AsSpan(_segments)[^1];
+
+        segment.Items[offset] = item;
+        segment.Slots[offset] = new PackedSlot(Pack(ref segment, slot.Span), slot.StepStart, slot.StateBefore, slot.GroupIndex);
         _lastSpan = slot.Span;
         Filled++;
     }
@@ -99,9 +163,9 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     /// <exception cref="ArgumentOutOfRangeException">The buffer does not hold an item at <paramref name="position"/>: it was released or has not been produced.</exception>
     public T ItemAt(long position)
     {
-        var (segment, offset) = Locate(position);
+        var (index, offset) = Locate(position);
 
-        return _items[segment][offset];
+        return _segments[index].Items[offset];
     }
 
     /// <summary>
@@ -131,12 +195,11 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
 
         for (var i = 0; i < count; i++)
         {
-            _pool.Return(_items[i], RuntimeHelpers.IsReferenceOrContainsReferences<T>());
-            ArrayPool<StreamSlot>.Shared.Return(_slots[i], clearArray: true);
+            _pool.Return(_segments[i].Items, RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+            ArrayPool<PackedSlot>.Shared.Return(_segments[i].Slots, clearArray: true);
         }
 
-        _items.RemoveRange(0, count);
-        _slots.RemoveRange(0, count);
+        _segments.RemoveRange(0, count);
         _released += count;
     }
 
@@ -146,9 +209,11 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     /// <exception cref="ArgumentOutOfRangeException">The buffer does not hold an item at <paramref name="position"/>: it was released or has not been produced.</exception>
     public StreamSlot SlotAt(long position)
     {
-        var (segment, offset) = Locate(position);
+        var (index, offset) = Locate(position);
+        var segment = _segments[index];
+        var slot = segment.Slots[offset];
 
-        return _slots[segment][offset];
+        return new StreamSlot(Unpack(in segment, slot.Span), slot.StepStart, slot.StateBefore, slot.GroupIndex);
     }
 
     /// <summary>
@@ -163,15 +228,15 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     {
         if (end > start)
         {
-            var first = SlotAt(start).Span;
-            var last = SlotAt(end - 1).Span;
+            var first = SpanAt(start);
+            var last = SpanAt(end - 1);
 
             return new SourceSpan(first.Source, first.Start, last.End, first.CharStart, last.CharEnd);
         }
 
         if (start < Filled)
         {
-            var at = SlotAt(start).Span;
+            var at = SpanAt(start);
 
             return new SourceSpan(at.Source, at.Start, at.Start, at.CharStart, at.CharStart);
         }
@@ -190,7 +255,8 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
         }
 
         segmentStart = position - position % _segmentSize;
-        segment = _items[IndexOf(position)].AsMemory(0, (int)Math.Min(_segmentSize, Filled - segmentStart));
+        segment = _segments[IndexOf(position)].Items.AsMemory(0, (int)Math.Min(_segmentSize, Filled - segmentStart));
+
         return true;
     }
 }

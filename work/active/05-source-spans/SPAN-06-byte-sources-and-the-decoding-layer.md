@@ -14,6 +14,7 @@ Decoding is just another layer, and spans carry both byte and character offsets.
 
 - A `Layer<byte, char>` decoder, UTF-8 at minimum, with diagnostics for invalid sequences.
 - Spans carry byte offsets and character offsets when a decoding layer exists; text-rooted pipelines skip the character fields.
+- Store the four offsets densely in the stream buffer. Until then, a span whose character offsets differ from its root offsets is kept whole beside its segment ([SPAN-02](SPAN-02-out-of-band-span-storage.md)).
 
 ## Acceptance criteria
 
