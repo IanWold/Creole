@@ -108,9 +108,10 @@ public sealed record ParseError(
     /// <summary>
     /// Describes <see cref="Unexpected"/>, such as <c>unexpected string "host"</c>. A <see cref="CustomMessage"/> is its text alone.
     /// </summary>
-    internal string DescribeUnexpected() => Unexpected switch
+    /// <remarks>An item's display can come from input, so it is cut to <see cref="RenderOptions.MaxWidth"/> and shown as source text is. A message is the grammar's, so it is shown as given.</remarks>
+    internal string DescribeUnexpected(RenderOptions options) => Unexpected switch
     {
-        UnexpectedItem item => $"unexpected {item.Display}",
+        UnexpectedItem item => $"unexpected {DisplayWidth.Cut(item.Display, options.MaxWidth)}",
         EndOfInput => "unexpected end of input",
         CustomMessage message => message.Text,
     };
@@ -123,7 +124,7 @@ public sealed record ParseError(
         var builder = new StringBuilder();
 
         builder.Append(CultureInfo.InvariantCulture, $"error[{Layer}] at {Span.CharStart}..{Span.CharEnd}: ");
-        builder.Append(DescribeUnexpected());
+        builder.Append(DescribeUnexpected(options));
 
         if (Expected.Count > 0)
         {

@@ -52,7 +52,8 @@ internal static class DiagnosticRenderer
         var (shown, caretColumn, caretCount) = DisplayWidth.ShowLine(
             source.Text.Span.Slice((int)lineStart, (int)(lineEnd - lineStart)),
             (int)(span.CharStart - lineStart),
-            (int)(span.CharEnd - lineStart)
+            (int)(span.CharEnd - lineStart),
+            options.MaxWidth
         );
 
         var number = Format(position.Line);
@@ -60,7 +61,7 @@ internal static class DiagnosticRenderer
         var hasExpected = error.Expected.Count > 0;
 
         builder.Append("error[").Append(error.Layer).Append("]: ");
-        builder.Append(hasExpected ? $"expected {error.DescribeExpected()}" : error.DescribeUnexpected()).Append('\n');
+        builder.Append(hasExpected ? $"expected {error.DescribeExpected()}" : error.DescribeUnexpected(options)).Append('\n');
 
         builder.Append(gutter).Append("--> ");
 
@@ -83,7 +84,7 @@ internal static class DiagnosticRenderer
 
         if (hasExpected)
         {
-            builder.Append(' ').Append(error.DescribeUnexpected());
+            builder.Append(' ').Append(error.DescribeUnexpected(options));
         }
 
         foreach (var (line, omitted) in Notes(error.Context, options))
