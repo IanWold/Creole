@@ -10,6 +10,7 @@ This version builds and chains layers, but has no public way to run them yet.
 | --- | --- |
 | `Layer.Tokens(item)` | The value of `item`, run repeatedly to the end of the input |
 | `Layer.Tokens(item, skip)` | The same, running `skip` before each item, such as whitespace between tokens |
+| `Layer.Transduce(initialState, step, atEnd)` | The outputs of `step`, run repeatedly to the end of the input, then those of `atEnd`: none, one or several per step, such as a layout pass adding INDENT and DEDENT |
 | `Layer.Where<T>(predicate)` | The items for which `predicate` is true |
 | `Layer.Select<TIn, TOut>(selector)` | `selector` applied to each item |
 | `Layer.Identity<T>()` | Its input, unchanged |
@@ -41,6 +42,39 @@ error[lexer] at 3..4: unexpected '?'; expected whitespace, letter, digit, "<", "
 
 The error's `Layer` is `lexer` unless the layer is given a name: `Layer.Tokens(item, skip, name: "words")`. A step that goes deeper than `ParseOptions.MaxDepth` ends the parse with the depth error, also named for the layer.
 
+## `Layer.Transduce`
+
+`Layer.Transduce` runs a step parser that returns an [`Emit<T>`](#a-steps-outputs-emitt): any number of outputs per step, each derived from the input the step consumed or synthetic. Each step stops if the input has ended, and otherwise runs `step` and produces its outputs in order. When the input ends, the layer runs `atEnd` once and produces its outputs too.
+
+This pass turns each newline token into a synthetic `;`, passes other tokens through, and adds a synthetic `<end>`:
+
+```csharp
+Layer<string, string> semicolons = Layer.Transduce(
+    initialState: 0,
+    step: OneOf(Token("\n").Select<Emit<string>>(static _ => Emit.Synthetic(";")), Any.Select(static token => Emit.One(token))),
+    atEnd: static _ => Emit.Synthetic("<end>")
+);
+
+Layer<char, string> lexer = statements.Then(semicolons);
+```
+
+Over `"a = 1\nb = 2\n"`, with `statements` a lexer that produces names, numbers, `=` and newlines, `lexer` produces `a = 1 ; b = 2 ; <end>`. Each `;` is zero-width where its newline was, at 5..5 and 11..11, and `<end>` is zero-width at the end, 12..12.
+
+Each output's span follows from its kind and its place in the step:
+
+| Output | Span |
+| --- | --- |
+| Derived | From the start of the first input item the step consumed to the end of the last. Several derived outputs of one step each get that whole span. |
+| Synthetic, with no derived output before it in the step | Zero-width at the start of the step's first input item |
+| Synthetic, after a derived output | Zero-width at the start of the first input item after the step, or at the end of the input if there is none |
+| From `atEnd` | Zero-width at the end of the input. Each is synthetic, whether or not it is marked. |
+
+So a DEDENT emitted after a NEWLINE sits at the start of the first token on the next line, not at the end of the newline. To place it, the step reads one input item past its own input.
+
+- `atEnd` is optional. It receives the layer's state, which starts as `initialState`. In this version nothing changes the state, so `atEnd` receives `initialState`.
+- A `step` that succeeds without consuming input would never let the layer reach the end of its input, so it throws `GrammarException`. Outputs that stand for no input are synthetic outputs of a step that consumes some, or come from `atEnd`.
+- If `step` fails, the parse ends with an error from this layer, as for `Layer.Tokens`. Its `Layer` is `layout` unless the layer is given a name: `Layer.Transduce(0, step, name: "indents")`.
+
 ## `Where` and `Select`
 
 `Layer.Where` and `Layer.Select` apply a function to each item, with no parsing. Each item keeps its span. Each function runs once for each item, when the layer above first needs the result.
@@ -59,7 +93,7 @@ Layer<char, int> lengths = lexer.Then(Layer.Select<string, int>(static token => 
 
 ## A step's outputs: `Emit<T>`
 
-A step that can produce any number of items returns them as an `Emit<T>`: an ordered list of outputs, each either derived from the input the step consumed or synthetic.
+A `Layer.Transduce` step returns its outputs as an `Emit<T>`: an ordered list of outputs, each either derived from the input the step consumed or synthetic.
 
 | Output | Means | Its span |
 | --- | --- | --- |

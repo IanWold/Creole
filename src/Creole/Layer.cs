@@ -87,6 +87,44 @@ public static class Layer
         new TokensLayer<TIn, TOut>(Guard.NotNull(item, itemExpression), Guard.NotNull(skip, skipExpression), Guard.NotNullOrEmpty(name));
 
     /// <summary>
+    /// A layer that runs <paramref name="step"/> repeatedly to the end of its input and produces the outputs of each run, then the outputs of <paramref name="atEnd"/>, such as a layout pass that adds INDENT and DEDENT tokens.
+    /// </summary>
+    /// <typeparam name="TIn">The type of item the layer reads.</typeparam>
+    /// <typeparam name="TOut">The type of item the layer produces.</typeparam>
+    /// <typeparam name="TState">The type of the layer's state.</typeparam>
+    /// <param name="initialState">The layer's state when it starts.</param>
+    /// <param name="step">The parser for one step, which produces that step's outputs: none, one or several, each derived or synthetic.</param>
+    /// <param name="atEnd">The function from the layer's state at the end of its input to the outputs it adds there, such as the DEDENTs that close every open block; or null to add none.</param>
+    /// <param name="name">The layer's name in errors, which <see cref="ParseError.Layer"/> holds.</param>
+    /// <param name="stepExpression">Filled in by the compiler with the expression for <paramref name="step"/>.</param>
+    /// <returns>A layer that produces the outputs of each run of <paramref name="step"/>, then those of <paramref name="atEnd"/>.</returns>
+    /// <exception cref="GrammarException"><paramref name="step"/> is null, or <paramref name="name"/> is null or empty.</exception>
+    /// <remarks>
+    /// <para>
+    /// Each step stops if the input has ended, and otherwise runs <paramref name="step"/> and produces its outputs in order.
+    /// A derived output's span runs from the start of the first input item the step consumed to the end of the last.
+    /// A synthetic output's span is zero-width at the start of the next input item: the step's first item if no derived output comes before it in the step, and otherwise the first item after the step, or the end of the input if there is none.
+    /// So a step that emits a synthetic output after a derived one reads one input item past its own input.
+    /// </para>
+    /// <para>
+    /// When the input ends, the layer runs <paramref name="atEnd"/> once with its state and produces its outputs.
+    /// They stand for no input, so each is synthetic, with a zero-width span at the end of the input, whether or not it is marked.
+    /// </para>
+    /// <para>
+    /// If <paramref name="step"/> fails, the parse ends with an error from this layer: the furthest failure its steps recorded.
+    /// If <paramref name="step"/> succeeds without consuming input, the layer would never reach the end of its input, so it throws <see cref="GrammarException"/>.
+    /// </para>
+    /// </remarks>
+    public static Layer<TIn, TOut> Transduce<TIn, TOut, TState>(
+        TState initialState,
+        Parser<TIn, Emit<TOut>> step,
+        Func<TState, Emit<TOut>>? atEnd = null,
+        string name = "layout",
+        [CallerArgumentExpression(nameof(step))] string stepExpression = ""
+    ) =>
+        new TransduceLayer<TIn, TOut, TState>(initialState, Guard.NotNull(step, stepExpression), atEnd, Guard.NotNullOrEmpty(name));
+
+    /// <summary>
     /// A layer that keeps the items for which <paramref name="predicate"/> is true and drops the rest.
     /// </summary>
     /// <typeparam name="T">The type of item.</typeparam>

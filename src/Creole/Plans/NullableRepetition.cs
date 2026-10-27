@@ -22,6 +22,9 @@ internal static class NullableRepetition
     public static GrammarException LayerItem() =>
         new("A layer's item parser succeeded without consuming input, so the layer would never reach the end of its input. Make the item consume input, and put input to skip between items in skip.");
 
+    public static GrammarException LayerStep() =>
+        new("A layer's step parser succeeded without consuming input, so the layer would never reach the end of its input. Make the step consume input, and emit outputs that stand for no input as synthetic outputs of a step that does, or from atEnd.");
+
     public static GrammarException Operator() =>
         new("A prefix or postfix operator succeeded without consuming input, so the expression would never end. Make the operator consume input.");
 }

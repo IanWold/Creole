@@ -39,6 +39,7 @@ sources.GetName(SourceId.Unnamed);    // null
 Each [layer](layers.md) gives every item it produces a span in the original source, kept beside the item rather than inside it, so token types need no position fields.
 
 - An item from `Layer.Tokens` spans from the start of the first input item its parser consumed to the end of the last. Input that `skip` consumed is left out, so a token's span never includes the whitespace before it.
+- An output of a `Layer.Transduce` step that is derived spans the input the step consumed. A synthetic one is zero-width at the start of the next input item ([Layers § `Layer.Transduce`](layers.md#layertransduce)).
 - An item from `Layer.Where` or `Layer.Select` keeps the span of the input item it came from.
 
 ## Lines and columns
