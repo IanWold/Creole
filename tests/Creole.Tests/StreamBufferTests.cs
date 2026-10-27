@@ -160,6 +160,33 @@ public class StreamBufferTests
     }
 
     [Fact]
+    public void ACursorThatHasReadTheLastItemOfASegmentKeepsThatSegment()
+    {
+        var pool = ArrayPool<char>.Create(maxArrayLength: 16, maxArraysPerBucket: 4);
+        var buffer = new StreamBuffer<char>(new ArrayUpstream<char>("abcdefgh".ToCharArray()), segmentSize: 2, pool);
+        var cursor = new Cursor<char>(buffer);
+
+        cursor.Advance(4);
+        buffer.Release(cursor.Position, failures: null);
+
+        for (var i = 0; i < 2; i++)
+        {
+            pool.Rent(2).AsSpan().Fill('z');
+        }
+
+        Assert.Equal(2, buffer.Start);
+        Assert.Equal('d', cursor.ItemAt(3));
+        Assert.Equal("cd", cursor.Since(2).ToString());
+
+        try
+        {
+            _ = cursor.ItemAt(1);
+            Assert.Fail("A released position was read.");
+        }
+        catch (ArgumentOutOfRangeException) { }
+    }
+
+    [Fact]
     public void ASliceKeepsItsTextAfterItsSegmentIsReused()
     {
         var pool = ArrayPool<char>.Create(maxArrayLength: 16, maxArraysPerBucket: 4);
@@ -169,7 +196,8 @@ public class StreamBufferTests
         ReadOnlyMemory<char> slice = default;
 
         Assert.True(plan.TryParse(ref cursor, ref slice));
-        buffer.Release(cursor.Position);
+        cursor.Advance(1);
+        buffer.Release(cursor.Position, failures: null);
 
         var reused = 0;
 
@@ -263,28 +291,30 @@ public class StreamBufferTests
     public void ReadingAndReleasingAsItGoesAllocatesNothingPerItem()
     {
         const int length = 1 << 20;
-        var read = 0L;
+        var buffer = new StreamBuffer<char>(new RepeatUpstream('x', 8 * length), segmentSize: 1024);
+        var position = 0L;
 
-        var allocated = Allocation.Fewest(
-            () =>
+        void Read()
+        {
+            var cursor = new Cursor<char>(buffer);
+            cursor.Reset(position);
+
+            for (var i = 0; i < length && cursor.TryRead(out _); i++)
             {
-                var buffer = new StreamBuffer<char>(new RepeatUpstream('x', length), segmentSize: 1024);
-                var cursor = new Cursor<char>(buffer);
-
-                while (cursor.TryRead(out _))
+                if (cursor.Position % 1024 == 0)
                 {
-                    if (cursor.Position % 1024 == 0)
-                    {
-                        buffer.Release(cursor.Position);
-                    }
+                    buffer.Release(cursor.Position, failures: null);
                 }
+            }
 
-                read = cursor.Position;
-            },
-            attempts: 5
-        );
+            position = cursor.Position;
+        }
 
-        Assert.Equal(length, read);
+        Read();
+
+        var allocated = Allocation.Fewest(Read, attempts: 5);
+
+        Assert.True(position >= 2 * length, $"Read only {position} items.");
         Assert.True(allocated < 4096, $"{allocated} bytes allocated over {length} items.");
     }
 
@@ -294,7 +324,7 @@ public class StreamBufferTests
         var cursor = Over("abcdefg", 2, out _, out var buffer);
 
         cursor.Advance(5);
-        buffer.Release(5);
+        buffer.Release(5, failures: null);
 
         Assert.Equal(4, buffer.Start);
         Assert.Throws<ArgumentOutOfRangeException>(() => buffer.SlotAt(3));
@@ -313,7 +343,7 @@ public class StreamBufferTests
         Assert.Equal('f', item);
 
         cursor.Advance(1);
-        buffer.Release(cursor.Position);
+        buffer.Release(cursor.Position, failures: null);
 
         Assert.Equal(6, buffer.Start);
         Assert.True(cursor.IsAtEnd);

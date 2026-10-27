@@ -229,7 +229,7 @@ public ref struct Cursor<T>
     internal static Cursor<T> FromMemory(ReadOnlyMemory<T> input) => new(input.Span) { _segment = input };
 
     /// <summary>
-    /// Holds the cursor's position in the failure log until <see cref="DropStart"/>, as the start of a filter or a chained operator that may be rejected there after the cursor has moved on.
+    /// Holds the cursor's position in the failure log until <see cref="DropStart"/>, as the start of a filter, a chained operator or a custom scanner that may record a failure there after the cursor has moved on.
     /// </summary>
     internal readonly void HoldStart() => Failures?.HoldStart(Position);
 

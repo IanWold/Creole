@@ -24,7 +24,7 @@ A streamed layer's buffer releases segments below its horizon and refills them (
 1. `p` consumes from s and fails at f. `Atomic` rewinds to s and releases its pin. The failure at f stands (§ The error model, Labels).
 2. `q` consumes from s to well past f, and `pred` rejects.
 3. The filter restores the failure it saved on entry, the one at f. Its own rejection at s is earlier, so it is ignored.
-4. The error reads the item at f with `TryPeekAt` ([`FailureLog.cs:394`](../../../src/Creole/Errors/FailureLog.cs#L394)). Once the buffer has released f, that throws ([`Cursor.cs:300`](../../../src/Creole/Cursor.cs#L300)).
+4. The error reads the item at f with `TryPeekAt`, in `FailureLog.ToError` ([`FailureLog.cs`](../../../src/Creole/Errors/FailureLog.cs)). Once the buffer has released f, that throws, in `Cursor.Reset` ([`Cursor.cs`](../../../src/Creole/Cursor.cs)).
 
 **Two invariants frame the choice:**
 
@@ -117,13 +117,13 @@ Keep ADR-0014 point 6 and ADR-0021 point 4 as written. Document that a construct
 Option **B**, as recommended. Accepted by the maintainer on 2026-10-26.
 
 1. **What an error may read behind the cursor.** Each layer's failure log knows every position an error built later may read:
-   - the start of each open filter, and of a chained operator while it is matched: item and span;
+   - the start of each open filter, of a chained operator while it is matched, and of a custom scanner while it runs, since one that fails after moving records its failure there: item and span;
    - the start of each `Context` frame the log holds, whether open or kept for the furthest failure: span;
    - the furthest failure's position: item and span;
    - the end of the input that a rejection widened the furthest failure to: span;
    - the same two positions for each failure saved by a construct that may put it back, such as `Lookahead`, `Not`, `Longest` and a filter.
-2. **Positions on entry.** No construct copies an item or a span when it starts. A filter and a chained operator register their start with the layer's failure log while they are open, as `Context` does now. A layer without a failure log registers nothing.
-3. **Copy at release.** Before a buffer releases a segment, the layer reading it copies the item and span at each position in point 1 that falls in that segment. The copies go into storage the log reuses, so they allocate nothing once it is large enough. When a rejection is recorded at a start that was already copied, the record takes that copy. A rejected value can end at a segment boundary, so its last item may be released before the rejection is recorded. That item is always the last one released, so the log also keeps the span of the last item each release frees.
+2. **Positions on entry.** No construct copies an item or a span when it starts. A filter, a chained operator and a custom scanner register their start with the layer's failure log while they are open, as `Context` does now. A failure recorded at the innermost registered start takes its copy. A layer without a failure log registers nothing.
+3. **Copy at release.** Before a buffer releases a segment, the layer reading it copies the item and span at each position in point 1 that falls in that segment. The copies go into storage the log reuses, so they allocate nothing once it is large enough. When a rejection is recorded at a start that was already copied, the record takes that copy. A buffer also keeps the segment holding the item just below the horizon. A cursor that has just read a segment's last item still holds that segment, so returning it would let the cursor read reused memory. Keeping it also means the item before the cursor, where a rejected value ends, is never released before the rejection is recorded.
 4. **Reads.** An error uses the copy if one was taken. Otherwise it reads the buffer, which still holds the item.
 5. **Mode changes.** Point 3 copies only consumed items, and invalidation discards only unconsumed ones, so a copy is never stale. A construct that starts with `SetMode` reports the item lexed under the new mode.
 6. **In-memory input** keeps every item until the parse ends. Nothing is copied, and errors read the input, as ADR-0021 point 4 says.
@@ -153,7 +153,7 @@ What would change this:
 
 **Harder:**
 
-- ERR-02's code changes, on a Done card. `FilterPlan` and `ExpressionPlan` register their start instead of peeking. `FailureLog` keeps the copies taken at release, including those for the failures it has saved, so `FailureMark` no longer carries an item. A `Context` frame gains room for a copied span. Behaviour over in-memory input does not change, and the existing tests must pass unchanged.
+- ERR-02's code changes, on a Done card. `FilterPlan` and `ExpressionPlan` register their start instead of peeking, and `CustomPlan` registers its start too. `FailureLog` keeps the copies taken at release, including those for the failures it has saved, so `FailureMark` no longer carries an item. A `Context` frame gains room for a copied span. Behaviour over in-memory input does not change, and the existing tests keep their assertions. One test harness released input without telling the log, and now releases through the stream buffer.
 - The buffer's release step gains a call into the layer that reads it, made before each segment goes back to the pool.
 - Compacting context frames must keep the spans already copied into them.
 
@@ -179,5 +179,10 @@ What would change this:
   - [MODE-02](../../active/07-mode-channels/MODE-02-invalidation-rule.md): a criterion for a filter and a `Context` around Example C's `Operand`.
   - [LAY-08](../../active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md): the register of open starts and the copies taken at release are listed as per-layer state.
   - [GEN-06](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md): generated code registers the same starts.
+  - [ERR-02](../../active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md): a dated note that filters and chained operators no longer capture their first item by value.
 - **Decisions index:** a note that this record refines ADR-0014 point 6 and ADR-0021 point 4, and fills ADR-0021 point 1 for streamed input.
-- **Edited in place during the LAY-01 build, before merge:** point 1 adds saved failures, which a construct may restore after the buffer released their items. Point 3 adds the span of the last released item, for a rejection whose value ends at a segment boundary. Consequences says `FailureMark` loses its item fields. Each case has a test in `ReleasedInputFailureTests`.
+- **Edited in place during the LAY-01 build, before merge:**
+  - Point 1 adds saved failures, which a construct may restore after the buffer released their items, and a custom scanner's start, where one that fails after moving records its failure.
+  - Point 3 adds that a buffer keeps the segment holding the item just below the horizon. An earlier edit had the log keep the span of the last released item instead; that covered a rejection's end but not a cursor reading its own released segment.
+  - Consequences says `FailureMark` loses its item fields and one test harness changed.
+  - Each copy has a test in `ReleasedInputFailureTests` or `RejectionFailureTests`, and disabling any one of them fails at least one test.

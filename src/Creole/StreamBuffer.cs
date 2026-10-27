@@ -105,16 +105,22 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     }
 
     /// <summary>
-    /// Returns to the pool every segment whose items all lie below <paramref name="horizon"/>, after <paramref name="failures"/> has copied what its errors need from them.
+    /// Returns to the pool every segment whose items all lie below the item just before <paramref name="horizon"/>, after <paramref name="failures"/> has copied what its errors need from them.
     /// </summary>
     /// <remarks>
-    /// A segment that still holds an item at or past <paramref name="horizon"/>, or that is not yet full, is kept.
+    /// <para>
+    /// The segment holding the item at <paramref name="horizon"/> − 1 is kept, as is any segment not yet full.
+    /// A cursor at the horizon that has just read the last item of a segment still holds that segment, so returning it would let the cursor read whatever the pool put there.
+    /// </para>
+    /// <para>
+    /// It also keeps the item before the cursor, where a value rejected at the cursor ends.
+    /// </para>
     /// </remarks>
-    /// <param name="horizon">The position below which nothing will be read again.</param>
+    /// <param name="horizon">The position below which nothing will be read again, at or before the cursor of the layer that reads this buffer.</param>
     /// <param name="failures">The failure log of the layer that reads this buffer, or null if it keeps none.</param>
-    public void Release(long horizon, FailureLog<T>? failures = null)
+    public void Release(long horizon, FailureLog<T>? failures)
     {
-        var count = (int)(Math.Min(horizon, Filled) / _segmentSize - _released);
+        var count = (int)((Math.Min(horizon, Filled) - 1) / _segmentSize - _released);
 
         if (count <= 0)
         {

@@ -56,8 +56,6 @@ internal sealed class FailureLog<T>
     private ContextFrame[] _frames = new ContextFrame[8];
     private int _heldCount;
     private HeldStart[] _heldStarts = new HeldStart[8];
-    private long _lastReleased = -1;
-    private SourceSpan _lastReleasedSpan;
     private string? _message;
     private int _protected;
     private int _records;
@@ -179,6 +177,15 @@ internal sealed class FailureLog<T>
             _context = _current;
         }
 
+        if (_at is null
+            && _heldCount > 0
+            && _heldStarts[_heldCount - 1] is { Copy: { } copy } held
+            && held.Position == position
+        )
+        {
+            _at = copy;
+        }
+
         _records++;
         return true;
     }
@@ -201,8 +208,6 @@ internal sealed class FailureLog<T>
         _frameCount = 0;
         _frameFloor = 0;
         _heldCount = 0;
-        _lastReleased = -1;
-        _lastReleasedSpan = default;
         _records = 0;
         _protected = 0;
         _saveCount = 0;
@@ -241,10 +246,11 @@ internal sealed class FailureLog<T>
     }
 
     /// <summary>
-    /// Holds <paramref name="position"/>, where a filter or a chained operator starts, until the matching <see cref="DropStart"/>.
+    /// Holds <paramref name="position"/>, where a filter, a chained operator or a custom scanner starts, until the matching <see cref="DropStart"/>.
     /// </summary>
     /// <remarks>
-    /// A rejection reported there may come after a stream buffer has released the item, and <see cref="Preserve"/> copies it first.
+    /// A failure recorded there may come after a stream buffer has released the item, and <see cref="Preserve"/> copies it first.
+    /// A failure recorded at the innermost held start takes that copy.
     /// </remarks>
     public void HoldStart(long position)
     {
@@ -290,9 +296,6 @@ internal sealed class FailureLog<T>
     /// <summary>
     /// Copies the item and span at each position an error may still read from <paramref name="start"/> up to <paramref name="end"/>, which <paramref name="buffer"/> is about to release.
     /// </summary>
-    /// <remarks>
-    /// It also keeps the span of the last item released, which a rejection recorded later may end at.
-    /// </remarks>
     public void Preserve(StreamBuffer<T> buffer, long start, long end)
     {
         bool Within(long position) => position >= start && position < end;
@@ -341,9 +344,6 @@ internal sealed class FailureLog<T>
                 _frames[i] = frame with { StartSpan = buffer.SpanOf(frame.Start, frame.Start + 1) };
             }
         }
-
-        _lastReleased = end - 1;
-        _lastReleasedSpan = buffer.SpanOf(end - 1, end);
     }
 
     /// <summary>
@@ -410,17 +410,7 @@ internal sealed class FailureLog<T>
         if (end > _end)
         {
             _end = end;
-            _endSpan = _lastReleased >= 0 && end - 1 == _lastReleased
-                ? _lastReleasedSpan
-                : null;
-        }
-
-        if (_at is null
-            && _heldCount > 0
-            && _heldStarts[_heldCount - 1] is { Copy: { } copy } held
-            && held.Position == position)
-        {
-            _at = copy;
+            _endSpan = null;
         }
     }
 
