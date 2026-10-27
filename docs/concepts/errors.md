@@ -182,7 +182,7 @@ error[parser]: expected ',' or '}'
 
 - **Headline.** `error[layer]:` and what was expected. The carets are labelled with what was found. When nothing was expected, the headline says what was found and the carets have no label. A `CustomMessage` is shown as its text.
 - **Location.** ` --> name:line:column`, or ` --> line:column` for a source with no name. Lines and columns start at 1, and columns count Unicode scalar values, as [`LineMap`](spans.md) does.
-- **Notes.** One `= note:` line per context line, innermost first, ending with where the construct started, as `starting at line:column`. The start may lie in another source, such as the file an embedded script sits in.
+- **Notes.** One `= note:` line per context line, innermost first, ending with where the construct started, as `starting at line:column`. The start may lie in another source, such as the file an embedded script sits in. An error with many context lines shows only the innermost and outermost ones ([Limits on what is shown](#limits-on-what-is-shown)).
 - **Order.** Errors come in span order, so they are grouped by source, in the order the `SourceRegistry` issued the ids, with `SourceId.Unnamed` first. A blank line separates errors, and lines are joined by `\n`.
 
 `Render()`, with no arguments, writes the same as `Render(sources)` when the collection holds a text for every source its errors and their context lines point into, and each text is long enough for its spans. Otherwise it writes [one line per error](#one-line-per-error). It never throws. The errors from `Parse` over text hold that text, so `result.Diagnostics.Render()` shows them against it.
@@ -199,6 +199,38 @@ A `SourceText` holds a source's full text with the id and name to show it under.
 `Text` is a `ReadOnlyMemory<char>` over the text as given. Nothing is copied. If you change memory after wrapping it, rendering shows the new contents, so render before you reuse a buffer.
 
 `Render(sources)` throws `ArgumentException` if an error or one of its context lines points into a source with no text, if two texts have the same id, if a text is null, or if an error's span ends, or a context line starts, past the end of its text. That last one usually means the wrong text was passed.
+
+#### Limits on what is shown
+
+Rendering an error on untrusted input should not produce megabytes of text. `RenderOptions` limits how much of each error is shown. Pass it first, as `Render(options)` or `Render(options, sources)`; a null `options` throws `ArgumentNullException`. The other overloads and `ParseError.ToString()` use `RenderOptions.Default`.
+
+```csharp
+static readonly RenderOptions Brief = RenderOptions.Default with { MaxNotes = 4 };
+
+string report = result.Diagnostics.Render(Brief);
+```
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `MaxNotes` | 10 | The most context lines shown for one error. It must be 0 or more; `int.MaxValue` shows them all. |
+
+An error with more context lines than `MaxNotes` shows its innermost half and its outermost half, with one note between them that says how many were left out. When `MaxNotes` is odd, the innermost half has the extra line. With 0, only that count is shown. A parse of 1,500 `[` that reaches `MaxDepth`, in a grammar that adds `Context("in list")` at every level, ends:
+
+```text
+  = note: in list starting at 1:1001
+  = note: in list starting at 1:1000
+  = note: in list starting at 1:999
+  = note: in list starting at 1:998
+  = note: in list starting at 1:997
+  = note: … 991 more
+  = note: in list starting at 1:5
+  = note: in list starting at 1:4
+  = note: in list starting at 1:3
+  = note: in list starting at 1:2
+  = note: in list starting at 1:1
+```
+
+The innermost notes name the construct that failed, and the outermost say where the nesting began. The limits apply only to rendered text: the error's `Context` keeps every line.
 
 #### Caret alignment
 
@@ -241,5 +273,5 @@ error[parser] at 30..30: unexpected end of input; expected value, '[' or end of 
 ```
 
 - The offsets are `CharStart..CharEnd`. They count characters in text, and tokens in a [token parse](parsing.md#token-input), whose errors always render this way because it holds no text.
-- The expected part is left out when nothing was expected. Context lines follow, innermost first, each with the offset where its construct started.
+- The expected part is left out when nothing was expected. Context lines follow, innermost first, each with the offset where its construct started. They are limited as in the block, with `; … 991 more` in place of the note ([Limits on what is shown](#limits-on-what-is-shown)). `Render(options)` applies its options to these lines too.
 - A line shows no file name, line or column. Use it when the source text is not at hand.

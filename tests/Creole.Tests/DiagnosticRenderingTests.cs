@@ -382,6 +382,50 @@ public class DiagnosticRenderingTests
         );
     }
 
+    [Theory]
+    [InlineData(4, new[] { 6, 5 }, 3, new[] { 1, 0 })]
+    [InlineData(5, new[] { 6, 5, 4 }, 2, new[] { 1, 0 })]
+    [InlineData(1, new[] { 6 }, 6, new int[0])]
+    [InlineData(0, new int[0], 7, new int[0])]
+    public void NotesPastMaxNotesKeepTheInnermostAndOutermost(int maxNotes, int[] innermost, int omitted, int[] outermost)
+    {
+        var text = "[[[[[[[x";
+        var context = Enumerable.Range(0, 7).Reverse().Select(start => new ContextLine("in list", new SourceSpan(default, start, start + 1))).ToArray();
+        var error = Error(7, 8, new UnexpectedItem("'x'"), [new ExpectedItem("'['")], context);
+
+        static string Note(int start) =>
+            $"  = note: in list starting at 1:{start + 1}";
+
+        Assert.Equal(
+            [.. innermost.Select(Note), $"  = note: … {omitted} more", .. outermost.Select(Note)],
+            new Diagnostics([error]).Render(new RenderOptions { MaxNotes = maxNotes }, new SourceText(text)).Split('\n')[5..]
+        );
+    }
+
+    [Theory]
+    [InlineData(7)]
+    [InlineData(int.MaxValue)]
+    public void NotesUpToMaxNotesAreAllShown(int maxNotes)
+    {
+        var text = "[[[[[[[x";
+        var context = Enumerable.Range(0, 7).Reverse().Select(start => new ContextLine("in list", new SourceSpan(default, start, start + 1))).ToArray();
+        var error = Error(7, 8, new UnexpectedItem("'x'"), [new ExpectedItem("'['")], context);
+
+        Assert.Equal(
+            [.. Enumerable.Range(0, 7).Reverse().Select(start => $"  = note: in list starting at 1:{start + 1}")],
+            new Diagnostics([error]).Render(new RenderOptions { MaxNotes = maxNotes }, new SourceText(text)).Split('\n')[5..]
+        );
+    }
+
+    [Fact]
+    public void NullOptionsThrow()
+    {
+        var diagnostics = new Diagnostics([Error(0, 1, new EndOfInput())]);
+
+        Assert.Throws<ArgumentNullException>("options", () => diagnostics.Render((RenderOptions)null!));
+        Assert.Throws<ArgumentNullException>("options", () => diagnostics.Render((RenderOptions)null!, new SourceText("a")));
+    }
+
     [Fact]
     public void BadSourceListsThrow()
     {
