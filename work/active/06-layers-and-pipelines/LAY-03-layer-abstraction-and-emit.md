@@ -33,6 +33,7 @@ Layers turn a stream of one type into a stream of another using ordinary combina
 
 - [ERR-07 Lexer recovery and cascade suppression](../04-errors-and-recovery/ERR-07-lexer-recovery-and-cascade-suppression.md)
 - [SPAN-03 Synthetic items](../05-source-spans/SPAN-03-synthetic-items.md)
+- [SPAN-04 Span combinators](../05-source-spans/SPAN-04-span-combinators.md)
 - [SPAN-05 Trivia attach mode](../05-source-spans/SPAN-05-trivia-attach-mode.md)
 - [SPAN-06 Byte sources and the decoding layer](../05-source-spans/SPAN-06-byte-sources-and-the-decoding-layer.md)
 - [LAY-04 Layer-local state](../06-layers-and-pipelines/LAY-04-layer-local-state.md)

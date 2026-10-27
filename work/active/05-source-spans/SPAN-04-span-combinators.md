@@ -23,6 +23,7 @@ Let grammars capture and test locations.
 ## Blocked by
 
 - [SPAN-02 Out-of-band span storage](../05-source-spans/SPAN-02-out-of-band-span-storage.md)
+- [LAY-03 Layer abstraction and Emit](../06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md)
 
 ## Unblocks
 
