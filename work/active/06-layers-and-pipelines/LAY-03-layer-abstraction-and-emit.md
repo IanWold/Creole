@@ -14,6 +14,7 @@ Layers turn a stream of one type into a stream of another using ordinary combina
 
 - `Layer<TIn, TOut>`; `Layer.Identity<T>()`; associative composition.
 - `Layer.Tokens(item, skip)` loop; reject nullable items at run time until ANA-03 adds CRL0003.
+- The derived-item span rule (§ Span rules, rule 2): an item's span runs from the first input item its item parser consumed to the end of the last, and input consumed by `skip` is excluded. Moved here from [SPAN-02](../05-source-spans/SPAN-02-out-of-band-span-storage.md), since this loop computes it.
 - `Layer.Transduce(initialState, step, atEnd)` with `Emit<T>` as a hand-written `[Union]` struct; record `groupIndex` for multi-output steps. If "no output" is a null `Value`, switches without a `null` arm compile and then throw on it; consider a case type for it ([ADR-0002](../../docs/decisions/0002-parseresult-as-a-plain-union.md) § Consequences).
 - `Layer.Where` and `Layer.Select` item functions.
 - Guarantee 4: a layer's own backtracking is invisible downstream.
@@ -21,6 +22,7 @@ Layers turn a stream of one type into a stream of another using ordinary combina
 ## Acceptance criteria
 
 - [ ] A lexer composed with a layout pass is usable as a single `Layer<char, Token>`.
+- [ ] A token's span never includes leading whitespace.
 
 ## Blocked by
 
@@ -45,6 +47,7 @@ Layers turn a stream of one type into a stream of another using ordinary combina
 - [§ Layers, streams and pipelines](../../../whitepaper.md#layers-streams-and-pipelines)
 - [§ Defining layers](../../../whitepaper.md#defining-layers)
 - [§ Guarantees](../../../whitepaper.md#guarantees)
+- [§ Span rules](../../../whitepaper.md#span-rules)
 
 ## Artifacts
 

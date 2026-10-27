@@ -4,7 +4,12 @@ namespace Creole;
 /// What a <see cref="StreamBuffer{T}"/> keeps beside each item: where it came from, and what is needed to produce it again.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Running the producing step again from <paramref name="StepStart"/> with <paramref name="StateBefore"/>, and skipping its first <paramref name="GroupIndex"/> outputs, produces the item again.
+/// </para>
+/// <para>
+/// This is the slot as an upstream adds it and as the buffer reads it back. The buffer stores the span packed, in two 32-bit numbers where it fits.
+/// </para>
 /// </remarks>
 /// <param name="Span">The item's span in the original source.</param>
 /// <param name="StepStart">The upstream position where the step that produced the item began.</param>
