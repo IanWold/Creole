@@ -18,7 +18,7 @@ List every piece of state a layer's parse carries, and decide what each mechanis
   - the depth count ([ADR-0020](../../docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md));
   - the furthest-failure record and its context frames ([ADR-0021](../../docs/decisions/0021-how-failures-are-recorded-and-merged.md));
   - the mode log, the diagnostic count and layer state (§ Bookmarks and retention);
-  - the starts of open filters and chained operators, and the items and spans copied when the buffer releases them ([ADR-0028](../../docs/decisions/0028-an-errors-items-are-copied-when-the-buffer-releases-them.md)). Under that record, a furthest failure kept across a mode change at or before its position reads the item lexed under the new mode.
+  - the starts of open filters, chained operators and custom scanners, the failures saved by constructs that may restore them, and the items and spans copied when the buffer releases them ([ADR-0028](../../docs/decisions/0028-an-errors-items-are-copied-when-the-buffer-releases-them.md)). Under that record, a furthest failure kept across a mode change at or before its position reads the item lexed under the new mode.
 - Each consumer saves a different subset today, and none restores the failure record:
   - `LightMark`: the position and the cut flag;
   - LAY-02's light mark: five fields;

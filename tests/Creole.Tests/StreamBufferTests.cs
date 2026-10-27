@@ -187,6 +187,27 @@ public class StreamBufferTests
     }
 
     [Fact]
+    public void ASliceWithinOneSegmentKeepsItsTextAfterTheSegmentIsReused()
+    {
+        var pool = ArrayPool<char>.Create(maxArrayLength: 16, maxArraysPerBucket: 4);
+        var buffer = new StreamBuffer<char>(new ArrayUpstream<char>("ab;defgh".ToCharArray()), segmentSize: 4, pool);
+        var cursor = new Cursor<char>(buffer);
+        var plan = new PlanBuilder(LoweringOptions.All).Lower(Letter.SkipAtLeastOnce().Slice());
+        ReadOnlyMemory<char> slice = default;
+
+        Assert.True(plan.TryParse(ref cursor, ref slice));
+
+        cursor.Advance(4);
+        buffer.Release(cursor.Position, failures: null);
+
+        var array = pool.Rent(4);
+
+        Assert.Equal("ab;d", array.AsSpan(0, 4).ToString());
+        array.AsSpan().Fill('x');
+        Assert.Equal("ab", slice.ToString());
+    }
+
+    [Fact]
     public void ASliceKeepsItsTextAfterItsSegmentIsReused()
     {
         var pool = ArrayPool<char>.Create(maxArrayLength: 16, maxArraysPerBucket: 4);
@@ -316,6 +337,27 @@ public class StreamBufferTests
 
         Assert.True(position >= 2 * length, $"Read only {position} items.");
         Assert.True(allocated < 4096, $"{allocated} bytes allocated over {length} items.");
+    }
+
+    [Fact]
+    public void RereadingAfterARewindNeverRunsTheUpstream()
+    {
+        var cursor = Over("abcdef", 2, out var upstream, out _);
+        var read = new List<char>();
+
+        cursor.Advance(5);
+
+        Assert.Equal(5, upstream.Steps);
+
+        cursor.Reset(1);
+
+        while (cursor.Position < 5 && cursor.TryRead(out var item))
+        {
+            read.Add(item);
+        }
+
+        Assert.Equal("bcde", new string([.. read]));
+        Assert.Equal(5, upstream.Steps);
     }
 
     [Fact]

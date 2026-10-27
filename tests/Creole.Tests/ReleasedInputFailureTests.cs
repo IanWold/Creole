@@ -41,15 +41,16 @@ public class ReleasedInputFailureTests
         }
     }
 
-    private class MovingScanner(Releaser release) : IScanner<char, Unit>
+    private class MovingScanner(Releaser release, int distance) : IScanner<char, Unit>
     {
+        private readonly int _distance = distance;
         private readonly Releaser _release = release;
 
-        public ScannerInfo Info { get; } = new(Nullable: false, Name: "pair");
+        public ScannerInfo Info { get; } = new(Nullable: false, Name: "token");
 
         public bool Scan(ref Cursor<char> cursor, out Unit value)
         {
-            cursor.Advance(2);
+            cursor.Advance(_distance);
             _release.Release(cursor.Position);
             value = default;
             return false;
@@ -115,10 +116,31 @@ public class ReleasedInputFailureTests
         );
 
     [Fact]
+    public void ACopyTakenBeforeALookaheadSavesTheFailureSurvivesItsRestore() =>
+        Assert.Equal(
+            At(0, 1, new UnexpectedItem("'a'"), [new ExpectedItem("'x'")]),
+            Released(release => Char('x').Optional().Then(String("abc")).Then(release.Here).Then(Lookahead(Char('d').Then(Char('y').Optional()))), "abcd")
+        );
+
+    [Fact]
     public void ACustomScannerThatFailsAfterMovingNamesItsStart() =>
         Assert.Equal(
-            At(0, 1, new UnexpectedItem("'a'"), [new Label("pair")]),
-            Released(release => Custom(new MovingScanner(release)), "abc")
+            At(0, 1, new UnexpectedItem("'a'"), [new Label("token")]),
+            Released(release => Custom(new MovingScanner(release, 2)), "abc")
+        );
+
+    [Fact]
+    public void AFailureAtAnotherPositionDoesNotTakeAHeldStartsCopy() =>
+        Assert.Equal(
+            At(3, 4, new UnexpectedItem("'1'"), [new Label("letter"), new ExpectedItem("';'")]),
+            Released(release => Letter.SkipAtLeastOnce().Then(release.Here).Then(Char(';')).Where(static _ => true), "abc1")
+        );
+
+    [Fact]
+    public void AFailureAtAnInnerHeldStartTakesThatStartsCopy() =>
+        Assert.Equal(
+            At(1, 2, new UnexpectedItem("'b'"), [new Label("token")]),
+            Released(release => Letter.Then(Custom(new MovingScanner(release, 3))).Where(static _ => true), "abcdef")
         );
 
     [Fact]
@@ -140,6 +162,20 @@ public class ReleasedInputFailureTests
         Assert.Equal(
             At(0, 3, new UnexpectedItem("'a'"), []),
             Released(release => Atomic(Letter.SkipAtLeastOnce().Where(static _ => false)).Optional().Then(String("abc")).Then(Char(';')).Then(Lookahead(release.Here.Then(Char('y').Optional()))), "abc;")
+        );
+
+    [Fact]
+    public void AFurtherFailureDropsTheCopyOfTheOneItReplaces() =>
+        Assert.Equal(
+            At(4, 5, new UnexpectedItem("'e'"), [new ExpectedItem("'q'")]),
+            Released(release => Char('x').Optional().Then(String("abcd")).Then(release.Here).Then(Char('q')), "abcde")
+        );
+
+    [Fact]
+    public void AWiderRejectionAtTheSamePositionDropsTheEndSpanItReplaces() =>
+        Assert.Equal(
+            At(0, 5, new UnexpectedItem("'a'"), []),
+            Released(release => Atomic(Letter.SkipAtLeastOnce().Where(static _ => false)).Optional().Then(Letter.SkipAtLeastOnce().Then(Digit.SkipMany()).Then(release.Here).Where(static _ => false)), "abc12;")
         );
 
     [Fact]
