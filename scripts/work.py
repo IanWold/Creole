@@ -46,16 +46,21 @@ def md_files() -> list[Path]:
     return sorted(out)
 
 
+def strip_fences(text: str) -> str:
+    """Blank out fenced code blocks, keeping their line breaks."""
+    return re.sub(r"```.*?```", lambda m: "\n" * m.group(0).count("\n"), text, flags=re.S)
+
+
 def strip_code(text: str) -> str:
     """Blank out fenced code blocks and inline code so links inside them are ignored."""
-    text = re.sub(r"```.*?```", lambda m: "\n" * m.group(0).count("\n"), text, flags=re.S)
-    return re.sub(r"`[^`\n]*`", lambda m: " " * len(m.group(0)), text)
+    return re.sub(r"`[^`\n]*`", lambda m: " " * len(m.group(0)), strip_fences(text))
 
 
 def slugify(heading: str) -> str:
-    """GitHub-style heading anchor."""
-    h = re.sub(r"<[^>]+>", "", heading).strip().lower()
-    h = h.replace("`", "")
+    """GitHub-style heading anchor. Inline code keeps its text, including any angle brackets."""
+    parts = re.split(r"(`[^`\n]*`)", heading)
+    h = "".join(p[1:-1] if len(p) >= 2 and p[0] == p[-1] == "`" else re.sub(r"<[^>]+>", "", p) for p in parts)
+    h = h.strip().lower()
     h = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", h)
     h = re.sub(r"[^\w\- ]", "", h)
     return h.replace(" ", "-")
@@ -68,7 +73,7 @@ def anchors(path: Path) -> set[str]:
     if path not in _anchor_cache:
         seen: dict[str, int] = {}
         result = set()
-        for line in strip_code(path.read_text(encoding="utf-8")).splitlines():
+        for line in strip_fences(path.read_text(encoding="utf-8")).splitlines():
             m = re.match(r"^#{1,6}\s+(.*?)\s*#*\s*$", line)
             if not m:
                 continue

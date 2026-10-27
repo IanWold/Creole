@@ -216,6 +216,35 @@ public class ParsingTests
     }
 
     [Fact]
+    public void ADeepDepthErrorRendersItsInnermostAndOutermostNotes()
+    {
+        var result = Nesting.Lists.Parse(new string('[', 1500));
+
+        Assert.Equal(1001, OnlyError(result).Context.Count);
+        Assert.Equal(
+            [
+                "error[parser]: nesting exceeds ParseOptions.MaxDepth of 1000",
+                " --> 1:1002",
+                "  |",
+                $"1 | …{new string('[', 118)}…",
+                $"  | {new string(' ', 59)}^",
+                "  = note: in list starting at 1:1001",
+                "  = note: in list starting at 1:1000",
+                "  = note: in list starting at 1:999",
+                "  = note: in list starting at 1:998",
+                "  = note: in list starting at 1:997",
+                "  = note: … 991 more",
+                "  = note: in list starting at 1:5",
+                "  = note: in list starting at 1:4",
+                "  = note: in list starting at 1:3",
+                "  = note: in list starting at 1:2",
+                "  = note: in list starting at 1:1",
+            ],
+            result.Diagnostics.Render().Split('\n')
+        );
+    }
+
+    [Fact]
     public void AFailedParseRendersAgainstItsInput()
     {
         var text = "{\n  \"port\": 8080 \"host\": \"x\"\n}";
@@ -327,6 +356,22 @@ public class ParsingTests
             ],
             error.Context
         );
+    }
+
+    [Fact]
+    public void ADeepTokenDepthErrorRendersItsInnermostAndOutermostNotesOnOneLine()
+    {
+        var result = TokenNesting.Lists.Parse(TokenNesting.Lex(new string('[', 1500)));
+        var error = OnlyError(result);
+        var expected =
+            "error[parser] at 1001..1002: nesting exceeds ParseOptions.MaxDepth of 1000"
+            + "; in list starting at 1000; in list starting at 999; in list starting at 998; in list starting at 997; in list starting at 996"
+            + "; … 991 more"
+            + "; in list starting at 4; in list starting at 3; in list starting at 2; in list starting at 1; in list starting at 0";
+
+        Assert.Equal(1001, error.Context.Count);
+        Assert.Equal(expected, result.Diagnostics.Render());
+        Assert.Equal(expected, error.ToString());
     }
 
     [Fact]

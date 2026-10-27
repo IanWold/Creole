@@ -382,6 +382,139 @@ public class DiagnosticRenderingTests
         );
     }
 
+    [Theory]
+    [InlineData(4, new[] { 6, 5 }, 3, new[] { 1, 0 })]
+    [InlineData(5, new[] { 6, 5, 4 }, 2, new[] { 1, 0 })]
+    [InlineData(1, new[] { 6 }, 6, new int[0])]
+    [InlineData(0, new int[0], 7, new int[0])]
+    public void NotesPastMaxNotesKeepTheInnermostAndOutermost(int maxNotes, int[] innermost, int omitted, int[] outermost)
+    {
+        var text = "[[[[[[[x";
+        var context = Enumerable.Range(0, 7).Reverse().Select(start => new ContextLine("in list", new SourceSpan(default, start, start + 1))).ToArray();
+        var error = Error(7, 8, new UnexpectedItem("'x'"), [new ExpectedItem("'['")], context);
+
+        static string Note(int start) =>
+            $"  = note: in list starting at 1:{start + 1}";
+
+        Assert.Equal(
+            [.. innermost.Select(Note), $"  = note: … {omitted} more", .. outermost.Select(Note)],
+            new Diagnostics([error]).Render(new RenderOptions { MaxNotes = maxNotes }, new SourceText(text)).Split('\n')[5..]
+        );
+    }
+
+    [Theory]
+    [InlineData(7)]
+    [InlineData(int.MaxValue)]
+    public void NotesUpToMaxNotesAreAllShown(int maxNotes)
+    {
+        var text = "[[[[[[[x";
+        var context = Enumerable.Range(0, 7).Reverse().Select(start => new ContextLine("in list", new SourceSpan(default, start, start + 1))).ToArray();
+        var error = Error(7, 8, new UnexpectedItem("'x'"), [new ExpectedItem("'['")], context);
+
+        Assert.Equal(
+            [.. Enumerable.Range(0, 7).Reverse().Select(start => $"  = note: in list starting at 1:{start + 1}")],
+            new Diagnostics([error]).Render(new RenderOptions { MaxNotes = maxNotes }, new SourceText(text)).Split('\n')[5..]
+        );
+    }
+
+    [Fact]
+    public void AnErrorOnAVeryLongLineShowsAWindowAroundIt()
+    {
+        var text = $"{new string('a', 300_000)}x{new string('a', 299_999)}";
+        var lines = Render(text, Error(300_000, 300_001, new UnexpectedItem("'x'"), [new ExpectedItem("'a'")])).Split('\n');
+
+        Assert.Equal(
+            [
+                "error[parser]: expected 'a'",
+                " --> 1:300001",
+                "  |",
+                $"1 | …{new string('a', 58)}x{new string('a', 59)}…",
+                $"  | {new string(' ', 59)}^ unexpected 'x'",
+            ],
+            lines
+        );
+        Assert.All(lines, line => Assert.InRange(line.Length, 0, 124));
+    }
+
+    [Fact]
+    public void AClusterOfManyMarksShowsItsFirst32ScalarValues()
+    {
+        var text = $"a{new string('\u0301', 600_000)}x";
+
+        Assert.Equal(
+            [
+                "error[parser]: expected 'a'",
+                " --> 1:600002",
+                "  |",
+                $"1 | a{new string('\u0301', 31)}x",
+                "  |  ^ unexpected 'x'",
+            ],
+            Render(text, Error(600_001, 600_002, new UnexpectedItem("'x'"), [new ExpectedItem("'a'")])).Split('\n')
+        );
+    }
+
+    [Fact]
+    public void ALineOfZeroWidthCharactersShowsAWindowAroundTheSpan()
+    {
+        var text = $"{new string('\u200B', 600_000)}x";
+
+        Assert.Equal(
+            [
+                "error[parser]: expected 'a'",
+                " --> 1:600001",
+                "  |",
+                $"1 | …{new string('\u200B', 118)}x",
+                "  |  ^ unexpected 'x'",
+            ],
+            Render(text, Error(600_000, 600_001, new UnexpectedItem("'x'"), [new ExpectedItem("'a'")])).Split('\n')
+        );
+    }
+
+    [Fact]
+    public void ALongDisplayIsCutAndShownAsSourceText()
+    {
+        var wide = Error(0, 1, new UnexpectedItem($"string \"{new string('h', 600_000)}\""));
+        var controls = Error(0, 1, new UnexpectedItem($"string \"{Esc}[31m\nx\""), [new ExpectedItem("','")]);
+
+        Assert.Equal($"error[parser]: unexpected string \"{new string('h', 111)}…", Render("x", wide).Split('\n')[0]);
+        Assert.Equal($"  | ^ unexpected string \"{EscPicture}[31m\u240Ax\"", Render("x", controls).Split('\n')[4]);
+        Assert.Equal($"error[parser] at 0..1: unexpected string \"{new string('h', 111)}…", wide.ToString());
+    }
+
+    [Fact]
+    public void LimitsOfIntMaxValueShowEverythingAndSmallerOnesShowLess()
+    {
+        var text = $"{new string('a', 300_000)}x{new string('a', 299_999)}";
+        var display = $"'{new string('x', 200)}'";
+        var context = Enumerable.Range(0, 12).Reverse().Select(start => new ContextLine("in list", new SourceSpan(default, start, start + 1))).ToArray();
+        var diagnostics = new Diagnostics([Error(300_000, 300_001, new UnexpectedItem(display), [new ExpectedItem("'a'")], context)]);
+        var everything = diagnostics.Render(new RenderOptions { MaxWidth = int.MaxValue, MaxNotes = int.MaxValue }, new SourceText(text)).Split('\n');
+        var less = diagnostics.Render(new RenderOptions { MaxWidth = 20, MaxNotes = 2 }, new SourceText(text)).Split('\n');
+
+        Assert.Equal($"1 | {text}", everything[3]);
+        Assert.Equal($"  | {new string(' ', 300_000)}^ unexpected {display}", everything[4]);
+        Assert.Equal(17, everything.Length);
+        Assert.Equal(
+            [
+                $"1 | …{new string('a', 8)}x{new string('a', 9)}…",
+                $"  | {new string(' ', 9)}^ unexpected '{new string('x', 18)}…",
+                "  = note: in list starting at 1:12",
+                "  = note: … 10 more",
+                "  = note: in list starting at 1:1",
+            ],
+            less[3..]
+        );
+    }
+
+    [Fact]
+    public void NullOptionsThrow()
+    {
+        var diagnostics = new Diagnostics([Error(0, 1, new EndOfInput())]);
+
+        Assert.Throws<ArgumentNullException>("options", () => diagnostics.Render((RenderOptions)null!));
+        Assert.Throws<ArgumentNullException>("options", () => diagnostics.Render((RenderOptions)null!, new SourceText("a")));
+    }
+
     [Fact]
     public void BadSourceListsThrow()
     {

@@ -108,12 +108,42 @@ public sealed record ParseError(
     /// <summary>
     /// Describes <see cref="Unexpected"/>, such as <c>unexpected string "host"</c>. A <see cref="CustomMessage"/> is its text alone.
     /// </summary>
-    internal string DescribeUnexpected() => Unexpected switch
+    /// <remarks>An item's display can come from input, so it is cut to <see cref="RenderOptions.MaxWidth"/> and shown as source text is. A message is the grammar's, so it is shown as given.</remarks>
+    internal string DescribeUnexpected(RenderOptions options) => Unexpected switch
     {
-        UnexpectedItem item => $"unexpected {item.Display}",
+        UnexpectedItem item => $"unexpected {DisplayWidth.Cut(item.Display, options.MaxWidth)}",
         EndOfInput => "unexpected end of input",
         CustomMessage message => message.Text,
     };
+
+    /// <summary>
+    /// Writes the error on one line, showing as many context lines as <paramref name="options"/> allows.
+    /// </summary>
+    internal string ToString(RenderOptions options)
+    {
+        var builder = new StringBuilder();
+
+        builder.Append(CultureInfo.InvariantCulture, $"error[{Layer}] at {Span.CharStart}..{Span.CharEnd}: ");
+        builder.Append(DescribeUnexpected(options));
+
+        if (Expected.Count > 0)
+        {
+            builder.Append("; expected ").Append(DescribeExpected());
+        }
+
+        foreach (var (line, omitted) in DiagnosticRenderer.Notes(Context, options))
+        {
+            if (line is null)
+            {
+                builder.Append(CultureInfo.InvariantCulture, $"; … {omitted} more");
+                continue;
+            }
+
+            builder.Append(CultureInfo.InvariantCulture, $"; {line.Text} starting at {line.Start.CharStart}");
+        }
+
+        return builder.ToString();
+    }
 
     /// <inheritdoc/>
     public bool Equals(ParseError? other) =>
@@ -146,24 +176,13 @@ public sealed record ParseError(
         return hash.ToHashCode();
     }
 
-    /// <inheritdoc/>
-    public override string ToString()
-    {
-        var builder = new StringBuilder();
-
-        builder.Append(CultureInfo.InvariantCulture, $"error[{Layer}] at {Span.CharStart}..{Span.CharEnd}: ");
-        builder.Append(DescribeUnexpected());
-
-        if (Expected.Count > 0)
-        {
-            builder.Append("; expected ").Append(DescribeExpected());
-        }
-
-        foreach (var line in Context)
-        {
-            builder.Append(CultureInfo.InvariantCulture, $"; {line.Text} starting at {line.Start.CharStart}");
-        }
-
-        return builder.ToString();
-    }
+    /// <summary>
+    /// Writes the error on one line, such as <c>error[parser] at 15..21: unexpected string "host"; expected ',' or '}'; in object starting at 2</c>.
+    /// </summary>
+    /// <remarks>
+    /// Offsets are character offsets (<see cref="SourceSpan.CharStart"/> to <see cref="SourceSpan.CharEnd"/>), and a context line shows the character offset where its construct started.
+    /// Context lines are limited as <see cref="RenderOptions.Default"/> limits them, so a deeply nested error shows its innermost and outermost lines and how many were left out.
+    /// </remarks>
+    public override string ToString() =>
+        ToString(RenderOptions.Default);
 }
