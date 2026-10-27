@@ -80,7 +80,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 3 | ✅ [ERR-08](active/04-errors-and-recovery/ERR-08-bound-rendered-diagnostics.md) Bound rendered diagnostics | [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) |
 | 3 | ✅ [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md) Per-layer parse state | [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md), [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) |
 | 4 | [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) Marks and retention | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md) |
-| 4 | [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) Layer abstraction and Emit | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) |
+| 4 | ✅ [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) Layer abstraction and Emit | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) |
 | 5 | [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md) Diagnostic withdrawal | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) |
 | 5 | [SPAN-03](active/05-source-spans/SPAN-03-synthetic-items.md) Synthetic items | [SPAN-02](active/05-source-spans/SPAN-02-out-of-band-span-storage.md), [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) |
 | 5 | [SPAN-04](active/05-source-spans/SPAN-04-span-combinators.md) Span combinators | [SPAN-02](active/05-source-spans/SPAN-02-out-of-band-span-storage.md), [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) |
@@ -210,7 +210,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) Layer abstraction and Emit — Build
+None yet.
 
 ### Can start now
 
@@ -219,7 +219,14 @@ These items have all their blockers done:
 - [CORE-14](active/02-core-combinators/CORE-14-choices-beyond-16-alternatives.md) Choices beyond 16 alternatives
 - [INT-10](active/03-interpreter/INT-10-dispatched-longest-measured-against-the-automaton.md) Dispatched Longest, measured against the automaton
 - [INT-12](active/03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md) Close the interpreter test gaps BENCH-01 left
+- [SPAN-03](active/05-source-spans/SPAN-03-synthetic-items.md) Synthetic items
+- [SPAN-04](active/05-source-spans/SPAN-04-span-combinators.md) Span combinators
+- [SPAN-05](active/05-source-spans/SPAN-05-trivia-attach-mode.md) Trivia attach mode
+- [SPAN-06](active/05-source-spans/SPAN-06-byte-sources-and-the-decoding-layer.md) Byte sources and the decoding layer
 - [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) Marks and retention
+- [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) Pipeline API and sources
+- [MODE-01](active/07-mode-channels/MODE-01-mode-channels-and-layermodal.md) Mode channels and Layer.Modal
+- [ANA-01](active/09-static-analysis/ANA-01-grammar-property-analysis.md) Grammar property analysis
 - [GEN-11](active/11-source-generator/GEN-11-runtime-support-surface-for-generated-code.md) Runtime support surface for generated code
 - [BENCH-04](active/13-benchmarks/BENCH-04-revisit-string-handling-in-the-json-benchmark-grammar.md) Revisit string handling in the JSON benchmark grammar
 
@@ -319,7 +326,7 @@ Stream buffers, marks, layers, layer state and the pipeline API. Folder: [`activ
 | --- | --- | --- |
 | ✅ [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) StreamBuffer and pulling cursor | 1 | [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) |
 | [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) Marks and retention | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md) |
-| [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) Layer abstraction and Emit | 1 | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) |
+| ✅ [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) Layer abstraction and Emit | 1 | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) |
 | [LAY-04](active/06-layers-and-pipelines/LAY-04-layer-local-state.md) Layer-local state | 1 | [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md), [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) |
 | [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) Pipeline API and sources | 1 | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) |
 | [LAY-06](active/06-layers-and-pipelines/LAY-06-buffer-size-limit.md) Buffer size limit | 1 | [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) |

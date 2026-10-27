@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Layers, buffers and pipelines](../../README.md#lay--layers-buffers-and-pipelines) |
 | Phase | Phase 1 — Layers |
-| Status | Building |
+| Status | Done |
 
 ## Summary
 
@@ -22,9 +22,9 @@ Layers turn a stream of one type into a stream of another using ordinary combina
 
 ## Acceptance criteria
 
-- [ ] A lexer composed with a stateless layout pass, a `Transduce` that turns each newline token into a synthetic `;`, is usable as a single `Layer<char, Token>`.
-- [ ] A token's span never includes leading whitespace.
-- [ ] Building and reading an `Emit<T>` of zero or one output allocates nothing.
+- [x] A lexer composed with a stateless layout pass, a `Transduce` that turns each newline token into a synthetic `;`, is usable as a single `Layer<char, Token>`.
+- [x] A token's span never includes leading whitespace.
+- [x] Building and reading an `Emit<T>` of zero or one output allocates nothing.
 
 ## Blocked by
 
@@ -65,3 +65,46 @@ Layers turn a stream of one type into a stream of another using ordinary combina
 - 2026-10-27 (Build): Plan approved: three increments (`Emit<T>`; the layer model with `Tokens`, `Where`, `Select`, `Identity` and `Then`; `Transduce`). Calls: layers run through an internal `Open(StreamBuffer<TIn>, …)` until LAY-05; `a.Then(b)` composes, and composing with `Identity` returns the other layer; `skip` is an optional `Parser<TIn, Unit>` that must succeed; a step that consumes nothing throws `GrammarException`; a failed step ends the parse with its layer's furthest failure, or its depth error, carried by an internal exception for LAY-05 to catch; `Tokens` and `Transduce` take an optional `name`, default `lexer` and `layout`. Increment 1 done: `Emit<T>` (`EmitOfT.cs`), `Emitted<T>` and the `Emit` class (`One`, `Synthetic`, and a hidden `Create` for collection expressions) as ADR-0032 points 1–4 define them. `EmitTests` (10): building with collection expressions, conversions, spreads, `Emit.One` for an interface-typed item, CS0029 for that item's conversion, equality and hash codes, `ToString`, and no allocation for zero or one output (criterion 3). Two mutations each failed a test: `Create` copying a single output into an array, and equality ignoring the mark. Docs: new `docs/concepts/layers.md` with the `Emit` section, added to the docs index. `dotnet build` 0 warnings; `dotnet test` 1,606 passed; AOT smoke publishes and prints OK. Criterion 3 appears met; not ticked until `/complete`. Next: increment 2, the layer model and `Layer.Tokens`.
 - 2026-10-27 (Build): Increment 2 done. `Layer<TIn, TOut>` (`LayerOfTInTOut.cs`), an abstract class with an internal constructor, one internal `Open(StreamBuffer<TIn>, ParseOptions, bool recordFailures)` that returns the `IUpstream<TOut>` filling the buffer above, and `Then`. The `Layer` class makes `Tokens`, `Where`, `Select` and `Identity`. Each kind is a sealed class in `src/Creole/Layers/` with its upstream as a `file` type. `Then` returns the other layer when either side is `Identity`, and otherwise a `ComposedLayer` that puts a `StreamBuffer` between the two. One change to the approved plan: `skip` is a second `Tokens` overload, not a nullable parameter, so a null `skip`, such as a field declared later, throws `GrammarException` instead of being silently ignored. Each `Tokens` step runs on a cursor of its own and keeps one failure log for the whole run. A failed `skip` or item throws the internal `LayerFailedException`, which carries the layer's furthest failure across its steps, or the depth error. An item that consumes nothing throws `GrammarException` (`NullableRepetition.LayerItem`). The depth and nothing-recorded errors moved from `Parsing` into `ParseErrors`, so `Parsing` and layers build them the same way; `Parsing`'s tests pass unchanged. Tests: `LayerTests` (17) and the `LayerRun` helper. Criterion 2 is a CsCheck property over random tokens and whitespace with segment sizes 1–4 (500 cases), checking each token's span and step start. The other tests cover spans and step starts, input that is all skip, items read back to back, a failed item (pinned message), a failed `skip`, a custom name, the depth error, an item that consumes nothing, the failure log spanning steps, `Where`, `Select`, associativity, identity as the unit, identity run on its own, null arguments, and guarantee 4: a parser that rewinds over a backtracking lexer never runs it again. Mutations each failed tests: the span including `skip` (4), `stepStart` after `skip` (2), `Then` not returning the layer for a left `Identity` (1), a new failure log per step (2), and the depth limit ignored (1). Docs: `layers.md` covers making layers, `Tokens`, its errors, `Where` and `Select`, and `Then`; `spans.md` gains Spans of a layer's items; the docs index is updated. `dotnet build` 0 warnings; `dotnet test` 1,623 passed; AOT smoke publishes and prints OK. Criterion 2 appears met; not ticked until `/complete`. Next: increment 3, `Layer.Transduce`.
 - 2026-10-27 (Build): Increment 3 done. `Layer.Transduce(initialState, step, atEnd = null, name = "layout")` and `TransduceLayer` in `src/Creole/Layers/`, as ADR-0032 points 5–10 define it. Derived outputs get the step's span; a synthetic output with no derived output before it in its step is zero-width at the step's first item; one after a derived output is zero-width at the first item after the step, which the step peeks for, or at the end of the input. `atEnd` runs once at the end with the state, which is still `initialState`, and its outputs are zero-width there whatever their mark. `groupIndex` counts every output of a step. A step that consumes nothing throws `GrammarException` (`NullableRepetition.LayerStep`), and a failed step throws `LayerFailedException` named `layout` or the given name. Tests: `TransduceTests` (7). They cover criterion 1: a lexer composed with a pass that turns newlines into synthetic `;` and adds a synthetic `<end>` is a `Layer<char, string>`, a parser reading its buffer parses the statements, and every span is checked. Also: a table of spans, step starts and group indices covering every placement rule and an empty emit; a failed step (pinned message); a custom name; a step that consumes nothing; no `atEnd`; null arguments. Mutations each failed tests: a trailing synthetic placed at the end of the step (1), a leading synthetic given the step's span (2), `groupIndex` always 0 (1), `atEnd` never run (2), and derived outputs never noted (1). Docs: `layers.md` gains a `Layer.Transduce` section with the placement table and a row in Making layers; `spans.md` and the docs index mention `Transduce`. `dotnet build` 0 warnings; `dotnet test` 1,630 passed; AOT smoke publishes and prints OK. All three criteria appear met; none ticked until `/complete`. Next: maintainer review, then `/complete LAY-03`.
+- 2026-10-27 (Done): `/complete` on 14f4212. All three criteria met on evidence: the full suite passes, and the three criterion tests were re-run alone. Follow-ups written into LAY-05 (catch `LayerFailedException`; when runs record failures) and ANA-01 (layers are not `INode`s yet).
+
+## Outcome
+
+- **`Emit<T>`** ([ADR-0032](../../docs/decisions/0032-emit-is-a-list-of-outputs-each-derived-or-synthetic.md)), in [EmitOfT.cs](../../../src/Creole/EmitOfT.cs), [Emitted.cs](../../../src/Creole/Emitted.cs) and [Emit.cs](../../../src/Creole/Emit.cs):
+  - It is a list of outputs, each derived or synthetic, not a union.
+  - Collection expressions build it, as in `[newline, Emit.Synthetic(indent)]`. An item converts to one derived output, and `Emit.One` does the same for items typed as an interface or `object`.
+  - It holds zero or one output inline and several in one array. Two emits are equal when their outputs are equal in order.
+- **Layers**, in [LayerOfTInTOut.cs](../../../src/Creole/LayerOfTInTOut.cs), [Layer.cs](../../../src/Creole/Layer.cs) and [src/Creole/Layers/](../../../src/Creole/Layers/):
+  - `Layer<TIn, TOut>` has an internal constructor and one internal engine method, `Open(StreamBuffer<TIn>, ParseOptions, bool recordFailures)`. It returns the `IUpstream<TOut>` that fills the buffer above.
+  - Each kind is a sealed class with its upstream as a `file` type: `Tokens` (with and without `skip`), `Transduce`, `Where`, `Select` and `Identity`.
+  - `a.Then(b)` puts a `StreamBuffer` between the two layers and returns the other layer when either side is `Identity`.
+  - Each step runs on its own cursor, so backtracking, cuts and depth stay inside it (guarantee 4). Each run keeps one failure log across its steps.
+- **Spans.** `Tokens` follows rule 2 and leaves out `skip`. `Transduce` places derived and synthetic outputs as ADR-0032 points 6–8 say. `Where` and `Select` keep each item's span. `groupIndex` counts every output of a step.
+- **Failures.**
+  - A failed step throws the internal [LayerFailedException](../../../src/Creole/LayerFailedException.cs). It carries the layer's furthest failure across its steps, or the depth error, named `lexer`, `layout` or the layer's `name`.
+  - [ParseErrors.cs](../../../src/Creole/Errors/ParseErrors.cs) now builds those errors for both `Parsing` and layers.
+  - An item or step that consumes nothing throws `GrammarException` until ANA-03 adds CRL0003.
+- **Calls made in the build plan**, none of which changes the whitepaper's design:
+  - `skip` is a second `Tokens` overload, so a null `skip` throws instead of being ignored.
+  - `Tokens` and `Transduce` take an optional `name`.
+  - A failed step ends the parse through an internal exception.
+  - Layers are not `INode`s yet.
+- **Tests** (34):
+  - [EmitTests.cs](../../../tests/Creole.Tests/EmitTests.cs) (10).
+  - [LayerTests.cs](../../../tests/Creole.Tests/LayerTests.cs) (17), including a CsCheck span property and guarantee 4.
+  - [TransduceTests.cs](../../../tests/Creole.Tests/TransduceTests.cs) (7), including a table that covers every placement rule.
+  - [LayerRun.cs](../../../tests/Creole.Tests/Utilities/LayerRun.cs) runs a layer over text, as LAY-05's pipelines will.
+  - Mutation sweeps in each increment: each mutation failed at least one test.
+- **Docs:** [layers.md](../../../docs/concepts/layers.md) (new), [spans.md](../../../docs/concepts/spans.md) (spans of a layer's items), and the [docs index](../../../docs/README.md).
+- **Follow-ups**, recorded on the cards:
+  - LAY-05 catches `LayerFailedException` and decides when a run records failures.
+  - ANA-01 adds a walk over layers.
+  - SPAN-03 exposes `IsSynthetic`.
+  - LAY-04 lets `Transduce`'s step read and change its state.
+  - LAY-02 pins and releases layer input.
+- **Evidence, 2026-10-27, on 14f4212:** `dotnet build` with 0 warnings; `dotnet test` with 1,630 passed and 0 failed; the AOT smoke publish with no warnings, and its run printing OK.
+
+  | Criterion | Evidence |
+  | --- | --- |
+  | 1. A lexer composed with a stateless layout pass is one `Layer<char, Token>` | `TransduceTests.ALexerComposedWithALayoutPassIsOneLayer`: `Then` returns `Layer<char, string>`; a parser reading its buffer parses `a = 1\nb = 2\n`; every span is checked, including the synthetic `;` at 5..5 and 11..11 |
+  | 2. A token's span never includes leading whitespace | `LayerTests.ATokenSpanCoversItsOwnInputAndNoSkippedInput`: 500 CsCheck cases of random tokens and whitespace at segment sizes 1–4; a mutation that let the span include `skip` failed 4 tests |
+  | 3. An `Emit<T>` of zero or one output allocates nothing | `EmitTests.BuildingAndReadingZeroOrOneOutputDoesNotAllocate`: 0 bytes; a mutation that copied a single output into an array failed it |
