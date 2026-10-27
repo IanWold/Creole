@@ -86,7 +86,7 @@ Layer<char, int> lengths = lexer.Then(Layer.Select<string, int>(static token => 
 
 ## Chaining layers: `Then`
 
-`a.Then(b)` runs `b` over the items `a` produces. The items of `a` are held in a buffer between the two, so `b` can rewind over them without `a` running again.
+`a.Then(b)` runs `b` over the items `a` produces. The items of `a` are held in a buffer between the two, so `b` can rewind over them without `a` running again. The buffer lets an item go once `b` can no longer go back to it. `a` in turn keeps its own input only from where the step began that produced the oldest item still held, so memory follows how far `b` can go back, not the length of the input ([ADR-0031](../../work/docs/decisions/0031-constructs-that-read-their-input-back-pin-their-start.md)).
 
 - Chaining is associative: `a.Then(b).Then(c)` and `a.Then(b.Then(c))` produce the same items with the same spans.
 - `Layer.Identity<T>()` is its unit: `a.Then(Layer.Identity<T>())` and `Layer.Identity<T>().Then(a)` return `a` itself.

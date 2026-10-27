@@ -6,6 +6,7 @@ namespace Creole;
 /// <remarks>
 /// Each step runs on a cursor of its own, so a cut, the depth and any rewind inside the step stay inside it.
 /// The failure log lasts the whole run, so the layer reports its furthest failure across its steps.
+/// The cursor's floor starts where the oldest step whose items are still held began, or at the step's own start, so the input of the running step and of every held item stays in the buffer.
 /// </remarks>
 file sealed class TokensUpstream<TIn, TOut>(StreamBuffer<TIn> input, Plan<TIn, TOut> item, Plan<TIn, Unit>? skip, string name, int maxDepth, FailureLog<TIn>? failures) : IUpstream<TOut>
 {
@@ -22,8 +23,8 @@ file sealed class TokensUpstream<TIn, TOut>(StreamBuffer<TIn> input, Plan<TIn, T
 
     public bool TryStep(StreamBuffer<TOut> buffer)
     {
-        var cursor = new Cursor<TIn>(_input) { Failures = _failures, MaxDepth = _maxDepth };
         var stepStart = _position;
+        var cursor = new Cursor<TIn>(_input) { Failures = _failures, Floor = buffer.OldestStepStart ?? stepStart, MaxDepth = _maxDepth };
         var itemStart = stepStart;
         var skipped = default(Unit);
         var value = default(TOut)!;
