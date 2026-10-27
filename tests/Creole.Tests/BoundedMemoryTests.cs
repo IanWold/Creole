@@ -33,6 +33,7 @@ file abstract record Shape
 /// </summary>
 /// <remarks>
 /// Every letter appears in one place only, so no alternative that is not taken consumes, and nothing that follows a repetition or an optional letter starts with its letter.
+/// Choices of four or more alternatives are lowered to dispatch. Half the sentences take the first alternative of every choice, which nests deepest, so each input reaches the full depth.
 /// </remarks>
 file sealed class NestedChoices
 {
@@ -52,7 +53,13 @@ file sealed class NestedChoices
 
     private static Parser<char, Unit> Build(Shape shape) => shape switch
     {
-        Shape.Choice choice => choice.Alternatives.Skip(1).Aggregate(Build(choice.Alternatives[0]), (parser, alternative) => parser.Or(Build(alternative))),
+        Shape.Choice { Alternatives: var alternatives } => alternatives.Length switch
+        {
+            2 => OneOf(Build(alternatives[0]), Build(alternatives[1])),
+            3 => OneOf(Build(alternatives[0]), Build(alternatives[1]), Build(alternatives[2])),
+            4 => OneOf(Build(alternatives[0]), Build(alternatives[1]), Build(alternatives[2]), Build(alternatives[3])),
+            _ => OneOf(Build(alternatives[0]), Build(alternatives[1]), Build(alternatives[2]), Build(alternatives[3]), Build(alternatives[4])),
+        },
         Shape.Prefixed { Tail: null } prefixed => Char(prefixed.Letter).Select(static _ => default(Unit)),
         Shape.Prefixed prefixed => Char(prefixed.Letter).Then(Build(prefixed.Tail)),
         Shape.Repeat repeat => Char(repeat.Letter).SkipMany(),
@@ -62,7 +69,7 @@ file sealed class NestedChoices
 
     private Shape.Choice Choice(int depth)
     {
-        var count = _random.Next(2, 4);
+        var count = _random.Next(2, 6);
         var alternatives = new Shape[count];
 
         for (var i = 0; i < count; i++)
@@ -84,12 +91,19 @@ file sealed class NestedChoices
         return new Shape.Choice(alternatives);
     }
 
-    private void Write(Shape shape, StringBuilder text)
+    private void Write(Shape shape, StringBuilder text, bool deepest)
     {
         switch (shape)
         {
             case Shape.Choice choice:
-                Write(choice.Alternatives[_random.Next(choice.Alternatives.Length)], text);
+                Write(
+                    choice.Alternatives[deepest
+                        ? 0
+                        : _random.Next(choice.Alternatives.Length)
+                    ],
+                    text,
+                    deepest
+                );
                 break;
 
             case Shape.Prefixed prefixed:
@@ -97,7 +111,7 @@ file sealed class NestedChoices
 
                 if (prefixed.Tail is not null)
                 {
-                    Write(prefixed.Tail, text);
+                    Write(prefixed.Tail, text, deepest);
                 }
 
                 break;
@@ -121,7 +135,7 @@ file sealed class NestedChoices
 
         while (text.Length < length)
         {
-            Write(Root, text);
+            Write(Root, text, deepest: _random.Next(2) == 0);
         }
 
         return text.ToString();

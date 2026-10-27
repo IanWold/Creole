@@ -54,7 +54,7 @@ public class RetentionTests
         new("String", String("abcdex").Or(String("abcdef")), "----abcdef;"),
         new("CIString", CIString("ABCDEX").Or(CIString("ABCDEF")), "----abcdef;"),
         new("Atomic", Atomic(_terminated.Select(static _ => "atomic")).Or(_word), "----abcdef"),
-        new("Lookahead", Lookahead(_word).Then(_word), "----abcdef;"),
+        new("Lookahead", Lookahead(Letter.SkipAtLeastOnce()).Then(_word), "----abcdef;"),
         new("Not", Not(_terminated).Then(_word), "----abcdef"),
         new("Longest", Longest(_terminated.Select(static _ => "terminated"), _word), "----abcdef"),
         new("Compiled Longest", Longest(String("abcdefgh"), String("abc")).Then(_word), "----abcdefx;"),

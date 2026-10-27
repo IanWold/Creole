@@ -104,7 +104,7 @@ The layer's pin moves to the start of each step as the step begins. It stays at 
   - `Release` may run at any time.
   - No `Atomic` spans two steps (ADR-0030 point 1), so every pin a node takes inside a step lies at or above the step's start. In a producing layer, node pins add nothing to retention, and an engine may skip them.
 - Cons:
-  - A step that emits nothing, such as a trivia step, still holds its input until it ends. It would hold that under 2B too.
+  - A step that emits nothing still holds its input until it ends. While an earlier output is held, so is the input of every later step, so a run of input that produces nothing is held in full: a filter that drops a long run holds the whole run. 2A and 2B have the same cost.
 
 ## Decision
 
@@ -144,7 +144,7 @@ So pins cost time only in the last layer of a pipeline over streamed input. That
 
 **5. § Guarantees point 2 becomes:**
 
-> **Bounded memory.** Memory at a boundary is proportional to the longest window held open by a pin in the layer above, plus the input of the step that layer is running and of the steps that produced the items it still holds. `Atomic`, `Lookahead`, `Not`, `Longest`, `Slice`, `Text`, `Custom` and a longer `String` or `CIString` pin (§ Bookmarks and retention). `Or` and repetition add nothing, so a large document keeps a constant number of items per boundary, however deeply its `Or`s nest, as long as no pin in the last layer spans it.
+> **Bounded memory.** Memory at a boundary is proportional to the longest window held open by a pin in the layer above. The layer below keeps its own input from where the step began that produced the oldest item still held, through the step it is running. `Atomic`, `Lookahead`, `Not`, `Longest`, `Slice`, `Text`, `Custom` and a longer `String` or `CIString` pin (§ Bookmarks and retention). `Or` and repetition add nothing, so a large document keeps a constant number of items per boundary, however deeply its `Or`s nest, as long as no pin in the last layer spans it. A buffer always keeps the item its reader read last, so the input after that item that produces nothing is held until the next item is produced: a filter that drops a long run holds the whole run.
 
 **6. What LAY-02 builds.** LAY-02 keeps:
 
@@ -187,6 +187,7 @@ What would change this:
 
 - A streamed last layer at character level holds about 17× a long capture's characters, if its buffer carries slots.
 - The horizon has four inputs.
+- A run of input that produces nothing is held while an earlier output is, so a filter that drops most of its input holds memory that grows with it. [LAY-09](../../active/06-layers-and-pipelines/LAY-09-hold-only-the-input-the-reader-can-still-go-back-to.md) narrows the pin to outputs the reader can still go back to.
 - Each engine must know whether a layer produces, to skip pins in it. Taking them anyway is correct, only slower.
 
 **Ruled out:**
@@ -212,6 +213,6 @@ What would change this:
   - [LAY-02](../../active/06-layers-and-pipelines/LAY-02-marks-and-retention.md): scope narrowed as point 6 says, "reference-counted" replaced by point 3, and a new criterion for read-back constructs across released segments and the step pin.
   - [MODE-03](../../active/07-mode-channels/MODE-03-rollback-rule.md) and [ERR-04](../../active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md): each gains ADR-0030 point 9's rule and point 6's re-run for its part.
   - [GEN-06](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md): generated code pins as the interpreter does, and may skip pins where point 4 allows.
-  - No new cards.
+  - [LAY-09](../../active/06-layers-and-pipelines/LAY-09-hold-only-the-input-the-reader-can-still-go-back-to.md): created, to pin only from the oldest output the reader can still go back to.
 
-This record was edited in place before its branch merged. LAY-02's build plan found that the Context's "a custom scanner cannot go back" was wrong: the documented way to write a scanner keeps the original cursor at its start while a copy reads ahead. `Custom` now pins its start (point 1), and the Context, point 5's guarantee text and Changes made say so.
+This record was edited in place before its branch merged. LAY-02's build plan found that the Context's "a custom scanner cannot go back" was wrong: the documented way to write a scanner keeps the original cursor at its start while a copy reads ahead. `Custom` now pins its start (point 1), and the Context, point 5's guarantee text and Changes made say so. LAY-02's completion review then found that point 5 promised less than a producing layer keeps when its steps produce nothing. Point 5, option 2C's cons and Consequences now say what it keeps, and LAY-09 takes up the narrower pin.
