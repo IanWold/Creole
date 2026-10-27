@@ -18,6 +18,7 @@ Full feature parity: everything the interpreter supports must run in generated c
 - Count depth and probe the stack at the same points as the interpreter, sharing the cursor's counter with interpreted subtrees ([ADR-0020](../../docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md)).
 - `Bind`, the filter behind `Where` ([ADR-0014](../../docs/decisions/0014-a-rejected-filter-reports-at-the-start-of-the-value.md)), `Expression.Build` ([ADR-0015](../../docs/decisions/0015-a-prefix-operand-takes-only-tighter-levels.md)) and `Custom` nodes.
 - Register the start of each open filter, chained operator and custom scanner with the failure log, as the interpreter does, so the buffer can copy what an error needs before it releases a segment ([ADR-0028](../../docs/decisions/0028-an-errors-items-are-copied-when-the-buffer-releases-them.md)).
+- Lower failures at mode changes, undos and restores, keep the rewind order, run a `Longest` winner again when needed, and clear and give back failures for `Recover` and `OrInsert`, as the interpreter does ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) points 2, 3, 6 and 8).
 
 ## Acceptance criteria
 

@@ -15,10 +15,12 @@ The whitepaper names mode rollback corner cases as a top risk; test against a si
 - Reference model that re-lexes from scratch for the current mode history.
 - Random grammars and inputs with mode changes, backtracking, and multi-layer cascades.
 - Run in CI.
+- Compare errors as well as items, against a model of the failure record that applies [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 3.
 
 ## Acceptance criteria
 
 - [ ] Thousands of generated cases agree with the reference model.
+- [ ] Generated cases' errors agree with the failure-record model.
 
 ## Blocked by
 

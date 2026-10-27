@@ -22,6 +22,7 @@ Chain layers into a parser and run it over in-memory or reader input.
 - A pipeline over in-memory input runs without failure logs and, when it fails, runs again whole with them ([ADR-0027](../../docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)). Decide whether the second run reuses items already buffered or produces them again.
 - When a parse ends, return the segments its stream buffers still hold to the pool. `StreamBuffer<T>.Release` keeps the segment below its horizon, so every finished buffer holds at least one: about 34 KB for characters with the default 1,024-item segment, most of it the 32-byte slots ([LAY-01](LAY-01-streambuffer-and-pulling-cursor.md) review, [SPAN-02](../05-source-spans/SPAN-02-out-of-band-span-storage.md)).
 - Over streamed input, make sure `Parse`'s fallback errors read nothing the buffer may have released: `NothingRecorded` reads position 0, and `DepthError` the depth limit's position.
+- Under `ParseMany`, each item starts with no furthest failure. Decide, with STRM-02, which item's result holds a diagnostic a lexer raised while producing lookahead past an item's end ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) points 4 and 7).
 
 ## Acceptance criteria
 

@@ -20,7 +20,7 @@ Decide the public surface that generated code calls to agree with the interprete
 
   The public `Cursor<T>` offers only `Advance`, `TryPeek`, `TryRead`, `Available`, `IsAtEnd` and `Position`.
 - Choose the granularity: raw cursor hooks, or coarser helpers hidden from IntelliSense (`[EditorBrowsable(Never)]`). Whatever is chosen becomes 1.0 contract at REL-04. Exposing today's internals as they stand would freeze [ADR-0021](../../docs/decisions/0021-how-failures-are-recorded-and-merged.md)'s recording protocol.
-- The surface carries the per-layer parse state LAY-08 lists.
+- The surface carries the per-layer parse state that [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 1 lists, and the operations point 2 gives each mechanism.
 - Fallback: decide how generated code calls the interpreter for a subtree inside a rule field (§ Source-generated engine). `Staging` is keyed by the rule field's node, and a subtree is reachable only through the internal `Children`. If fallback goes by child path, `Children` order becomes contract.
 - Registration accepts one node held by two rule fields. Today `Staging.Register` throws on a second registration, so a field that aliases another rule (`Name = A.Identifier`) would fail under staging but work when interpreted.
 - The whitepaper's generated sample calls `c.PeekKind()`, which does not exist. Align the sample with the surface chosen.

@@ -12,15 +12,17 @@ A mode change discards items lexed under the old mode and re-produces them corre
 
 ## Scope
 
-- Discard buffered items at index i or later, and withdraw their diagnostics (ERR-04).
+- Discard buffered items at index i or later, and withdraw the diagnostics raised by the steps that are run again (ERR-04, [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 4).
 - Re-run item i's producing step from `stepStart` with `stateBefore`, dropping the first `groupIndex` outputs.
 - Check dropped outputs equal the consumed ones; report CRL0008 at run time if not.
 - Append (index i, previous mode stack) to the mode log.
+- Lower the furthest failure at *i*: a failure past *i* becomes a bare failure at *i*, and a failure whose span reaches past *i* loses that end and a rejection's or chained operator's message. Saves note the mode log's length and are lowered when restored, by the changes still in effect ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 3).
 
 ## Acceptance criteria
 
 - [ ] Example C lexes `/` correctly in both `(a) / 2` and `if (ok) /x/.test(s)`.
 - [ ] A filter and a `Context` around Example C's `Operand`, which starts with `SetMode`, each report the item lexed under the new mode ([ADR-0028](../../docs/decisions/0028-an-errors-items-are-copied-when-the-buffer-releases-them.md)).
+- [ ] Tests from [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 11: counterexample 3, and a rejection whose span crossed a later mode change no longer widens the error or supplies its message.
 
 ## Blocked by
 

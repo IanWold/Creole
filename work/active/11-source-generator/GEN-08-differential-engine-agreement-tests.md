@@ -19,6 +19,7 @@ The Phase 3 release gate: both engines agree on value, consumed position, every 
 - Random pipelines with layer state and a mode channel beside single-layer grammars, reusing MODE-06's reference re-lexer, so generated layers and mode rollback are compared too ([Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 13).
 - Compare against the interpreter lowered with no rewrites (`LoweringOptions.None`) as well as with all of them, so a bug in code both engines share, such as `CommitAutomaton`, still shows ([Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 13).
 - Run in CI as a release gate, not a nice-to-have: 10,000 fixed-seed grammar and input pairs on every run, plus a nightly fresh-seed run that files issues without blocking.
+- Run the comparisons with [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 9's skipped saves turned off as well as on.
 
 ## Acceptance criteria
 

@@ -14,6 +14,7 @@ Repair a single missing item, such as a forgotten `;`, without re-running anythi
 
 - `p.OrInsert(span => token)` records a diagnostic and succeeds with a synthetic, zero-width token.
 - Inserts only where the failure would otherwise be committed, so it never changes which alternative a choice takes.
+- If its diagnostic comes from the furthest failure, `OrInsert` clears it and gives it back when the diagnostic is withdrawn, as `Recover` does ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 8).
 
 ## Acceptance criteria
 

@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Layers, buffers and pipelines](../../README.md#lay--layers-buffers-and-pipelines) |
 | Phase | Phase 1 — Layers |
-| Status | Not started |
+| Status | Designing |
 
 ## Summary
 
@@ -35,7 +35,7 @@ List every piece of state a layer's parse carries, and decide what each mechanis
 ## Acceptance criteria
 
 - [ ] An accepted decision record lists every piece of per-layer parse state and, for each mechanism above, what it saves and restores.
-- [ ] The scopes of LAY-02, MODE-02, ERR-05, STRM-02 and INC-04 match the record, and each card names the review's counterexample that it must turn into a test.
+- [ ] The scopes of LAY-02, MODE-02, ERR-05, STRM-02 and INC-04 match the record, and each card names the counterexample that it must turn into a test, or says that none applies.
 
 ## Blocked by
 
@@ -63,3 +63,12 @@ List every piece of state a layer's parse carries, and decide what each mechanis
 ## Artifacts
 
 - [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements
+- [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) Accepted: the list of per-layer parse state, what each mechanism saves and restores, how a mode change forgets the failures past it, and exact reuse with its mechanism left to INC-04
+
+## Progress notes
+
+- 2026-10-27 (Design): Started. Draft one decision record that inventories per-layer parse state and gives, per mechanism, what it saves and restores, then align the five downstream cards and their counterexample tests.
+- 2026-10-27 (Design): Drafted ADR-0030 (Proposed), with options 1A, 2D, 3C, 4B, 5A and 6A. The maintainer chose 5A, exact reuse. Ohm's memo table was read as prior art for 5A. Next: the maintainer accepts, rejects or revises it; on acceptance, update the whitepaper and the cards in its Changes made.
+- 2026-10-27 (Design): Challenged ADR-0030 with two independent critics. They found two blocking defects: lowering on undo broke the restores and exact dispatch, and the draft's reuse mechanism was not exact. Revised in place: 2D to 2F, 3C to 3B, the reuse mechanism moved to INC-04, a per-layer flag for leaving parts out, completed tables, tests moved to cards that can write them. Next: the maintainer accepts, rejects or revises; on acceptance, LAY-08's second criterion also needs "or says none applies" for LAY-02.
+- 2026-10-27 (Design): Second challenge of ADR-0030's points 3 and 8 found that 2F's stored failure goes stale, that a withdrawn `Recover` diagnostic lost its failure, and that the dispatch argument was vacuous. The maintainer chose 2G. Revised in place: 2G, the give-back in 3B covering `OrInsert`, a fixed rewind order, the dispatch-key constraint, declared refinements and new tests. Next: the maintainer accepts, rejects or revises.
+- 2026-10-27 (Design): The maintainer accepted ADR-0030. The whitepaper and 20 cards were updated as its Changes made lists, and its second criterion now allows a card to say that no counterexample applies. Next: /complete, which verifies both criteria and closes the card.

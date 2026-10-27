@@ -12,15 +12,18 @@ Async record streams parse one top-level item at a time and restart that item wh
 
 ## Scope
 
-- Bookmark across every layer at each item start, including layer states, mode logs and the diagnostic bag.
+- Bookmark across every layer at each item start, including layer states, mode logs and each layer's diagnostics. Each item starts with no furthest failure and no cut in force.
 - On Starved, await at least double the buffered data, rewind and retry.
 - `ParseManyAsync` over `PipeReader` and `Stream`, returning `IAsyncEnumerable<ParseResult<T>>`.
 - Large JSON-lines peak-memory test.
 - A streamed parse records failures as it goes. Measure whether an item that fails can run again from its bookmark with a log instead, as in-memory parses do, and adopt it only for a measured gain ([ADR-0027](../../docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)).
+- On Starved, undo mode changes, clear every layer's failure record and the Starved flag, and reset scoped state to its base. Keep the pins the layers and the driver hold ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 7).
+- Decide, with LAY-05, which item's result holds a diagnostic a lexer raised while producing lookahead past an item's end ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 4).
 
 ## Acceptance criteria
 
 - [ ] Peak memory on a multi-gigabyte JSON-lines input tracks the largest record.
+- [ ] Test from [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 11: an attempt that starves inside a `Lookahead` and a `Context`, after recording a failure, leaves no failure, save or frame after the retry.
 
 ## Blocked by
 

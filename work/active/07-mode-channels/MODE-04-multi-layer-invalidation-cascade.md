@@ -15,6 +15,7 @@ A channel may skip intermediate layers, such as a parser steering the lexer bene
 - Truncate each buffer using the slot's `stepStart`, down to the channel's producer.
 - Intermediate layers restore `stateBefore` and re-run over re-lexed items.
 - No storage beyond existing slot fields.
+- Each layer whose input is truncated at *j* lowers its failures at *j*, and a producing layer that re-runs a step from `stepStart` *s* lowers its own at *s*. An intermediate layer discards input it had consumed; its pin at the `stepStart` of its oldest retained output kept that input from being released, so its copies stay correct ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 3).
 
 ## Acceptance criteria
 
