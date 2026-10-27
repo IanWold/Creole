@@ -14,7 +14,7 @@ Turn the classic infinite-loop and left-recursion bugs into errors.
 
 - CRL0001: repetition of a nullable parser.
 - CRL0002: left recursion, reported with the cycle path.
-- CRL0003: nullable layer item parser.
+- CRL0003: nullable layer item parser or `Transduce` step ([ADR-0032](../../docs/decisions/0032-emit-is-a-list-of-outputs-each-derived-or-synthetic.md) point 5).
 
 ## Acceptance criteria
 
@@ -32,3 +32,7 @@ Turn the classic infinite-loop and left-recursion bugs into errors.
 ## Whitepaper references
 
 - [§ Diagnostics](../../../whitepaper.md#diagnostics)
+
+## Artifacts
+
+- [ADR-0032: `Emit<T>` is a list of outputs, each derived or synthetic, not a union](../../docs/decisions/0032-emit-is-a-list-of-outputs-each-derived-or-synthetic.md)
