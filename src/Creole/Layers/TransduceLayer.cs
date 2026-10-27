@@ -7,6 +7,7 @@ namespace Creole;
 /// Each step runs on a cursor of its own, so a cut, the depth and any rewind inside the step stay inside it.
 /// The failure log lasts the whole run, so the layer reports its furthest failure across its steps.
 /// The cursor's floor starts where the oldest step whose outputs are still held began, or at the step's own start, so the input of the running step and of every held output stays in the buffer.
+/// Each step starts by releasing the input below that floor, since a step that starts in a new segment reaches it without the cursor releasing anything.
 /// </remarks>
 file sealed class TransduceUpstream<TIn, TOut, TState>(
     StreamBuffer<TIn> input,
@@ -92,9 +93,11 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
         }
 
         var stepStart = _position;
-        var cursor = new Cursor<TIn>(_input) { Failures = _failures, Floor = buffer.OldestStepStart ?? stepStart, MaxDepth = _maxDepth };
+        var floor = buffer.OldestStepStart ?? stepStart;
+        var cursor = new Cursor<TIn>(_input) { Failures = _failures, Floor = floor, MaxDepth = _maxDepth };
         var outputs = default(Emit<TOut>);
 
+        _input.Release(floor, _failures);
         cursor.Reset(stepStart);
 
         try

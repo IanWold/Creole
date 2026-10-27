@@ -81,8 +81,8 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     /// </remarks>
     public long? OldestStepStart =>
         Filled > Start
-            ? _segments[0].Slots[0].StepStart
-            : null;
+        ? _segments[0].Slots[0].StepStart
+        : null;
 
     /// <summary>
     /// The first position the buffer still holds. Every position below it has been released.

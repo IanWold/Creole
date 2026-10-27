@@ -22,10 +22,7 @@ public class LayerRetentionTests
 
     private static readonly Layer<char, int> _tokens = Layer.Tokens(Letter.SkipAtLeastOnce().Select(static _ => 1), Char(' ').SkipMany());
 
-    private static readonly Layer<char, int> _transduce = Layer.Transduce(
-        0,
-        Letter.SkipAtLeastOnce().Select(static _ => Emit.One(1)).Or(Char(' ').SkipAtLeastOnce().Select(static _ => default(Emit<int>)))
-    );
+    private static readonly Layer<char, int> _transduce = Layer.Transduce(0, Letter.SkipAtLeastOnce().Select(static _ => Emit.One(1)).Or(Char(' ').SkipAtLeastOnce().Select(static _ => default(Emit<int>))));
 
     private static readonly Layer<char, char> _where = Layer.Where<char>(static c => c != ' ');
 
@@ -35,11 +32,11 @@ public class LayerRetentionTests
         var characters = new StreamBuffer<char>(new ArrayUpstream<char>(Text.ToCharArray()), segmentSize, new OverwritingPool<char>('#'));
         var output = new StreamBuffer<T>(layer.Open(characters, ParseOptions.Default, recordFailures: true), segmentSize, new OverwritingPool<T>(default!));
         var reader = new Cursor<T>(output);
+        var spans = new List<SourceSpan>();
+        var label = $"{name} in segments of {segmentSize}{(pinFirst ? ", first item pinned" : "")}";
         var floor = pinFirst
             ? reader.Pin()
             : reader.Floor;
-        var spans = new List<SourceSpan>();
-        var label = $"{name} in segments of {segmentSize}{(pinFirst ? ", first item pinned" : "")}";
 
         try
         {
@@ -78,15 +75,11 @@ public class LayerRetentionTests
         select difference;
 
     [Fact]
-    public void EveryProducingLayerKeepsTheInputOfItsRunningStepAndOfEveryItemItsReaderHolds()
-    {
-        string[] differences = [
+    public void EveryProducingLayerKeepsTheInputOfItsRunningStepAndOfEveryItemItsReaderHolds() =>
+        Assert.Empty((string[])[
             .. Differences("Tokens", _tokens),
             .. Differences("Transduce", _transduce),
             .. Differences("Select", _select),
             .. Differences("Where", _where),
-        ];
-
-        Assert.Empty(differences);
-    }
+        ]);
 }
