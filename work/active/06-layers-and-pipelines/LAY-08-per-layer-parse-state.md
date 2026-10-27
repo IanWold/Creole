@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Layers, buffers and pipelines](../../README.md#lay--layers-buffers-and-pipelines) |
 | Phase | Phase 1 — Layers |
-| Status | Not started |
+| Status | Done |
 
 ## Summary
 
@@ -34,8 +34,8 @@ List every piece of state a layer's parse carries, and decide what each mechanis
 
 ## Acceptance criteria
 
-- [ ] An accepted decision record lists every piece of per-layer parse state and, for each mechanism above, what it saves and restores.
-- [ ] The scopes of LAY-02, MODE-02, ERR-05, STRM-02 and INC-04 match the record, and each card names the review's counterexample that it must turn into a test.
+- [x] An accepted decision record lists every piece of per-layer parse state and, for each mechanism above, what it saves and restores.
+- [x] The scopes of LAY-02, MODE-02, ERR-05, STRM-02 and INC-04 match the record, and each card names the counterexample that it must turn into a test, or says that none applies.
 
 ## Blocked by
 
@@ -63,3 +63,69 @@ List every piece of state a layer's parse carries, and decide what each mechanis
 ## Artifacts
 
 - [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements
+- [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) Accepted: the list of per-layer parse state, what each mechanism saves and restores, how a mode change forgets the failures past it, and exact reuse with its mechanism left to INC-04
+
+## Progress notes
+
+- 2026-10-27 (Design): Started. Draft one decision record that inventories per-layer parse state and gives, per mechanism, what it saves and restores, then align the five downstream cards and their counterexample tests.
+- 2026-10-27 (Design): Drafted ADR-0030 (Proposed), with options 1A, 2D, 3C, 4B, 5A and 6A. The maintainer chose 5A, exact reuse. Ohm's memo table was read as prior art for 5A. Next: the maintainer accepts, rejects or revises it; on acceptance, update the whitepaper and the cards in its Changes made.
+- 2026-10-27 (Design): Challenged ADR-0030 with two independent critics. They found two blocking defects: lowering on undo broke the restores and exact dispatch, and the draft's reuse mechanism was not exact. Revised in place: 2D to 2F, 3C to 3B, the reuse mechanism moved to INC-04, a per-layer flag for leaving parts out, completed tables, tests moved to cards that can write them. Next: the maintainer accepts, rejects or revises; on acceptance, LAY-08's second criterion also needs "or says none applies" for LAY-02.
+- 2026-10-27 (Design): Second challenge of ADR-0030's points 3 and 8 found that 2F's stored failure goes stale, that a withdrawn `Recover` diagnostic lost its failure, and that the dispatch argument was vacuous. The maintainer chose 2G. Revised in place: 2G, the give-back in 3B covering `OrInsert`, a fixed rewind order, the dispatch-key constraint, declared refinements and new tests. Next: the maintainer accepts, rejects or revises.
+- 2026-10-27 (Design): The maintainer accepted ADR-0030. The whitepaper and 20 cards were updated as its Changes made lists, and its second criterion now allows a card to say that no counterexample applies. Next: /complete, which verifies both criteria and closes the card.
+
+## Outcome
+
+Delivered [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md), Accepted on 2026-10-27, after two rounds of review by independent critics. It covers:
+
+- every part of per-layer parse state, with its kind (point 1);
+- what each mechanism saves and restores (point 2);
+- how a mode change and its undo forget the failures past them (point 3);
+- that diagnostics belong to the layer that raised them (point 4);
+- that reuse is invisible, with what a memo must account for (point 5);
+- `Longest`, restart and `Recover` (points 6 to 8);
+- leaving parts out of marks in layers that cannot change them (point 9).
+
+It refines ADR-0004, ADR-0014, ADR-0016, ADR-0021, ADR-0022 and ADR-0028 (see the decisions index note), and settles ADR-0028 point 9.
+
+Changed with it:
+
+- **Whitepaper:**
+  - § Choice and backtracking
+  - § Longest match
+  - § Bookmarks and retention
+  - § Guarantees
+  - § Failure positions
+  - § 3. Mode channels
+  - § The error model
+  - § Recovery
+  - § Embedded languages
+  - § Properties
+  - § Interpreted engine
+  - § The restart protocol
+  - § Reusing parser results
+  - § Limits for untrusted input
+- **Cards:**
+  - LAY-02, LAY-04 and LAY-05
+  - MODE-02, MODE-03, MODE-04 and MODE-06
+  - ANA-01
+  - GEN-02, GEN-06, GEN-08 and GEN-11
+  - ERR-04, ERR-05, ERR-06 and ERR-07
+  - STRM-01 and STRM-02
+  - INC-04
+
+  The tests in point 11 are acceptance criteria on the cards that write them. No `docs/` page described the behaviour that changed.
+
+Deviations from this card's scope:
+
+- **The reuse memo.** The scope asked what a reuse memo must store, "for example … the failures it left at or past its end". Review showed that storing a rule's own failures and merging them on reuse is not exact under ADR-0021's rules. The record fixes the requirement (5A) and what a memo must account for. It leaves the representation and the replay to INC-04, with four named hazards and a differential test as INC-04's criterion.
+- **This card's second criterion** gained "or says that none applies", because no counterexample can arise for LAY-02 before modes, layer state or diagnostics exist.
+
+Left open, each on its card:
+
+- INC-04: the memo design, and whether a session follows ADR-0027.
+- LAY-05 and STRM-02: which item's result holds a lexer diagnostic raised while producing lookahead past an item's end.
+- ERR-05: whether a strategy can fail.
+- ERR-06: whether `OrInsert` builds its diagnostic from the furthest failure.
+- MODE-01: whether two layers may write one channel.
+
+No new cards.

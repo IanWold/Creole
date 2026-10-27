@@ -15,6 +15,7 @@ In streaming mode, running out of buffered data is neither success nor failure.
 - Sticky Starved flag on parse state, held behind the reference the cursor already holds (as `Failures` is), so a custom scanner that scans a copy of the cursor and discards it cannot lose it ([Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 19).
 - `Or`, `Atomic`, `Not`, `Lookahead` and `Recover` check it before acting on a failure.
 - `End` and root reads report Starved at the end of buffered data before the true end of the stream.
+- Starved need not unwind the state that nodes open and close, such as context frames, saved failures, held starts and depth: the restart resets it ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 7).
 
 ## Acceptance criteria
 

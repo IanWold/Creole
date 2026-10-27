@@ -19,6 +19,8 @@ A fixpoint over the grammar graph computes the properties every check builds on.
 - Decide union-token `Case<T>()` before building on it. § Authoring ergonomics and § Where unions are not used leave open whether union tokens need `IKinded`, and the code requires it. FIRST's separate case part makes any choice that mixes `Kind(k)` and `Case<T>()` look overlapping, a false-positive risk for the Phase 2 gate ([idea](../../ideas/union-tokens-and-ikinded.md); [Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 25).
 - Write the analysis so it can be shared with the Roslyn component (RSLN-02).
 - Interpreter lowering may take `Or` dispatch keys from these properties instead of its leading-item walk ([ADR-0016](../../docs/decisions/0016-or-dispatches-on-each-alternatives-leading-item.md) point 5).
+- Dispatch keys taken from these properties stop at any node that can change the mode, because dispatch peeks the next item under the current mode ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 3).
+- Per layer, record whether the grammar can change the mode, raise diagnostics (`Recover`, `OrInsert`, `Embed`) or change layer state (`SetState`, `Scan`), following `Rec` references. A `Bind` counts as all three ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 9).
 
 ## Acceptance criteria
 

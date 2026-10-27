@@ -15,10 +15,12 @@ Lexer layers recover like parsers, and downstream layers do not re-report lexer 
 - `Layer.Tokens(..., onError: Recover.SkipChar(...))` emits an error token and continues.
 - `Kind(k)` never matches an error token.
 - Drop downstream diagnostics whose unexpected item is an error token.
+- Lexer diagnostics belong to the lexer layer. A parser's mark never withdraws them; they are withdrawn only when the step that raised them is run again or its tokens are discarded ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 4).
 
 ## Acceptance criteria
 
 - [ ] An input with one bad character produces exactly one diagnostic.
+- [ ] Tests from [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 11: counterexample 4, and a re-run step whose earlier outputs were consumed reports its diagnostic once.
 
 ## Blocked by
 

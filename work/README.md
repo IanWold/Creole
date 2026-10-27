@@ -78,7 +78,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 1 | ✅ [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) StreamBuffer and pulling cursor | [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) |
 | 2 | ✅ [SPAN-02](active/05-source-spans/SPAN-02-out-of-band-span-storage.md) Out-of-band span storage | [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md), [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) |
 | 3 | ✅ [ERR-08](active/04-errors-and-recovery/ERR-08-bound-rendered-diagnostics.md) Bound rendered diagnostics | [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) |
-| 3 | [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md) Per-layer parse state | [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md), [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) |
+| 3 | ✅ [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md) Per-layer parse state | [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md), [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) |
 | 4 | [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) Marks and retention | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md) |
 | 4 | [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) Layer abstraction and Emit | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [LAY-01](active/06-layers-and-pipelines/LAY-01-streambuffer-and-pulling-cursor.md) |
 | 5 | [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md) Diagnostic withdrawal | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) |
@@ -219,8 +219,9 @@ These items have all their blockers done:
 - [CORE-14](active/02-core-combinators/CORE-14-choices-beyond-16-alternatives.md) Choices beyond 16 alternatives
 - [INT-10](active/03-interpreter/INT-10-dispatched-longest-measured-against-the-automaton.md) Dispatched Longest, measured against the automaton
 - [INT-12](active/03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md) Close the interpreter test gaps BENCH-01 left
+- [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) Marks and retention
 - [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) Layer abstraction and Emit
-- [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md) Per-layer parse state
+- [GEN-11](active/11-source-generator/GEN-11-runtime-support-surface-for-generated-code.md) Runtime support surface for generated code
 - [BENCH-04](active/13-benchmarks/BENCH-04-revisit-string-handling-in-the-json-benchmark-grammar.md) Revisit string handling in the JSON benchmark grammar
 
 ## Epics
@@ -324,7 +325,7 @@ Stream buffers, marks, layers, layer state and the pipeline API. Folder: [`activ
 | [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) Pipeline API and sources | 1 | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) |
 | [LAY-06](active/06-layers-and-pipelines/LAY-06-buffer-size-limit.md) Buffer size limit | 1 | [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) |
 | [LAY-07](active/06-layers-and-pipelines/LAY-07-three-layer-demo-and-bounded-memory-check.md) Three-layer demo and bounded-memory check | 1 | [SPAN-03](active/05-source-spans/SPAN-03-synthetic-items.md), [LAY-04](active/06-layers-and-pipelines/LAY-04-layer-local-state.md), [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md), [LAY-06](active/06-layers-and-pipelines/LAY-06-buffer-size-limit.md) |
-| [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md) Per-layer parse state | 1 | [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md), [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) |
+| ✅ [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md) Per-layer parse state | 1 | [CORE-08](active/02-core-combinators/CORE-08-control-nodes.md), [INT-01](active/03-interpreter/INT-01-cursor-and-in-memory-input.md) |
 
 ### MODE — Mode channels
 

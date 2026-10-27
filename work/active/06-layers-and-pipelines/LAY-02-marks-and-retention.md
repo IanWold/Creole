@@ -17,10 +17,15 @@ Pinning bookmarks keep what may be rewound; light marks pin nothing, so `Or` and
 - Constructs that read behind the cursor also need their start retained: `Slice`, `Text`, `CIString`, a multi-character `String` (which resets after a partial read) and a compiled `Longest`. Streamed with nothing pinned, a `Text` across a segment boundary makes `Since` throw. This changes § Guarantees point 2, so it needs a decision record before the build ([Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 17).
 - Light marks taken before each attempt of `Or`, `Optional`, repetition (items, separators, terminators), `Expression.Build` (operators and atoms) and `Recover`: cursor position, mode log length, diagnostic count, layer-state reference, cut flag.
 - Horizon is the minimum of the cursor and the oldest pin; each layer pins its own input at the `stepStart` of its oldest retained output.
+- Light marks keep the furthest failure and withdraw only the diagnostics their own layer raised. A rewind withdraws diagnostics, then undoes mode changes, then restores any saved failure ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) points 2 and 4).
+- A layer whose grammar cannot change the mode, raise diagnostics or change layer state leaves those parts out of its marks, and a layer with a `Bind` saves every part ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 9).
+- `Longest` restores every restorable part between alternatives and leaves the winner's state after a match. It runs the winner again when another alternative ran after it and the winner can change the mode log, diagnostics or layer state ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 6).
+- The layer's pin at the `stepStart` of its oldest retained output belongs to the layer, not to a node, and a restart keeps it ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 1).
 
 ## Acceptance criteria
 
 - [ ] Property test of guarantee 2: deeply nested `Or` without `Atomic` keeps a constant number of items per boundary.
+- [ ] A layer with no modes, layer state or diagnostics takes two-field light marks, and the Phase 0 tests still pass. None of [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md)'s counterexamples can arise before those parts exist (point 11).
 
 ## Blocked by
 

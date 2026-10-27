@@ -15,6 +15,7 @@ Layers decide from their own history with immutable state that backtracking rest
 - `GetState<S>()`, `SetState<S>(s)` and `p.Scan<S, R>(...)`.
 - Record `stateBefore` per slot; marks snapshot state by reference.
 - `p.Scan`'s function returns layer state, so it is a decision function: engines run it wherever the state could change the outcome ([ADR-0026](../../docs/decisions/0026-engines-may-skip-unused-values-and-repeat-user-functions.md)). Layer state is the supported place for state a parse needs, since functions in grammars must not rely on side effects.
+- Marks save the layer-state reference only in a layer whose grammar contains `SetState`, `Scan` or `Bind`. A `Longest` whose winner can change layer state runs the winner again when another alternative ran after it ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) points 6 and 9).
 
 ## Acceptance criteria
 
