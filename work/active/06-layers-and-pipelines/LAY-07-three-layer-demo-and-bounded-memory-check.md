@@ -13,7 +13,7 @@ The Phase 1 gate: the indentation-sensitive language from Example B runs, and me
 
 ## Scope
 
-- Implement Example B (lexer, layout layer, parser) as a test and sample.
+- Implement Example B (lexer, layout layer, parser) as a test and sample. Its indentation pass is the first stateful `Transduce`; LAY-03 built only a stateless one ([ADR-0032](../../docs/decisions/0032-emit-is-a-list-of-outputs-each-derived-or-synthetic.md) point 10).
 - Memory test for G2 on Example B and a JSON-lines stream generated at 10 MB, 100 MB and 1 GB: retained heap sampled after forced full blocking GCs at fixed item intervals, minus a warm-up baseline, one process per size.
 - Check DEDENT span placement in error messages.
 
@@ -37,3 +37,7 @@ The Phase 1 gate: the indentation-sensitive language from Example B runs, and me
 - [§ B. An indentation-sensitive language in three layers](../../../whitepaper.md#b-an-indentation-sensitive-language-in-three-layers)
 - [§ Guarantees](../../../whitepaper.md#guarantees)
 - [§ Roadmap](../../../whitepaper.md#roadmap)
+
+## Artifacts
+
+- [ADR-0032: `Emit<T>` is a list of outputs, each derived or synthetic, not a union](../../docs/decisions/0032-emit-is-a-list-of-outputs-each-derived-or-synthetic.md)

@@ -14,6 +14,7 @@ Layers decide from their own history with immutable state that backtracking rest
 
 - `GetState<S>()`, `SetState<S>(s)` and `p.Scan<S, R>(...)`.
 - Record `stateBefore` per slot; marks snapshot state by reference.
+- `Transduce`'s step reads and changes its layer state through these. LAY-03 only hands `initialState` to `atEnd` ([ADR-0032](../../docs/decisions/0032-emit-is-a-list-of-outputs-each-derived-or-synthetic.md) point 10).
 - `p.Scan`'s function returns layer state, so it is a decision function: engines run it wherever the state could change the outcome ([ADR-0026](../../docs/decisions/0026-engines-may-skip-unused-values-and-repeat-user-functions.md)). Layer state is the supported place for state a parse needs, since functions in grammars must not rely on side effects.
 - Marks save the layer-state reference only in a layer whose grammar contains `SetState`, `Scan` or `Bind`. A `Longest` whose winner can change layer state runs the winner again when another alternative ran after it ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) points 6 and 9).
 
@@ -36,3 +37,7 @@ Layers decide from their own history with immutable state that backtracking rest
 
 - [§ 2. Layer-local state](../../../whitepaper.md#2-layer-local-state)
 - [§ The stream buffer](../../../whitepaper.md#the-stream-buffer)
+
+## Artifacts
+
+- [ADR-0032: `Emit<T>` is a list of outputs, each derived or synthetic, not a union](../../docs/decisions/0032-emit-is-a-list-of-outputs-each-derived-or-synthetic.md)

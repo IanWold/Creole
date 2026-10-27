@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 
 namespace Creole;
@@ -121,32 +120,6 @@ public static class Parsing
             : new Failed(new Diagnostics([error]));
     }
 
-    private static ParseError DepthError<TIn>(DepthExceededException exception, ref readonly Cursor<TIn> cursor, FailureLog<TIn> log)
-    {
-        var position = exception.Position;
-        var end = cursor.TryPeekAt(position, out _)
-            ? position + 1
-            : position;
-        var message = exception.Cause == DepthCause.MaxDepth
-            ? string.Create(CultureInfo.InvariantCulture, $"nesting exceeds ParseOptions.MaxDepth of {cursor.MaxDepth}")
-            : "nesting is too deep for the thread's stack";
-
-        return new ParseError(SpanOf(position, end), Layer, new CustomMessage(message), [], log.ContextAt(position, SpanOf));
-    }
-
-    private static ParseError NothingRecorded<TIn>(ref readonly Cursor<TIn> cursor)
-    {
-        var atItem = cursor.TryPeekAt(0, out var item);
-        Unexpected unexpected = atItem
-            ? new UnexpectedItem(Display<TIn>.Item(item))
-            : new EndOfInput();
-        var end = atItem
-            ? 1
-            : 0;
-
-        return new ParseError(SpanOf(0, end), Layer, unexpected, [], []);
-    }
-
     private static ParseResult<TOut> Run<TOut>(Parser<char, TOut> parser, ReadOnlyMemory<char> input, string? source, ParseOptions options) =>
         TryRun(parser, input, options, out var value, out var error)
         ? new Parsed<TOut>(value)
@@ -209,11 +182,11 @@ public static class Parsing
                 return true;
             }
 
-            error = log.ToError(in cursor, Layer, SpanOf) ?? NothingRecorded(in cursor);
+            error = ParseErrors.Failure(in cursor, log, 0, Layer, SpanOf);
         }
         catch (DepthExceededException exception)
         {
-            error = DepthError(exception, in cursor, log);
+            error = ParseErrors.Depth(exception, in cursor, log, Layer, SpanOf);
         }
 
         return false;

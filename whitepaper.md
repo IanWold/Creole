@@ -229,7 +229,8 @@ Each case is a branch parser and a function that combines the union's case with 
 
 ### Where unions are not used
 
-- **Hot-path values.** Steps return `bool` and read consumption from the cursor (§ Combinator semantics), so no union is involved. `Emit<T>` is a hand-written `[Union]` struct using C# 15's non-boxing access pattern (`HasValue` plus `TryGetValue`), so it keeps exhaustive matching without allocating. `Maybe<T>` uses the same pattern through `TryGetValue` alone. Its empty state is the case type `Nothing` rather than a null `Value`, so `default` matches `Nothing` and a switch needs no null arm.
+- **Hot-path values.** Steps return `bool` and read consumption from the cursor (§ Combinator semantics), so no union is involved. `Maybe<T>` is a hand-written `[Union]` struct using C# 15's non-boxing access pattern through `TryGetValue` alone, so it keeps exhaustive matching without allocating. Its empty state is the case type `Nothing` rather than a null `Value`, so `default` matches `Nothing` and a switch needs no null arm.
+- **Layer outputs.** `Emit<T>` is not a union. Its zero, one or several outputs are lengths of one list rather than distinct shapes, and the layer reading it loops over every output, so a union would give the compiler nothing to check. It is a struct that holds zero or one output inline, so most steps allocate nothing; several outputs take one array ([ADR-0032](work/docs/decisions/0032-emit-is-a-list-of-outputs-each-derived-or-synthetic.md)).
 - **Grammar nodes.** Neither unions nor C# 15's `closed` classes can hold nodes such as `Map<TIn, TA, TOut>`, whose type `TA` does not appear in `Parser<TIn, TOut>`. Instead each engine operation is an abstract method every node must implement (§ Types, [ADR-0001](work/docs/decisions/0001-grammar-node-encoding-and-engine-dispatch.md)). Adding a combinator without teaching the interpreter is a build error, which protects G7. The source generator reads syntax rather than node types, so its share of G7 rests on the CRL0301 fallback and the differential tests (§ Equivalence). User-written scanners join through a single `Custom` node (§ Custom primitives), so the set of nodes stays fixed.
 - **Tokens, by default.** Tokens can be unions, matched with `Case<Ident>()` instead of `Kind(k)`, and analysis treats each case type as a kind. But a union token boxes struct cases, so a lexer would allocate per token. `IKinded<TKind>` struct tokens remain the fast path, and fused layers never materialize tokens either way.
 
@@ -391,7 +392,7 @@ Layer<char, JTok> lexer = Layer.Tokens(item: Token, skip: Whitespace.SkipMany())
 Layer<Tok, Tok> layout = Layer.Transduce(
     initialState: IndentStack.Root,
     step: LayoutStep,
-    atEnd: (stack, span) => stack.CloseAll(span));
+    atEnd: stack => stack.CloseAll());
 
 // 3. Plain item functions, no parsing.
 Layer<Tok, Tok> noComments = Layer.Where<Tok>(t => t.Kind != K.Comment);
@@ -404,7 +405,9 @@ Layer<char, Tok> modal = Layer.Modal(modes, mode => mode switch
 });
 ```
 
-`Layer.Tokens` loops: run `skip`; stop at end of input; run `item`; emit its value. An item parser that can succeed without consuming would loop forever, so analysis rejects it (CRL0003). `Emit<T>` is a small struct holding zero, one or many outputs; synthetic outputs such as INDENT and DEDENT are emitted this way.
+`Layer.Tokens` loops: run `skip`; stop at end of input; run `item`; emit its value. An item parser that can succeed without consuming would loop forever, so analysis rejects it (CRL0003). `Layer.Transduce` loops the same way without `skip`, and its step is held to the same rule.
+
+`Emit<T>` is the list of outputs a step produces: zero, one or several, each either derived from the input the step consumed or synthetic. An item converts to one derived output, `Emit.Synthetic(item)` makes a synthetic one, and a collection expression builds several, as in `[newline, Emit.Synthetic(indent)]`. Synthetic outputs such as INDENT and DEDENT are emitted this way, and § Span rules places them. `atEnd` runs once at the end of input with the layer's final state, and every output it returns is synthetic ([ADR-0032](work/docs/decisions/0032-emit-is-a-list-of-outputs-each-derived-or-synthetic.md)).
 
 ### Running pipelines
 
@@ -538,8 +541,8 @@ Offsets are `long` because streams can exceed 2 GB. Buffers still store 32-bit o
 ### Span rules
 
 1. **Root layer.** Character *i* of the source has span \[*i*, *i* + 1).
-2. **Derived items.** An item's span runs from the start of the first input item its item parser consumed to the end of the last one. Input consumed by `skip` is excluded, so a token's span never includes leading whitespace.
-3. **Synthetic items.** An item produced without consuming input (INDENT, DEDENT, an inserted semicolon) gets a zero-width span at the start of the next input item and is flagged `IsSynthetic`.
+2. **Derived items.** An item's span runs from the start of the first input item its item parser consumed to the end of the last one. Input consumed by `skip` is excluded, so a token's span never includes leading whitespace. A step that emits several derived outputs gives each the whole span.
+3. **Synthetic items.** An item produced without consuming input (INDENT, DEDENT, an inserted semicolon), or marked synthetic by the step that emitted it, gets a zero-width span at the start of the next input item and is flagged `IsSynthetic`. In a step that consumed input, the next input item is the step's first one if no derived output comes before the synthetic one, and otherwise the first one after the step. At the end of input it is the end of the last input item ([ADR-0032](work/docs/decisions/0032-emit-is-a-list-of-outputs-each-derived-or-synthetic.md)).
 4. **Embedded sources.** Spans from an embedded sub-pipeline are mapped through a `SourceMap` back into the parent source, so they still point at real characters.
 
 Line and column are computed on demand from a `LineMap` built once per source, using binary search over line starts. Streaming parses cannot keep the whole text, so their diagnostics capture positions when they are raised (§ Streaming). Columns are reported in Unicode scalar values by default and rendered with grapheme-aware caret alignment.
@@ -679,7 +682,7 @@ Per layer, analysis also records whether the grammar can change the mode, raise 
 | --- | --- | --- | --- |
 | CRL0001 | Repetition of a nullable parser: an infinite loop | Error | `Whitespace.SkipMany().Many()` |
 | CRL0002 | Left recursion, reported with the cycle path | Error | `Expr = Rec(() => Seq(Expr, Plus, Term))` |
-| CRL0003 | Layer item parser is nullable | Error | `Layer.Tokens(item: Digit.Many())` |
+| CRL0003 | A layer's item parser or step is nullable | Error | `Layer.Tokens(item: Digit.Many())` |
 | CRL0004 | A field initializer uses a field declared later without `Rec`, so it reads null at run time | Error | `Value` uses `ArrayValue` declared below it |
 | CRL0006 | A construct not allowed in deterministic mode | Error | `Atomic` inside `Grammar.Deterministic(...)` |
 | CRL0008 | A mode change altered items already consumed | Error, at run time | A step whose earlier outputs depend on the new mode |
@@ -1072,12 +1075,12 @@ public sealed partial class Layout : TokenGrammar<Tok, K>
     public static readonly Layer<Tok, Tok> Pass = Layer.Transduce(
         initialState: IndentStack.Root,                                    // immutable stack, [0]
         step: OneOf(
-            // Emits NEWLINE, then INDENT or DEDENTs as zero-width synthetic tokens.
+            // Emits NEWLINE, then INDENT or DEDENTs marked synthetic: [nl, Emit.Synthetic(dedent), ...].
             // An inconsistent dedent emits an Error token for the parser's recovery to skip.
             Kind(K.Newline).Scan<IndentStack, Emit<Tok>>(
-                static (nl, stack, span) => stack.Adjust(nl.Width, span)),
+                static (nl, stack, _) => stack.Adjust(nl)),
             Any.Select(static t => Emit.One(t))),
-        atEnd: static (stack, span) => stack.CloseAll(span));
+        atEnd: static stack => stack.CloseAll());                          // DEDENTs, all synthetic
 }
 
 public sealed partial class MiniGrammar : TokenGrammar<Tok, K>

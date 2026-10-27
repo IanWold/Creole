@@ -12,8 +12,8 @@ Items produced without consuming input, such as INDENT, DEDENT or an inserted se
 
 ## Scope
 
-- Zero-width span at the start of the next input item.
-- `IsSynthetic` flag.
+- `IsSynthetic` flag, which downstream layers read.
+- LAY-03 gives synthetic `Transduce` outputs their zero-width spans, since its loop computes every span ([ADR-0032](../../docs/decisions/0032-emit-is-a-list-of-outputs-each-derived-or-synthetic.md) points 7 and 8). This card checks the placement end to end on Example B.
 
 ## Acceptance criteria
 
@@ -32,3 +32,7 @@ Items produced without consuming input, such as INDENT, DEDENT or an inserted se
 ## Whitepaper references
 
 - [§ Span rules](../../../whitepaper.md#span-rules)
+
+## Artifacts
+
+- [ADR-0032: `Emit<T>` is a list of outputs, each derived or synthetic, not a union](../../docs/decisions/0032-emit-is-a-list-of-outputs-each-derived-or-synthetic.md)
