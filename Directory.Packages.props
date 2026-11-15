@@ -7,7 +7,7 @@
 
     <!-- Testing -->
     <PackageVersion Include="CsCheck" Version="5.0.0" />
-    <PackageVersion Include="xunit.v3" Version="4.0.2" />
+    <PackageVersion Include="xunit.v3" Version="4.0.3" />
 
     <!-- Benchmarks and competitor baselines -->
     <!-- 0.15.x does not recognise .NET 11; move to a stable 0.16 when it ships. -->
