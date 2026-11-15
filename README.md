@@ -124,7 +124,7 @@ Every phase has a numeric gate it needs to pass in ([whitepaper § Roadmap](whit
 dotnet add package Creole --version 0.1.0-alpha-2
 ```
 
-Creole targets .NET 11 and uses C# 15 unions in its public API. .NET 11 is a release candidate until it ships, which should be November 2026, so the repo pins the RC 2 SDK in [global.json](global.json):
+Creole targets .NET 11 and uses C# 15 unions in its public API. The repo pins the .NET 11 SDK in [global.json](global.json):
 
 ## Building from Source
 

@@ -39,7 +39,7 @@ When asked for an opinion, assessment, review or "what do you think", answer and
 - Look for disconfirming evidence, especially prior art that already does what Creole plans. Parlot is the strongest competitor (whitepaper § Risks).
 - Do not agree just because the maintainer said it. If something looks wrong, say so with reasons, and say how sure you are.
 - Show evidence, not assertions: test output, measurements, file references. Tick an acceptance criterion only on evidence.
-- .NET 11 and C# 15 are in preview until GA (expected November 2026). Verify language and runtime facts against current sources (learn.microsoft.com, dotnet/csharplang, dotnet/runtime, dotnet/roslyn) and say which version a fact applies to.
+- .NET 11 and C# 15 reached GA on 2026-11-10. The repository builds with `LangVersion` 15, not `preview`; C# 15's memory-safety rules are still preview and are not used. Verify language and runtime facts against current sources (learn.microsoft.com, dotnet/csharplang, dotnet/runtime, dotnet/roslyn) and say which version a fact applies to.
 
 ### Stewardship
 
@@ -67,13 +67,13 @@ Match the whitepaper: plain English, short declarative sentences, concrete claim
 
 - Diagnostics use the prefix `CRL` (for example CRL0004, CRL0301). Each gets a page in `docs/reference/diagnostics/` when it is introduced. IDs are public contract.
 - Gate thresholds are numbers, fixed by [FND-06](work/active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) in [ADR-0003](work/docs/decisions/0003-numeric-gate-thresholds.md) and the whitepaper's Roadmap.
-- [FND-07](work/active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md) was done on the RC 2 compiler ([ADR-0002](work/docs/decisions/0002-parseresult-as-a-plain-union.md)). When `global.json` moves to the GA SDK, re-run its spike or the tests that rely on unions; [FND-09](work/active/01-foundations/FND-09-move-to-the-net-11-ga-sdk.md) tracks this and the other RC 2 findings.
+- [FND-07](work/active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md) was done on the RC 2 compiler ([ADR-0002](work/docs/decisions/0002-parseresult-as-a-plain-union.md)). [FND-09](work/active/01-foundations/FND-09-move-to-the-net-11-ga-sdk.md) re-checked it and the other RC 2 findings on the GA SDK (11.0.100); all held.
 - The project was once called Strata. That name is taken on NuGet; do not use it.
 - Python 3 and `gh` are available.
 
 ## Build and test
 
-The SDK is pinned in `global.json` (.NET 11 RC 2). On this machine the system `dotnet` is .NET 10, so use `~/.dotnet/dotnet` or put `~/.dotnet` first on `PATH`.
+The SDK is pinned in `global.json` (.NET 11 GA, 11.0.100). On this machine the system `dotnet` is .NET 10, so use `~/.dotnet/dotnet` or put `~/.dotnet` first on `PATH`.
 
 | Task | Command |
 | --- | --- |

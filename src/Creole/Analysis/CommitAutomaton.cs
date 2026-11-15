@@ -100,7 +100,6 @@ file sealed class CandidateComparer : IEqualityComparer<Candidate>
         Run run => RuntimeHelpers.GetHashCode(run.Term),
         EndChoice end => HashCode.Combine(1, end.Id),
         EndAtomic end => HashCode.Combine(2, end.Id),
-        _ => throw new UnreachableException(),
     };
 
     private static bool Same(Frame left, Frame right) => (left, right) switch
@@ -168,7 +167,7 @@ file sealed record Continuation(Frame Head, Continuation? Tail);
 
 file readonly record struct Entry(EntryKind Kind, int Id, bool Consumed);
 
-file abstract record Frame;
+file closed record Frame;
 
 file sealed record EndAtomic(int Id) : Frame;
 
@@ -433,7 +432,6 @@ file sealed class Determinizer(IReadOnlyList<RegularTerm> alternatives)
                         Run run => TermId(run.Term) << 2,
                         EndChoice end => (Rename(end.Id) << 2) | 1,
                         EndAtomic end => (Rename(end.Id) << 2) | 2,
-                        _ => throw new UnreachableException(),
                     });
                 }
 

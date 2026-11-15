@@ -10,12 +10,12 @@ namespace Creole.Tests;
 internal static class SnippetCompiler
 {
     /// <summary>
-    /// Compiles <paramref name="source"/> against Creole as assembly <paramref name="assemblyName"/>, at the preview language version the repository builds with and with every warning an error, and returns the distinct error ids.
+    /// Compiles <paramref name="source"/> against Creole as assembly <paramref name="assemblyName"/>, at C# 15, the language version the repository builds with and with every warning an error, and returns the distinct error ids.
     /// </summary>
     public static string[] Compile(string assemblyName, string source) => [..
         CSharpCompilation.Create(
             assemblyName,
-            [CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview))],
+            [CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.CSharp15))],
             ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
                 .Split(Path.PathSeparator)
                 .Where(path => Path.GetFileName(path).StartsWith("System.", StringComparison.Ordinal) || Path.GetFileName(path) is "netstandard.dll" or "mscorlib.dll")

@@ -191,7 +191,7 @@ An idea is promoted by creating the card or research note it leads to and deleti
 
 ### Prerequisites
 
-The .NET 11 SDK, pinned in [`global.json`](global.json). .NET 11 is in preview until GA (expected November 2026), so the pin is a release candidate and rolls forward to later feature bands. Install it with [`dotnet-install`](https://learn.microsoft.com/dotnet/core/tools/dotnet-install-script) if your package manager does not carry it.
+The .NET 11 SDK, pinned in [`global.json`](global.json). The pin rolls forward to later feature bands. The repository builds with C# 15 (`LangVersion` 15), not `preview`. Install it with [`dotnet-install`](https://learn.microsoft.com/dotnet/core/tools/dotnet-install-script) if your package manager does not carry it.
 
 ### Layout
 
