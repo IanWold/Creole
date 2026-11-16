@@ -24,7 +24,7 @@ A SessionStart hook prints a one-paragraph tracker brief at the top of each sess
 
 Path-scoped rules in `.claude/rules/` load automatically when you touch cards, research notes, decision records, docs or the whitepaper. The workflow skills (`/status`, `/start`, `/research`, `/decide`, `/build`, `/refactor`, `/reconcile`, `/complete`, `/challenge`, `/check-sources`, `/idea`, `/new-card`, `/sync`) carry the multi-step procedures. The `researcher` and `critic` subagents do isolated research and independent review.
 
-Precedence when sources conflict: accepted decision record > whitepaper > card > code and docs. A conflict is a defect to report, never something to resolve silently.
+Precedence when sources conflict: accepted decision record > whitepaper > card > code and docs. A Proposed record is the working spec for the card that owns it while that card builds, and binds nothing else. A conflict is a defect to report, never something to resolve silently.
 
 ## Rules
 
@@ -45,7 +45,7 @@ When asked for an opinion, assessment, review or "what do you think", answer and
 
 - Set a card's `Status` when a stage starts or ends, and keep work/README.md's "In progress" and "Can start now" lists in step.
 - Before stopping work on an unfinished card, append a dated progress note: stage, what was done, the next step. A fresh session must be able to resume from the card alone.
-- Never change the whitepaper's design during a build. If the build shows the design is wrong, stop and propose a decision (`/decide`). Editorial fixes are fine.
+- The whitepaper's design changes only when a decision record is accepted. A record that code depends on stays Proposed through its card's build: try the options it leaves open, revise it in place as the build teaches you, and the maintainer accepts it when the card completes (CONTRIBUTING.md § Decision records). If the build shows the design is wrong and no Proposed record covers it, stop and propose one (`/decide`). Editorial fixes are fine.
 - A Stop hook runs `python3 scripts/work.py check` at the end of each turn and reports inconsistencies. Fix the ones your change caused; report ones that predate it.
 
 ### Discrete changes and git
