@@ -1,6 +1,6 @@
 # Decision records
 
-Each record captures one design choice: the options, the choice, and why. Rules are in [CONTRIBUTING.md § Decision records](../../../CONTRIBUTING.md#decision-records). Only the maintainer marks a record Accepted.
+Each record captures one design choice: the options, how they were judged, the choice, and why. Rules, including how a Proposed record is tried and revised during its card's build, are in [CONTRIBUTING.md § Decision records](../../../CONTRIBUTING.md#decision-records). The first card in a record's `Cards` row owns it. Only the maintainer marks a record Accepted.
 
 ## Index
 
@@ -88,17 +88,28 @@ Copy into `NNNN-<slug>.md`, using the next number:
 The problem, the forces at play, and the constraints (goals and non-goals from the
 whitepaper, performance budgets, compatibility). Link research rather than repeat it.
 
+## Criteria
+
+How the options are judged, fixed before any option is tried: gate thresholds,
+measurements with their inputs, API properties, tests that must pass. If the
+criteria change after trials begin, add a dated line saying what changed and why.
+
 ## Options
 
 ### A. <name>
-What it is. Pros. Cons. Evidence.
+What it is. Pros. Cons. Evidence. Whether an argument settles it or it needs a trial.
+
+**Result:** Chosen | Ruled out by argument | Ruled out by trial | Open. The argument,
+or the trial's measurements and the commit it ran on.
 
 ### B. <name>
 …
 
 ## Decision
 
-The choice, stated so someone could implement it. Include the deciding reason.
+While Proposed: the recommendation, the options still open and how each will be
+tried, and what would change the recommendation.
+Once Accepted: the choice, stated so someone could implement it, and the deciding reason.
 
 ## Consequences
 

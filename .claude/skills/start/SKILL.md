@@ -20,6 +20,6 @@ argument-hint: "<card ID> [research|design|build]"
 6. **Update work/README.md.** Add the card to "In progress" (`- [ID](path) Title — Stage`), replacing "None yet." Remove it from "Can start now".
 7. **Set up the stage:**
    - Research: draft the question(s) the research must answer, and offer to run `/research`.
-   - Design: list the decisions the card needs, and offer to run `/decide`.
-   - Build: offer to run `/build`, which plans before coding.
+   - Design: list the decisions the card needs, and offer to run `/decide`, which drafts each record with options and criteria for the maintainer to approve.
+   - Build: offer to run `/build`, which plans before coding and tries the options the card's Proposed records leave open.
 8. Run `python3 scripts/work.py check`, fix anything it reports, and suggest a commit message only if the maintainer wants to commit the status change on its own (usually it goes with the stage's first real work).

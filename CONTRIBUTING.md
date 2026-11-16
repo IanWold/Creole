@@ -26,7 +26,7 @@ This document describes how work moves through the Creole project: where things 
 
 The [whitepaper](whitepaper.md) describes the system Creole intends to be. The [work tracker](work/README.md) breaks it into epics and cards. Most cards were split out of the whitepaper; new ones come from ideas, research findings, decisions, or follow-up work found while building.
 
-Each card moves through some or all of **Research → Design → Build**, and every stage leaves an artifact behind: a research note, a decision record, or code with its documentation. A card can enter at any stage. A card that only needs code starts at Build; a card whose approach the whitepaper already settles skips Research; a spike may end at Design with a decision and no code. [The lifecycle](#the-lifecycle) gives the full detail.
+Each card moves through some or all of **Research → Design → Build**, and every stage leaves an artifact behind: a research note, a decision record, or code with its documentation. A card can enter at any stage. A card that only needs code starts at Build; a card whose approach the whitepaper already settles skips Research; a spike may end at Design with a decision and no code. A decision that code depends on is accepted when the code is done, not before. [The lifecycle](#the-lifecycle) gives the full detail.
 
 ## Repository layout
 
@@ -58,14 +58,16 @@ When two sources disagree, the higher one wins until the conflict is resolved. A
 3. **Cards**, for scope, acceptance criteria and dependencies. A card that contradicts the whitepaper is wrong, or needs a decision.
 4. **`docs/` and the code**, for behaviour as built. Where they differ from the whitepaper, either the code has a bug or the design changed without a decision. Both need fixing.
 
+A Proposed decision record is not on this list, with one exception: it is the working specification for the card that owns it while that card is in Build, and ranks above the whitepaper for that card's work. Other cards do not build on it ([Decision records](#decision-records)).
+
 ## The lifecycle
 
 | Stage | Card Status | Purpose | Artifact | Ends when |
 | --- | --- | --- | --- | --- |
 | Idea | — (not a card yet) | Capture a thought before it is lost. | `work/ideas/<slug>.md` | Promoted to a card or research note, or dropped. |
 | Research | `Researching` | Find out what is known: prior art, papers, other libraries, measurements, .NET constraints. | Research note | The question is answered well enough to design, with sources. |
-| Design | `Designing` | Choose an approach and record why. | Decision record; whitepaper and card updates | The decision is Accepted by the maintainer. |
-| Build | `Building` | Code **and** documentation, together, with tests. | Code, tests, `docs/` pages | Every acceptance criterion is met and checked off. |
+| Design | `Designing` | Lay out the options for each decision and how they will be judged. | Proposed decision record | The maintainer approves the record's options and criteria. A card whose deliverable is the decision ends here, when the record is Accepted. |
+| Build | `Building` | Try the options that need trying, then code **and** documentation of the chosen one, together, with tests. | Code, tests, `docs/` pages; the card's decision records Accepted, with whitepaper and card updates | Every acceptance criterion is met and checked off, and the card's decision records are Accepted. |
 | Done | `Done` | — | `## Outcome` section on the card | — |
 
 `Not started` is the status of a card nobody has picked up. There is no separate Documentation stage: a Build change that alters public behaviour without updating `docs/` is not finished.
@@ -76,7 +78,7 @@ When two sources disagree, the higher one wins until the conflict is resolved. A
 - **Design** if the approach is unclear but no outside knowledge is needed, or the card ends in a decision (for example [FND-07](work/active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [GLL-05](work/active/18-general-parsing-spike/GLL-05-general-parsing-decision.md)).
 - **Build** if the whitepaper and card already pin down what to build.
 
-A card may move backwards: Build can uncover a design question, and the card returns to `Designing` until a decision exists.
+A card may move backwards. If Build raises a design question that no record covers, the card returns to `Designing` until the maintainer approves a new record's options and criteria. A question that the card's own Proposed record covers does not move the card back: the record is revised in place.
 
 ## Cards
 
@@ -174,12 +176,26 @@ A research note is a record of what was learned at a point in time. It is not ed
 
 ## Decision records
 
-A decision record captures one design choice. File: `work/docs/decisions/NNNN-<slug>.md`, numbered in sequence, listed in the [decisions index](work/docs/decisions/README.md), which also holds the template.
+A decision record captures one design choice: the options, how they were judged, the choice, and why. File: `work/docs/decisions/NNNN-<slug>.md`, numbered in sequence, listed in the [decisions index](work/docs/decisions/README.md), which also holds the template.
 
 - Status is `Proposed`, `Accepted`, `Rejected` or `Superseded by NNNN`.
-- Only the maintainer accepts a decision. Claude may draft and recommend; it does not mark a record Accepted on its own.
-- Once Accepted, a record is not rewritten. To change a decision, write a new record that supersedes it and update the old record's status.
+- Each record is owned by one card, the first in its `Cards` row. That card's work settles it. The other cards listed are affected by it.
+- Only the maintainer approves a record's options and criteria, accepts it, or rejects it. Claude may draft, try options and recommend; it does not mark a record Accepted on its own.
 - Write a record for any choice that someone could reasonably have made differently and that later work depends on: public API shape, semantics, data structures with performance consequences, gate thresholds, scope cuts. Do not write one for choices that are easy to reverse.
+
+### How a record is settled
+
+A decision is often only clear once it is built, so a record that code depends on stays Proposed until its card's build is done.
+
+1. **Propose.** In Design, the record lists the real options and its criteria: how the options will be judged, fixed before any is tried. Criteria are gate thresholds, measurements with their inputs, API properties, or tests that must pass. The record says which options an argument settles and which need a trial, and recommends one. The maintainer approves the options and criteria. This approves the trial, not the answer.
+2. **Try and build.** The owning card moves to Build with the record still Proposed. The record is the card's working specification, and the build may change it in place: add an option the build suggests, rule one out, or change the recommendation. An option is tried only when argument cannot settle it: speed, allocation, compiler behaviour, or how the code reads. Several options can be tried in parallel, each in its own worktree. Independent decision points are tried separately, not in every combination. A new option to try, or any change to the criteria, needs the maintainer's agreement first, and a criteria change is dated and explained in the record.
+3. **Accept.** The record is ready when one option meets the criteria, the card's acceptance criteria are met with it, and every other option is ruled out by an argument or a trial. No option is deleted: each says how it was settled, and a trial's measurements and the commit it ran on stay in the record. Code from options not chosen is not merged. The maintainer accepts the record in the card's final change, with the whitepaper and cards updated in the same change ([Changing the whitepaper](#changing-the-whitepaper)).
+
+A record with no code behind it, such as one that is its card's deliverable or that states a position on prior art, is accepted at the end of Design. The maintainer may also accept a record before its build ends, when other work needs the answer.
+
+Other cards do not build on a Proposed record. A card that needs its answer waits until it is Accepted, or lists the owning card as a blocker.
+
+Once an Accepted record has merged to `main`, it is not rewritten. The only edits are its Status line (to `Superseded by NNNN`) and fixing broken links. To change the decision, write a new record that supersedes it. Before it merges, an Accepted record can still be corrected in place on its branch.
 
 ## Ideas
 
@@ -264,10 +280,10 @@ See [docs/README.md](docs/README.md) for the planned layout.
 
 The whitepaper is a living specification. It always describes the intended system, so it changes when the design changes:
 
-- **Design changes** come through an Accepted decision record. The whitepaper edit happens in the same change as the acceptance, and the edited section links to the record.
+- **Design changes** come through an Accepted decision record. The whitepaper edit happens in the same change as the acceptance, and the edited section links to the record. While a record is Proposed, the design change it makes lives in the record, not the whitepaper.
 - **Editorial fixes** (typos, inconsistencies, clarity) can be made directly, as part of a card such as [FND-08](work/active/01-foundations/FND-08-whitepaper-editorial-cleanup.md) or as a small standalone change.
 - **Open questions** in § Risks and open questions are updated when a decision closes them: move the question to "Questions raised in review" with "Decided: …" and a link.
-- Never change the whitepaper's design silently during Build. If building shows the whitepaper is wrong, stop, move the card to `Designing`, and record a decision.
+- Never change the whitepaper's design silently during Build. If building shows the design is wrong, revise the card's Proposed record if it covers the question. Otherwise stop, move the card to `Designing`, and propose a record.
 
 Heading changes break anchors used by cards. After editing headings, run `scripts/work.py check`.
 
@@ -275,7 +291,7 @@ Heading changes break anchors used by cards. After editing headings, run `script
 
 Every change should be one understandable piece of work: a reviewer should be able to say what it does in one sentence.
 
-- One card, or one stage of one card, per change. A research note, a decision record with its whitepaper edits, or a Build increment.
+- One card, or one stage of one card, per change: a research note, a Proposed decision record, or a Build increment. A Build increment may revise the card's Proposed record. The card's final change accepts it, with its whitepaper edits.
 - Do not mix unrelated edits. Tracker bookkeeping for the card (status, progress notes, README lists) belongs in the same change as the work.
 - If a change grows past what its card describes, split it: finish what the card covers and create a new card for the rest.
 
@@ -298,7 +314,7 @@ A card is Done when:
 
 1. Every acceptance criterion is met **and verified**: tests pass, measurements are recorded, or the item is inspected. Check each box only with evidence.
 2. Code is tested, and documentation (`docs/`, XML docs) is updated with it.
-3. Any deviation from the card or whitepaper has an Accepted decision record, and the whitepaper reflects it.
+3. The card's own decision records are Accepted, any deviation from the card or whitepaper has an Accepted decision record, and the whitepaper reflects them.
 4. The card has an `## Outcome` section, and `Status` is `Done`.
 5. `work/README.md` is updated: the card leaves "In progress", newly unblocked cards join "Can start now", and the card is marked ✅ in its tables.
 6. `scripts/work.py check` passes.
@@ -321,8 +337,8 @@ The script rewrites every relative link into and out of the folder. Then update 
 
 | Command | What it does |
 | --- | --- |
-| `python3 scripts/work.py check` | Verifies every relative link and heading anchor in the repository, card status values, `Blocked by` ↔ `Unblocks` symmetry, Done cards having all criteria checked, README totals, and the README "In progress" and "Can start now" lists. |
-| `python3 scripts/work.py status` | Counts by status and phase, in-progress cards, and cards ready to start. |
+| `python3 scripts/work.py check` | Verifies every relative link and heading anchor in the repository, card status values, `Blocked by` ↔ `Unblocks` symmetry, Done cards having all criteria checked, README totals, the README "In progress" and "Can start now" lists, and that no Proposed decision record's owning card is Done. |
+| `python3 scripts/work.py status` | Counts by status and phase, in-progress cards, decisions awaiting the maintainer or being built, and cards ready to start. |
 | `python3 scripts/work.py ready` | Cards whose blockers are all Done. |
 | `python3 scripts/work.py card <ID>` | One card's status, blockers and dependents. |
 | `python3 scripts/work.py move <path> <dest>` | Moves a file or folder and rewrites links. `--dry-run` previews. |
@@ -347,8 +363,8 @@ Claude Code is set up to work inside this process. [CLAUDE.md](CLAUDE.md) holds 
 | `/status` | See where the project stands and what to do next. |
 | `/start <ID> [research\|design\|build]` | Start a card at the right stage, or move it to the next. |
 | `/research <question or ID>` | Investigate with outside sources and write a cited research note. |
-| `/decide <topic or ID>` | Draft a decision record; `/decide accept NNNN` folds it into the whitepaper and cards. |
-| `/build <ID>` | Plan against the acceptance criteria, then code, tests and docs together. |
+| `/decide <topic or ID>` | Draft a decision record with its options and criteria; `/decide revise NNNN` changes it during a build; `/decide accept NNNN` folds it into the whitepaper and cards. |
+| `/build <ID>` | Plan against the acceptance criteria, try the options a Proposed record leaves open, then code, tests and docs together. |
 | `/refactor <transformation>` | Make a behaviour-preserving change across the codebase in verified batches. |
 | `/reconcile [ID] [paths or git range]` | Bring the card, README, docs and XML docs in line with work you did by hand. |
 | `/complete <ID>` | Verify a card against evidence, check it off, and update everything downstream. |
