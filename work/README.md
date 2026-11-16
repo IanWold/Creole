@@ -21,7 +21,7 @@ flowchart LR
 
 Within each phase, work is grouped into **waves**. A wave's items depend only on items in earlier waves (of this or an earlier phase), so everything in one wave can run in parallel.
 
-Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md) was done on the .NET 11 RC 2 compiler, before GA (expected November 2026), by the maintainer's choice. Its decision ([ADR-0002](docs/decisions/0002-parseresult-as-a-plain-union.md)) unblocks ERR-01. When `global.json` moves to the GA SDK, re-run the FND-07 spike or the tests that rely on unions; [FND-09](active/01-foundations/FND-09-move-to-the-net-11-ga-sdk.md) tracks this.
+Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md) was done on the .NET 11 RC 2 compiler, before GA, by the maintainer's choice. Its decision ([ADR-0002](docs/decisions/0002-parseresult-as-a-plain-union.md)) unblocks ERR-01. [FND-09](active/01-foundations/FND-09-move-to-the-net-11-ga-sdk.md) re-ran its checks on the GA SDK (11.0.100), and they held.
 
 ### Phase 0 — Core
 
@@ -111,7 +111,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 
 | Wave | Work item | Blocked by |
 | --- | --- | --- |
-| 1 | [FND-09](active/01-foundations/FND-09-move-to-the-net-11-ga-sdk.md) Move to the .NET 11 GA SDK | [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md); .NET 11 / C# 15 GA (expected November 2026) |
+| 1 | ✅ [FND-09](active/01-foundations/FND-09-move-to-the-net-11-ga-sdk.md) Move to the .NET 11 GA SDK | [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md); .NET 11 / C# 15 GA (expected November 2026) |
 | 1 | [CORE-14](active/02-core-combinators/CORE-14-choices-beyond-16-alternatives.md) Choices beyond 16 alternatives | [CORE-05](active/02-core-combinators/CORE-05-choice-nodes.md), [CORE-06](active/02-core-combinators/CORE-06-longest.md) |
 | 2 | [RSLN-04](active/10-roslyn-analyzers/RSLN-04-crl0004-forward-field-reference-analyzer.md) CRL0004 forward field reference analyzer | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md), [FND-09](active/01-foundations/FND-09-move-to-the-net-11-ga-sdk.md), [CORE-09](active/02-core-combinators/CORE-09-recursion-with-rec.md) |
 | 2 | [GEN-11](active/11-source-generator/GEN-11-runtime-support-surface-for-generated-code.md) Runtime support surface for generated code | [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md) |
@@ -233,6 +233,7 @@ These items have all their blockers done:
 - [STRM-01](active/08-streaming/STRM-01-starved-outcome.md) Starved outcome
 - [ANA-01](active/09-static-analysis/ANA-01-grammar-property-analysis.md) Grammar property analysis
 - [GEN-11](active/11-source-generator/GEN-11-runtime-support-surface-for-generated-code.md) Runtime support surface for generated code
+- [RSLN-04](active/10-roslyn-analyzers/RSLN-04-crl0004-forward-field-reference-analyzer.md) CRL0004 forward field reference analyzer
 - [BENCH-04](active/13-benchmarks/BENCH-04-revisit-string-handling-in-the-json-benchmark-grammar.md) Revisit string handling in the JSON benchmark grammar
 
 ## Epics
@@ -251,7 +252,7 @@ Repository, CI, test and benchmark infrastructure, and the decisions code will d
 | ✅ [FND-06](active/01-foundations/FND-06-fix-numeric-gate-thresholds.md) Fix numeric gate thresholds | 0 | [FND-05](active/01-foundations/FND-05-benchmark-harness.md) |
 | ✅ [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md) Validate C# 15 features and decide `ParseResult<T>` | 0 | [FND-02](active/01-foundations/FND-02-repository-and-solution-scaffolding.md); .NET 11 / C# 15 GA (expected November 2026) |
 | ✅ [FND-08](active/01-foundations/FND-08-whitepaper-editorial-cleanup.md) Whitepaper editorial cleanup | 0 | — |
-| [FND-09](active/01-foundations/FND-09-move-to-the-net-11-ga-sdk.md) Move to the .NET 11 GA SDK | 2 | [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md); .NET 11 / C# 15 GA (expected November 2026) |
+| ✅ [FND-09](active/01-foundations/FND-09-move-to-the-net-11-ga-sdk.md) Move to the .NET 11 GA SDK | 2 | [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-parseresult-t.md), [CORE-04](active/02-core-combinators/CORE-04-sequencing-and-mapping-nodes.md); .NET 11 / C# 15 GA (expected November 2026) |
 | ✅ [FND-10](active/01-foundations/FND-10-move-the-parlot-baselines-to-200.md) Move the Parlot baselines to 2.0.0 | 0 | [FND-05](active/01-foundations/FND-05-benchmark-harness.md) |
 
 ### CORE — Core combinators
