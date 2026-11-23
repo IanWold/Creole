@@ -211,7 +211,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-None yet.
+- [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md) Diagnostic withdrawal — Build
 
 ### Can start now
 
@@ -220,7 +220,6 @@ These items have all their blockers done:
 - [CORE-14](active/02-core-combinators/CORE-14-choices-beyond-16-alternatives.md) Choices beyond 16 alternatives
 - [INT-10](active/03-interpreter/INT-10-dispatched-longest-measured-against-the-automaton.md) Dispatched Longest, measured against the automaton
 - [INT-12](active/03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md) Close the interpreter test gaps BENCH-01 left
-- [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md) Diagnostic withdrawal
 - [SPAN-03](active/05-source-spans/SPAN-03-synthetic-items.md) Synthetic items
 - [SPAN-04](active/05-source-spans/SPAN-04-span-combinators.md) Span combinators
 - [SPAN-05](active/05-source-spans/SPAN-05-trivia-attach-mode.md) Trivia attach mode

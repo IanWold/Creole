@@ -94,10 +94,10 @@ public class ScanLoweringTests
     public void ASkippedRunOfACharacterClassLowersToAScan()
     {
         Assert.IsType<ScanPlan>(new PlanBuilder(LoweringOptions.Scan).Lower(Digit.SkipMany()));
-        Assert.IsType<SkipRepeatPlan<char, char>>(new PlanBuilder(LoweringOptions.None).Lower(Digit.SkipMany()));
+        Assert.IsType<SkipRepeatPlan<char, char, LightMark>>(new PlanBuilder(LoweringOptions.None).Lower(Digit.SkipMany()));
     }
 
     [Fact]
     public void ASkippedRunOfSatisfyIsNotScanned() =>
-        Assert.IsType<SkipRepeatPlan<char, char>>(new PlanBuilder(LoweringOptions.Scan).Lower(Satisfy(char.IsDigit).SkipMany()));
+        Assert.IsType<SkipRepeatPlan<char, char, LightMark>>(new PlanBuilder(LoweringOptions.Scan).Lower(Satisfy(char.IsDigit).SkipMany()));
 }

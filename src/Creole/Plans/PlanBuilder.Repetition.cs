@@ -3,10 +3,10 @@ namespace Creole;
 internal sealed partial class PlanBuilder
 {
     public Plan<TIn, IReadOnlyList<T>> Repeat<TIn, T>(Parser<TIn, T> item, int min, int? max) =>
-        new RepeatPlan<TIn, T>(Lower(item), min, max);
+        new RepeatPlan<TIn, T, LightMark>(Lower(item), min, max);
 
     public Plan<TIn, IReadOnlyList<T>> Separated<TIn, T, TSep>(Parser<TIn, T> item, Parser<TIn, TSep> separator, int min, bool allowTrailing) =>
-        new SeparatedPlan<TIn, T, TSep>(Lower(item), Lower(separator), min, allowTrailing);
+        new SeparatedPlan<TIn, T, TSep, LightMark>(Lower(item), Lower(separator), min, allowTrailing);
 
     /// <summary>
     /// Lowers a skipped repetition, as a <see cref="ScanPlan"/> when the item is a character class and <see cref="LoweringOptions.Scan"/> is on.
@@ -16,8 +16,8 @@ internal sealed partial class PlanBuilder
         && item is CharClassNode run
         && ScanPlan.Of(run.Set, run.Expected, min, max) is Plan<TIn, Unit> scan
         ? scan
-        : new SkipRepeatPlan<TIn, T>(Lower(item), min, max);
+        : new SkipRepeatPlan<TIn, T, LightMark>(Lower(item), min, max);
 
     public Plan<TIn, IReadOnlyList<T>> Until<TIn, T, TTerm>(Parser<TIn, T> item, Parser<TIn, TTerm> terminator) =>
-        new UntilPlan<TIn, T, TTerm>(Lower(item), Lower(terminator));
+        new UntilPlan<TIn, T, TTerm, LightMark>(Lower(item), Lower(terminator));
 }

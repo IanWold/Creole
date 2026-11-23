@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Errors, diagnostics and recovery](../../README.md#err--errors-diagnostics-and-recovery) |
 | Phase | Phase 1 — Layers |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -35,3 +35,8 @@ Diagnostics raised on paths that are later abandoned must disappear, so every er
 ## Whitepaper references
 
 - [§ Recovery](../../../whitepaper.md#recovery)
+
+## Progress notes
+
+- 2026-11-23 (Build): Started. Build what ADR-0030 points 4, 6, 8 and 9 and ADR-0031 point 6 fix: per-layer diagnostics tagged with their step, count-based withdrawal with failure give-back, and a step-withdrawal hook. Nothing raises a diagnostic yet (`Recover`, `OrInsert` and lexer recovery are ERR-05 to ERR-07), so the plan must say how the property test raises one.
+- 2026-11-23 (Build): Plan agreed in three increments: (1) a refactor that gives every plan taking a mark a mark type parameter; (2) diagnostics in the failure log, with `KeptFailure`, give-back and the step hook; (3) `FullMark`, `LoweringOptions.LightMarks` with the per-root check, the withdrawals in `Atomic`, `Lookahead`, `Not` and `Longest`, the re-run of a `Longest` winner, and the model-based property test. Increment 1 done: `IMark<TSelf>` (static `Take`, `FailedEmpty`, `Rewind`); `LightMark` implements it with a `Rewind` that does nothing. Optional, Or, Dispatch, Repeat, SkipRepeat, Until, Separated, Expression and its operator plans, Atomic, Lookahead, Not and Longest take `TMark`. `ExpressionOperator.Lower<TMark>` keeps the expression's call into itself direct. The builder passes `LightMark` everywhere. Evidence: `dotnet build` 0 warnings; `dotnet test` 1,637 of 1,637 pass; AOT smoke publish clean and prints OK. Speed: three gate runs give 1.74× Parlot and fail. The base commit 6cde18d, run the same way, gives 1.72× and also fails (Parlot 2.3.1 since FND-09; BENCH-01 passed at 1.37× on Parlot 2.0.0). Creole's JSON times and every allocation are unchanged. Arithmetic read about 4% slower over six runs, but its JIT output for the expression path matches the base except where tiered PGO inlines differently, and PGO's choices vary between runs of one binary. With `DOTNET_TieredPGO=0`, alternating runs give 482.8 ns against the base's 484.4 ns (medians of three). Next: increment 2, after the maintainer commits this one.

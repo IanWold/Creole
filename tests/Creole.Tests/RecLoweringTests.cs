@@ -37,8 +37,8 @@ public class RecLoweringTests
     {
         var (_, rootB) = Mutual();
 
-        var b = Assert.IsType<OrPlan<char, int>>(new PlanBuilder().Lower(rootB));
-        var a = Assert.IsType<OrPlan<char, int>>(b.Alternatives[1]);
+        var b = Assert.IsType<OrPlan<char, int, LightMark>>(new PlanBuilder().Lower(rootB));
+        var a = Assert.IsType<OrPlan<char, int, LightMark>>(b.Alternatives[1]);
         var rec = Assert.IsType<RecPlan<char, int>>(a.Alternatives[1]);
 
         Assert.Same(b, Assert.IsType<ForwardPlan<char, int>>(rec.Target).Target);
@@ -87,8 +87,8 @@ public class RecLoweringTests
     {
         var (nodeA, nodeB) = Mutual();
 
-        var a = Assert.IsType<OrPlan<char, int>>(new PlanBuilder().Lower(nodeA));
-        var b = Assert.IsType<OrPlan<char, int>>(Assert.IsType<RecPlan<char, int>>(a.Alternatives[1]).Target);
+        var a = Assert.IsType<OrPlan<char, int, LightMark>>(new PlanBuilder().Lower(nodeA));
+        var b = Assert.IsType<OrPlan<char, int, LightMark>>(Assert.IsType<RecPlan<char, int>>(a.Alternatives[1]).Target);
         var back = Assert.IsType<ForwardPlan<char, int>>(b.Alternatives[1]);
 
         Assert.Equal(1, nodeA.LowerCount);
@@ -102,7 +102,7 @@ public class RecLoweringTests
         var node = Self();
         var builder = new PlanBuilder();
 
-        var s = Assert.IsType<OrPlan<char, int>>(builder.Lower(node));
+        var s = Assert.IsType<OrPlan<char, int, LightMark>>(builder.Lower(node));
         var back = Assert.IsType<ForwardPlan<char, int>>(Assert.IsType<RecPlan<char, int>>(s.Alternatives[1]).Target);
 
         Assert.Equal(1, node.LowerCount);

@@ -355,7 +355,7 @@ public class WorkedExampleATests
         var named = Assert.IsType<NamedPlan<JTok, JsonValue>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(JsonGrammar.Value));
         var value = Assert.IsType<RecPlan<JTok, JsonValue>>(named.Item);
 
-        Assert.IsType<DispatchPlan<JTok, JsonValue>>(value.Target);
+        Assert.IsType<DispatchPlan<JTok, JsonValue, LightMark>>(value.Target);
         Assert.Equal(without, with);
     }
 

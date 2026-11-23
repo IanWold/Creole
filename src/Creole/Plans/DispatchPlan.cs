@@ -8,7 +8,7 @@ namespace Creole;
 /// Each alternative either has keys, the FIRST keys of its leading primitive, or none.
 /// The candidates for a key are the alternatives whose keys contain it and every alternative with no keys, in their original order.
 /// At the end of the input the candidates are the alternatives with no keys.
-/// The candidates run exactly as <see cref="OrPlan{TIn, T}"/> runs its alternatives, each with its light mark.
+/// The candidates run exactly as <see cref="OrPlan{TIn, T, TMark}"/> runs its alternatives, each with its mark.
 /// </para>
 /// <para>
 /// Before each candidate, and after the last, the plan records what the alternatives skipped since the previous candidate would have expected, in their order.
@@ -19,7 +19,8 @@ namespace Creole;
 /// The alternatives a key skips are those of <see cref="Alternatives"/> not among its candidates; the error model records what they would have expected (ERR-02).
 /// </para>
 /// </remarks>
-internal sealed class DispatchPlan<TIn, T> : Plan<TIn, T>
+internal sealed class DispatchPlan<TIn, T, TMark> : Plan<TIn, T>
+    where TMark : struct, IMark<TMark>
 {
     /// <summary>
     /// Keys below this are looked up in a table; others by binary search.
@@ -138,7 +139,7 @@ internal sealed class DispatchPlan<TIn, T> : Plan<TIn, T>
                 continue;
             }
 
-            var mark = LightMark.Take(ref cursor);
+            var mark = TMark.Take(ref cursor);
 
             if (alternative!.TryParse(ref cursor, ref result))
             {

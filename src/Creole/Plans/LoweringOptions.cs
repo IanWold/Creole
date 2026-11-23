@@ -26,7 +26,7 @@ internal enum LoweringOptions
     CollapseSelect = 2,
 
     /// <summary>
-    /// An <c>Or</c> runs only the alternatives that can start with the next item (<see cref="DispatchPlan{TIn, T}"/>).
+    /// An <c>Or</c> runs only the alternatives that can start with the next item (<see cref="DispatchPlan{TIn, T, TMark}"/>).
     /// </summary>
     Dispatch = 4,
 

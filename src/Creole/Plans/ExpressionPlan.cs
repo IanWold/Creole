@@ -10,7 +10,7 @@ namespace Creole;
 /// After an operand, the postfix and infix operators within the limit are tried, tighter levels first and in declaration order within a level, until none matches.
 /// </para>
 /// <para>
-/// Each prefix attempt, each postfix or infix attempt, and the atom take a light mark, so a cut passed in one that fails without consuming is dropped (ADR-0011).
+/// Each prefix attempt, each postfix or infix attempt, and the atom take a mark, so a cut passed in one that fails without consuming is dropped (ADR-0011).
 /// An infix attempt is the operator and its right operand together.
 /// An attempt that fails after consuming fails the expression.
 /// </para>
@@ -19,7 +19,8 @@ namespace Creole;
 /// Its start is held in the failure log while it is matched, so a stream buffer that releases it first copies the item there.
 /// </para>
 /// </remarks>
-internal sealed class ExpressionPlan<TIn, T>(Plan<TIn, T> atom, OperatorPlan<TIn, T>[] prefixes, OperatorPlan<TIn, T>[] operators, int loosest) : Plan<TIn, T>
+internal sealed class ExpressionPlan<TIn, T, TMark>(Plan<TIn, T> atom, OperatorPlan<TIn, T, TMark>[] prefixes, OperatorPlan<TIn, T, TMark>[] operators, int loosest) : Plan<TIn, T>
+    where TMark : struct, IMark<TMark>
 {
     private readonly Plan<TIn, T> _atom = atom;
     private readonly int _loosest = loosest;
@@ -27,18 +28,18 @@ internal sealed class ExpressionPlan<TIn, T>(Plan<TIn, T> atom, OperatorPlan<TIn
     /// <summary>
     /// The postfix and infix operators, tightest level first, in declaration order within a level.
     /// </summary>
-    private readonly OperatorPlan<TIn, T>[] _operators = operators;
+    private readonly OperatorPlan<TIn, T, TMark>[] _operators = operators;
 
     /// <summary>
     /// The prefix operators, in table order.
     /// </summary>
-    private readonly OperatorPlan<TIn, T>[] _prefixes = prefixes;
+    private readonly OperatorPlan<TIn, T, TMark>[] _prefixes = prefixes;
 
     private bool ParseOperand(ref Cursor<TIn> cursor, ref T result)
     {
         foreach (var prefix in _prefixes)
         {
-            var mark = LightMark.Take(ref cursor);
+            var mark = TMark.Take(ref cursor);
 
             if (prefix.TryApply(ref cursor, this, ref result))
             {
@@ -51,7 +52,7 @@ internal sealed class ExpressionPlan<TIn, T>(Plan<TIn, T> atom, OperatorPlan<TIn
             }
         }
 
-        var atomMark = LightMark.Take(ref cursor);
+        var atomMark = TMark.Take(ref cursor);
 
         if (_atom.TryParse(ref cursor, ref result))
         {
@@ -86,7 +87,7 @@ internal sealed class ExpressionPlan<TIn, T>(Plan<TIn, T> atom, OperatorPlan<TIn
                     break;
                 }
 
-                var mark = LightMark.Take(ref cursor);
+                var mark = TMark.Take(ref cursor);
 
                 if (op.Level == chained)
                 {

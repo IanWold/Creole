@@ -14,13 +14,13 @@ internal sealed partial class PlanBuilder
     /// <summary>
     /// A dispatch plan for an <c>Or</c> when at least the builder's dispatch threshold of its alternatives have keys and they are all read the same way; otherwise null.
     /// </summary>
-    private DispatchPlan<TIn, T>? Dispatch<TIn, T>(IReadOnlyList<Parser<TIn, T>> alternatives, Plan<TIn, T>[] plans)
+    private DispatchPlan<TIn, T, LightMark>? Dispatch<TIn, T>(IReadOnlyList<Parser<TIn, T>> alternatives, Plan<TIn, T>[] plans)
     {
         var keyed = alternatives.Select(static alternative => Keyed(alternative)).ToArray();
         var primitives = keyed.Select(static key => key.Primitive).OfType<IPrimitiveNode>().ToArray();
 
         return primitives.Length >= _dispatchThreshold && KeyReader<TIn>(primitives) is { } read
-            ? new DispatchPlan<TIn, T>(
+            ? new DispatchPlan<TIn, T, LightMark>(
                 plans,
                 [.. keyed.Select(static key => key.Primitive?.First.Keys)],
                 [.. keyed.Select(static key => key.Label ?? key.Primitive?.Expected)],

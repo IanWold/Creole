@@ -10,21 +10,23 @@ namespace Creole;
 /// When every alternative is Regular, <see cref="DfaLongestPlan{T}"/> replaces this plan (<see cref="LoweringOptions.Dfa"/>).
 /// Its start is pinned while it runs, so a stream buffer keeps the input every alternative starts from.
 /// </remarks>
-internal sealed class LongestPlan<TIn, T>(Plan<TIn, T>[] alternatives) : Plan<TIn, T>
+internal sealed class LongestPlan<TIn, T, TMark>(Plan<TIn, T>[] alternatives) : Plan<TIn, T>
+    where TMark : struct, IMark<TMark>
 {
     private readonly Plan<TIn, T>[] _alternatives = alternatives;
 
     public override bool TryParse(ref Cursor<TIn> cursor, ref T result)
     {
         var outerCut = cursor.Cut;
-        var start = cursor.Position;
+        var mark = TMark.Take(ref cursor);
         var floor = cursor.Pin();
         var failures = cursor.SaveFailures();
         var bestEnd = -1L;
 
         foreach (var alternative in _alternatives)
         {
-            cursor.Reset(start);
+            mark.Rewind(ref cursor);
+            cursor.Reset(mark.Position);
             cursor.Cut = false;
             T value = default!;
 
@@ -40,7 +42,8 @@ internal sealed class LongestPlan<TIn, T>(Plan<TIn, T>[] alternatives) : Plan<TI
 
         if (bestEnd < 0)
         {
-            cursor.Reset(start);
+            mark.Rewind(ref cursor);
+            cursor.Reset(mark.Position);
             cursor.KeepFailures(in failures);
             return false;
         }

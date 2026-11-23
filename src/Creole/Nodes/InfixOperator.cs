@@ -14,6 +14,6 @@ internal sealed class InfixOperator<TIn, TOp, T>(Fixity fixity, Parser<TIn, TOp>
 
     public Parser<TIn, TOp> Op { get; } = op;
 
-    internal override OperatorPlan<TIn, T> Lower(PlanBuilder builder, int level) =>
-        builder.Infix(Fixity, Op, Combine, level);
+    internal override OperatorPlan<TIn, T, TMark> Lower<TMark>(PlanBuilder builder, int level) =>
+        builder.Infix<TIn, TOp, T, TMark>(Fixity, Op, Combine, level);
 }

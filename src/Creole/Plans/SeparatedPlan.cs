@@ -14,7 +14,8 @@ namespace Creole;
 /// When the list ends after a separator, only the item's failed attempt is undone: the separator stays consumed, and a cut it passed stays in force (ADR-0011).
 /// </para>
 /// </remarks>
-internal sealed class SeparatedPlan<TIn, T, TSep>(Plan<TIn, T> item, Plan<TIn, TSep> separator, int min, bool allowTrailing) : Plan<TIn, IReadOnlyList<T>>
+internal sealed class SeparatedPlan<TIn, T, TSep, TMark>(Plan<TIn, T> item, Plan<TIn, TSep> separator, int min, bool allowTrailing) : Plan<TIn, IReadOnlyList<T>>
+    where TMark : struct, IMark<TMark>
 {
     private readonly bool _allowTrailing = allowTrailing;
     private readonly Plan<TIn, T> _item = item;
@@ -23,7 +24,7 @@ internal sealed class SeparatedPlan<TIn, T, TSep>(Plan<TIn, T> item, Plan<TIn, T
 
     public override bool TryParse(ref Cursor<TIn> cursor, ref IReadOnlyList<T> result)
     {
-        var mark = LightMark.Take(ref cursor);
+        var mark = TMark.Take(ref cursor);
         T value = default!;
 
         if (!_item.TryParse(ref cursor, ref value))
@@ -43,7 +44,7 @@ internal sealed class SeparatedPlan<TIn, T, TSep>(Plan<TIn, T> item, Plan<TIn, T
 
         while (true)
         {
-            var round = LightMark.Take(ref cursor);
+            var round = TMark.Take(ref cursor);
 
             if (!_separator.TryParse(ref cursor, ref separator))
             {
@@ -55,7 +56,7 @@ internal sealed class SeparatedPlan<TIn, T, TSep>(Plan<TIn, T> item, Plan<TIn, T
                 break;
             }
 
-            var itemMark = LightMark.Take(ref cursor);
+            var itemMark = TMark.Take(ref cursor);
 
             if (!_item.TryParse(ref cursor, ref value))
             {

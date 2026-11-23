@@ -34,7 +34,7 @@ public ref struct Cursor<T>
     /// </summary>
     /// <remarks>
     /// Each layer has its own cursor, so this is the one cut flag per layer that the cut rule needs.
-    /// <c>Atomic</c>, <c>Lookahead</c>, <c>Not</c>, <c>Longest</c> alternatives and every <see cref="LightMark"/> save and restore it.
+    /// <c>Atomic</c>, <c>Lookahead</c>, <c>Not</c>, <c>Longest</c> alternatives and every mark (<see cref="IMark{TSelf}"/>) save and restore it.
     /// </remarks>
     internal bool Cut { get; set; }
 

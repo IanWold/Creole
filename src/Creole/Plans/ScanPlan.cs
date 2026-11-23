@@ -3,7 +3,7 @@ using System.Buffers;
 namespace Creole;
 
 /// <summary>
-/// Skips a run of characters in one class, as <see cref="SkipRepeatPlan{TIn, T}"/> over that class does, with one vectorized search per segment.
+/// Skips a run of characters in one class, as <see cref="SkipRepeatPlan{TIn, T, TMark}"/> over that class does, with one vectorized search per segment.
 /// </summary>
 /// <remarks>
 /// <para>

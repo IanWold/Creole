@@ -1,9 +1,10 @@
 namespace Creole;
 
 /// <summary>
-/// Runs its item as <see cref="RepeatPlan{TIn, T}"/> does, but keeps none of the results, so it allocates nothing.
+/// Runs its item as <see cref="RepeatPlan{TIn, T, TMark}"/> does, but keeps none of the results, so it allocates nothing.
 /// </summary>
-internal sealed class SkipRepeatPlan<TIn, T>(Plan<TIn, T> item, int min, int? max) : Plan<TIn, Unit>
+internal sealed class SkipRepeatPlan<TIn, T, TMark>(Plan<TIn, T> item, int min, int? max) : Plan<TIn, Unit>
+    where TMark : struct, IMark<TMark>
 {
     private readonly Plan<TIn, T> _item = item;
     private readonly int? _max = max;
@@ -15,7 +16,7 @@ internal sealed class SkipRepeatPlan<TIn, T>(Plan<TIn, T> item, int min, int? ma
 
         for (var count = 0; _max is not { } max || count < max; count++)
         {
-            var mark = LightMark.Take(ref cursor);
+            var mark = TMark.Take(ref cursor);
 
             if (!_item.TryParse(ref cursor, ref value))
             {

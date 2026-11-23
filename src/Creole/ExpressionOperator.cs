@@ -23,5 +23,6 @@ public abstract class ExpressionOperator<TIn, T>
     /// <summary>
     /// Lowers this operator to the interpreter's plan for it, at <paramref name="level"/> in the table (0 is the tightest).
     /// </summary>
-    internal abstract OperatorPlan<TIn, T> Lower(PlanBuilder builder, int level);
+    internal abstract OperatorPlan<TIn, T, TMark> Lower<TMark>(PlanBuilder builder, int level)
+        where TMark : struct, IMark<TMark>;
 }

@@ -8,14 +8,15 @@ namespace Creole;
 /// On exit, a cut passed inside stays in force for the enclosing parse, whether the item succeeded or failed (ADR-0011 points 2 and 7).
 /// Its start is pinned while it runs, so a stream buffer keeps the input it may rewind to.
 /// </remarks>
-internal sealed class AtomicPlan<TIn, T>(Plan<TIn, T> item) : Plan<TIn, T>
+internal sealed class AtomicPlan<TIn, T, TMark>(Plan<TIn, T> item) : Plan<TIn, T>
+    where TMark : struct, IMark<TMark>
 {
     private readonly Plan<TIn, T> _item = item;
 
     public override bool TryParse(ref Cursor<TIn> cursor, ref T result)
     {
         var outerCut = cursor.Cut;
-        var start = cursor.Position;
+        var mark = TMark.Take(ref cursor);
         var floor = cursor.Pin();
         cursor.Cut = false;
 
@@ -23,7 +24,8 @@ internal sealed class AtomicPlan<TIn, T>(Plan<TIn, T> item) : Plan<TIn, T>
 
         if (!ok && !cursor.Cut)
         {
-            cursor.Reset(start);
+            mark.Rewind(ref cursor);
+            cursor.Reset(mark.Position);
         }
 
         cursor.Unpin(floor);
