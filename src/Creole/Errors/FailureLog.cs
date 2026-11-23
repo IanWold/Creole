@@ -16,7 +16,7 @@ namespace Creole;
 /// <para>
 /// The log records positions, not items. An error reads the items and spans it needs when it is built, from input that still holds them.
 /// A stream buffer may release input before that, so it first calls <see cref="Preserve"/>, which copies the item and span at each position an error may still read:
-/// the furthest failure's position and the end of the input it names, the same for each saved failure, the start of each context frame, and each start that <see cref="HoldStart"/> holds.
+/// the furthest failure's position and the end of the input it names, the same for each saved failure, the start of each context frame, each start that <see cref="HoldStart"/> holds, and the same again for the failure each diagnostic reports.
 /// A buffer releases only consumed items, which a mode change never discards, so no copy is of an item lexed under an abandoned mode.
 /// </para>
 /// <para>
@@ -34,8 +34,11 @@ namespace Creole;
 /// Recording stores references and indexes in reusable arrays and allocates nothing once the arrays are large enough.
 /// A <see cref="ParseError"/> is built only for the failure that is reported, by <see cref="ToError"/>.
 /// </para>
+/// <para>
+/// The log also holds the diagnostics the layer raised, with what the layer can give back when one is withdrawn.
+/// </para>
 /// </remarks>
-internal sealed class FailureLog<T>
+internal sealed partial class FailureLog<T>
 {
     private readonly record struct HeldStart(long Position, ItemCopy? Copy);
 
@@ -54,6 +57,7 @@ internal sealed class FailureLog<T>
     private int _frameCount;
     private int _frameFloor;
     private ContextFrame[] _frames = new ContextFrame[8];
+    private int _generation;
     private int _heldCount;
     private HeldStart[] _heldStarts = new HeldStart[8];
     private string? _message;
@@ -157,6 +161,12 @@ internal sealed class FailureLog<T>
         return context;
     }
 
+    /// <summary>
+    /// The furthest failure as it is now, with its context stack copied out of the frame array.
+    /// </summary>
+    private FailureCopy Copy() =>
+        new(Position, _expected[_start.._count], _message, _chain, _end, _at, _endSpan, Stack(_context));
+
     private bool Reaches(long position)
     {
         if (position < Position)
@@ -191,7 +201,32 @@ internal sealed class FailureLog<T>
     }
 
     /// <summary>
-    /// Forgets every failure and context, so the log can serve another parse.
+    /// Copies the context stack from <paramref name="innermost"/> out of the frame array, innermost first.
+    /// </summary>
+    /// <remarks>
+    /// The copies keep their <see cref="ContextFrame.Parent"/> indexes, which mean nothing outside the array.
+    /// </remarks>
+    private ContextFrame[] Stack(int innermost)
+    {
+        var depth = 0;
+
+        for (var i = innermost; i >= 0; i = _frames[i].Parent)
+        {
+            depth++;
+        }
+
+        var stack = new ContextFrame[depth];
+
+        for (int i = innermost, j = 0; i >= 0; i = _frames[i].Parent, j++)
+        {
+            stack[j] = _frames[i];
+        }
+
+        return stack;
+    }
+
+    /// <summary>
+    /// Forgets every failure, context and diagnostic, so the log can serve another parse.
     /// </summary>
     public void Clear()
     {
@@ -211,6 +246,9 @@ internal sealed class FailureLog<T>
         _records = 0;
         _protected = 0;
         _saveCount = 0;
+        _generation = 0;
+        _diagnostics.Clear();
+        StepStart = 0;
     }
 
     /// <summary>
@@ -291,7 +329,7 @@ internal sealed class FailureLog<T>
     /// The furthest failure as it is now, for <see cref="Relabel"/>. Unlike <see cref="Save"/>, it protects nothing and needs no ending.
     /// </summary>
     public FailureMark Note() =>
-        new(Position, _start, _count, _message, _chain, _end, _context, _records, _protected, _frameFloor);
+        new(Position, _start, _count, _message, _chain, _end, _context, _records, _protected, _frameFloor, _generation);
 
     /// <summary>
     /// Copies the item and span at each position an error may still read from <paramref name="start"/> up to <paramref name="end"/>, which <paramref name="buffer"/> is about to release.
@@ -343,6 +381,11 @@ internal sealed class FailureLog<T>
             {
                 _frames[i] = frame with { StartSpan = buffer.SpanOf(frame.Start, frame.Start + 1) };
             }
+        }
+
+        foreach (var diagnostic in _diagnostics)
+        {
+            diagnostic.Failure.Preserve(buffer, start, end);
         }
     }
 
@@ -419,7 +462,7 @@ internal sealed class FailureLog<T>
     /// </summary>
     /// <remarks>
     /// Nothing changes unless the furthest failure is at <paramref name="start"/> and a failure recorded since the note is still part of it.
-    /// A failure that expected nothing in particular counts. Expectations recorded at <paramref name="start"/> before the note stay, ahead of the label.
+    /// A failure that expected nothing in particular counts. Expectations recorded at <paramref name="start"/> before the note stay, ahead of the label, unless the furthest failure was taken out of the log since the note.
     /// A message is never removed.
     /// </remarks>
     public void Relabel(in FailureMark note, long start, Expected label)
@@ -429,7 +472,7 @@ internal sealed class FailureLog<T>
             return;
         }
 
-        _count = note.Position == start
+        _count = note.Position == start && note.Generation == _generation
             ? note.Count
             : _start;
         Add(label);
@@ -455,6 +498,7 @@ internal sealed class FailureLog<T>
         _records = mark.Records;
         _protected = mark.Protected;
         _frameFloor = mark.FrameFloor;
+        _generation = mark.Generation;
     }
 
     /// <summary>
@@ -489,51 +533,8 @@ internal sealed class FailureLog<T>
     /// Expected items that show the same are listed once, in the order first recorded.
     /// Context lines come from the stack of the first failure at the position, innermost first, leaving out contexts that started there.
     /// </remarks>
-    public ParseError? ToError(ref readonly Cursor<T> cursor, string layer, Func<long, long, SourceSpan> spanOf)
-    {
-        if (Position < 0)
-        {
-            return null;
-        }
-
-        T item;
-        bool atItem;
-
-        if (_at is { } copy)
-        {
-            item = copy.Item;
-            atItem = true;
-        }
-        else
-        {
-            atItem = cursor.TryPeekAt(Position, out item);
-        }
-
-        var first = _at?.Span ?? spanOf(Position, atItem ? Position + 1 : Position);
-        var last = _end > (atItem ? Position + 1 : Position)
-            ? _endSpan ?? spanOf(_end - 1, _end)
-            : first;
-        var span = new SourceSpan(first.Source, first.Start, last.End, first.CharStart, last.CharEnd);
-        var message = _message ?? _chain?.Text(atItem, item);
-
-        Unexpected unexpected = message is not null
-            ? new CustomMessage(message)
-            : atItem
-                ? new UnexpectedItem(Display<T>.Item(item))
-                : new EndOfInput();
-
-        var expected = new List<Expectation>(_count - _start);
-
-        for (var i = _start; i < _count; i++)
-        {
-            var expectation = _expected[i].Build();
-
-            if (!expected.Exists(e => Equals(e.Value, expectation.Value)))
-            {
-                expected.Add(expectation);
-            }
-        }
-
-        return new ParseError(span, layer, unexpected, expected, ContextLines(_context, Position, spanOf));
-    }
+    public ParseError? ToError(ref readonly Cursor<T> cursor, string layer, Func<long, long, SourceSpan> spanOf) =>
+        Position < 0
+            ? null
+            : Copy().ToError(in cursor, layer, spanOf);
 }

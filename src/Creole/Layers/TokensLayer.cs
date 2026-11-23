@@ -31,6 +31,7 @@ file sealed class TokensUpstream<TIn, TOut>(StreamBuffer<TIn> input, Plan<TIn, T
         var skipped = default(Unit);
         var value = default(TOut)!;
 
+        _failures?.StepStart = stepStart;
         _input.Release(floor, _failures);
         cursor.Reset(stepStart);
 
