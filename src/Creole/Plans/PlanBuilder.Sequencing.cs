@@ -16,7 +16,10 @@ internal sealed partial class PlanBuilder
             ? Lower(source).Select(selector)
             : new MapPlan<TIn, TSource, TResult>(Lower(source), selector);
 
-    public Plan<TIn, Maybe<T>> Optional<TIn, T>(Parser<TIn, T> item) => new OptionalPlan<TIn, T, LightMark>(Lower(item));
+    public Plan<TIn, Maybe<T>> Optional<TIn, T>(Parser<TIn, T> item) =>
+        FullMarks
+            ? new OptionalPlan<TIn, T, FullMark>(Lower(item))
+            : new OptionalPlan<TIn, T, LightMark>(Lower(item));
 
     public Plan<TIn, TOut> Sequence<TIn, T1, T2, TOut>(Parser<TIn, T1> first, Parser<TIn, T2> second, Func<T1, T2, TOut> selector) =>
         new SequencePlan<TIn, T1, T2, TOut>(Lower(first), Lower(second), selector);

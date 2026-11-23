@@ -2,18 +2,24 @@ namespace Creole;
 
 internal sealed partial class PlanBuilder
 {
-    public Plan<TIn, T> Expression<TIn, T>(Parser<TIn, T> atom, IReadOnlyList<IReadOnlyList<ExpressionOperator<TIn, T>>> levels)
+    private ExpressionPlan<TIn, T, TMark> Expression<TIn, T, TMark>(Parser<TIn, T> atom, IReadOnlyList<IReadOnlyList<ExpressionOperator<TIn, T>>> levels)
+        where TMark : struct, IMark<TMark>
     {
         var atomPlan = Lower(atom);
-        var operators = levels.SelectMany((level, index) => level.Select(op => op.Lower<LightMark>(this, index))).ToArray();
+        var operators = levels.SelectMany((level, index) => level.Select(op => op.Lower<TMark>(this, index))).ToArray();
 
-        return new ExpressionPlan<TIn, T, LightMark>(
+        return new ExpressionPlan<TIn, T, TMark>(
             atomPlan,
             [.. operators.Where(op => op.Fixity == Fixity.Prefix)],
             [.. operators.Where(op => op.Fixity != Fixity.Prefix)],
             levels.Count - 1
         );
     }
+
+    public Plan<TIn, T> Expression<TIn, T>(Parser<TIn, T> atom, IReadOnlyList<IReadOnlyList<ExpressionOperator<TIn, T>>> levels) =>
+        FullMarks
+            ? Expression<TIn, T, FullMark>(atom, levels)
+            : Expression<TIn, T, LightMark>(atom, levels);
 
     public OperatorPlan<TIn, T, TMark> Infix<TIn, TOp, T, TMark>(Fixity fixity, Parser<TIn, TOp> op, Func<T, TOp, T, T> combine, int level)
         where TMark : struct, IMark<TMark> =>

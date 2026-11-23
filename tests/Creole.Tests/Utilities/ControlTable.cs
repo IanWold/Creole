@@ -68,6 +68,11 @@ internal abstract record ControlShape
     public record Or(ControlShape First, ControlShape Second) : ControlShape;
 
     /// <summary>
+    /// Raises a diagnostic that reports <c>d</c> followed by <paramref name="Id"/> where it is, and succeeds without consuming. Produces the empty string.
+    /// </summary>
+    public record Raise(int Id) : ControlShape;
+
+    /// <summary>
     /// Produces its items' values joined; the separators' values are discarded.
     /// </summary>
     public record SepBy(ControlShape Item, ControlShape Separator) : ControlShape;
@@ -185,6 +190,7 @@ internal static class ControlTable
         ControlShape.Not s => Grammar<char>.Not(Build(s.Item)).As(""),
         ControlShape.Optional s => Build(s.Item).Optional().Select(m => m.GetValueOrDefault("")),
         ControlShape.Or s => Build(s.First).Or(Build(s.Second)),
+        ControlShape.Raise s => new RaiseNode($"d{s.Id}"),
         ControlShape.SepBy s => Build(s.Item).SepBy(Build(s.Separator)).Select(string.Concat),
         ControlShape.Until s => Build(s.Item).Until(Build(s.Terminator)).Select(string.Concat),
         ControlShape.Seq s => s.Steps.Skip(1).Aggregate(

@@ -48,6 +48,11 @@ public ref struct Cursor<T>
     internal int Depth { get; private set; }
 
     /// <summary>
+    /// How many diagnostics this layer has raised and not withdrawn, or 0 in a parse that records no failures and so raises none.
+    /// </summary>
+    internal readonly int DiagnosticCount => Failures?.DiagnosticCount ?? 0;
+
+    /// <summary>
     /// Where this layer's parse records its failures, or null to record none.
     /// </summary>
     internal FailureLog<T>? Failures { get; init; }
@@ -406,6 +411,11 @@ public ref struct Cursor<T>
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void Unpin(long floor) => Floor = floor;
+
+    /// <summary>
+    /// Withdraws the diagnostics this layer raised after the first <paramref name="count"/>, giving back the failures those built from the furthest failure took.
+    /// </summary>
+    internal readonly void WithdrawDiagnostics(int count) => Failures?.Withdraw(count);
 
     /// <summary>
     /// Moves past <paramref name="count"/> items, which may span several segments.

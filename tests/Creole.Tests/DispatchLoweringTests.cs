@@ -123,9 +123,9 @@ public class DispatchLoweringTests
         var four = OneOf(Char('a').As(1), String("bc").As(2), Digit.As(3), Char('x').As(4), Return(0));
 
         Assert.Equal(4, PlanBuilder.DispatchThreshold);
-        Assert.IsType<OrPlan<char, int, LightMark>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(three));
-        Assert.IsType<DispatchPlan<char, int, LightMark>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(four));
-        Assert.IsType<OrPlan<char, int, LightMark>>(new PlanBuilder(LoweringOptions.None).Lower(four));
+        Assert.IsType<OrPlan<char, int, FullMark>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(three));
+        Assert.IsType<DispatchPlan<char, int, FullMark>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(four));
+        Assert.IsType<OrPlan<char, int, FullMark>>(new PlanBuilder(LoweringOptions.None).Lower(four));
     }
 
     [Fact]
@@ -134,8 +134,8 @@ public class DispatchLoweringTests
         var mixed = TokenGrammar<TwoKinds, Letter>.Kind(Letter.A).Or(TokenGrammar<TwoKinds, Shade>.Kind(Shade.Dark));
         var same = TokenGrammar<TwoKinds, Letter>.Kind(Letter.A).Or(TokenGrammar<TwoKinds, Letter>.Kind(Letter.B));
 
-        Assert.IsType<OrPlan<TwoKinds, TwoKinds, LightMark>>(new PlanBuilder(LoweringOptions.Dispatch, dispatchThreshold: 1).Lower(mixed));
-        Assert.IsType<DispatchPlan<TwoKinds, TwoKinds, LightMark>>(new PlanBuilder(LoweringOptions.Dispatch, dispatchThreshold: 1).Lower(same));
+        Assert.IsType<OrPlan<TwoKinds, TwoKinds, FullMark>>(new PlanBuilder(LoweringOptions.Dispatch, dispatchThreshold: 1).Lower(mixed));
+        Assert.IsType<DispatchPlan<TwoKinds, TwoKinds, FullMark>>(new PlanBuilder(LoweringOptions.Dispatch, dispatchThreshold: 1).Lower(same));
         AssertAgrees(same, [new TwoKinds(Letter.B, Shade.Dark)]);
     }
 
@@ -152,7 +152,7 @@ public class DispatchLoweringTests
             []
         );
 
-        Assert.IsType<DispatchPlan<char, char, LightMark>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(choice));
+        Assert.IsType<DispatchPlan<char, char, FullMark>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(choice));
         Assert.Equal(expected, Execution.Error(parser, "x", LoweringOptions.Dispatch));
         Assert.Equal(expected, Execution.Error(parser, "x"));
     }
@@ -170,7 +170,7 @@ public class DispatchLoweringTests
             []
         );
 
-        Assert.IsType<DispatchPlan<char, char, LightMark>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(choice));
+        Assert.IsType<DispatchPlan<char, char, FullMark>>(new PlanBuilder(LoweringOptions.Dispatch).Lower(choice));
         Assert.Equal(expected, Execution.Error(parser, "x", LoweringOptions.Dispatch));
         Assert.Equal(expected, Execution.Error(parser, "x"));
     }

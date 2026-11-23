@@ -36,7 +36,12 @@ internal enum LoweringOptions
     Dfa = 8,
 
     /// <summary>
+    /// A grammar that cannot raise diagnostics takes <see cref="LightMark"/>, which leaves the diagnostic count out. Otherwise every plan takes <see cref="FullMark"/>.
+    /// </summary>
+    LightMarks = 16,
+
+    /// <summary>
     /// Every rewrite.
     /// </summary>
-    All = Scan | CollapseSelect | Dispatch | Dfa,
+    All = Scan | CollapseSelect | Dispatch | Dfa | LightMarks,
 }

@@ -16,6 +16,11 @@ internal readonly struct LightMark : IMark<LightMark>
     /// </summary>
     public long Position { get; }
 
+    /// <summary>
+    /// False: a light mark saves only the position and the cut flag.
+    /// </summary>
+    public static bool Rewinds => false;
+
     private LightMark(long position, bool cut)
     {
         Position = position;

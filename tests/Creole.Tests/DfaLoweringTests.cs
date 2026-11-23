@@ -185,5 +185,5 @@ public class DfaLoweringTests
 
     [Fact]
     public void WithoutTheRewriteALongestRunsOnTheInterpreter() =>
-        Assert.IsType<LongestPlan<char, string, LightMark>>(new PlanBuilder(LoweringOptions.None).Lower(Longest(String("<"), String("<="))));
+        Assert.IsType<LongestPlan<char, string, FullMark>>(new PlanBuilder(LoweringOptions.None).Lower(Longest(String("<"), String("<="))));
 }
