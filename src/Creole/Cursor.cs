@@ -199,6 +199,11 @@ public ref struct Cursor<T>
     }
 
     /// <summary>
+    /// Stops holding the position that the matching <see cref="HoldSpan"/> held.
+    /// </summary>
+    internal readonly void DropSpan() => _source?.DropSpan();
+
+    /// <summary>
     /// Stops holding the start that the matching <see cref="HoldStart"/> held.
     /// </summary>
     internal readonly void DropStart() => Failures?.DropStart();
@@ -252,6 +257,15 @@ public ref struct Cursor<T>
     /// Creates a cursor at the start of an input held entirely in memory, whose items <see cref="Since"/> can return without copying.
     /// </summary>
     internal static Cursor<T> FromMemory(ReadOnlyMemory<T> input) => new(input.Span) { _segment = input };
+
+    /// <summary>
+    /// Holds the cursor's position until <see cref="DropSpan"/>, as the start of a span combinator's range, so that <see cref="SpanSince"/> can still start there after the cursor has moved on.
+    /// </summary>
+    /// <remarks>
+    /// A source that releases the item first copies its span, whether or not this layer keeps a failure log.
+    /// Input held whole in memory releases nothing, so nothing is held.
+    /// </remarks>
+    internal readonly void HoldSpan() => _source?.HoldSpan(Position);
 
     /// <summary>
     /// Holds the cursor's position in the failure log until <see cref="DropStart"/>, as the start of a filter, a chained operator or a custom scanner that may record a failure there after the cursor has moved on.
@@ -397,6 +411,37 @@ public ref struct Cursor<T>
         }
 
         return items;
+    }
+
+    /// <summary>
+    /// The source span of the items from <paramref name="start"/> up to the cursor: from the start of the first to the end of the last.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Over input held whole in memory, offsets are item positions in <see cref="SourceId.Unnamed"/>.
+    /// Over a source, they are the spans the source keeps beside its items.
+    /// </para>
+    /// <para>
+    /// When <paramref name="start"/> is the cursor's position, the span is zero-width at the start of the next item, or at the end of the last item at the end of the input.
+    /// The cursor then peeks, so the next item has been read.
+    /// </para>
+    /// <para>
+    /// <paramref name="start"/> must be a position the input still holds, or one that <see cref="HoldSpan"/> holds.
+    /// </para>
+    /// </remarks>
+    internal SourceSpan SpanSince(long start)
+    {
+        if (_source is null)
+        {
+            return new SourceSpan(SourceId.Unnamed, start, Position);
+        }
+
+        if (start == Position)
+        {
+            TryPeek(out _);
+        }
+
+        return _source.SpanOf(start, Position);
     }
 
     /// <summary>
