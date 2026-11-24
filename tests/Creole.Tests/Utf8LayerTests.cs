@@ -1,12 +1,20 @@
 using System.Text;
 using CsCheck;
 using static Creole.CharGrammar;
+using StringGrammar = Creole.Grammar<string>;
 
 namespace Creole.Tests;
 
 public class Utf8LayerTests
 {
     private static readonly byte[] _byteOrderMark = [0xEF, 0xBB, 0xBF];
+
+    private static readonly Parser<string, (IReadOnlyList<(SourceSpan Trivia, SourceSpan Span)> Items, SourceSpan End)> _file =
+        StringGrammar.Seq(
+            StringGrammar.Seq(StringGrammar.LeadingTrivia, StringGrammar.Any.Spanned()).Select(static (trivia, item) => (trivia, item.Span)).Many(),
+            StringGrammar.LeadingTrivia
+        )
+        .Before(StringGrammar.End);
 
     private static readonly Gen<Rune> _runes = Gen.OneOf(
         Gen.Int[0x20, 0x7E],
@@ -27,7 +35,11 @@ public class Utf8LayerTests
         _runes.Select(static rune => Encoding.UTF8.GetBytes(rune.ToString())[..^1])
     );
 
+    private static readonly Gen<char[]> _spaces = Gen.Char[" \t\r\n\u00A0\u3000"].Array[1, 3];
+
     private static readonly UTF8Encoding _strict = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    private static readonly Layer<byte, string> _words = Layer.Utf8().Then(Layer.Tokens(Letter.AtLeastOnce().Text(), skip: Whitespace.SkipMany()));
 
     private static (List<(char Item, StreamSlot Slot)> Items, ParseError? Error) Decode(byte[] bytes, int segmentSize)
     {
@@ -65,6 +77,15 @@ public class Utf8LayerTests
             : text;
     }
 
+    private static byte[] Encode(Rune[] runes, bool byteOrderMark)
+    {
+        var encoded = Encoding.UTF8.GetBytes(string.Concat(runes.Select(static rune => rune.ToString())));
+
+        return byteOrderMark
+            ? [.. _byteOrderMark, .. encoded]
+            : encoded;
+    }
+
     /// <summary>
     /// The items and slots the layer should produce for <paramref name="text"/>, encoded from <paramref name="firstByte"/>.
     /// </summary>
@@ -91,7 +112,19 @@ public class Utf8LayerTests
     }
 
     private static StreamSlot Slot(long start, long end, long charStart, long charEnd, int group = 0) =>
-        new(new SourceSpan(SourceId.Unnamed, start, end, charStart, charEnd), start, StateBefore: null, group);
+        new(Span(start, end, charStart, charEnd), start, StateBefore: null, group);
+
+    private static SourceSpan Span(long start, long end, long charStart, long charEnd) =>
+        new(SourceId.Unnamed, start, end, charStart, charEnd);
+
+    [Fact]
+    public void AByteOrderMarkAloneIsAllEndTrivia()
+    {
+        var (items, end) = LayerRun.Run(_words, _file, _byteOrderMark).Value;
+
+        Assert.Empty(items);
+        Assert.Equal(Span(0, 3, 0, 0), end);
+    }
 
     [Fact]
     public void ALeadingByteOrderMarkIsSkippedAndALaterOneIsACharacter() =>
@@ -154,17 +187,21 @@ public class Utf8LayerTests
         Gen.Select(_runes.Array[0, 30], Gen.Bool, Gen.Int[1, 5]).Sample(
             static (runes, byteOrderMark, segmentSize) =>
             {
-                var encoded = Encoding.UTF8.GetBytes(string.Concat(runes.Select(static rune => rune.ToString())));
-
-                var bytes = byteOrderMark
-                    ? [.. _byteOrderMark, .. encoded]
-                    : encoded;
-
+                var bytes = Encode(runes, byteOrderMark);
                 var text = Decoded(bytes, out var firstByte);
 
                 return Decode(bytes, segmentSize) is { Error: null } decoded && decoded.Items.SequenceEqual(Expected(text, firstByte));
             },
             iter: 1000
+        );
+
+    [Fact]
+    public void EveryDecodedCharacterCoversAtLeastOneByteSoNoneIsSynthetic() =>
+        Gen.Select(_runes.Array[0, 30], Gen.Bool, Gen.Int[1, 5]).Sample(
+            static (runes, byteOrderMark, segmentSize) =>
+                Decode(Encode(runes, byteOrderMark), segmentSize) is { Error: null } decoded
+                && decoded.Items.All(static item => item.Slot.Span.Length > 0),
+            iter: 500
         );
 
     [Theory]
@@ -186,9 +223,42 @@ public class Utf8LayerTests
     public void LayersAboveKeepBothUnits() =>
         Assert.Equal(
             [new SourceSpan(SourceId.Unnamed, 3, 9, 0, 5), new SourceSpan(SourceId.Unnamed, 10, 16, 6, 11)],
-            LayerRun.Items(
-                Layer.Utf8().Then(Layer.Tokens(Letter.AtLeastOnce().Text(), skip: Whitespace.SkipMany())),
-                [.. _byteOrderMark, .. Encoding.UTF8.GetBytes("héllo wörld")]
-            ).Select(static entry => entry.Slot.Span)
+            LayerRun.Items(_words, [.. _byteOrderMark, .. Encoding.UTF8.GetBytes("h\u00E9llo w\u00F6rld")]).Select(static entry => entry.Slot.Span)
         );
+
+    [Fact]
+    public void TriviaAndItemsOverBytesCoverTheBytesAndTheTextExactlyOnce() =>
+        Gen.Select(
+            _spaces.Array[0, 1],
+            Gen.Select(Gen.Char["ab\u00E9\u00DF\u0416\u4E2D"].Array[1, 3], _spaces).Array[0, 6],
+            Gen.Bool,
+            Gen.Int[1, 4]
+        ).Sample(
+            static (leading, words, byteOrderMark, segmentSize) =>
+            {
+                var text = string.Concat(leading.Select(static spaces => new string(spaces))) + string.Concat(words.Select(static word => new string(word.Item1) + new string(word.Item2)));
+                var encoded = Encoding.UTF8.GetBytes(text);
+
+                var bytes = byteOrderMark
+                    ? [.. _byteOrderMark, .. encoded]
+                    : encoded;
+
+                var (ok, (items, end), _) = LayerRun.Run(_words, _file, bytes, segmentSize);
+                SourceSpan[] ranges = [.. items.SelectMany(static item => (SourceSpan[])[item.Trivia, item.Span]), end];
+
+                return ok
+                    && bytes.SequenceEqual(ranges.SelectMany(range => bytes[(int)range.Start..(int)range.End]))
+                    && text == string.Concat(ranges.Select(range => text[(int)range.CharStart..(int)range.CharEnd]));
+            },
+            iter: 500
+        );
+
+    [Fact]
+    public void TriviaOverBytesHasByteAndCharacterOffsets()
+    {
+        var (items, end) = LayerRun.Run(_words, _file, [.. _byteOrderMark, .. Encoding.UTF8.GetBytes("  h\u00E9 \u3000w")]).Value;
+
+        Assert.Equal<(SourceSpan, SourceSpan)>([(Span(0, 5, 0, 2), Span(5, 8, 2, 4)), (Span(8, 12, 4, 6), Span(12, 13, 6, 7))], items);
+        Assert.Equal(Span(13, 13, 7, 7), end);
+    }
 }

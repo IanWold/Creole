@@ -132,6 +132,7 @@ public static class Layer
     /// <para>
     /// Each step decodes one Unicode scalar value into one character, or into the two halves of a surrogate pair.
     /// A byte-order mark (EF BB BF) at the start of the input is skipped, so the characters are those a <see cref="StreamReader"/> would read.
+    /// Its bytes are in the leading trivia of the first item above.
     /// </para>
     /// <para>
     /// Each character's span gives both units.

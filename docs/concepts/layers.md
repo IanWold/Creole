@@ -103,7 +103,7 @@ Layer<char, int> lengths = lexer.Then(Layer.Select<string, int>(static token => 
 Layer<byte, string> words = Layer.Utf8().Then(Layer.Tokens(Letter.AtLeastOnce().Text(), skip: Whitespace.SkipMany()));
 ```
 
-Each step decodes one Unicode scalar value into one character, or into both halves of a surrogate pair. A byte-order mark (EF BB BF) at the start of the input is skipped, so the characters are the ones `StreamReader` would read. A byte-order mark anywhere else is the character U+FEFF.
+Each step decodes one Unicode scalar value into one character, or into both halves of a surrogate pair. A byte-order mark (EF BB BF) at the start of the input is skipped, so the characters are the ones `StreamReader` would read. Its bytes are in the [leading trivia](spans.md#trivia) of the first item above, which is three bytes wide and zero-width in characters. A byte-order mark anywhere else is the character U+FEFF.
 
 Each character's span gives two units ([Source spans](spans.md#spans-of-a-layers-items)):
 

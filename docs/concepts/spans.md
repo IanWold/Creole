@@ -120,6 +120,7 @@ Over the tokens of a lexer that skips whitespace and comments, `  a /* c */ b ` 
 - A [synthetic item](#synthetic-items) takes the gap before it. An item at the same place after it gets zero-width trivia, so in a layout pass the indentation before a dedented line is the trivia of its first DEDENT.
 - If an item starts before the item before it ends, its trivia is zero-width at its own start. This happens with the outputs of a `Layer.Transduce` step that emits several derived outputs over one span.
 - Over input held whole in memory, items are adjacent, so trivia is always zero-width.
+- Over a byte source decoded by [`Layer.Utf8`](layers.md#decoding-bytes-layerutf8), trivia has byte and character offsets, as items do. Its byte ranges reproduce the bytes and its character ranges reproduce the decoded text. A byte-order mark at the start is in the first item's trivia.
 - It reads the next item to find where that item starts, as `Position` does.
 
 ## Lines and columns

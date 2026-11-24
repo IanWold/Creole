@@ -32,18 +32,6 @@ public class ByteSourceDiagnosticsTests
         .Many()
         .Before(End);
 
-    private static ParseError ParserError(byte[] bytes)
-    {
-        var tokens = LayerRun.Open(_lexer, bytes, out _);
-        var failures = new FailureLog<string>();
-        var cursor = new Cursor<string>(tokens) { Failures = failures };
-        IReadOnlyList<string> settings = [];
-
-        Assert.False(PlanCache.Get(_settings).TryParse(ref cursor, ref settings));
-
-        return ParseErrors.Failure(in cursor, failures, 0, "parser", tokens.SpanOf);
-    }
-
     private static string Render(ParseError error, byte[] bytes) =>
         new Diagnostics([error]).Render(new SourceText(SourceId.Unnamed, "settings.txt", Encoding.UTF8.GetString(bytes.AsSpan(_byteOrderMark.Length))));
 
@@ -92,7 +80,7 @@ public class ByteSourceDiagnosticsTests
     public void AParserErrorTwoLayersAboveReportsItsBytesAndItsLineAndColumn()
     {
         var bytes = Source("naïve = 1\r\nemoji = \"😀\" 7\r\n");
-        var error = ParserError(bytes);
+        var error = LayerRun.Error(_lexer, _settings, bytes)!;
 
         Assert.Equal(new SourceSpan(SourceId.Unnamed, 30, 31, 24, 25), error.Span);
         Assert.Equal(

@@ -24,9 +24,15 @@ internal static class LayerRun
     /// <summary>
     /// The error for the furthest failure <paramref name="parser"/> records over the items the layer produces from <paramref name="text"/>, from layer <c>parser</c>, or null if it recorded none.
     /// </summary>
-    public static ParseError? Error<T, TOut>(Layer<char, T> layer, Parser<T, TOut> parser, string text, int segmentSize = 1024)
+    public static ParseError? Error<T, TOut>(Layer<char, T> layer, Parser<T, TOut> parser, string text, int segmentSize = 1024) =>
+        Error(layer, parser, text.ToCharArray(), segmentSize);
+
+    /// <summary>
+    /// The error for the furthest failure <paramref name="parser"/> records over the items the layer produces from <paramref name="input"/>, from layer <c>parser</c>, or null if it recorded none.
+    /// </summary>
+    public static ParseError? Error<TIn, T, TOut>(Layer<TIn, T> layer, Parser<T, TOut> parser, TIn[] input, int segmentSize = 1024)
     {
-        var tokens = Open(layer, text, out _, segmentSize);
+        var tokens = Open(layer, input, out _, segmentSize);
         var log = new FailureLog<T>();
         var cursor = new Cursor<T>(tokens) { Failures = log };
         TOut value = default!;
@@ -79,9 +85,15 @@ internal static class LayerRun
     /// <summary>
     /// Runs <paramref name="parser"/> over the items the layer produces from <paramref name="text"/>, as the last layer of a pipeline will, with or without a failure log of its own.
     /// </summary>
-    public static (bool Ok, TOut Value, long Position) Run<T, TOut>(Layer<char, T> layer, Parser<T, TOut> parser, string text, int segmentSize = 1024, bool recordFailures = true)
+    public static (bool Ok, TOut Value, long Position) Run<T, TOut>(Layer<char, T> layer, Parser<T, TOut> parser, string text, int segmentSize = 1024, bool recordFailures = true) =>
+        Run(layer, parser, text.ToCharArray(), segmentSize, recordFailures);
+
+    /// <summary>
+    /// Runs <paramref name="parser"/> over the items the layer produces from <paramref name="input"/>, as the last layer of a pipeline will, with or without a failure log of its own.
+    /// </summary>
+    public static (bool Ok, TOut Value, long Position) Run<TIn, T, TOut>(Layer<TIn, T> layer, Parser<T, TOut> parser, TIn[] input, int segmentSize = 1024, bool recordFailures = true)
     {
-        var cursor = new Cursor<T>(Open(layer, text, out _, segmentSize)) { Failures = recordFailures ? new FailureLog<T>() : null };
+        var cursor = new Cursor<T>(Open(layer, input, out _, segmentSize)) { Failures = recordFailures ? new FailureLog<T>() : null };
         TOut value = default!;
         var ok = PlanCache.Get(parser).TryParse(ref cursor, ref value);
 
