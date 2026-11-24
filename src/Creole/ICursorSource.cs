@@ -68,9 +68,14 @@ internal interface ICursorSource<T> : IDisposable
     /// <summary>
     /// Gets the segment holding the item at <paramref name="position"/>, pulling more input if needed.
     /// </summary>
+    /// <remarks>
+    /// A source whose items a layer produces uses <paramref name="horizon"/> to decide what input that layer must keep: only what it needs to produce again the items at or above the horizon.
+    /// So the reader states it with every read that may pull.
+    /// </remarks>
     /// <param name="position">An absolute position in the input.</param>
+    /// <param name="horizon">The lowest position the reader may still go back to: the minimum of its cursor and its floor, or a layer's own pin. It must not be above the reader's true horizon, which never falls.</param>
     /// <param name="segment">The segment, which holds the item at <paramref name="position"/>.</param>
     /// <param name="segmentStart">The absolute position of the segment's first item.</param>
     /// <returns><see langword="false"/> if no item exists at <paramref name="position"/>.</returns>
-    bool TryGetSegment(long position, out ReadOnlyMemory<T> segment, out long segmentStart);
+    bool TryGetSegment(long position, long horizon, out ReadOnlyMemory<T> segment, out long segmentStart);
 }

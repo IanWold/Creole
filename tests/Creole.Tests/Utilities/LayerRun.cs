@@ -56,7 +56,7 @@ internal static class LayerRun
         var output = Open(layer, input, out _, segmentSize, options, recordFailures);
         var items = new List<(T, StreamSlot)>();
 
-        for (var position = 0L; output.TryGetSegment(position, out _, out _); position++)
+        for (var position = 0L; output.TryGetSegment(position, horizon: 0, out _, out _); position++)
         {
             items.Add((output.ItemAt(position), output.SlotAt(position)));
         }

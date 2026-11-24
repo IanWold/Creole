@@ -90,7 +90,7 @@ In every layer above, an output is synthetic exactly when its span is zero-width
 
 ## `Where` and `Select`
 
-`Layer.Where` and `Layer.Select` apply a function to each item, with no parsing. Each item keeps its span. Each function runs once for each item, when the layer above first needs the result.
+`Layer.Where` and `Layer.Select` apply a function to each item, with no parsing. Each item keeps its span. Each function runs once for each item, when the layer above first needs the result. An item that `Where` drops is let go as it is dropped, so a filter that keeps one item in a million holds no more of its input than one that keeps them all.
 
 ```csharp
 Layer<char, string> noLessThan = lexer.Then(Layer.Where<string>(static token => token != "<"));
@@ -124,7 +124,7 @@ The one-line form shows character offsets. The error's `Span.Start` and `Span.En
 
 ## Chaining layers: `Then`
 
-`a.Then(b)` runs `b` over the items `a` produces. The items of `a` are held in a buffer between the two, so `b` can rewind over them without `a` running again. The buffer lets an item go once `b` can no longer go back to it. `a` in turn keeps its own input only from where the step began that produced the oldest item still held, so memory follows how far `b` can go back, not the length of the input ([ADR-0031](../../work/docs/decisions/0031-constructs-that-read-their-input-back-pin-their-start.md)).
+`a.Then(b)` runs `b` over the items `a` produces. The items of `a` are held in a buffer between the two, so `b` can rewind over them without `a` running again. The buffer lets an item go once `b` can no longer go back to it. `a` in turn keeps its own input only from where the step began that produced the oldest item `b` can still go back to, or from the start of the step it is running if there is none. So memory follows how far `b` can go back, not the length of the input, and input that produces no item, such as a run that `Where` drops or `Transduce` steps that emit nothing, is let go as it is read ([ADR-0040](../../work/docs/decisions/0040-a-producing-layer-keeps-input-only-for-outputs-its-reader-can-go-back-to.md)).
 
 - Chaining is associative: `a.Then(b).Then(c)` and `a.Then(b.Then(c))` produce the same items with the same spans.
 - `Layer.Identity<T>()` is its unit: `a.Then(Layer.Identity<T>())` and `Layer.Identity<T>().Then(a)` return `a` itself.

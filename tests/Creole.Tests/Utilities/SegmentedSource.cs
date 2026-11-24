@@ -15,7 +15,7 @@ internal class SegmentedSource<T>(T[] items, int segmentSize) : ICursorSource<T>
     public SourceSpan SpanOf(long start, long end) =>
         new(SourceId.Unnamed, start, end);
 
-    public bool TryGetSegment(long position, out ReadOnlyMemory<T> segment, out long segmentStart)
+    public bool TryGetSegment(long position, long horizon, out ReadOnlyMemory<T> segment, out long segmentStart)
     {
         if (position < 0 || position >= items.Length)
         {

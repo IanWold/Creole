@@ -29,7 +29,7 @@ public class InputBoundsTests
     {
         var items = LayerRun.Open(layer, text, out _);
 
-        for (var position = 0L; items.TryGetSegment(position, out _, out _); position++) { }
+        for (var position = 0L; items.TryGetSegment(position, horizon: 0, out _, out _); position++) { }
 
         return (items.InputStart, items.InputEnd);
     }

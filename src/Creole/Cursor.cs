@@ -74,7 +74,8 @@ public ref struct Cursor<T>
     /// </summary>
     /// <remarks>
     /// Each construct that may go back to its start lowers the floor to its start with <see cref="Pin"/> and puts it back with <see cref="Unpin"/>.
-    /// A producing layer starts each step's cursor with a floor at the start of the oldest step whose outputs it still holds.
+    /// A producing layer starts each step's cursor with a floor at its own pin: the start of the step that produced the oldest output its reader can still go back to, or of the step it is running.
+    /// Each read that may pull more input states the minimum of the floor and the cursor as this layer's horizon, so the layer below keeps only what it can still be asked to produce again.
     /// When the cursor moves on to its next segment, its source may release what lies below both the floor and the cursor.
     /// A copy of the cursor keeps the floor, so a copy taken inside a pin never releases what the original may still read.
     /// </remarks>
@@ -183,7 +184,7 @@ public ref struct Cursor<T>
     {
         var position = Position;
 
-        if (_source is null || !_source.TryGetSegment(position, out var segment, out var start))
+        if (_source is null || !_source.TryGetSegment(position, Math.Min(position, Floor), out var segment, out var start))
         {
             return;
         }
@@ -400,13 +401,13 @@ public ref struct Cursor<T>
             return;
         }
 
-        if (_source is not null && position >= 0 && _source.TryGetSegment(position, out var segment, out var start))
+        if (_source is not null && position >= 0 && _source.TryGetSegment(position, Math.Min(position, Floor), out var segment, out var start))
         {
             SetSegment(segment, start, position);
             return;
         }
 
-        if (_source is not null && position > 0 && _source.TryGetSegment(position - 1, out segment, out start) && start + segment.Length == position)
+        if (_source is not null && position > 0 && _source.TryGetSegment(position - 1, Math.Min(position, Floor), out segment, out start) && start + segment.Length == position)
         {
             SetSegment(segment, start, position);
             return;
@@ -453,7 +454,7 @@ public ref struct Cursor<T>
 
         for (var copied = 0; copied < length;)
         {
-            if (_source is null || !_source.TryGetSegment(start + copied, out var segment, out var segmentStart))
+            if (_source is null || !_source.TryGetSegment(start + copied, Math.Min(Position, Floor), out var segment, out var segmentStart))
             {
                 throw new ArgumentOutOfRangeException(nameof(start), start, "The input does not hold this position.");
             }

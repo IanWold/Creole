@@ -606,4 +606,22 @@ public class StreamBufferTests
         Assert.Equal(At(7, 7), buffer.SpanOf(3, 3));
         Assert.Equal(At(0, 0), empty.SpanOf(0, 0));
     }
+
+    [Fact]
+    public void TheLayerBelowKeepsItsInputFromTheStepOfTheItemAtTheHighestHorizonItsReaderHasStated()
+    {
+        var buffer = new StreamBuffer<char>(new GroupUpstream([['a', 'b'], ['c'], ['d', 'e'], ['f']], [null, null, null, null]), segmentSize: 2);
+
+        Assert.True(buffer.TryGetSegment(4, horizon: 3, out _, out _));
+        Assert.Equal(2, buffer.OldestStepStart);
+
+        Assert.True(buffer.TryGetSegment(4, horizon: 4, out _, out _));
+        Assert.Equal(2, buffer.OldestStepStart);
+
+        Assert.True(buffer.TryGetSegment(0, horizon: 1, out _, out _));
+        Assert.Equal(2, buffer.OldestStepStart);
+
+        Assert.True(buffer.TryGetSegment(4, horizon: 5, out _, out _));
+        Assert.Null(buffer.OldestStepStart);
+    }
 }

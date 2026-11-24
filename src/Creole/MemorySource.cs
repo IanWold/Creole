@@ -25,7 +25,7 @@ internal sealed class MemorySource<T>(ReadOnlyMemory<T> input) : ICursorSource<T
     public SourceSpan SpanOf(long start, long end) =>
         new(SourceId.Unnamed, start, end);
 
-    public bool TryGetSegment(long position, out ReadOnlyMemory<T> segment, out long segmentStart)
+    public bool TryGetSegment(long position, long horizon, out ReadOnlyMemory<T> segment, out long segmentStart)
     {
         segment = _input;
         segmentStart = 0;

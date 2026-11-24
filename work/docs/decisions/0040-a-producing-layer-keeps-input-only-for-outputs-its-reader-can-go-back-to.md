@@ -95,7 +95,7 @@ If no mode channel reaches a layer, nothing produces its outputs again, so it pi
 
 #### 2A. The reader states its horizon with every pull (recommended)
 
-`TryGetSegment` takes the reader's horizon. The buffer keeps it, and the producing layer reads it as each step begins. A cursor passes the minimum of its position and its floor. A layer that reads without a cursor, such as `Select`, `Where` and `Utf8`, passes its own pin.
+`TryGetSegment` takes the reader's horizon. The buffer keeps the highest one stated, and the producing layer reads it as each step begins. A cursor passes the minimum of its position and its floor. A layer that reads without a cursor, such as `Select`, `Where` and `Utf8`, passes its own pin.
 
 - Pros:
   - The signature means no pull can leave out a horizon.
@@ -129,8 +129,8 @@ The buffer keeps a reference to its reader and asks for its horizon when a step 
 Options **1B and 2A**, as recommended. Accepted by the maintainer on 2026-11-24.
 
 1. **The layer's pin.** A producing layer pins its input at the `stepStart` of the oldest output its reader can still go back to: the output at the reader's horizon, if the buffer has produced it. Otherwise it pins the start of the step it is running, from the moment the step begins. A restart keeps the pin. This replaces "the oldest output the layer still holds" in ADR-0031 point 2.
-2. **The reader states its horizon when it pulls.** Every read that may make the layer below produce carries the reader's horizon: the minimum of its cursor, its floor, its own pin and the restart bookmark. A cursor passes the minimum of its position and its floor, and the floor of a step's cursor starts at its layer's pin. A layer that reads without a cursor passes its own pin. The buffer keeps the latest horizon stated, and a layer computes its pin from it as each step begins.
-   - A horizon never falls. A pin lowers the floor no further than the cursor. A rewind goes back no further than an open pin's start, and a light mark rewinds only when nothing was consumed. A restart goes back no further than its bookmark. So a horizon stated earlier is still a lower bound, and a layer may use it until the next pull.
+2. **The reader states its horizon when it pulls.** Every read that may make the layer below produce carries the reader's horizon: the minimum of its cursor, its floor, its own pin and the restart bookmark. A cursor passes the minimum of its position and its floor, and the floor of a step's cursor starts at its layer's pin. A layer that reads without a cursor passes its own pin. The buffer keeps the highest horizon stated, and a layer computes its pin from it as each step begins.
+   - A horizon never falls. A pin lowers the floor no further than the cursor. A rewind goes back no further than an open pin's start, and a light mark rewinds only when nothing was consumed. A restart goes back no further than its bookmark. So a horizon stated earlier is still a lower bound, and a layer may use it until the next pull. A read that states less than the reader's true horizon, such as a cursor copy that reads behind the floor to build an error, does not lower it.
    - A copy of the cursor reads ahead only inside a pin, and carries the floor (ADR-0031 points 1 and 3). So it states the same horizon as the original.
 3. **What the reader may no longer ask for.** An output below its reader's horizon keeps its item and slot while the buffer holds it (ADR-0028 point 3), but its step's input may be gone. Nothing may produce it again.
 4. **Cascades.** A cascade truncates layer *L*'s input at *j*, the `stepStart` of *L*'s re-run output *i*. Output *i* is at or above the horizon of *L*'s reader, so *j* is at or above *L*'s pin. *L*'s pin is one input of *L*'s horizon on its own input, so *j* is at or above that horizon too. The layer below *L* then sees an invalidation at *j*, at or above its reader's horizon, and the argument repeats one layer down. Two earlier arguments rest on the old pin, and both still hold:
@@ -190,3 +190,5 @@ What would change this:
   - [MODE-04](../../active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md): the pin in its scope follows point 4, and its model-based tests also run over streamed input in small segments.
   - [GEN-06](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md): a producing layer's pin follows point 1, and every pull states the reader's horizon.
 - **Decisions index:** a note that this record refines ADR-0031 points 2 and 5.
+
+This record was edited in place before its branch merged. LAY-09's build found that a cursor copy reading behind the floor, as an error does with `ItemAt`, states a horizon below the reader's true one. If the buffer kept the latest horizon, that would lower the pin, and in a stack of layers the pin lookup below could land on an item already released. So Fork 2A and point 2 now say the buffer keeps the highest horizon stated, which equals the latest whenever every reader states its true horizon.

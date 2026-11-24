@@ -24,6 +24,7 @@ namespace Creole;
 /// A <see cref="Cursor{T}"/> reads the buffer as its <see cref="ICursorSource{T}"/>.
 /// Asking for a position past the filled items runs upstream steps until that position is filled or the input ends, and no further, so no item is produced before the layer above asks for it.
 /// Reading a filled position again, after a rewind, never runs the upstream.
+/// Each such read states the reader's horizon, and the upstream keeps only the input it needs to produce again the items at or above it (<see cref="OldestStepStart"/>).
 /// </para>
 /// <para>
 /// <see cref="Release"/> returns whole segments below a position to the pool, which may hand their arrays to anything else.
@@ -79,6 +80,7 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     private bool _ended;
     private int _heldCount;
     private HeldSpan[] _heldSpans = [];
+    private long _horizon;
     private SourceSpan _lastSpan;
     private readonly ArrayPool<T> _pool = pool ?? ArrayPool<T>.Shared;
     private long _released;
@@ -106,15 +108,32 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     public SourceSpan InputStart => _upstream.InputStart;
 
     /// <summary>
-    /// Where the step that produced the oldest item the buffer still holds began in the upstream's input, or null when the buffer holds no item.
+    /// Where the step that produced the oldest item the reader can still go back to began in the upstream's input, or null when the upstream has not produced that item yet.
     /// </summary>
     /// <remarks>
-    /// The upstream keeps its input from here on, so that any item still held can be produced again.
+    /// <para>
+    /// That item is the one at the highest horizon the reader has stated, with <see cref="TryGetSegment"/> or <see cref="Release"/>.
+    /// A reader's horizon never falls, so the highest it has stated is still at or below it.
+    /// </para>
+    /// <para>
+    /// The upstream keeps its input from here on, so that any item the reader can still go back to can be produced again.
+    /// An item below the horizon is never produced again: it keeps its slot while the buffer holds it, but its step's input may be released.
+    /// </para>
     /// </remarks>
-    public long? OldestStepStart =>
-        Filled > Start
-        ? _segments[0].Slots[0].StepStart
-        : null;
+    public long? OldestStepStart
+    {
+        get
+        {
+            if (_horizon >= Filled)
+            {
+                return null;
+            }
+
+            var (index, offset) = Locate(_horizon);
+
+            return _segments[index].Slots[offset].StepStart;
+        }
+    }
 
     /// <summary>
     /// The first position the buffer still holds. Every position below it has been released.
@@ -346,10 +365,12 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     /// It also keeps the item before the cursor, where a value rejected at the cursor ends.
     /// </para>
     /// </remarks>
-    /// <param name="horizon">The position below which nothing will be read again, at or before the cursor of the layer that reads this buffer.</param>
+    /// <param name="horizon">The position below which nothing will be read again, at or before the cursor of the layer that reads this buffer. It also states the reader's horizon, as <see cref="TryGetSegment"/> does.</param>
     /// <param name="failures">The failure log of the layer that reads this buffer, or null if it keeps none.</param>
     public void Release(long horizon, FailureLog<T>? failures)
     {
+        _horizon = Math.Max(_horizon, horizon);
+
         var count = (int)((Math.Min(horizon, Filled) - 1) / _segmentSize - _released);
 
         if (count <= 0)
@@ -416,8 +437,13 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
         _segments[Locate(position).Segment].Chars is not null;
 
     /// <inheritdoc/>
-    public bool TryGetSegment(long position, out ReadOnlyMemory<T> segment, out long segmentStart)
+    /// <remarks>
+    /// The buffer keeps the highest <paramref name="horizon"/> it has been given before it pulls, so the upstream's steps see it (<see cref="OldestStepStart"/>).
+    /// </remarks>
+    public bool TryGetSegment(long position, long horizon, out ReadOnlyMemory<T> segment, out long segmentStart)
     {
+        _horizon = Math.Max(_horizon, horizon);
+
         if (position < Start || !Fill(position))
         {
             segment = default;
