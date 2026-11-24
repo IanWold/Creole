@@ -8,6 +8,7 @@ namespace Creole;
 /// <para>
 /// A derived output came from the input its step consumed, and its span covers that input.
 /// A synthetic output, such as an INDENT or DEDENT, stands for no input, and its span is zero-width.
+/// The layer uses the mark to place the span and does not keep it, so downstream an item is synthetic exactly when its span is zero-width.
 /// </para>
 /// <para>
 /// An item converts to a derived output, and <see cref="Emit.Synthetic{T}(T)"/> makes a synthetic one, so a collection expression can mix them: <c>[newline, Emit.Synthetic(indent)]</c>.

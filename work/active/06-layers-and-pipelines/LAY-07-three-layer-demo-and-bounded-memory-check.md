@@ -15,11 +15,12 @@ The Phase 1 gate: the indentation-sensitive language from Example B runs, and me
 
 - Implement Example B (lexer, layout layer, parser) as a test and sample. Its indentation pass is the first stateful `Transduce`; LAY-03 built only a stateless one ([ADR-0032](../../docs/decisions/0032-emit-is-a-list-of-outputs-each-derived-or-synthetic.md) point 10).
 - Memory test for G2 on Example B and a JSON-lines stream generated at 10 MB, 100 MB and 1 GB: retained heap sampled after forced full blocking GCs at fixed item intervals, minus a warm-up baseline, one process per size.
-- Check DEDENT span placement in error messages.
+- Check DEDENT span placement in error messages. This check moved here from SPAN-03 ([ADR-0034](../../docs/decisions/0034-a-synthetic-item-is-one-whose-span-is-zero-width.md) point 7).
 
 ## Acceptance criteria
 
 - [ ] Peak retained heap at 1 GB is at most 1.5× the peak at 10 MB for both inputs ([ADR-0003](../../docs/decisions/0003-numeric-gate-thresholds.md)).
+- [ ] Example B's "expected statement" error after a block points at the dedented line.
 
 ## Blocked by
 
@@ -41,3 +42,4 @@ The Phase 1 gate: the indentation-sensitive language from Example B runs, and me
 ## Artifacts
 
 - [ADR-0032: `Emit<T>` is a list of outputs, each derived or synthetic, not a union](../../docs/decisions/0032-emit-is-a-list-of-outputs-each-derived-or-synthetic.md)
+- [ADR-0034: A synthetic item is one whose span is zero-width, and no flag is stored](../../docs/decisions/0034-a-synthetic-item-is-one-whose-span-is-zero-width.md)

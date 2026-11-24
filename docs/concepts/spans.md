@@ -13,7 +13,7 @@ var span = new SourceSpan(file, start: 12, end: 16);   // units 12, 13, 14 and 1
 - Offsets are `long`, because a streamed source can be longer than 2 GB.
 - `Start` and `End` are in the root layer's units: characters for text, bytes for a byte source.
 - `CharStart` and `CharEnd` are offsets in the decoded text. For a text source they equal `Start` and `End`. For a byte source, use the five-argument constructor to give both pairs.
-- A zero-width span (`Start == End`) marks a position, such as where a missing item was expected.
+- A zero-width span (`Start == End`) marks a position, such as where a missing item was expected. An item whose span is zero-width is [synthetic](#synthetic-items).
 - The constructor throws `ArgumentOutOfRangeException` if a start offset is negative or an end offset is before its start.
 - Spans are values. Two spans are equal when their source and all four offsets are equal.
 
@@ -41,6 +41,14 @@ Each [layer](layers.md) gives every item it produces a span in the original sour
 - An item from `Layer.Tokens` spans from the start of the first input item its parser consumed to the end of the last. Input that `skip` consumed is left out, so a token's span never includes the whitespace before it.
 - An output of a `Layer.Transduce` step that is derived spans the input the step consumed. A synthetic one is zero-width at the start of the next input item ([Layers § `Layer.Transduce`](layers.md#layertransduce)).
 - An item from `Layer.Where` or `Layer.Select` keeps the span of the input item it came from.
+
+### Synthetic items
+
+An item is synthetic exactly when its span is zero-width (`Length == 0`): it covers no source text. INDENT, DEDENT and the other synthetic outputs of a `Layer.Transduce` step are synthetic in every layer above. Nothing else records it: `Emitted<T>.IsSynthetic` tells the layer where to place an output's span, and is not kept with the item ([ADR-0034](../../work/docs/decisions/0034-a-synthetic-item-is-one-whose-span-is-zero-width.md)).
+
+- `Layer.Where` and `Layer.Select` keep each item's span, so a synthetic item stays synthetic.
+- A token built only from synthetic items at one position is zero-width, so it is synthetic. So is a derived output of a step that consumed only such items, whatever its mark.
+- A token built from synthetic items at two positions spans the text between them, so it is not synthetic. Over `"a\n\nb"`, a pass that turns each newline into a synthetic `;` puts them at 1..1 and 2..2, and a token made of both spans 1..2.
 
 ## Lines and columns
 
