@@ -28,6 +28,7 @@ A pipeline is data, as its layers and parser are: building one runs nothing. It 
 | --- | --- | --- |
 | `Parse(string input, string? source = null, ParseOptions? options = null)` | `Pipeline<char, TOut>` | A string. |
 | `Parse(ReadOnlyMemory<char> input, string? source = null, ParseOptions? options = null)` | `Pipeline<char, TOut>` | Characters in memory, such as part of a buffer, or a `char[]`. |
+| `Parse(TextReader input, ParseOptions? options = null)` | `Pipeline<char, TOut>` | A reader, read as the layers pull ([Readers](#readers)). |
 
 - `source` and `options` work as they do for a parser ([Running a parser](parsing.md#parse)). Pass options by name: `Parse(text, options: limits)`.
 - The depth limit applies to each layer's steps and to the parser, each counting its own depth.
@@ -43,7 +44,7 @@ A pipeline is data, as its layers and parser are: building one runs nothing. It 
   Either way, its spans are character offsets in the input, in the source `SourceId.Unnamed`.
 - `Parse` never returns `Recovered<T>` yet.
 
-A failed result holds the text it parsed, so `result.Diagnostics.Render()` shows the error against it:
+A failed result from a string or memory holds the text it parsed, so `result.Diagnostics.Render()` shows the error against it:
 
 ```csharp
 var result = json.Parse("[\n{\n  \"port\": 8080 \"host\": \"x\"\n}\n]", source: "config.json");
@@ -61,16 +62,55 @@ error[parser]: expected ',' or '}'
 
 The parser read tokens, but the error points at the characters of the token it did not expect, because every token's span is in the source ([Source spans](spans.md#spans-of-a-layers-items)). An error from the lexer renders the same way, at the characters it could not read.
 
+## `ParseMany`
+
+`ParseMany` parses input that holds a sequence of items, such as log entries or JSON values one after another. It runs the pipeline's parser at the start of the input, and again after each item until no input remains, and returns each item's result as you ask for it. With a lexer of words and `Grammar<string>.Any` as the parser, from [ParseManyTests.cs](../../tests/Creole.Tests/ParseManyTests.cs):
+
+```csharp
+var word = Pipeline.From(words).Then(Grammar<string>.Any);
+
+foreach (var result in word.ParseMany(" a bc  d "))
+{
+    // Parsed "a", then Parsed "bc", then Parsed "d"
+}
+```
+
+| Overload | Input |
+| --- | --- |
+| `ParseMany(string input, string? source = null, ParseOptions? options = null)` | A string. |
+| `ParseMany(ReadOnlyMemory<char> input, string? source = null, ParseOptions? options = null)` | Characters in memory. |
+| `ParseMany(TextReader input, ParseOptions? options = null)` | A reader ([Readers](#readers)). |
+
+- **It is lazy.** Nothing runs until you enumerate the results, and each item is parsed when you ask for it. A reader is read only as far as that item needs.
+- **A failed item is the last.** Each result is `Parsed<T>` or `Failed`. After a failure nothing says where the next item would start, so the sequence ends there.
+- **A layer's failure ends it too.** If a layer fails while the next item is being looked for, that next item's result is `Failed` with the layer's error.
+- **Each item starts afresh.** A failure recorded while parsing one item never shapes a later item's error.
+- **It records as it goes.** `ParseMany` records failures while it parses, rather than running again when an item fails, so a failed item never parses the items before it again. Each item pays the cost of recording.
+- **The parser must consume input.** A parser that succeeds without consuming input would never reach the end, so `ParseMany` throws `GrammarException`.
+- **Each enumeration parses from the start.** Ending an enumeration early, as `break` in a `foreach` does, returns its buffers' memory to their pools.
+
+Over a string or memory, a failed result holds the whole text, so its error renders at its line in the input. The arguments are checked when `ParseMany` is called; a grammar that is not valid throws when the enumeration starts.
+
+## Readers
+
+`Parse` and `ParseMany` over a `TextReader` read as the layers pull, blocking until the reader has characters or ends. They keep only what the layers may still go back to, so the whole input is never held.
+
+- Offsets count the characters read, from 0.
+- Failures are recorded as the parse goes, since the input cannot be read again, so a failed parse does not run twice.
+- A failed result holds no text, so `Render()` writes its error on one line, as `ToString()` does: `error[lexer] at 4..5: unexpected '1'; expected whitespace or letter`.
+- Slices, such as `Slice` values in tokens, are copies.
+- The reader is yours: a parse leaves it open. Enumerate `ParseMany` over a reader once, since a second enumeration reads on from wherever the reader is, counting offsets from 0 again.
+
 ## Input in memory
 
-`Parse` copies none of its input. The first layer reads the string or memory it was given, so slices a lexer takes, such as `Slice` values in tokens, are views of it, and a failed result refers to the same text to render it. If the input is a buffer you reuse, finish with the slices and render the errors before you reuse it.
+Over a string or memory, `Parse` and `ParseMany` copy none of their input. The first layer reads the string or memory it was given, so slices a lexer takes, such as `Slice` values in tokens, are views of it, and a failed result refers to the same text to render it. If the input is a buffer you reuse, finish with the slices and render the errors before you reuse it.
 
 Items between layers are held in buffers, which let an item go once nothing can go back to it ([Chaining layers](layers.md#chaining-layers-then)). When a parse ends, however it ends, its buffers return their memory to their pools.
 
 ## A failed parse runs twice
 
-As a parser's `Parse` does, a pipeline's `Parse` runs without recording failures. If it fails, it runs the whole pipeline again from the start, with new buffers and every layer recording, and reports the error from that second run. So a successful parse pays nothing for error reporting, and a failed one costs up to about two and a half times as much. The functions in every layer and in the parser run again in the second run (see [How often your functions run](sequencing.md#how-often-your-functions-run)). The reasons are in [ADR-0027](../../work/docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md) and [ADR-0038](../../work/docs/decisions/0038-pipelines-end-in-a-parser-run-again-whole-and-name-sources-without-a-registry.md).
+As a parser's `Parse` does, a pipeline's `Parse` over a string or memory runs without recording failures. If it fails, it runs the whole pipeline again from the start, with new buffers and every layer recording, and reports the error from that second run. So a successful parse pays nothing for error reporting, and a failed one costs up to about two and a half times as much. The functions in every layer and in the parser run again in the second run (see [How often your functions run](sequencing.md#how-often-your-functions-run)). The reasons are in [ADR-0027](../../work/docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md) and [ADR-0038](../../work/docs/decisions/0038-pipelines-end-in-a-parser-run-again-whole-and-name-sources-without-a-registry.md).
 
 ## Exceptions
 
-`Parse` throws `GrammarException` if the pipeline is null, or if a grammar in it is not valid, which is found when it first runs. It throws `ArgumentNullException` for a null string. Exceptions from your own code, such as a `Select` function in a layer or in the parser, pass through.
+`Parse` and `ParseMany` throw `GrammarException` if the pipeline is null, or if a grammar in it is not valid, which is found when it first runs. They throw `ArgumentNullException` for a null string or reader. Exceptions from the reader, such as an `IOException`, pass through. Exceptions from your own code, such as a `Select` function in a layer or in the parser, pass through.

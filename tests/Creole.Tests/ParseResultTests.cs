@@ -28,6 +28,10 @@ public class ParseResultTests
         "Creole.Parsing: Creole.ParseResult`1[TOut] Parse[TIn,TOut](Creole.Parser`2[TIn,TOut], System.ReadOnlyMemory`1[TIn], Creole.ParseOptions, System.String)",
         "Creole.Pipeline: Creole.ParseResult`1[TOut] Parse[TOut](Creole.Pipeline`2[System.Char,TOut], System.String, System.String, Creole.ParseOptions, System.String)",
         "Creole.Pipeline: Creole.ParseResult`1[TOut] Parse[TOut](Creole.Pipeline`2[System.Char,TOut], System.ReadOnlyMemory`1[System.Char], System.String, Creole.ParseOptions, System.String)",
+        "Creole.Pipeline: Creole.ParseResult`1[TOut] Parse[TOut](Creole.Pipeline`2[System.Char,TOut], System.IO.TextReader, Creole.ParseOptions, System.String)",
+        "Creole.Pipeline: System.Collections.Generic.IEnumerable`1[Creole.ParseResult`1[TOut]] ParseMany[TOut](Creole.Pipeline`2[System.Char,TOut], System.String, System.String, Creole.ParseOptions, System.String)",
+        "Creole.Pipeline: System.Collections.Generic.IEnumerable`1[Creole.ParseResult`1[TOut]] ParseMany[TOut](Creole.Pipeline`2[System.Char,TOut], System.ReadOnlyMemory`1[System.Char], System.String, Creole.ParseOptions, System.String)",
+        "Creole.Pipeline: System.Collections.Generic.IEnumerable`1[Creole.ParseResult`1[TOut]] ParseMany[TOut](Creole.Pipeline`2[System.Char,TOut], System.IO.TextReader, Creole.ParseOptions, System.String)",
     ];
     private static readonly Diagnostics _oneError = new([new ParseError(new SourceSpan(SourceId.Unnamed, 3, 4), "parser", new UnexpectedItem("'x'"), [new ExpectedItem("','")], [])]);
 
@@ -180,6 +184,19 @@ public class ParseResultTests
             pipeline.Parse("y".AsMemory()),
             pipeline.Parse("!".AsMemory()),
             pipeline.Parse("[[x".AsMemory(), options: shallow),
+            pipeline.Parse(new StringReader("x")),
+            pipeline.Parse(new StringReader("y")),
+            pipeline.Parse(new StringReader("!")),
+            pipeline.Parse(new StringReader("[[x"), options: shallow),
+            .. pipeline.ParseMany("xx y"),
+            .. pipeline.ParseMany("x!"),
+            .. pipeline.ParseMany("x[[x", options: shallow),
+            .. pipeline.ParseMany("xx y".AsMemory()),
+            .. pipeline.ParseMany("x!".AsMemory()),
+            .. pipeline.ParseMany("x[[x".AsMemory(), options: shallow),
+            .. pipeline.ParseMany(new StringReader("xx y")),
+            .. pipeline.ParseMany(new StringReader("x!")),
+            .. pipeline.ParseMany(new StringReader("x[[x"), options: shallow),
         ];
         ParseResult<int>[] itemResults =
         [

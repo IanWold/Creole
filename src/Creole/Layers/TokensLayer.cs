@@ -40,6 +40,12 @@ file sealed class TokensUpstream<TIn, TOut>(
 
     public void Dispose() => _input.Dispose();
 
+    public void ForgetFailures()
+    {
+        _failures?.ForgetFailure();
+        _input.ForgetFailures();
+    }
+
     public bool TryStep(StreamBuffer<TOut> buffer)
     {
         var stepStart = _position;

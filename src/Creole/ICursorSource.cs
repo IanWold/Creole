@@ -33,6 +33,14 @@ internal interface ICursorSource<T> : IDisposable
     void DropSpan();
 
     /// <summary>
+    /// Forgets the furthest failure of every layer that produced these items, as each item of a <c>ParseMany</c> starts.
+    /// </summary>
+    /// <remarks>
+    /// The default does nothing, for a source that no layer produces.
+    /// </remarks>
+    void ForgetFailures() { }
+
+    /// <summary>
     /// Holds <paramref name="position"/>, where a span combinator's range starts, until the matching <see cref="DropSpan"/>.
     /// </summary>
     /// <remarks>

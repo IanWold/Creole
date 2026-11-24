@@ -78,6 +78,8 @@ file sealed class Utf8Upstream(ICursorSource<byte> input) : IUpstream<char>
 
     public void Dispose() => _input.Dispose();
 
+    public void ForgetFailures() => _input.ForgetFailures();
+
     public bool TryStep(StreamBuffer<char> buffer)
     {
         var stepStart = _position;

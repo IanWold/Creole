@@ -33,6 +33,14 @@ internal interface IUpstream<T> : IDisposable
     void IDisposable.Dispose() { }
 
     /// <summary>
+    /// Forgets the furthest failure of this layer and of every layer below it, as each item of a <c>ParseMany</c> starts.
+    /// </summary>
+    /// <remarks>
+    /// The default does nothing, for an upstream that keeps no failure log and reads from nothing that does.
+    /// </remarks>
+    void ForgetFailures() { }
+
+    /// <summary>
     /// Runs one step, adding its outputs to <paramref name="buffer"/> with <see cref="StreamBuffer{T}.Add"/>.
     /// </summary>
     /// <returns><see langword="false"/> if the input is exhausted, so no step ran.</returns>

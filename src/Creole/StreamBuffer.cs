@@ -310,6 +310,9 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     public void DropSpan() => _heldCount--;
 
     /// <inheritdoc/>
+    public void ForgetFailures() => _upstream.ForgetFailures();
+
+    /// <inheritdoc/>
     public void HoldSpan(long position)
     {
         if (_heldCount == _heldSpans.Length)

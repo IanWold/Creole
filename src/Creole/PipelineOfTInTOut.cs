@@ -24,6 +24,19 @@ public abstract class Pipeline<TIn, TOut>
     internal Pipeline() { }
 
     /// <summary>
+    /// Runs the parser at the start of the input and again after each item until no item remains, with every layer recording failures, and returns each item's result as the caller asks for it.
+    /// </summary>
+    /// <param name="openRoot">Makes the first layer's input, once for each enumeration.</param>
+    /// <param name="options">The settings for the parse, whose depth limit applies to each layer and to the parser.</param>
+    /// <param name="text">The text a failed result holds for rendering, or null to hold none.</param>
+    /// <returns>Each item's result. A failed item is the last.</returns>
+    /// <remarks>
+    /// Each item starts with no furthest failure in any layer.
+    /// The buffers of an enumeration return their segments to their pools when it ends or is disposed.
+    /// </remarks>
+    internal abstract IEnumerable<ParseResult<TOut>> ParseMany(Func<ICursorSource<TIn>> openRoot, ParseOptions options, SourceText? text);
+
+    /// <summary>
     /// Runs the pipeline once over <paramref name="root"/>, with new buffers.
     /// </summary>
     /// <param name="root">The first layer's input.</param>

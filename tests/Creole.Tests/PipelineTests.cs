@@ -151,4 +151,72 @@ public class PipelineTests
         Assert.Throws<InvalidOperationException>(() => { pipeline.TryParse(new StreamBuffer<char>(thrown, segmentSize: 1), ParseOptions.Default, recordFailures: false, out _, out _); });
         Assert.True(thrown.Disposed);
     }
+
+    [Fact]
+    public void ADepthErrorFarIntoAReaderPointsAtItsItem()
+    {
+        var text = new string('x', 3000) + "((((a))))";
+        var pipeline = Pipeline.From(Layer.Tokens(Any)).Then(Char('x').SkipMany().Then(_nested));
+        var options = new ParseOptions { MaxDepth = 2 };
+
+        Assert.Equal("error[parser] at 3003..3004: nesting exceeds ParseOptions.MaxDepth of 2", Error(pipeline.Parse(new StringReader(text), options)));
+        Assert.Equal(Error(pipeline.Parse(text, options: options)), Error(pipeline.Parse(new StringReader(text), options)));
+    }
+
+    [Fact]
+    public void AFailedParseOverAReaderRendersOnOneLine()
+    {
+        var result = _sentence.Parse(new StringReader("the\n1"));
+
+        Assert.Equal("error[lexer] at 4..5: unexpected '1'; expected whitespace or letter", result.Diagnostics.Render());
+    }
+
+    [Theory]
+    [InlineData("the cat sat")]
+    [InlineData("the 1")]
+    [InlineData("a cat")]
+    [InlineData("")]
+    public void ParseOverAReaderMatchesParseOverText(string text)
+    {
+        var fromText = _sentence.Parse(text);
+        var fromReader = _sentence.Parse(new StringReader(text));
+
+        Assert.Equal(fromText.Diagnostics, fromReader.Diagnostics);
+        Assert.Equal((fromText.Value as Parsed<IReadOnlyList<string>>)?.Value, (fromReader.Value as Parsed<IReadOnlyList<string>>)?.Value);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void PositionOverAReaderWithNoItemsIsTheStart(string text) =>
+        Assert.Equal(new SourceSpan(SourceId.Unnamed, 0, 0), Assert.IsType<Parsed<SourceSpan>>(Pipeline.From(_words).Then(WordGrammar.Position).Parse(new StringReader(text)).Value).Value);
+
+    [Fact]
+    public void SlicesOverAReaderAreCopies()
+    {
+        var result = Pipeline.From(_slices).Then(SliceGrammar.Any.Many()).Parse(new StringReader("the cat"));
+        var slices = Assert.IsType<Parsed<IReadOnlyList<ReadOnlyMemory<char>>>>(result.Value).Value;
+
+        Assert.All(slices, static slice => Assert.False(MemoryMarshal.TryGetString(slice, out _, out _, out _)));
+        Assert.Equal(["the", "cat"], slices.Select(static slice => slice.ToString()));
+    }
+
+    [Fact]
+    public void TheReaderIsLeftOpen()
+    {
+        var reader = new StringReader("the cat");
+
+        Assert.IsType<Parsed<IReadOnlyList<string>>>(_sentence.Parse(reader).Value);
+        Assert.Equal(-1, reader.Read());
+    }
+
+    [Fact]
+    public void TriviaAtTheEndRunsToWhereTheInputEnds()
+    {
+        var pipeline = Pipeline.From(_words).Then(WordGrammar.Any.SkipMany().Then(WordGrammar.LeadingTrivia));
+        var expected = new SourceSpan(SourceId.Unnamed, 3, 5);
+
+        Assert.Equal(expected, Assert.IsType<Parsed<SourceSpan>>(pipeline.Parse("a b  ").Value).Value);
+        Assert.Equal(expected, Assert.IsType<Parsed<SourceSpan>>(pipeline.Parse(new StringReader("a b  ")).Value).Value);
+    }
 }

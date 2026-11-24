@@ -17,7 +17,7 @@ Streaming parses discard text, so diagnostics resolve their position and snippet
 - Whole-input parses still resolve lazily.
 - `Diagnostics.Render()` uses the captured lines, so streamed and whole-input results render with the same call ([ADR-0024](../../docs/decisions/0024-a-parses-diagnostics-hold-their-source-text.md) point 5).
 - Over a byte root, count lines and columns in the decoded text, not in bytes, so a captured position matches what `LineMap` gives for that text: columns in scalar values, from the first character after any leading byte-order mark ([SPAN-06](../05-source-spans/SPAN-06-byte-sources-and-the-decoding-layer.md)).
-- `Parse` and `ParseMany` over a `TextReader` hold captured lines too. Until this card, their errors render one line each ([ADR-0038](../../docs/decisions/0038-pipelines-end-in-a-parser-run-again-whole-and-name-sources-without-a-registry.md) point 2).
+- `Parse` and `ParseMany` over a `TextReader` hold captured lines too. Until this card, their errors render one line each, and they take no `source:`, since nothing shows a name. Add `source:` after the reader, where the overloads over text have it ([ADR-0038](../../docs/decisions/0038-pipelines-end-in-a-parser-run-again-whole-and-name-sources-without-a-registry.md) point 2).
 
 ## Acceptance criteria
 

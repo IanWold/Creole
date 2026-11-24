@@ -211,16 +211,7 @@ internal sealed partial class FailureLog<T>
     {
         var failure = Copy();
 
-        Position = -1;
-        _start = _protected;
-        _count = _protected;
-        _message = null;
-        _chain = null;
-        _end = -1;
-        _endSpan = null;
-        _at = null;
-        _context = -1;
-        _generation++;
+        ForgetFailure();
 
         return failure;
     }

@@ -31,6 +31,9 @@ if (parsed != 2
     || Pipelines.Count.Parse("a, b").Value is not Parsed<int> { Value: 2 }
     || !Pipelines.Count.Parse("a b", source: "smoke.txt").Diagnostics.Render().Contains(" --> smoke.txt:1:3", StringComparison.Ordinal)
     || Pipelines.Count.Parse("a, 1".AsMemory()).Diagnostics is not [{ Layer: "lexer" }]
+    || Pipelines.Count.Parse(new StringReader("a, b")).Value is not Parsed<int> { Value: 2 }
+    || Pipelines.Words.ParseMany("a, b").Count() != 3
+    || Pipelines.Words.ParseMany(new StringReader("a 1")).Last().Value is not Failed
 )
 {
     return 1;
@@ -151,6 +154,8 @@ internal class TokenLexer : CharGrammar
 internal static class Pipelines
 {
     public static readonly Pipeline<char, int> Count = Pipeline.From(TokenLexer.Lexer).Then(TokenLists.Count);
+
+    public static readonly Pipeline<char, Tok> Words = Pipeline.From(TokenLexer.Lexer).Then(Grammar<Tok>.Any);
 }
 
 internal static class Tokens

@@ -94,6 +94,12 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
 
     public void Dispose() => _input.Dispose();
 
+    public void ForgetFailures()
+    {
+        _failures?.ForgetFailure();
+        _input.ForgetFailures();
+    }
+
     public bool TryStep(StreamBuffer<TOut> buffer)
     {
         if (_ended)
