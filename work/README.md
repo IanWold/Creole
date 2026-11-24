@@ -211,7 +211,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-None yet.
+- [LAY-09](active/06-layers-and-pipelines/LAY-09-hold-only-the-input-the-reader-can-still-go-back-to.md) Hold only the input the reader can still go back to — Build
 
 ### Can start now
 
@@ -223,7 +223,6 @@ These items have all their blockers done:
 - [ERR-06](active/04-errors-and-recovery/ERR-06-orinsert-for-missing-items.md) OrInsert for missing items
 - [SPAN-07](active/05-source-spans/SPAN-07-embedded-languages.md) Embedded languages
 - [LAY-06](active/06-layers-and-pipelines/LAY-06-buffer-size-limit.md) Buffer size limit
-- [LAY-09](active/06-layers-and-pipelines/LAY-09-hold-only-the-input-the-reader-can-still-go-back-to.md) Hold only the input the reader can still go back to
 - [MODE-01](active/07-mode-channels/MODE-01-mode-channels-and-layermodal.md) Mode channels and Layer.Modal
 - [STRM-01](active/08-streaming/STRM-01-starved-outcome.md) Starved outcome
 - [STRM-04](active/08-streaming/STRM-04-huge-single-documents.md) Huge single documents
