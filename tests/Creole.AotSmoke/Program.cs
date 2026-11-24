@@ -1,6 +1,6 @@
 using Creole;
 
-if (Calc.Expr is null || Sequences.Pair is null || Sequences.Captured is null || Queries.Independent is null || Queries.Dependent is null || Spans.Located.Parse("xy").Value is not Parsed<string> { Value: "01y1" })
+if (Calc.Expr is null || Sequences.Pair is null || Sequences.Captured is null || Queries.Independent is null || Queries.Dependent is null || Spans.Located.Parse("xy").Value is not Parsed<string> { Value: "01y1" } || Spans.Pair.Parse("xy").Value is not Parsed<(char, char)> { Value: ('x', 'y') })
 {
     return 1;
 }
@@ -71,6 +71,8 @@ internal class Spans : CharGrammar
     public static readonly Parser<char, string> Located =
         Seq(Position, Char('x').Spanned(), Char('y').WithSpan(static (y, span) => $"{y}{span.Start}"))
             .Select(static (at, x, y) => $"{at.Start}{x.Span.End}{y}");
+
+    public static readonly Parser<char, (char, char)> Pair = Adjacent(Char('x'), Char('y'));
 }
 
 internal class Queries : CharGrammar

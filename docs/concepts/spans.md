@@ -59,6 +59,7 @@ A grammar can read spans as it parses, to give syntax nodes their location.
 | `p.Spanned()` | A `Spanned<T>`: `p`'s result as `Value`, and the span of the input `p` consumed as `Span` |
 | `p.WithSpan((value, span) => …)` | What the function builds from `p`'s result and that span |
 | `Position` | A zero-width `SourceSpan` where the next item starts |
+| `Adjacent(p, q)` | `p`'s and `q`'s results as a tuple, if `q` starts exactly where `p` ended ([below](#joining-split-tokens)) |
 
 ```csharp
 record Name(string Text, SourceSpan Span);
@@ -77,6 +78,25 @@ class Names : CharGrammar
 - Over input held whole in memory, such as a `string` or an array of tokens passed to `Parse`, offsets are item positions: character offsets for text, and token indexes for tokens.
 - `WithSpan`'s function must be pure, as `Select`'s must, because an engine may run it more than once ([whitepaper § Functions in grammars](../../whitepaper.md#functions-in-grammars)).
 - Span combinators keep no input alive. Over streamed input, if the buffer releases the item where a span starts while the parser is still running, it first copies that item's span.
+
+### Joining split tokens
+
+`Adjacent(p, q)` runs `p` and then `q`, as `Seq` does, and succeeds only if `q` starts exactly where `p` ended. It lets the lexer split what the parser may join. A lexer that reads `>>` as one token cannot close two type arguments in `List<List<int>>`. One that emits each `>` as its own token can, and the parser joins two of them where it reads a shift:
+
+```csharp
+public static readonly Parser<Tok, string> Expr = Expression.Build(Name, static op =>
+[
+    [op.InfixL(Atomic(Adjacent(Kind(Symbol.Gt), Kind(Symbol.Gt))), static (left, _, right) => $"({left} >> {right})")],
+    [op.InfixL(Kind(Symbol.Gt), static (left, _, right) => $"({left} > {right})")],
+]);
+```
+
+Over the tokens of a lexer that skips whitespace, `a >> b` gives `(a >> b)`, `a > b` gives `(a > b)`, and `a > > b` fails, because of the space the lexer skipped between the two `>`.
+
+- The two touch when `p`'s span ends where `q`'s starts, in the same source. A `p` that consumes nothing touches whatever follows it.
+- `Adjacent` commits as `Seq` does: once `p` has consumed input, a failure is committed. Wrap it in `Atomic` where the grammar should then try something shorter. Above, `a > b` reads its `>` as the start of a shift, and `Atomic` lets the comparison level read it instead.
+- When the two do not touch, it fails as a rejected `Where` does ([Sequencing § `Bind`, `where` and `let`](sequencing.md#bind-where-and-let)): at `p`'s start, over the input both consumed. The message names both, as in `'>' must come right after '>', with nothing between them`, each by its label or by what its leading primitive expects. If either has no name, it is `these items must touch, with nothing between them`.
+- Over input held whole in memory, consecutive items always touch, so telling `>>` from `> >` needs a layer's spans.
 
 ## Lines and columns
 

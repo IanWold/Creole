@@ -16,6 +16,21 @@ internal static class LayerRun
         Assert.Throws<LayerFailedException>(() => Items(layer, text, options: options)).Error;
 
     /// <summary>
+    /// The error for the furthest failure <paramref name="parser"/> records over the items the layer produces from <paramref name="text"/>, from layer <c>parser</c>, or null if it recorded none.
+    /// </summary>
+    public static ParseError? Error<T, TOut>(Layer<char, T> layer, Parser<T, TOut> parser, string text, int segmentSize = 1024)
+    {
+        var tokens = Open(layer, text, out _, segmentSize);
+        var log = new FailureLog<T>();
+        var cursor = new Cursor<T>(tokens) { Failures = log };
+        TOut value = default!;
+
+        _ = PlanCache.Get(parser).TryParse(ref cursor, ref value);
+
+        return log.ToError(in cursor, "parser", tokens.SpanOf);
+    }
+
+    /// <summary>
     /// Every item the layer produces from <paramref name="text"/>, with its slot.
     /// </summary>
     public static List<(T Item, StreamSlot Slot)> Items<T>(Layer<char, T> layer, string text, int segmentSize = 1024, ParseOptions? options = null)

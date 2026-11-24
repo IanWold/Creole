@@ -31,6 +31,7 @@ internal enum NodeKind
     Spanned,
     WithSpan,
     Position,
+    Adjacent,
     Or,
     Switch,
     Match,

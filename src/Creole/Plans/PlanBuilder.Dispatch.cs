@@ -66,7 +66,7 @@ internal sealed partial class PlanBuilder
     /// </remarks>
     private static IPrimitiveNode? KeyedPrimitive(INode node) => node.Kind switch
     {
-        NodeKind.Atomic or NodeKind.Bind or NodeKind.Context or NodeKind.Filter or NodeKind.Map or NodeKind.Named or NodeKind.Sequence or NodeKind.Slice or NodeKind.Spanned
+        NodeKind.Adjacent or NodeKind.Atomic or NodeKind.Bind or NodeKind.Context or NodeKind.Filter or NodeKind.Map or NodeKind.Named or NodeKind.Sequence or NodeKind.Slice or NodeKind.Spanned
             or NodeKind.Text or NodeKind.WithSpan =>
             KeyedPrimitive(node.Children[0]),
         NodeKind.Any or NodeKind.Case or NodeKind.CharClass or NodeKind.Custom or NodeKind.End or NodeKind.Kind or NodeKind.Satisfy or NodeKind.String or NodeKind.Token =>

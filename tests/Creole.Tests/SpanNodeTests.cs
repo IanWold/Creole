@@ -10,11 +10,23 @@ public class SpanNodeTests
         $"'{expression}' is null. If it refers to a rule declared later in the class, wrap the reference in Rec(() => {expression}).";
 
     [Fact]
+    public void AdjacentBuildsOneAdjacentNode()
+    {
+        var second = Return('x');
+        INode node = Assert.IsType<AdjacentNode<char, int, char>>(Adjacent(_int, second));
+
+        Assert.Equal(NodeKind.Adjacent, node.Kind);
+        Assert.Equal([_int, second], node.Children);
+    }
+
+    [Fact]
     public void NullArgumentsNameTheirExpressions()
     {
         Parser<char, int> item = null!;
         Func<int, SourceSpan, string> build = null!;
 
+        Assert.Equal(NullMessage("item"), Assert.Throws<GrammarException>(() => Adjacent(item, _int)).Message);
+        Assert.Equal(NullMessage("item"), Assert.Throws<GrammarException>(() => Adjacent(_int, item)).Message);
         Assert.Equal(NullMessage("item"), Assert.Throws<GrammarException>(() => item.Spanned()).Message);
         Assert.Equal(NullMessage("item"), Assert.Throws<GrammarException>(() => item.WithSpan(static (_, _) => "")).Message);
         Assert.Equal("'build' is null.", Assert.Throws<GrammarException>(() => _int.WithSpan(build)).Message);
