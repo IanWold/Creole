@@ -48,7 +48,7 @@ Nothing directly.
 - 2026-11-24 (Design): Drafted ADR-0040 (Proposed): 1B, pin at the `stepStart` of the output at the reader's horizon, or the running step's start; 2A, `TryGetSegment` carries the reader's horizon. Checked invalidation, rollback, restarts, cascades, ADR-0028 copies, span holds and trivia; none reads input below the horizon. Found CRL0008's check needs consumed outputs the output buffer may have released, under either pin, which goes to MODE-02. Next: maintainer accepts, rejects or revises ADR-0040.
 - 2026-11-24 (Design): ADR-0040 accepted as written. Whitepaper, MODE-02, MODE-04 and GEN-06 updated; scope narrowed to the decision and a criterion added for `LayerRetentionTests`. Next: `/build`.
 - 2026-11-24 (Building): Built in one increment. `ICursorSource.TryGetSegment` takes the reader's horizon: the cursor passes `Math.Min(position, Floor)`, and `Select`, `Where` and `Utf8` pass their pin. `StreamBuffer` keeps the highest horizon given by a pull or a release, and `OldestStepStart` is now the step start of the item at that horizon. ADR-0040 was edited in place from "latest" to "highest", since a cursor copy that reads behind the floor states less. Tests: `LayerRetentionTests` runs each layer over a producing layer and checks both boundaries; `BoundedMemoryTests` gains a run-length fact and a property with dropping layers, and every boundary's bound is now 2S + 1, the lexer's input included (LAY-02 had 3S + 2); a `StreamBufferTests` case pins the highest horizon. Eight mutations each fail a test: the old pin, a pin at only the running step, keeping the latest horizon, and overstating the horizon in `Cursor.LoadSegment`, `Cursor.Reset`, `Select`, `Where` and `Utf8`. `dotnet build` 0 warnings; `dotnet test` 1,766 passed. Docs: layers.md. Next: maintainer review and commit, then `/complete`.
-- 2026-11-24 (Building): Verified for completion at fb4c40e. Every criterion met; see Outcome.
+- 2026-11-24 (Building): Verified for completion. Every criterion met; see Outcome.
 
 ## Outcome
 
@@ -57,6 +57,7 @@ A producing layer now keeps its input only from the step of the oldest output it
 - **The horizon crosses each boundary.** `ICursorSource.TryGetSegment` takes the reader's horizon ([ICursorSource.cs](../../../src/Creole/ICursorSource.cs)):
   - The cursor passes `Math.Min(position, Floor)` from `LoadSegment`, `Reset` and `Since` ([Cursor.cs](../../../src/Creole/Cursor.cs)). It is computed only past the `_source is null` check, so in-memory parses are untouched.
   - `Select`, `Where` and `Utf8` pass their own pin ([src/Creole/Layers/](../../../src/Creole/Layers/)).
+  - `MemorySource`, LAY-05's root over input held in memory, takes the horizon and ignores it, since it releases nothing ([MemorySource.cs](../../../src/Creole/MemorySource.cs)).
 - **The pin.** `StreamBuffer` keeps the highest horizon it is given, by a pull or by `Release`. `OldestStepStart` is the step start of the output at that horizon, or null if it is not yet produced ([StreamBuffer.cs](../../../src/Creole/StreamBuffer.cs)). `Tokens` and `Transduce` already took their floor from it, so only their docs changed.
 - **Tests:**
   - [BoundedMemoryTests.cs](../../../tests/Creole.Tests/BoundedMemoryTests.cs), 2 new:
@@ -67,12 +68,12 @@ A producing layer now keeps its input only from the step of the oldest output it
     - Each of `Tokens`, `Transduce`, `Select`, `Where` and `Utf8` runs over a producing layer, with and without a pinned reader.
     - After each read it checks that every output at or above the reader's horizon still has its step's input. It also checks every input item at or above the layer's own pin.
   - [StreamBufferTests.cs](../../../tests/Creole.Tests/StreamBufferTests.cs) (1 new): the buffer keeps the highest horizon stated.
-- **Mutation checks, on fresh builds, at fb4c40e.** Each fails at least one of these tests:
+- **Mutation checks, on fresh builds, at 071251f.** Each fails at least one of these tests:
   - `OldestStepStart` as the oldest held output, which was the old pin;
   - a pin at only the running step;
   - keeping the latest horizon rather than the highest;
   - overstating the horizon in `Cursor.LoadSegment`, `Cursor.Reset`, `Select`, `Where` or `Utf8`. Each of these fails only the layers that read through the mutated code.
-- **Evidence, 2026-11-24, at fb4c40e.** `dotnet build`: 0 warnings. `dotnet test`: 1,766 passed, 0 failed.
+- **Evidence, 2026-11-24, at 071251f, after rebasing onto LAY-05.** `dotnet build`: 0 warnings. `dotnet test`: 1,866 passed, 0 failed. Before the rebase it was 1,766 passed.
 
   | Criterion | Evidence |
   | --- | --- |
