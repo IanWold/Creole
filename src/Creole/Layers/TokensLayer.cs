@@ -19,6 +19,10 @@ file sealed class TokensUpstream<TIn, TOut>(StreamBuffer<TIn> input, Plan<TIn, T
     private long _position;
     private readonly Plan<TIn, Unit>? _skip = skip;
 
+    public SourceSpan InputEnd => _input.InputEnd;
+
+    public SourceSpan InputStart => _input.InputStart;
+
     private LayerFailedException Failed(ref readonly Cursor<TIn> cursor, long position) =>
         new(ParseErrors.Failure(in cursor, _failures, position, _name, _input.SpanOf));
 

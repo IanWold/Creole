@@ -14,6 +14,7 @@ Run a whole sub-pipeline over a token's text, such as SQL in a string literal, w
 
 - `p.Embed(pipeline)`.
 - `SourceMap` mapping sub-pipeline spans through escapes to raw characters. A character that came from raw text maps to a span wider than zero, and a synthetic item stays zero-width ([ADR-0034](../../docs/decisions/0034-a-synthetic-item-is-one-whose-span-is-zero-width.md) point 6).
+- The sub-pipeline's root reports `InputStart` and `InputEnd` as the mapped start and end of the token's text, so its trivia stays inside that text ([ADR-0036](../../docs/decisions/0036-trivia-is-the-source-between-items-read-with-a-zero-width-parser.md) point 5).
 - Sub-pipeline diagnostics land in the parent's bag.
 - Add `Embed` to the nodes that give a grammar full marks in [PlanBuilder.Marks.cs](../../../src/Creole/Plans/PlanBuilder.Marks.cs) ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 9, [ERR-04](../04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md) Outcome).
 

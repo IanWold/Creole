@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Source spans and provenance](../../README.md#span--source-spans-and-provenance) |
 | Phase | Phase 1 — Layers |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -51,3 +51,5 @@ Nothing directly.
 - 2026-11-24 (Design): Started. § Trivia (optional) fixes the API shape but not the leading/trailing split rule, trivia granularity, where end-of-input trivia goes, how trivia passes through later layers, or how a grammar or tool reads it; settle these in a decision record before building.
 - 2026-11-24 (Design): Drafted ADR-0036 after a prior-art pass (Roslyn, SwiftSyntax, rust-analyzer, TypeScript, Prettier) and the maintainer's choices on four forks: derive trivia from span gaps, leading only, one range per gap, read with a zero-width `LeadingTrivia` parser. Next: maintainer accepts, rejects or revises; on acceptance the card becomes blocked by SPAN-04.
 - 2026-11-24 (Design): ADR-0036 accepted. Whitepaper § Trivia, this card's title, scope and criteria follow it. The card is now blocked by SPAN-04, which gives the cursor span access, so it returns to Not started with design done. Next: once SPAN-04 is Done, `/start SPAN-05` at Build.
+- 2026-11-24 (Build): Started. SPAN-04 is done (branch rebased on feature/span-04). ADR-0034 and ADR-0035 checked against ADR-0036: no conflict. Plan: increment 1 gives every buffer the source bounds of its input through `IUpstream<T>`; increment 2 adds `LeadingTrivia`, its tests and docs.
+- 2026-11-24 (Build): Increment 1 done. `IUpstream<T>`, `ICursorSource<T>` and `StreamBuffer<T>` have `InputStart` and `InputEnd`; the four layer upstreams take their input's, and test roots report their own. [InputBoundsTests.cs](../../../tests/Creole.Tests/InputBoundsTests.cs) (8 tests) covers Tokens, Where, Select, Identity, Transduce and Then over `"  ab  cd  "`, an empty input and an input that is only whitespace; full suite 1,729 passed. LAY-05 and SPAN-07 got scope notes for their roots. A branch that adds an `IUpstream<T>` (such as SPAN-06's decoding layer) must add both members when it merges. Next: increment 2, `LeadingTrivia`.

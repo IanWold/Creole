@@ -8,6 +8,16 @@ file sealed class SlotUpstream(StreamSlot[] slots) : IUpstream<int>
     private readonly StreamSlot[] _slots = slots;
     private int _next;
 
+    public SourceSpan InputEnd =>
+        _slots is [.., var last]
+        ? new SourceSpan(last.Span.Source, last.Span.End, last.Span.End, last.Span.CharEnd, last.Span.CharEnd)
+        : default;
+
+    public SourceSpan InputStart =>
+        _slots is [var first, ..]
+        ? new SourceSpan(first.Span.Source, first.Span.Start, first.Span.Start, first.Span.CharStart, first.Span.CharStart)
+        : default;
+
     public bool TryStep(StreamBuffer<int> buffer)
     {
         if (_next == _slots.Length)
@@ -27,6 +37,10 @@ file sealed class StrideUpstream(long first, int stride, int count) : IUpstream<
     private readonly long _first = first;
     private int _next;
     private readonly int _stride = stride;
+
+    public SourceSpan InputEnd => new(SourceId.Unnamed, _first + (long)_count * _stride, _first + (long)_count * _stride);
+
+    public SourceSpan InputStart => new(SourceId.Unnamed, _first, _first);
 
     public bool TryStep(StreamBuffer<char> buffer)
     {

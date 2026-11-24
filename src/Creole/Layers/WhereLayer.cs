@@ -13,6 +13,10 @@ file sealed class WhereUpstream<T>(StreamBuffer<T> input, Func<T, bool> predicat
     private readonly Func<T, bool> _predicate = predicate;
     private long _segmentStart;
 
+    public SourceSpan InputEnd => _input.InputEnd;
+
+    public SourceSpan InputStart => _input.InputStart;
+
     public bool TryStep(StreamBuffer<T> buffer)
     {
         if (!_input.TryGetSegment(_position, out var segment, out var segmentStart))

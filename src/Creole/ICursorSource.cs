@@ -6,6 +6,19 @@ namespace Creole;
 internal interface ICursorSource<T>
 {
     /// <summary>
+    /// A zero-width span where the input of the layer that produced these items ends in the source, after any input that layer skipped after its last item.
+    /// </summary>
+    /// <remarks>
+    /// It is known once a cursor has found the end of the items.
+    /// </remarks>
+    SourceSpan InputEnd { get; }
+
+    /// <summary>
+    /// A zero-width span where the input of the layer that produced these items starts in the source, before any input that layer skipped before its first item.
+    /// </summary>
+    SourceSpan InputStart { get; }
+
+    /// <summary>
     /// Stops holding the position that the matching <see cref="HoldSpan"/> held.
     /// </summary>
     void DropSpan();
