@@ -9,18 +9,19 @@ internal sealed partial class PlanBuilder
     /// </summary>
     /// <remarks>
     /// The first parser the builder lowers decides, because a builder lowers one grammar.
-    /// A grammar takes full marks when <see cref="LoweringOptions.LightMarks"/> is off or <see cref="CanRaiseDiagnostics"/> says it needs them.
+    /// A grammar takes full marks when <see cref="LoweringOptions.LightMarks"/> is off or <see cref="CanChangeWhatFullMarksSave"/> says it needs them.
     /// </remarks>
     private bool FullMarks => _fullMarks is true;
 
     /// <summary>
-    /// Whether a parser reachable from <paramref name="root"/>, following <c>Rec</c>, can raise diagnostics.
+    /// Whether a parser reachable from <paramref name="root"/>, following <c>Rec</c>, can raise diagnostics or change the layer's state.
     /// </summary>
     /// <remarks>
+    /// <c>SetState</c> and <c>Scan</c> change the state.
     /// A <c>Bind</c> counts, because its continuation can return any parser.
     /// A <c>Rec</c> whose reference fails is passed over here, so that lowering reports it with its rule path.
     /// </remarks>
-    private static bool CanRaiseDiagnostics(INode root)
+    private static bool CanChangeWhatFullMarksSave(INode root)
     {
         var seen = new HashSet<INode>(ReferenceEqualityComparer.Instance);
         var pending = new Stack<INode>([root]);
@@ -32,7 +33,7 @@ internal sealed partial class PlanBuilder
                 continue;
             }
 
-            if (node.Kind == NodeKind.Bind)
+            if (node.Kind is NodeKind.Bind or NodeKind.SetState or NodeKind.Scan)
             {
                 return true;
             }
@@ -61,5 +62,5 @@ internal sealed partial class PlanBuilder
     /// Decides <see cref="FullMarks"/> from <paramref name="root"/>, unless the builder has already lowered a parser.
     /// </summary>
     private void ChooseMarks(INode root) =>
-        _fullMarks ??= !_options.HasFlag(LoweringOptions.LightMarks) || CanRaiseDiagnostics(root);
+        _fullMarks ??= !_options.HasFlag(LoweringOptions.LightMarks) || CanChangeWhatFullMarksSave(root);
 }

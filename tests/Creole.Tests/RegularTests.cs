@@ -31,6 +31,9 @@ public class RegularTests
         ["Spanned, WithSpan and Position"] = (true, static () => Regular.Of(Seq(Position, _a.Spanned(), _b.WithSpan(static (b, _) => b)))),
         ["Adjacent"] = (false, static () => Regular.Of(Adjacent(_a, _b))),
         ["LeadingTrivia"] = (true, static () => Regular.Of(Seq(LeadingTrivia, _a, LeadingTrivia))),
+        ["GetState"] = (false, static () => Regular.Of(Seq(GetState<int>(), _a))),
+        ["SetState"] = (false, static () => Regular.Of(Seq(SetState(1), _a))),
+        ["Scan"] = (false, static () => Regular.Of(_a.Scan<int, char>(static (a, count, _) => (a, count + 1)))),
 
         ["Parsec-style decimal"] = (true, static () => Regular.Of(Seq(_digits, Seq(Char('.'), _digits).Optional()))),
         ["Atomic fraction"] = (true, static () => Regular.Of(Seq(_digits, Atomic(Seq(Char('.'), _digits)).Optional()))),

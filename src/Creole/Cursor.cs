@@ -74,6 +74,16 @@ public ref struct Cursor<T>
     internal int MaxDepth { get; init; } = int.MaxValue;
 
     /// <summary>
+    /// This layer's state, as <see cref="StateBox"/> holds it, or null when the layer has no state.
+    /// </summary>
+    /// <remarks>
+    /// <c>GetState</c> and <c>Scan</c> read it, and <c>SetState</c> and <c>Scan</c> replace it.
+    /// It is a reference, so <see cref="FullMark"/> saves and restores it without copying the state.
+    /// A layer that runs in steps puts its state here when a step starts and takes it back when the step ends.
+    /// </remarks>
+    internal object? State { get; set; }
+
+    /// <summary>
     /// The items from the cursor to the end of the current segment. Empty only at the end of the input.
     /// </summary>
     /// <remarks>

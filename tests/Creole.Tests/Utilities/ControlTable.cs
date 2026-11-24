@@ -171,31 +171,33 @@ internal static class ControlTable
     ];
 
     /// <summary>
-    /// Builds the Creole grammar for <paramref name="shape"/>.
+    /// Builds the Creole grammar for <paramref name="shape"/>, with each <see cref="ControlShape.Raise"/> leaf built by <paramref name="raise"/> from its id, or as a <see cref="RaiseNode"/> when it is null.
     /// </summary>
-    public static Parser<char, string> Build(ControlShape shape) => shape switch
+    public static Parser<char, string> Build(ControlShape shape, Func<int, Parser<char, string>>? raise = null) => shape switch
     {
-        ControlShape.AtLeastOnce s => Build(s.Item).AtLeastOnce().Select(string.Concat),
-        ControlShape.Atomic s => Grammar<char>.Atomic(Build(s.Item)),
+        ControlShape.AtLeastOnce s => Build(s.Item, raise).AtLeastOnce().Select(string.Concat),
+        ControlShape.Atomic s => Grammar<char>.Atomic(Build(s.Item, raise)),
         ControlShape.Chars s => s.Text.Skip(1).Aggregate(
             CharGrammar.Char(s.Text[0]).Select(c => c.ToString()),
             (text, c) => Grammar<char>.Seq(text, CharGrammar.Char(c)).Select((t, next) => t + next)
         ),
-        ControlShape.Context s => Build(s.Item).Context(s.Text),
+        ControlShape.Context s => Build(s.Item, raise).Context(s.Text),
         ControlShape.Cut => Grammar<char>.Cut.As(""),
-        ControlShape.Lookahead s => Grammar<char>.Lookahead(Build(s.Item)),
-        ControlShape.Longest s => Grammar<char>.Longest(Build(s.First), Build(s.Second)),
-        ControlShape.Many s => Build(s.Item).Many().Select(string.Concat),
-        ControlShape.Named s => Build(s.Item).Named(s.Label),
-        ControlShape.Not s => Grammar<char>.Not(Build(s.Item)).As(""),
-        ControlShape.Optional s => Build(s.Item).Optional().Select(m => m.GetValueOrDefault("")),
-        ControlShape.Or s => Build(s.First).Or(Build(s.Second)),
-        ControlShape.Raise s => new RaiseNode($"d{s.Id}"),
-        ControlShape.SepBy s => Build(s.Item).SepBy(Build(s.Separator)).Select(string.Concat),
-        ControlShape.Until s => Build(s.Item).Until(Build(s.Terminator)).Select(string.Concat),
+        ControlShape.Lookahead s => Grammar<char>.Lookahead(Build(s.Item, raise)),
+        ControlShape.Longest s => Grammar<char>.Longest(Build(s.First, raise), Build(s.Second, raise)),
+        ControlShape.Many s => Build(s.Item, raise).Many().Select(string.Concat),
+        ControlShape.Named s => Build(s.Item, raise).Named(s.Label),
+        ControlShape.Not s => Grammar<char>.Not(Build(s.Item, raise)).As(""),
+        ControlShape.Optional s => Build(s.Item, raise).Optional().Select(m => m.GetValueOrDefault("")),
+        ControlShape.Or s => Build(s.First, raise).Or(Build(s.Second, raise)),
+        ControlShape.Raise s => raise is null
+            ? new RaiseNode($"d{s.Id}")
+            : raise(s.Id),
+        ControlShape.SepBy s => Build(s.Item, raise).SepBy(Build(s.Separator, raise)).Select(string.Concat),
+        ControlShape.Until s => Build(s.Item, raise).Until(Build(s.Terminator, raise)).Select(string.Concat),
         ControlShape.Seq s => s.Steps.Skip(1).Aggregate(
-            Build(s.Steps[0]),
-            (text, step) => Grammar<char>.Seq(text, Build(step)).Select((t, next) => t + next)
+            Build(s.Steps[0], raise),
+            (text, step) => Grammar<char>.Seq(text, Build(step, raise)).Select((t, next) => t + next)
         ),
         _ => throw new ArgumentOutOfRangeException(nameof(shape), shape, null),
     };

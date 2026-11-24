@@ -163,6 +163,10 @@ public static class Parsing
         {
             return false;
         }
+        catch (LayerStateException exception)
+        {
+            throw exception.ToGrammarException(Layer);
+        }
     }
 
     /// <summary>
@@ -187,6 +191,10 @@ public static class Parsing
         catch (DepthExceededException exception)
         {
             error = ParseErrors.Depth(exception, in cursor, log, Layer, SpanOf);
+        }
+        catch (LayerStateException exception)
+        {
+            throw exception.ToGrammarException(Layer);
         }
 
         return false;

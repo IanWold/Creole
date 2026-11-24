@@ -36,7 +36,7 @@ internal enum LoweringOptions
     Dfa = 8,
 
     /// <summary>
-    /// A grammar that cannot raise diagnostics takes <see cref="LightMark"/>, which leaves the diagnostic count out. Otherwise every plan takes <see cref="FullMark"/>.
+    /// A grammar that cannot raise diagnostics or change the layer's state takes <see cref="LightMark"/>, which leaves the diagnostic count and the state out. Otherwise every plan takes <see cref="FullMark"/>.
     /// </summary>
     LightMarks = 16,
 

@@ -30,35 +30,6 @@ public class DiagnosticWithdrawalTests
             : $"{ControlModel.Describe(numbered)} on \"{input}\": model {expected.Outcome} [{string.Join(", ", expected.Diagnostics)}], interpreter {actual.Outcome} [{string.Join(", ", actual.Diagnostics)}]";
     }
 
-    /// <summary>
-    /// Gives each <see cref="ControlShape.Raise"/> leaf its own number, in the order a walk from the left meets them.
-    /// </summary>
-    private static ControlShape Number(ControlShape shape)
-    {
-        var next = 0;
-
-        ControlShape Renumber(ControlShape s) => s switch
-        {
-            ControlShape.Raise => new ControlShape.Raise(++next),
-            ControlShape.AtLeastOnce t => new ControlShape.AtLeastOnce(Renumber(t.Item)),
-            ControlShape.Atomic t => new ControlShape.Atomic(Renumber(t.Item)),
-            ControlShape.Context t => new ControlShape.Context(Renumber(t.Item), t.Text),
-            ControlShape.Lookahead t => new ControlShape.Lookahead(Renumber(t.Item)),
-            ControlShape.Longest t => new ControlShape.Longest(Renumber(t.First), Renumber(t.Second)),
-            ControlShape.Many t => new ControlShape.Many(Renumber(t.Item)),
-            ControlShape.Named t => new ControlShape.Named(Renumber(t.Item), t.Label),
-            ControlShape.Not t => new ControlShape.Not(Renumber(t.Item)),
-            ControlShape.Optional t => new ControlShape.Optional(Renumber(t.Item)),
-            ControlShape.Or t => new ControlShape.Or(Renumber(t.First), Renumber(t.Second)),
-            ControlShape.SepBy t => new ControlShape.SepBy(Renumber(t.Item), Renumber(t.Separator)),
-            ControlShape.Seq t => new ControlShape.Seq([.. t.Steps.Select(Renumber)]),
-            ControlShape.Until t => new ControlShape.Until(Renumber(t.Item), Renumber(t.Terminator)),
-            _ => s,
-        };
-
-        return Renumber(shape);
-    }
-
     private static List<ParseError> Raised<T>(Parser<char, T> grammar, string input)
     {
         var log = new FailureLog<char>();
@@ -95,7 +66,42 @@ public class DiagnosticWithdrawalTests
         return (outcome, [.. log.ToDiagnostics(in cursor, "parser", SpanOf).Select(error => $"{((CustomMessage)error.Unexpected.Value!).Text} at {error.Span.Start}")]);
     }
 
-    private static Gen<ControlShape> Shapes(int depth)
+    private static SourceSpan SpanOf(long start, long end) =>
+        new(SourceId.Unnamed, start, end);
+
+    private static List<string> Survivors<T>(Parser<char, T> grammar, string input) =>
+        [.. Raised(grammar, input).Select(error => ((CustomMessage)error.Unexpected.Value!).Text)];
+
+    /// <summary>
+    /// Gives each <see cref="ControlShape.Raise"/> leaf its own number, in the order a walk from the left meets them.
+    /// </summary>
+    internal static ControlShape Number(ControlShape shape)
+    {
+        var next = 0;
+
+        ControlShape Renumber(ControlShape s) => s switch
+        {
+            ControlShape.Raise => new ControlShape.Raise(++next),
+            ControlShape.AtLeastOnce t => new ControlShape.AtLeastOnce(Renumber(t.Item)),
+            ControlShape.Atomic t => new ControlShape.Atomic(Renumber(t.Item)),
+            ControlShape.Context t => new ControlShape.Context(Renumber(t.Item), t.Text),
+            ControlShape.Lookahead t => new ControlShape.Lookahead(Renumber(t.Item)),
+            ControlShape.Longest t => new ControlShape.Longest(Renumber(t.First), Renumber(t.Second)),
+            ControlShape.Many t => new ControlShape.Many(Renumber(t.Item)),
+            ControlShape.Named t => new ControlShape.Named(Renumber(t.Item), t.Label),
+            ControlShape.Not t => new ControlShape.Not(Renumber(t.Item)),
+            ControlShape.Optional t => new ControlShape.Optional(Renumber(t.Item)),
+            ControlShape.Or t => new ControlShape.Or(Renumber(t.First), Renumber(t.Second)),
+            ControlShape.SepBy t => new ControlShape.SepBy(Renumber(t.Item), Renumber(t.Separator)),
+            ControlShape.Seq t => new ControlShape.Seq([.. t.Steps.Select(Renumber)]),
+            ControlShape.Until t => new ControlShape.Until(Renumber(t.Item), Renumber(t.Terminator)),
+            _ => s,
+        };
+
+        return Renumber(shape);
+    }
+
+    internal static Gen<ControlShape> Shapes(int depth)
     {
         var leaf = Gen.OneOf<ControlShape>(new ControlShape.Chars("a"), new ControlShape.Chars("b"), new ControlShape.Chars("ab"), new ControlShape.Cut(), new ControlShape.Raise(0));
 
@@ -127,12 +133,6 @@ public class DiagnosticWithdrawalTests
 
         return Gen.Frequency((1, leaf), (2, unary), (3, binary));
     }
-
-    private static SourceSpan SpanOf(long start, long end) =>
-        new(SourceId.Unnamed, start, end);
-
-    private static List<string> Survivors<T>(Parser<char, T> grammar, string input) =>
-        [.. Raised(grammar, input).Select(error => ((CustomMessage)error.Unexpected.Value!).Text)];
 
     [Fact]
     public void NoDiagnosticSurvivesFromAnAbandonedPathInAnyShapeToDepthThree()

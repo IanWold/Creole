@@ -40,11 +40,11 @@ Any other alternative is tried for every item. That includes a choice inside a c
 A `Longest` compiles to an automaton when its input is characters and every alternative is regular:
 
 - **What an alternative can use.** Character classes (including `Any`), `String` and `CIString`, `Seq`, `Then`, `Before` and `Between`, `Or` and `OneOf`, `Optional`, `Atomic`, and `Many`, `AtLeastOnce`, `SkipMany` and `SkipAtLeastOnce` over a parser that cannot match nothing. `Select`, `As`, `Ignore`, `Slice`, `Text`, `Named` and `Context` can wrap any of these.
-- **What sends it to the interpreter.** Anything else in any alternative: `Satisfy`, `Custom`, `Where`, `Lookahead`, `Not`, `Cut`, `Rec`, a query, `Repeat`, `SepBy`, `Until`, `Return`, `End`, or a `Longest` anywhere but directly as an alternative.
+- **What sends it to the interpreter.** Anything else in any alternative: `Satisfy`, `Custom`, `Where`, `Lookahead`, `Not`, `Cut`, `Rec`, a query, `Repeat`, `SepBy`, `Until`, `Return`, `End`, `GetState`, `SetState`, `Scan`, or a `Longest` anywhere but directly as an alternative.
 - **Choices inside `Atomic`.** A choice there must be one the automaton can settle early. Call the rest what follows the choice up to the end of the outermost `Atomic` around it. Either the first branch followed by the rest cannot fail once it has consumed input, or the second branch followed by the rest cannot match nothing and starts with different characters from the first branch followed by the rest. `Atomic(Char('.').Then(digits))`, the usual fraction of a number, qualifies. `Atomic(String("ab").Or(String("a")).Then(Char('c')))` does not: both branches start with `a`, and the `Atomic` can still fail after `ab`.
 - **Size.** The automaton may have at most 2,000 states, and building it may take at most 500,000 steps, where trying a character class from a state takes a step for each way through the alternatives still open there. Lexers are far smaller: a 12-rule JSON lexer has 39 states and takes 1,767 steps, and a 138-rule C#-like lexer has 513 states and takes 90,816. A `Longest` over either limit runs on the interpreter, with the same results ([ADR-0025](../../work/docs/decisions/0025-automaton-construction-stops-at-a-state-cap-or-a-work-budget.md)). A `Longest` nested directly as one of its alternatives is then tried on its own, so the alternatives it holds may still compile.
 
-A `Longest` that does not compile still works: it runs each alternative in turn, as before.
+A `Longest` that does not compile still works: it runs each alternative in turn, as before. In a grammar that can change the [state](../concepts/layer-state.md), it then runs the winner once more if another alternative ran after it, so that the state is the one the winner leaves.
 
 The automaton follows the interpreter's commit semantics, so a compiled `Longest` gives exactly the results it would give otherwise. That is not always what an alternative's regular-expression reading suggests. `digits.Then(Char('.').Then(digits).Optional())` fails on `1.x`, because the `Optional` has consumed the `.`; write the fraction as `Atomic(Char('.').Then(digits)).Optional()` to match `1`.
 
@@ -66,6 +66,7 @@ Results that are value types flow through the plan without boxing, so a parse wh
 | `Slice()` over streamed input | a copy of the text ([ADR-0013](../../work/docs/decisions/0013-slices-view-in-memory-input-and-copy-streamed-input.md)); over in-memory input it is a view and allocates nothing |
 | A query whose later `from` builds a new parser from an earlier value | that parser, and its plan, on every match; return an existing parser, such as a rule field, to avoid it |
 | `Case<T>()` over union tokens that are structs, and `Match` over a union that is a struct, such as `Maybe<T>` | the case value, boxed to read it |
+| `Scan` with a value-type state | the new state, boxed, each time it runs; `SetState` allocates nothing |
 
 Struct tokens that implement `IKinded<TKind>`, matched with `Kind(k)`, never box.
 

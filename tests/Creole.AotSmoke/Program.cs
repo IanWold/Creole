@@ -33,8 +33,22 @@ if (parsed != 2
     return 1;
 }
 
+if (Braces.Depth.Parse("{{").Value is not Parsed<int> { Value: 2 } || Braces.Longest.Parse("{}").Value is not Parsed<int> { Value: 0 })
+{
+    return 1;
+}
+
 Console.WriteLine("Creole AOT smoke: OK");
 return 0;
+
+internal class Braces : CharGrammar
+{
+    private static readonly Parser<char, char> _open = Char('{').Scan<int, char>(static (brace, depth, _) => (brace, depth + 1));
+
+    public static readonly Parser<char, int> Depth = SetState(0).Then(_open.Many()).Then(GetState<int>());
+
+    public static readonly Parser<char, int> Longest = SetState(0).Then(Longest(String("{}").As('e'), _open)).Then(GetState<int>());
+}
 
 internal class Calc : CharGrammar
 {
