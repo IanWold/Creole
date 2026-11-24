@@ -553,12 +553,31 @@ Line and column are computed on demand from a `LineMap` built once per source, u
 - `p.WithSpan((value, span) => node)` builds AST nodes that keep their location. It is a node of its own, not `Spanned` followed by `Select`, so a session can find the nodes it builds (§ Reusing parser results).
 - `Adjacent(p, q)` runs `p`, then `q`, and produces both values as `Seq` does. It succeeds only if `q` starts exactly where `p` ended (§ Feedback). It checks after `q`, so a `q` that starts with `SetMode` is compared as lexed under the new mode. If the spans do not touch, it fails as a rejected filter over the pair: committed if anything was consumed, and reported at `p`'s start. A grammar that must fall back to a shorter form wraps it in `Atomic`.
 - `Position` is a zero-width parser that returns a zero-width `SourceSpan`: at the start of the next item, at the end of the last item at the end of the input, or at offset 0 in an empty input. It reads the next item under the mode in force, as `Lookahead` does.
+- `LeadingTrivia` is a zero-width parser returning the trivia before the next item, or before the end of input (§ Trivia).
 
 Over input held whole in memory, spans are item offsets, so over a token array consecutive tokens always touch; split and merge needs a lexer layer. Span combinators hold positions and never pin. `Spanned` and `WithSpan` hold `p`'s start, and `Adjacent` holds `q`'s, in a register the layer keeps whether or not it records failures. Before a buffer releases a segment, it copies the span at each held position in it, as it does for errors (§ Failure positions, [ADR-0035](work/docs/decisions/0035-span-combinators-commit-like-sequences-and-hold-their-spans.md)).
 
-### Trivia (optional)
+### Trivia
 
-`Layer.Tokens(item, skip, trivia: TriviaMode.Attach)` keeps skipped input as leading and trailing trivia spans on each token, in the style of Roslyn's syntax trees. That makes lossless round-tripping possible for formatters and refactoring tools. Trivia is stored as span ranges, not strings, and costs nothing when the mode is off.
+Trivia is the source between items: what a lexer's `skip` consumed, and anything a later layer dropped. Creole stores none of it. Span rule 2 already keeps skipped input out of every item's span, so trivia is computed from spans when a grammar reads it ([ADR-0036](work/docs/decisions/0036-trivia-is-the-source-between-items-read-with-a-zero-width-parser.md)).
+
+- An item's **leading trivia** runs from the end of the item before it to its own start. Before the first item, it starts where the layer's input starts.
+- The **end trivia** runs from the end of the last item to where the input ends. With no items, it is the whole input.
+- Each buffer records where its layer's input starts and ends, and nothing per item, so trivia costs nothing whether or not a grammar reads it.
+
+```csharp
+// Each token with the trivia before it, then the trivia at the end of the input.
+var tokens = (from lead in LeadingTrivia from token in Any select (lead, token)).Many();
+var file   = from all in tokens from end in LeadingTrivia from _ in End select (all, end);
+```
+
+Each gap belongs whole to the item after it, so there is no trailing trivia. Splitting a gap between two tokens needs a rule about line breaks and comments, and `skip` is an opaque parser that cannot say where its comments are. A tool that wants trailing trivia splits the gap itself, using the source text it needs anyway to read trivia. A trivia value is one `SourceSpan`; a tool that needs comments told apart runs its own trivia grammar over that range.
+
+Taking each item's leading trivia and span in order, then the end trivia, covers the input exactly once when the items are in source order and do not overlap, as a lexer's tokens are. Reading those ranges from the text reproduces the source, which is what formatters and refactoring tools need for lossless round-tripping. Gaps exist at every layer:
+
+- A comment token that a `Layer.Where` drops lands in the gap before the next kept token.
+- The gap before a run of synthetic items goes to the first of them.
+- An item that starts before the previous one ends has zero-width leading trivia. Only a `Transduce` step that emits several derived outputs over one span produces such an item.
 
 ## Errors, diagnostics and recovery
 

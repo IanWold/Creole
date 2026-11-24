@@ -33,6 +33,7 @@ Let grammars capture and test locations.
 
 ## Unblocks
 
+- [SPAN-05 Trivia from the gaps between spans](../05-source-spans/SPAN-05-trivia-attach-mode.md)
 - [INC-05 Session span table](../15-incremental-reparsing/INC-05-session-span-table.md)
 
 ## Whitepaper references
