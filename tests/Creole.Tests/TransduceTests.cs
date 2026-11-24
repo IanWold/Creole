@@ -59,6 +59,28 @@ public class TransduceTests
         Assert.Throws<GrammarException>(() => LayerRun.Items(_words.Then(Layer.Transduce(0, Return(default(Emit<string>)))), "ab"));
 
     [Fact]
+    public void AStepThatLeavesAStateOfAnotherTypeThrows() =>
+        Assert.Equal(
+            "A step of the layout layer left its state of type String, but its initialState is of type Int32.",
+            Assert.Throws<GrammarException>(() => LayerRun.Values(_words.Then(Layer.Transduce(0, Any.Then(SetState("x")).As(Emit.One("a")))), "ab")).Message
+        );
+
+    [Fact]
+    public void EachOutputsSlotRecordsTheStateItsStepStartedWith()
+    {
+        var layer = _words.Then(Layer.Transduce(0, Any.Scan<int, Emit<string>>(static (word, count, _) => ([word, Emit.Synthetic("!")], count + 1)), atEnd: static _ => "$"));
+
+        Assert.Equal([0, 0, 1, 1, 2], LayerRun.Items(layer, "ab cd").Select(static entry => entry.Slot.StateBefore));
+    }
+
+    [Fact]
+    public void EachStepReadsAndChangesTheStateAndAtEndGetsTheLast() =>
+        Assert.Equal(
+            ["ab", "cd", "2 words"],
+            LayerRun.Values(_words.Then(Layer.Transduce(0, Any.Scan<int, Emit<string>>(static (word, count, _) => (word, count + 1)), atEnd: static count => Emit.Synthetic($"{count} words"))), "ab cd")
+        );
+
+    [Fact]
     public void NullArgumentsThrow()
     {
         Assert.Throws<GrammarException>(static () => Layer.Transduce<string, string, int>(0, null!));
@@ -80,19 +102,26 @@ public class TransduceTests
 
         Assert.Equal(
             [
-                ("x", new StreamSlot(Span(0, 0), 0, null, 0)),
-                ("<", new StreamSlot(Span(4, 4), 1, null, 0)),
-                ("cd", new StreamSlot(Span(4, 6), 1, null, 1)),
-                (">", new StreamSlot(Span(8, 8), 1, null, 2)),
-                ("ef+gh", new StreamSlot(Span(8, 13), 2, null, 0)),
-                ("again", new StreamSlot(Span(8, 13), 2, null, 1)),
-                ("kl", new StreamSlot(Span(17, 19), 5, null, 0)),
-                ("!", new StreamSlot(Span(19, 19), 5, null, 1)),
-                ("$", new StreamSlot(Span(19, 19), 6, null, 0)),
+                ("x", new StreamSlot(Span(0, 0), 0, 0, 0)),
+                ("<", new StreamSlot(Span(4, 4), 1, 0, 0)),
+                ("cd", new StreamSlot(Span(4, 6), 1, 0, 1)),
+                (">", new StreamSlot(Span(8, 8), 1, 0, 2)),
+                ("ef+gh", new StreamSlot(Span(8, 13), 2, 0, 0)),
+                ("again", new StreamSlot(Span(8, 13), 2, 0, 1)),
+                ("kl", new StreamSlot(Span(17, 19), 5, 0, 0)),
+                ("!", new StreamSlot(Span(19, 19), 5, 0, 1)),
+                ("$", new StreamSlot(Span(19, 19), 6, 0, 0)),
             ],
             LayerRun.Items(layer, "ab  cd  ef gh ij kl")
         );
     }
+
+    [Fact]
+    public void ReadingTheStateAsAnotherTypeNamesTheLayer() =>
+        Assert.Equal(
+            "The indents layer's state is of type Int32, but its grammar reads it as String.",
+            Assert.Throws<GrammarException>(() => LayerRun.Values(_words.Then(Layer.Transduce(0, Any.Then(GetState<string>()).Select(static word => Emit.One(word)), name: "indents")), "ab")).Message
+        );
 
     [Fact]
     public void TheLayerNameNamesItsErrors() =>

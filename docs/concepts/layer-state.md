@@ -1,8 +1,6 @@
 # Layer state
 
-A grammar can keep a value as it parses and decide from it later, such as how deeply brackets nest or which blocks are open. That value is the parse's state. `GetState` and `SetState` are members of `Grammar<TIn>`, so a grammar class calls them unqualified, and `p.Scan(...)` is a method of `Parser<TIn, TOut>`. Backtracking puts the state back, so a grammar never sees a change made on a path the parse abandoned. The design is in the [whitepaper's § 2. Layer-local state](../../whitepaper.md#2-layer-local-state) and [ADR-0037](../../work/docs/decisions/0037-lexers-take-an-initial-state-parsers-set-theirs-and-a-mistyped-read-throws.md).
-
-> In this version a parser run with `Parse` keeps its state for the whole parse. Each step of a layer starts with no state.
+A grammar can keep a value as it parses and decide from it later, such as how deeply brackets nest or which blocks are open. That value is its state. Each layer has its own, and so does a parser run on its own. `GetState` and `SetState` are members of `Grammar<TIn>`, so a grammar class calls them unqualified, and `p.Scan(...)` is a method of `Parser<TIn, TOut>`. Backtracking puts the state back, so a grammar never sees a change made on a path the parse abandoned. The design is in the [whitepaper's § 2. Layer-local state](../../whitepaper.md#2-layer-local-state) and [ADR-0037](../../work/docs/decisions/0037-lexers-take-an-initial-state-parsers-set-theirs-and-a-mistyped-read-throws.md).
 
 ## Reading and setting the state
 
@@ -14,7 +12,28 @@ A grammar can keep a value as it parses and decide from it later, such as how de
 
 `Scan`'s function gets `p`'s value, the state as `p` left it, and the [span](spans.md) of what `p` consumed. It returns the value to produce and the new state. Use it whenever the new state depends on the input or on the state before. `SetState` only sets a value fixed when the grammar is built.
 
-A parser starts with no state, so a grammar sets its own at its root before anything reads it: `SetState(0).Then(Root)`.
+## Where the state starts
+
+| Where | Starts as |
+| --- | --- |
+| `Layer.Transduce(initialState, step, atEnd)` | `initialState` |
+| `Layer.Tokens(initialState, item, skip)` | `initialState` |
+| `Layer.Tokens(item)` and `Layer.Tokens(item, skip)` | no state, until the grammar sets one |
+| A parser run with `Parse` | no state, so the grammar sets its own at its root: `SetState(0).Then(Root)` |
+
+A layer runs in steps, and each step starts with the state the step before left, so a lexer can carry what it has seen from one token to the next. `skip` and `item` share it. `atEnd` receives the state the last step left. A `SetState` at the start of a layer's `item` would run on every step, so a layer that needs a state to start with takes an `initialState` instead.
+
+This lexer numbers its words:
+
+```csharp
+Layer<char, string> numbered = Layer.Tokens(
+    initialState: 0,
+    item: Letter.AtLeastOnce().Text().Scan<int, string>(static (word, count, _) => ($"{count}:{word}", count + 1)),
+    skip: Whitespace.SkipMany()
+);
+```
+
+Over `ab cd e` it produces `0:ab`, `1:cd` and `2:e`.
 
 ## An example
 
@@ -64,13 +83,16 @@ The state should be immutable: a value type, a record, or an immutable collectio
 
 ## Types
 
-`GetState<TState>()` reads the state when it is a `TState`: of that type, or of a type derived from it. A state set to null reads as null when `TState` allows null, such as `string?` or `int?`. Anything else is a mistake in the grammar, not in the input, so `Parse` throws `GrammarException` rather than returning an error. `Scan` reads the state the same way.
+`GetState<TState>()` reads the state when it is a `TState`: of that type, or of a type derived from it. A state set to null reads as null when `TState` allows null, such as `string?` or `int?`. `Scan` reads the state the same way. A layer given an `initialState` also checks, at the end of each step, that the state is still of `initialState`'s type, because later steps and `atEnd` read it as one.
+
+Anything else is a mistake in the grammar, not in the input, so the parse throws `GrammarException` rather than returning an error. The message names the layer: `parser` for a parser run on its own, otherwise the layer's name.
 
 | Mistake | Message |
 | --- | --- |
 | Reading the state before anything sets it | The parser layer has no state, but its grammar reads it as Int32. Give the layer an initialState, or set the state with SetState before reading it. |
 | Reading it as another type | The parser layer's state is of type String, but its grammar reads it as Int32. |
 | Reading null as a type that does not allow it | The parser layer's state is null, but its grammar reads it as Int32, which cannot be null. |
+| A layer's step leaving a state of another type | A step of the lexer layer left its state of type String, but its initialState is of type Int32. |
 
 ## Cost
 

@@ -23,6 +23,7 @@ public abstract partial class Parser<TIn, TOut>
     /// </para>
     /// <para>
     /// The new state lasts as one set by <see cref="Grammar{TIn}.SetState{TState}"/> does, and backtracking puts back the state from before it in the same way.
+    /// In a layer given an <c>initialState</c>, each step must leave a state of that state's type.
     /// The state should be immutable, because backtracking restores it by keeping a reference to it.
     /// A value-type state, such as an <see cref="int"/>, is boxed each time <paramref name="scan"/> returns it.
     /// </para>
