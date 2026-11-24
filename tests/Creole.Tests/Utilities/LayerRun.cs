@@ -73,27 +73,31 @@ internal static class LayerRun
     /// <summary>
     /// Starts the layer over <paramref name="input"/> and returns the buffer of its items, which fills as it is read.
     /// </summary>
+    /// <remarks>
+    /// Both buffers are bounded by the options' <see cref="ParseOptions.MaxBufferedItems"/>, as a pipeline's are.
+    /// </remarks>
     public static StreamBuffer<T> Open<TIn, T>(Layer<TIn, T> layer, TIn[] input, out ArrayUpstream<TIn> root, int segmentSize = 1024, ParseOptions? options = null, bool recordFailures = true)
     {
+        options ??= ParseOptions.Default;
         root = new ArrayUpstream<TIn>(input);
 
-        var buffer = new StreamBuffer<TIn>(root, segmentSize);
+        var buffer = new StreamBuffer<TIn>(root, segmentSize, maxBufferedItems: options.MaxBufferedItems);
 
-        return new StreamBuffer<T>(layer.Open(buffer, options ?? ParseOptions.Default, recordFailures), segmentSize);
+        return new StreamBuffer<T>(layer.Open(buffer, options, recordFailures), segmentSize, maxBufferedItems: options.MaxBufferedItems);
     }
 
     /// <summary>
     /// Runs <paramref name="parser"/> over the items the layer produces from <paramref name="text"/>, as the last layer of a pipeline will, with or without a failure log of its own.
     /// </summary>
-    public static (bool Ok, TOut Value, long Position) Run<T, TOut>(Layer<char, T> layer, Parser<T, TOut> parser, string text, int segmentSize = 1024, bool recordFailures = true) =>
-        Run(layer, parser, text.ToCharArray(), segmentSize, recordFailures);
+    public static (bool Ok, TOut Value, long Position) Run<T, TOut>(Layer<char, T> layer, Parser<T, TOut> parser, string text, int segmentSize = 1024, bool recordFailures = true, ParseOptions? options = null) =>
+        Run(layer, parser, text.ToCharArray(), segmentSize, recordFailures, options);
 
     /// <summary>
     /// Runs <paramref name="parser"/> over the items the layer produces from <paramref name="input"/>, as the last layer of a pipeline will, with or without a failure log of its own.
     /// </summary>
-    public static (bool Ok, TOut Value, long Position) Run<TIn, T, TOut>(Layer<TIn, T> layer, Parser<T, TOut> parser, TIn[] input, int segmentSize = 1024, bool recordFailures = true)
+    public static (bool Ok, TOut Value, long Position) Run<TIn, T, TOut>(Layer<TIn, T> layer, Parser<T, TOut> parser, TIn[] input, int segmentSize = 1024, bool recordFailures = true, ParseOptions? options = null)
     {
-        var cursor = new Cursor<T>(Open(layer, input, out _, segmentSize)) { Failures = recordFailures ? new FailureLog<T>() : null };
+        var cursor = new Cursor<T>(Open(layer, input, out _, segmentSize, options)) { Failures = recordFailures ? new FailureLog<T>() : null };
         TOut value = default!;
         var ok = PlanCache.Get(parser).TryParse(ref cursor, ref value);
 

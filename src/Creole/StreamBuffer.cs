@@ -102,6 +102,11 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     /// </summary>
     public long Filled { get; private set; }
 
+    /// <summary>
+    /// The highest horizon the reader has stated, with <see cref="TryGetSegment"/> or <see cref="Release"/>: the oldest position it can still go back to, or below it.
+    /// </summary>
+    public long Horizon => _horizon;
+
     /// <inheritdoc/>
     /// <remarks>
     /// It is the upstream's <see cref="IUpstream{T}.InputEnd"/>.
