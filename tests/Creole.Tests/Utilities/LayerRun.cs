@@ -5,7 +5,7 @@ namespace Creole.Tests;
 /// </summary>
 /// <remarks>
 /// Input item <c>i</c> has the span <c>[i, i + 1)</c>, as a root layer's character or byte does.
-/// The run records failures, so a failed step reports what it expected.
+/// The run records failures, so a failed step reports what it expected, unless a method is told not to, as a parse's first run does.
 /// </remarks>
 internal static class LayerRun
 {
@@ -45,15 +45,15 @@ internal static class LayerRun
     /// <summary>
     /// Every item the layer produces from <paramref name="text"/>, with its slot.
     /// </summary>
-    public static List<(T Item, StreamSlot Slot)> Items<T>(Layer<char, T> layer, string text, int segmentSize = 1024, ParseOptions? options = null) =>
-        Items(layer, text.ToCharArray(), segmentSize, options);
+    public static List<(T Item, StreamSlot Slot)> Items<T>(Layer<char, T> layer, string text, int segmentSize = 1024, ParseOptions? options = null, bool recordFailures = true) =>
+        Items(layer, text.ToCharArray(), segmentSize, options, recordFailures);
 
     /// <summary>
     /// Every item the layer produces from <paramref name="input"/>, with its slot.
     /// </summary>
-    public static List<(T Item, StreamSlot Slot)> Items<TIn, T>(Layer<TIn, T> layer, TIn[] input, int segmentSize = 1024, ParseOptions? options = null)
+    public static List<(T Item, StreamSlot Slot)> Items<TIn, T>(Layer<TIn, T> layer, TIn[] input, int segmentSize = 1024, ParseOptions? options = null, bool recordFailures = true)
     {
-        var output = Open(layer, input, out _, segmentSize, options);
+        var output = Open(layer, input, out _, segmentSize, options, recordFailures);
         var items = new List<(T, StreamSlot)>();
 
         for (var position = 0L; output.TryGetSegment(position, out _, out _); position++)
@@ -73,13 +73,13 @@ internal static class LayerRun
     /// <summary>
     /// Starts the layer over <paramref name="input"/> and returns the buffer of its items, which fills as it is read.
     /// </summary>
-    public static StreamBuffer<T> Open<TIn, T>(Layer<TIn, T> layer, TIn[] input, out ArrayUpstream<TIn> root, int segmentSize = 1024, ParseOptions? options = null)
+    public static StreamBuffer<T> Open<TIn, T>(Layer<TIn, T> layer, TIn[] input, out ArrayUpstream<TIn> root, int segmentSize = 1024, ParseOptions? options = null, bool recordFailures = true)
     {
         root = new ArrayUpstream<TIn>(input);
 
         var buffer = new StreamBuffer<TIn>(root, segmentSize);
 
-        return new StreamBuffer<T>(layer.Open(buffer, options ?? ParseOptions.Default, recordFailures: true), segmentSize);
+        return new StreamBuffer<T>(layer.Open(buffer, options ?? ParseOptions.Default, recordFailures), segmentSize);
     }
 
     /// <summary>
