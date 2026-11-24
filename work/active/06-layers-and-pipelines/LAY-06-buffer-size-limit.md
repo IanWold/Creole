@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Layers, buffers and pipelines](../../README.md#lay--layers-buffers-and-pipelines) |
 | Phase | Phase 1 — Layers |
-| Status | Building |
+| Status | Done |
 
 ## Summary
 
@@ -20,10 +20,10 @@ Bound each layer's buffer for untrusted input.
 
 ## Acceptance criteria
 
-- [ ] A pathological `Lookahead` over huge input fails cleanly instead of exhausting memory: the parse ends at the limit with the error at the `Lookahead`'s first item, and the buffer never holds more than the limit plus two segments and one step.
-- [ ] Wrapping the pinned part in `Not`, `Or` or `Atomic` does not change that outcome.
-- [ ] A producing layer whose step never ends, such as one inside an unterminated comment, ends the parse at the limit with an error that names that layer.
-- [ ] A limit of 1 lets a parse with no pins run to the end over an upstream that produces one item per step, and a parse over input held in memory ignores the limit.
+- [x] A pathological `Lookahead` over huge input fails cleanly instead of exhausting memory: the parse ends at the limit with the error at the `Lookahead`'s first item, and the buffer never holds more than the limit plus two segments and one step.
+- [x] Wrapping the pinned part in `Not`, `Or` or `Atomic` does not change that outcome.
+- [x] A producing layer whose step never ends, such as one inside an unterminated comment, ends the parse at the limit with an error that names that layer.
+- [x] A limit of 1 lets a parse with no pins run to the end over an upstream that produces one item per step, and a parse over input held in memory ignores the limit.
 
 ## Blocked by
 
@@ -51,3 +51,29 @@ Bound each layer's buffer for untrusted input.
 - 2026-11-24 (Building): Plan approved, in two increments: (1) the option, the check in `StreamBuffer.Fill` and the error for the last reader, criteria 1, 2 and 4; (2) producing layers turn the error into `LayerFailedException` under their names (`where` and `select` for the two that have none), criterion 3. The check needs the reader to state its horizon at each pull, which LAY-09 is building; the maintainer chose to wait for that and merge it in rather than build the hook twice. Done so far, in files LAY-09 does not touch: `ParseOptions.MaxBufferedItems` (positive, default 16,777,216, tested in `ParsingTests`), `BufferLimitExceededException`, `ParseErrors.BufferLimit`, and the option in parsing.md. `dotnet build` has 0 warnings. Next: once LAY-09's build is committed and merged into this branch, give `StreamBuffer` its limit and check it in `Fill`, pass the limit through `LayerRun`, and write `BufferLimitTests` for criteria 1, 2 and 4.
 - 2026-11-24 (Building): Rebased this branch onto feature/lay-09 at the maintainer's request (LAY-09 complete, 7175575); the uncommitted ADR-0039 work came back with two tracker conflicts resolved, and LAY-09's hook gives the reader's horizon at each pull. Increment 1 built: `StreamBuffer` takes `maxBufferedItems` and, after each upstream step in `Fill`, throws `BufferLimitExceededException` when the items from the stated horizon to `Filled` exceed it. `BufferLimitTests` covers criteria 1, 2 and 4 for a reader over a streamed root: a `Lookahead` over 10,000,000 items with a limit of 1,000 ends after exactly 1,003 items with the error at the `Lookahead`'s first item, for segments of 1, 2, 16 and 1,024, holding at most the limit plus two segments and one item; `Not`, `Optional`, `Or` and `Atomic` around it give the same error; the context in force is kept; a limit of 1 runs a parse with no pins to the end, and fails a step that produces two items; a parse over memory ignores the limit. Mutation check: removing the check, counting from `Start` instead of the horizon, or `>=` for `>` each fails at least four tests. Docs: the option in parsing.md, XML docs on `ParseOptions` and `StreamBuffer`. Evidence: `dotnet build` with 0 warnings; `dotnet test` with 1,777 passed and 0 failed. Until increment 2, a lower buffer's exception is not yet turned into its layer's error, so it would reach the top reader as if it were its own; no test or public API reaches that. Next: increment 2, producing layers turn the exception into `LayerFailedException` under their names, criterion 3, and layers.md.
 - 2026-11-24 (Building): Increment 2, producing layers. `Tokens` and `Transduce` turn `BufferLimitExceededException` into `LayerFailedException` under their names, beside the depth catch. The `try` now also covers the cursor's `Reset` at the start of a step, and `Transduce`'s `Add`, because both can pull: `Reset` when the last step did not peek, and `Add` when it peeks for a synthetic output's span. `Where` and `Select` catch around their one pull and report as `where` and `select` (new `Name` constants; they could not fail before). `Utf8` wraps its step. Its error is at the byte pin, with the character offset of the output at the reader's horizon (new `StreamBuffer.Horizon`), or its own count when it has produced none. `LayerRun` bounds both buffers it builds and `Run` takes options. `LayerBufferLimitTests`, 13 cases: a `Tokens` and a `Transduce` step inside an unterminated string fail at the step's start under the layer's name (criterion 3); a parser's `Lookahead` over a spaced lexer trips the lexer first, at the start of the step of the `Lookahead`'s first token; `Where`, `Select` and the decoder under a pinned reader report their own limit, the decoder with character offsets; the decoder's limit inside one sequence; and the rendered line layers.md shows. Mutation check: each of the five catches, `Reset` outside the `try` in either layer, `Add` outside it, and the decoder always using its own count, each fails at least one test. The first version had no test where `Reset` pulled, which the mutation check found; two tests whose steps never peek now cover it. Docs: layers.md gains § The buffer limit and notes in § Layer.Tokens, § Layer.Transduce and § Where and Select; parsing.md links to it. Evidence: `dotnet build` with 0 warnings; `dotnet test` with 1,790 passed and 0 failed. This closes the gap increment 1 left: no layer lets a lower buffer's exception through. All four criteria now appear met: 1 and 2 by `BufferLimitTests`, 3 by `LayerBufferLimitTests`, 4 by `BufferLimitTests`. Next: the maintainer reviews and commits, then runs `/complete`.
+
+## Outcome
+
+`ParseOptions.MaxBufferedItems` bounds each stream buffer, as [ADR-0039](../../docs/decisions/0039-each-layers-buffer-is-bounded-from-its-horizon-and-exceeding-it-ends-the-parse.md) decides. The design stage produced ADR-0039. The build had two increments, on LAY-09's horizon stated at each pull ([ADR-0040](../../docs/decisions/0040-a-producing-layer-keeps-input-only-for-outputs-its-reader-can-go-back-to.md) point 2).
+
+- **The option**, in [ParseOptions.cs](../../../src/Creole/ParseOptions.cs): a positive `int`, 16,777,216 by default.
+- **The check**, in [StreamBuffer.cs](../../../src/Creole/StreamBuffer.cs): the buffer takes the limit. After each upstream step in `Fill`, it throws the internal `BufferLimitExceededException` when the items from the reader's stated horizon to `Filled` exceed it. Input held in memory has no buffer, so nothing counts it.
+- **The error**, `ParseErrors.BufferLimit` in [ParseErrors.cs](../../../src/Creole/Errors/ParseErrors.cs): one item wide at the horizon, `buffered input from here exceeds ParseOptions.MaxBufferedItems of N`, expecting nothing, with the context lines in force where the limit was reached.
+- **Producing layers**, in [src/Creole/Layers/](../../../src/Creole/Layers/):
+  - `Tokens` and `Transduce` turn the exception into `LayerFailedException` under their names. Their `try` now also covers the cursor's `Reset` at a step's start and `Transduce`'s `Add`, since both can pull.
+  - `Where` and `Select` report as `where` and `select`, names they did not need before because they could not fail.
+  - The decoder reports at its byte pin, with the character offset of the output at its reader's horizon, read through the new `StreamBuffer.Horizon`, or its own count when it has produced none.
+- **The last reader**: no public API runs layers yet, so tests turn its exception into an error in place. [LAY-05](LAY-05-pipeline-api-and-sources.md) catches it at the pipeline entry points.
+- **Tests**:
+  - `BufferLimitTests`: criteria 1, 2 and 4.
+  - `LayerBufferLimitTests`: criterion 3, a parser's `Lookahead` tripping the lexer first, `Where`, `Select` and the decoder under a pinned reader, and the rendered line layers.md shows.
+  - `ParsingTests`: the option's default and validation.
+  - Mutation checks: removing the check, counting from `Start`, `>=` for `>`, disabling any layer's catch, moving `Reset` or `Add` out of the `try`, or giving the decoder only its own count each fails at least one test.
+- **Docs**: [parsing.md](../../../docs/concepts/parsing.md) (the option and its error) and [layers.md](../../../docs/concepts/layers.md) (§ The buffer limit, and notes in § Layer.Tokens, § Layer.Transduce and § Where and Select).
+- **Deviations**: none from this card or ADR-0039. The error names `where` and `select`, and `StreamBuffer.Horizon`, are choices made in the build.
+- **Evidence at completion** (ca2cf39):
+  - `dotnet build` with 0 warnings, and `dotnet test` with 1,790 passed and 0 failed.
+  - The AOT smoke publish succeeds with no IL warnings.
+  - `dotnet format --verify-no-changes` reports two issues in files this card did not touch, `PrimitiveExecutionTests.cs` and `RepetitionTablePidginTests.cs`, last changed in #37.
+  - The speed gate was not re-run: its benchmarks are single-layer parses over input in memory, which never reach a buffer.
+- **Left to other cards**, already in their scopes: LAY-05 the entry points, STRM-02 the restart bookmark and the driver's read-ahead, ERR-05 `Recover` passing it through, GEN-06 the generated engine.
