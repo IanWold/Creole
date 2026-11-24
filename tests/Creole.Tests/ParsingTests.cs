@@ -447,6 +447,16 @@ public class ParsingTests
     }
 
     [Fact]
+    public void MaxBufferedItemsDefaultsToTwoToTheTwentyFourthAndMustBePositive()
+    {
+        Assert.Equal(16_777_216, ParseOptions.Default.MaxBufferedItems);
+        Assert.Equal(16_777_216, new ParseOptions().MaxBufferedItems);
+        Assert.Equal(1, (ParseOptions.Default with { MaxBufferedItems = 1 }).MaxBufferedItems);
+        Assert.Throws<ArgumentOutOfRangeException>("MaxBufferedItems", () => new ParseOptions { MaxBufferedItems = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>("MaxBufferedItems", () => new ParseOptions { MaxBufferedItems = -1 });
+    }
+
+    [Fact]
     public void MaxDepthDefaultsToAThousandAndMustBePositive()
     {
         Assert.Equal(1000, ParseOptions.Default.MaxDepth);

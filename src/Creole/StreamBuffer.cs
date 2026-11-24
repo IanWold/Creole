@@ -27,6 +27,11 @@ namespace Creole;
 /// Each such read states the reader's horizon, and the upstream keeps only the input it needs to produce again the items at or above it (<see cref="OldestStepStart"/>).
 /// </para>
 /// <para>
+/// After each upstream step, the buffer counts the items from that horizon to the filled end.
+/// If they are more than its limit, it throws <see cref="BufferLimitExceededException"/>, which ends the parse.
+/// The layer reading the buffer turns it into its own error.
+/// </para>
+/// <para>
 /// <see cref="Release"/> returns whole segments below a position to the pool, which may hand their arrays to anything else.
 /// Nothing may read a released position afterwards, so the layer above first copies out what its pending errors need.
 /// <see cref="Dispose"/> returns every segment when the parse ends, and disposes the upstream, which disposes the buffers below it.
@@ -39,7 +44,8 @@ namespace Creole;
 /// <param name="upstream">The layer that produces the items.</param>
 /// <param name="segmentSize">How many items each segment holds.</param>
 /// <param name="pool">Where segments are rented from and returned to; <see cref="ArrayPool{T}.Shared"/> if null.</param>
-internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1024, ArrayPool<T>? pool = null) : ICursorSource<T>
+/// <param name="maxBufferedItems">The most items the reader may hold, from its horizon to the filled end: the parse's <see cref="ParseOptions.MaxBufferedItems"/>.</param>
+internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1024, ArrayPool<T>? pool = null, int maxBufferedItems = int.MaxValue) : ICursorSource<T>
 {
     /// <summary>
     /// A position a span combinator holds, and its span once the buffer has released it.
@@ -82,6 +88,7 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     private HeldSpan[] _heldSpans = [];
     private long _horizon;
     private SourceSpan _lastSpan;
+    private readonly int _maxBufferedItems = maxBufferedItems;
     private readonly ArrayPool<T> _pool = pool ?? ArrayPool<T>.Shared;
     private long _released;
     private readonly List<Segment> _segments = [];
@@ -162,6 +169,11 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
             {
                 _ended = true;
                 return false;
+            }
+
+            if (Filled - _horizon > _maxBufferedItems)
+            {
+                throw new BufferLimitExceededException(position, _horizon, _maxBufferedItems);
             }
         }
 
@@ -440,6 +452,7 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     /// <remarks>
     /// The buffer keeps the highest <paramref name="horizon"/> it has been given before it pulls, so the upstream's steps see it (<see cref="OldestStepStart"/>).
     /// </remarks>
+    /// <exception cref="BufferLimitExceededException">A pull left more items from the horizon to the filled end than the buffer's limit.</exception>
     public bool TryGetSegment(long position, long horizon, out ReadOnlyMemory<T> segment, out long segmentStart)
     {
         _horizon = Math.Max(_horizon, horizon);
