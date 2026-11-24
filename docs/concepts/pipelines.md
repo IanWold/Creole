@@ -138,4 +138,4 @@ As a parser's `Parse` does, a pipeline's `Parse` over a string or memory runs wi
 
 ## Exceptions
 
-`Parse` and `ParseMany` throw `GrammarException` if the pipeline is null, or if a grammar in it is not valid, which is found when it first runs. They throw `ArgumentNullException` for a null string or reader. Exceptions from the reader, such as an `IOException`, pass through. Exceptions from your own code, such as a `Select` function in a layer or in the parser, pass through.
+`Parse` and `ParseMany` throw `GrammarException` if the pipeline is null, if a grammar in it is not valid, which is found when it first runs, or if a layer or the parser reads its [state](layer-state.md#types) as a type it is not. They throw `ArgumentNullException` for a null string or reader. Exceptions from the reader, such as an `IOException`, pass through. Exceptions from your own code, such as a `Select` function in a layer or in the parser, pass through.

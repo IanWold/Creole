@@ -219,4 +219,27 @@ public class PipelineTests
         Assert.Equal(expected, Assert.IsType<Parsed<SourceSpan>>(pipeline.Parse("a b  ").Value).Value);
         Assert.Equal(expected, Assert.IsType<Parsed<SourceSpan>>(pipeline.Parse(new StringReader("a b  ")).Value).Value);
     }
+
+    [Fact]
+    public void AParserThatReadsItsStateAsAnotherTypeThrows()
+    {
+        const string Message = "The parser layer's state is of type String, but its grammar reads it as Int32.";
+        var pipeline = Pipeline.From(_words).Then(WordGrammar.SetState("x").Then(WordGrammar.GetState<int>()));
+
+        Assert.Equal(Message, Assert.Throws<GrammarException>(() => pipeline.Parse("a")).Message);
+        Assert.Equal(Message, Assert.Throws<GrammarException>(() => pipeline.Parse(new StringReader("a"))).Message);
+        Assert.Equal(Message, Assert.Throws<GrammarException>(() => pipeline.ParseMany("a").ToList()).Message);
+    }
+
+    [Fact]
+    public void EachItemOfParseManyStartsWithNoParserState()
+    {
+        var item = WordGrammar.OneOf(WordGrammar.Token("set").Then(WordGrammar.SetState(1)).As(0), WordGrammar.Token("get").Then(WordGrammar.GetState<int>()));
+        var pipeline = Pipeline.From(_words).Then(item);
+
+        Assert.Equal(
+            "The parser layer has no state, but its grammar reads it as Int32. Give the layer an initialState, or set the state with SetState before reading it.",
+            Assert.Throws<GrammarException>(() => pipeline.ParseMany("set get").ToList()).Message
+        );
+    }
 }

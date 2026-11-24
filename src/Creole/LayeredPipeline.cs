@@ -63,6 +63,10 @@ internal sealed class LayeredPipeline<TIn, TItem, TOut>(Layer<TIn, TItem> layers
         {
             error = ParseErrors.Depth(exception, in cursor, log, ParserLayer, items.SpanOf);
         }
+        catch (LayerStateException exception)
+        {
+            throw exception.ToGrammarException(ParserLayer);
+        }
 
         result = new Failed(Diagnostics.Of(error, text()));
 
@@ -118,6 +122,10 @@ internal sealed class LayeredPipeline<TIn, TItem, TOut>(Layer<TIn, TItem> layers
         catch (DepthExceededException exception)
         {
             error = ParseErrors.Depth(exception, in cursor, log, ParserLayer, items.SpanOf);
+        }
+        catch (LayerStateException exception)
+        {
+            throw exception.ToGrammarException(ParserLayer);
         }
 
         return false;
