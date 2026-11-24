@@ -56,11 +56,11 @@ public class Utf8LayerTests
     {
         var text = _strict.GetString(bytes);
 
-        firstByte = text.StartsWith('﻿')
+        firstByte = text.StartsWith('\uFEFF')
             ? _byteOrderMark.Length
             : 0;
 
-        return text.StartsWith('﻿')
+        return text.StartsWith('\uFEFF')
             ? text[1..]
             : text;
     }
@@ -96,7 +96,7 @@ public class Utf8LayerTests
     [Fact]
     public void ALeadingByteOrderMarkIsSkippedAndALaterOneIsACharacter() =>
         Assert.Equal<(char, StreamSlot)>(
-            [('a', Slot(3, 4, 0, 1)), ('﻿', Slot(4, 7, 1, 2))],
+            [('a', Slot(3, 4, 0, 1)), ('\uFEFF', Slot(4, 7, 1, 2))],
             LayerRun.Items(Layer.Utf8(), (byte[])[0xEF, 0xBB, 0xBF, 0x61, 0xEF, 0xBB, 0xBF])
         );
 
