@@ -211,7 +211,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-None yet.
+- [LAY-04](active/06-layers-and-pipelines/LAY-04-layer-local-state.md) Layer-local state — Build
 
 ### Can start now
 
@@ -221,7 +221,6 @@ These items have all their blockers done:
 - [INT-10](active/03-interpreter/INT-10-dispatched-longest-measured-against-the-automaton.md) Dispatched Longest, measured against the automaton
 - [INT-12](active/03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md) Close the interpreter test gaps BENCH-01 left
 - [ERR-06](active/04-errors-and-recovery/ERR-06-orinsert-for-missing-items.md) OrInsert for missing items
-- [LAY-04](active/06-layers-and-pipelines/LAY-04-layer-local-state.md) Layer-local state
 - [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) Pipeline API and sources
 - [LAY-06](active/06-layers-and-pipelines/LAY-06-buffer-size-limit.md) Buffer size limit
 - [LAY-09](active/06-layers-and-pipelines/LAY-09-hold-only-the-input-the-reader-can-still-go-back-to.md) Hold only the input the reader can still go back to

@@ -14,6 +14,7 @@ The parser can switch an upstream layer's lexing mode through a typed channel.
 
 - `ModeChannel<TMode>` as a typed key with an initial mode; the mode stack lives in parse state.
 - `Layer.Modal(channel, selector, skip:)`, calling the selector once per distinct mode case and caching the result.
+- A `Layer.Modal` form that takes an `initialState` first, as `Layer.Tokens(initialState, item, skip)` does. Its overloads are checked for CS0121 against the stateless ones, as LAY-04's spike did ([ADR-0037](../../docs/decisions/0037-lexers-take-an-initial-state-parsers-set-theirs-and-a-mistyped-read-throws.md) point 2).
 - `SetMode`, `PushMode`, `PopMode` as zero-width parser nodes.
 
 ## Acceptance criteria

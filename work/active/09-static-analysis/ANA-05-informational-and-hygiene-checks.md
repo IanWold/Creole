@@ -15,11 +15,13 @@ Tell authors where analysis is limited and where error messages will be poor.
 - CRL0201: opaque node limits analysis.
 - CRL0202: dependent query clause makes the rest of the rule opaque.
 - CRL0204: mutable type used as layer state.
+- A check that each `GetState`, `SetState` and `Scan` in a layer's grammar uses the layer's state type ([ADR-0037](../../docs/decisions/0037-lexers-take-an-initial-state-parsers-set-theirs-and-a-mistyped-read-throws.md) point 6). Its CRL number is assigned when it is built.
 - CRL0501: unlabelled rule whose errors would list many raw tokens.
 
 ## Acceptance criteria
 
 - [ ] Each check fires on its whitepaper example.
+- [ ] The state-type check fires on `GetState<long>()` in a layer whose state is an `int`.
 
 ## Blocked by
 
@@ -32,3 +34,4 @@ Tell authors where analysis is limited and where error messages will be poor.
 ## Whitepaper references
 
 - [§ Diagnostics](../../../whitepaper.md#diagnostics)
+- [§ 2. Layer-local state](../../../whitepaper.md#2-layer-local-state)
