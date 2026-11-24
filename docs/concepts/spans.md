@@ -50,6 +50,34 @@ An item is synthetic exactly when its span is zero-width (`Length == 0`): it cov
 - A token built only from synthetic items at one position is zero-width, so it is synthetic. So is a derived output of a step that consumed only such items, whatever its mark.
 - A token built from synthetic items at two positions spans the text between them, so it is not synthetic. Over `"a\n\nb"`, a pass that turns each newline into a synthetic `;` puts them at 1..1 and 2..2, and a token made of both spans 1..2.
 
+## Spans in grammars
+
+A grammar can read spans as it parses, to give syntax nodes their location.
+
+| Combinator | Produces |
+| --- | --- |
+| `p.Spanned()` | A `Spanned<T>`: `p`'s result as `Value`, and the span of the input `p` consumed as `Span` |
+| `p.WithSpan((value, span) => …)` | What the function builds from `p`'s result and that span |
+| `Position` | A zero-width `SourceSpan` where the next item starts |
+
+```csharp
+record Name(string Text, SourceSpan Span);
+
+class Names : CharGrammar
+{
+    public static readonly Parser<char, Name> Identifier =
+        Letter.AtLeastOnce().Text().WithSpan((text, span) => new Name(text, span));
+}
+```
+
+- A span runs from the start of the first item `p` consumed to the end of the last, in the original source. Over a layer's items it leaves out input the layer skipped, so a parser over the tokens of `  ab cd` gives `ab cd` the span 2..7.
+- If `p` consumes nothing, its span is zero-width where `Position` would be.
+- If `p` fails, `Spanned` and `WithSpan` fail the same way.
+- `Position` lies after any input the layer skipped. At the end of the input it is the end of the last item, and in an empty input it is offset 0. It reads the next item to find where that item starts.
+- Over input held whole in memory, such as a `string` or an array of tokens passed to `Parse`, offsets are item positions: character offsets for text, and token indexes for tokens.
+- `WithSpan`'s function must be pure, as `Select`'s must, because an engine may run it more than once ([whitepaper § Functions in grammars](../../whitepaper.md#functions-in-grammars)).
+- Span combinators keep no input alive. Over streamed input, if the buffer releases the item where a span starts while the parser is still running, it first copies that item's span.
+
 ## Lines and columns
 
 A `LineMap` turns character offsets into lines and columns. Build it once per source, then look up as many offsets as you need. It records where lines start and does not keep the text.

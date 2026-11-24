@@ -44,6 +44,18 @@ internal static class LayerRun
     }
 
     /// <summary>
+    /// Runs <paramref name="parser"/> over the items the layer produces from <paramref name="text"/>, as the last layer of a pipeline will, with or without a failure log of its own.
+    /// </summary>
+    public static (bool Ok, TOut Value, long Position) Run<T, TOut>(Layer<char, T> layer, Parser<T, TOut> parser, string text, int segmentSize = 1024, bool recordFailures = true)
+    {
+        var cursor = new Cursor<T>(Open(layer, text, out _, segmentSize)) { Failures = recordFailures ? new FailureLog<T>() : null };
+        TOut value = default!;
+        var ok = PlanCache.Get(parser).TryParse(ref cursor, ref value);
+
+        return (ok, value, cursor.Position);
+    }
+
+    /// <summary>
     /// Every item the layer produces from <paramref name="text"/>.
     /// </summary>
     public static List<T> Values<T>(Layer<char, T> layer, string text) =>

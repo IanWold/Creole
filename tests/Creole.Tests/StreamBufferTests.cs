@@ -490,6 +490,34 @@ public class StreamBufferTests
     }
 
     [Fact]
+    public void SpannedAtEveryItemAllocatesNothingPerItem()
+    {
+        const int length = 1 << 20;
+        var buffer = new StreamBuffer<char>(new RepeatUpstream('x', 8 * length), segmentSize: 1024);
+        var plan = PlanCache.Get(Any.Spanned());
+        var position = 0L;
+
+        void Read()
+        {
+            var cursor = new Cursor<char>(buffer);
+            Spanned<char> spanned = default;
+
+            cursor.Reset(position);
+
+            for (var i = 0; i < length && plan.TryParse(ref cursor, ref spanned); i++) { }
+
+            position = cursor.Position;
+        }
+
+        Read();
+
+        var allocated = Allocation.Fewest(Read, attempts: 1);
+
+        Assert.True(position >= 2 * length, $"Read only {position} items.");
+        Assert.True(allocated < 65_536, $"{allocated} bytes allocated over {length} items.");
+    }
+
+    [Fact]
     public void SpanSinceTheCursorIsZeroWidthAtTheNextItemOrAtTheEnd()
     {
         var cursor = new Cursor<string>(new StreamBuffer<string>(new SpanUpstream(["ab", "c"], [At(0, 2), At(3, 4)]), segmentSize: 2));

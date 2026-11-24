@@ -14,6 +14,8 @@ file static class Alternatives
         new(CIString("ab"), "CIString(ab)"),
         new(Atomic(Seq(Char('a'), Char('b').Optional())).Text().Named("ab?"), "Atomic(a, b?).Text().Named()"),
         new(Seq(Char('a'), Any).Select(static (a, any) => $"{a}{any}"), "Seq(a, Any).Select()"),
+        new(Seq(Char('a'), Any).Spanned().Select(static spanned => $"spanned {spanned.Span.Start}..{spanned.Span.End}"), "Seq(a, Any).Spanned().Select()"),
+        new(Seq(Position, Range('a', 'c').WithSpan(static (c, span) => $"{c}@{span.Start}")).Select(static (at, text) => $"{at.Start} {text}"), "Seq(Position, Range(a, c).WithSpan())"),
     ];
 
     public static Gen<Alternative> Of(int depth) =>
