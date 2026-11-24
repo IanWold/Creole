@@ -12,7 +12,7 @@ namespace Creole;
 /// </para>
 /// <para>
 /// The scan stops at the end of the input without taking the automaton's end-of-input transition: the paths still reading can only die there, which removes no match.
-/// When nothing matches, the interpreter's <see cref="LongestPlan{TIn, T}"/> runs instead, so a failure never comes from the tables.
+/// When nothing matches, the interpreter's <see cref="LongestPlan{TIn, T, TMark}"/> runs instead, so a failure never comes from the tables.
 /// It also runs when the winner, run again, does not match the input the automaton gave it, which would mean the automaton is wrong; Debug builds assert instead.
 /// A match records no failure, as the interpreter's plan records none once it has a winner; running the winner again puts the furthest failure back afterwards.
 /// A Regular alternative contains no <c>Cut</c>, so a match leaves the cut flag as it found it.
@@ -24,7 +24,7 @@ internal sealed class DfaLongestPlan<T>(CommitAutomaton automaton, Plan<char, T>
     private const int MaxStackAlternatives = 1_024;
     private readonly ushort[] _classOf = automaton.ClassOf;
     private readonly int[][] _ends = automaton.Ends;
-    private readonly LongestPlan<char, T> _fallback = new(alternatives);
+    private readonly LongestPlan<char, T, LightMark> _fallback = new(alternatives);
     private readonly int _initial = automaton.Initial;
     private readonly bool[] _live = automaton.Live;
     private readonly int[][] _matched = automaton.Matched;

@@ -15,6 +15,7 @@ Run a whole sub-pipeline over a token's text, such as SQL in a string literal, w
 - `p.Embed(pipeline)`.
 - `SourceMap` mapping sub-pipeline spans through escapes to raw characters.
 - Sub-pipeline diagnostics land in the parent's bag.
+- Add `Embed` to the nodes that give a grammar full marks in [PlanBuilder.Marks.cs](../../../src/Creole/Plans/PlanBuilder.Marks.cs) ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 9, [ERR-04](../04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md) Outcome).
 
 ## Acceptance criteria
 

@@ -8,12 +8,13 @@ namespace Creole;
 /// A right-associative operator's right operand extends with its own level too, so <c>a ^ b ^ c</c> is <c>a ^ (b ^ c)</c>.
 /// That operand runs one level of recursion deeper, because the input alone bounds how long the chain is.
 /// </remarks>
-internal sealed class InfixOperatorPlan<TIn, TOp, T>(Fixity fixity, Plan<TIn, TOp> op, Func<T, TOp, T, T> combine, int level) : OperatorPlan<TIn, T>(fixity, level)
+internal sealed class InfixOperatorPlan<TIn, TOp, T, TMark>(Fixity fixity, Plan<TIn, TOp> op, Func<T, TOp, T, T> combine, int level) : OperatorPlan<TIn, T, TMark>(fixity, level)
+    where TMark : struct, IMark<TMark>
 {
     private readonly Func<T, TOp, T, T> _combine = combine;
     private readonly Plan<TIn, TOp> _op = op;
 
-    private bool ParseRight(ref Cursor<TIn> cursor, ExpressionPlan<TIn, T> expression, ref T right)
+    private bool ParseRight(ref Cursor<TIn> cursor, ExpressionPlan<TIn, T, TMark> expression, ref T right)
     {
         if (Fixity != Fixity.InfixR)
         {
@@ -28,7 +29,7 @@ internal sealed class InfixOperatorPlan<TIn, TOp, T>(Fixity fixity, Plan<TIn, TO
     }
 
     /// <exception cref="DepthExceededException">The operator is right-associative and the parse is too deep to parse its right operand.</exception>
-    public override bool TryApply(ref Cursor<TIn> cursor, ExpressionPlan<TIn, T> expression, ref T value)
+    public override bool TryApply(ref Cursor<TIn> cursor, ExpressionPlan<TIn, T, TMark> expression, ref T value)
     {
         TOp operatorValue = default!;
 

@@ -13,6 +13,6 @@ internal sealed class PrefixOperator<TIn, TOp, T>(Parser<TIn, TOp> op, Func<TOp,
 
     public Parser<TIn, TOp> Op { get; } = op;
 
-    internal override OperatorPlan<TIn, T> Lower(PlanBuilder builder, int level) =>
-        builder.Prefix(Op, Combine, level);
+    internal override OperatorPlan<TIn, T, TMark> Lower<TMark>(PlanBuilder builder, int level) =>
+        builder.Prefix<TIn, TOp, T, TMark>(Op, Combine, level);
 }

@@ -21,6 +21,11 @@ namespace Creole.Tests;
 /// With <c>dispatch</c> set, the model skips every attempt that the next item shows would fail without consuming, as a generator's <c>switch</c> does.
 /// The semantics make that exact, which <see cref="ControlModelTests"/> checks.
 /// </para>
+/// <para>
+/// <see cref="Diagnose"/> also returns the diagnostics the <c>Raise</c> leaves raised that survive, in the order raised.
+/// Going back withdraws the diagnostics raised since: an attempt that fails without consuming, an <c>Atomic</c> that rewinds, a <c>Lookahead</c> that succeeds, and every <c>Not</c>.
+/// A <c>Longest</c> runs each alternative as if it alone had run, and keeps the diagnostics its winner left.
+/// </para>
 /// </remarks>
 internal sealed class ControlModel(bool dispatch)
 {
@@ -38,20 +43,20 @@ internal sealed class ControlModel(bool dispatch)
             new string([.. Enumerable.Range(0, n).Select(i => (bits >> i & 1) == 0 ? 'a' : 'b')])));
 
     /// <summary>
-    /// Every shape up to <paramref name="depth"/> over the leaves <c>a</c>, <c>b</c>, <c>ab</c> and <c>Cut</c>, with every unary control and repetition shape and binary <c>Seq</c>, <c>Or</c>, <c>Longest</c>, <c>SepBy</c> and <c>Until</c>.
+    /// Every shape up to <paramref name="depth"/> over <paramref name="leaves"/>, or the leaves <c>a</c>, <c>b</c>, <c>ab</c> and <c>Cut</c>, with every unary control and repetition shape and binary <c>Seq</c>, <c>Or</c>, <c>Longest</c>, <c>SepBy</c> and <c>Until</c>.
     /// Repetitions that can loop without consuming are left out: a <c>Many</c>, <c>AtLeastOnce</c> or <c>Until</c> item that can succeed without consuming, or a <c>SepBy</c> whose item and separator both can.
     /// Analysis reports them (CRL0001), and engines guard against them at run time.
     /// </summary>
-    public static IEnumerable<ControlShape> AllShapes(int depth)
+    public static IEnumerable<ControlShape> AllShapes(int depth, ControlShape[]? leaves = null)
     {
-        ControlShape[] leaves = [new ControlShape.Chars("a"), new ControlShape.Chars("b"), new ControlShape.Chars("ab"), new ControlShape.Cut()];
+        leaves ??= [new ControlShape.Chars("a"), new ControlShape.Chars("b"), new ControlShape.Chars("ab"), new ControlShape.Cut()];
 
         if (depth <= 1)
         {
             return leaves;
         }
 
-        var smaller = AllShapes(depth - 1).ToArray();
+        var smaller = AllShapes(depth - 1, leaves).ToArray();
 
         var unary = smaller.SelectMany(s => new ControlShape[]
         {
@@ -95,8 +100,34 @@ internal sealed class ControlModel(bool dispatch)
         ControlShape.AtLeastOnce s => $"AtLeastOnce({Describe(s.Item)})",
         ControlShape.Named s => $"Named({Describe(s.Item)})",
         ControlShape.Context s => $"Context({Describe(s.Item)})",
+        ControlShape.Raise s => $"Raise({s.Id})",
         _ => throw new ArgumentOutOfRangeException(nameof(shape), shape, null),
     };
+
+    /// <summary>
+    /// Runs <paramref name="shape"/> on <paramref name="input"/> as <see cref="Run"/> does, and returns the outcome and the diagnostics that survive, each as <c>d1 at 2</c>.
+    /// A repetition whose item succeeds without consuming gives <see cref="Outcome.Throws"/> and no diagnostics.
+    /// </summary>
+    public (Outcome Outcome, IReadOnlyList<string> Diagnostics) Diagnose(ControlShape shape, string input)
+    {
+        var evaluator = new Evaluator(Dispatch, input);
+
+        try
+        {
+            var ok = evaluator.Eval(shape, out var value);
+            Outcome outcome = ok
+                ? new Outcome.Ok(value, evaluator.Position)
+                : evaluator.Position > 0
+                    ? new Outcome.FailConsumed()
+                    : new Outcome.FailEmpty();
+
+            return (outcome, evaluator.Diagnostics);
+        }
+        catch (NullableRepetitionException)
+        {
+            return (new Outcome.Throws(), []);
+        }
+    }
 
     /// <summary>
     /// Merges every <c>Seq</c> nested directly in a <c>Seq</c>, so <c>Seq(a, Seq(b, c))</c> becomes <c>Seq(a, b, c)</c>.
@@ -167,7 +198,7 @@ internal sealed class ControlModel(bool dispatch)
     internal static bool ContainsCut(ControlShape shape) => shape switch
     {
         ControlShape.Cut => true,
-        ControlShape.Chars => false,
+        ControlShape.Chars or ControlShape.Raise => false,
         ControlShape.Seq s => s.Steps.Any(ContainsCut),
         ControlShape.Or s => ContainsCut(s.First) || ContainsCut(s.Second),
         ControlShape.Longest s => ContainsCut(s.First) || ContainsCut(s.Second),
@@ -190,7 +221,7 @@ internal sealed class ControlModel(bool dispatch)
     internal static bool First(ControlShape shape, char c) => shape switch
     {
         ControlShape.Chars s => s.Text[0] == c,
-        ControlShape.Cut or ControlShape.Not => false,
+        ControlShape.Cut or ControlShape.Not or ControlShape.Raise => false,
         ControlShape.Seq s => FirstOfSteps(s.Steps, c),
         ControlShape.Or s => First(s.First, c) || First(s.Second, c),
         ControlShape.Longest s => First(s.First, c) || First(s.Second, c),
@@ -212,7 +243,7 @@ internal sealed class ControlModel(bool dispatch)
     internal static bool Nullable(ControlShape shape) => shape switch
     {
         ControlShape.Chars => false,
-        ControlShape.Cut or ControlShape.Not or ControlShape.Lookahead or ControlShape.Optional or ControlShape.Many or ControlShape.SepBy => true,
+        ControlShape.Cut or ControlShape.Not or ControlShape.Lookahead or ControlShape.Optional or ControlShape.Many or ControlShape.SepBy or ControlShape.Raise => true,
         ControlShape.Seq s => s.Steps.All(Nullable),
         ControlShape.Or s => Nullable(s.First) || Nullable(s.Second),
         ControlShape.Longest s => Nullable(s.First) || Nullable(s.Second),
@@ -267,11 +298,15 @@ internal sealed class ControlModel(bool dispatch)
 file sealed class NullableRepetitionException : Exception;
 
 /// <summary>
-/// One run of <see cref="ControlModel"/>: the input, the position and the cut flag.
+/// One run of <see cref="ControlModel"/>: the input, the position, the cut flag and the diagnostics raised.
 /// </summary>
 file sealed class Evaluator(bool dispatch, string input)
 {
+    private readonly List<string> _diagnostics = [];
+
     public bool Cut { get; private set; }
+
+    public IReadOnlyList<string> Diagnostics => _diagnostics;
 
     public int Position { get; private set; }
 
@@ -330,6 +365,11 @@ file sealed class Evaluator(bool dispatch, string input)
             case ControlShape.Context s:
                 return Eval(s.Item, out value);
 
+            case ControlShape.Raise s:
+                _diagnostics.Add($"d{s.Id} at {Position}");
+                value = "";
+                return true;
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(shape), shape, null);
         }
@@ -357,6 +397,7 @@ file sealed class Evaluator(bool dispatch, string input)
 
         var savedCut = Cut;
         var start = Position;
+        var raised = _diagnostics.Count;
 
         if (run(out value))
         {
@@ -369,6 +410,7 @@ file sealed class Evaluator(bool dispatch, string input)
         }
 
         Cut = savedCut;
+        Withdraw(raised);
         value = "";
         return AttemptResult.EmptyFailure;
     }
@@ -377,6 +419,7 @@ file sealed class Evaluator(bool dispatch, string input)
     {
         var savedCut = Cut;
         var start = Position;
+        var raised = _diagnostics.Count;
         Cut = false;
 
         var ok = Eval(item, out value);
@@ -384,6 +427,7 @@ file sealed class Evaluator(bool dispatch, string input)
         if (!ok && !Cut)
         {
             Position = start;
+            Withdraw(raised);
         }
 
         Cut = savedCut || Cut;
@@ -409,23 +453,29 @@ file sealed class Evaluator(bool dispatch, string input)
     {
         var savedCut = Cut;
         var start = Position;
+        var raised = _diagnostics.Count;
         var bestEnd = -1;
+        string[] winnerLeft = [];
         value = "";
 
         foreach (var alternative in alternatives)
         {
             Position = start;
             Cut = false;
+            Withdraw(raised);
 
             if (Eval(alternative, out var v) && Position > bestEnd)
             {
                 bestEnd = Position;
                 value = v;
+                winnerLeft = [.. _diagnostics.Skip(raised)];
             }
         }
 
         Cut = savedCut;
         Position = bestEnd < 0 ? start : bestEnd;
+        Withdraw(raised);
+        _diagnostics.AddRange(winnerLeft);
         return bestEnd >= 0;
     }
 
@@ -433,6 +483,7 @@ file sealed class Evaluator(bool dispatch, string input)
     {
         var savedCut = Cut;
         var start = Position;
+        var raised = _diagnostics.Count;
         Cut = false;
 
         var ok = Eval(item, out value);
@@ -440,6 +491,7 @@ file sealed class Evaluator(bool dispatch, string input)
         if (ok)
         {
             Position = start;
+            Withdraw(raised);
         }
 
         Cut = savedCut;
@@ -450,11 +502,13 @@ file sealed class Evaluator(bool dispatch, string input)
     {
         var savedCut = Cut;
         var start = Position;
+        var raised = _diagnostics.Count;
         Cut = false;
 
         var ok = Eval(item, out _);
 
         Position = start;
+        Withdraw(raised);
         Cut = savedCut;
         return !ok;
     }
@@ -605,6 +659,12 @@ file sealed class Evaluator(bool dispatch, string input)
     /// </summary>
     private bool Viable(ControlShape shape) =>
         ControlModel.Nullable(shape) || (Position < input.Length && ControlModel.First(shape, input[Position]));
+
+    /// <summary>
+    /// Withdraws the diagnostics raised after the first <paramref name="count"/>.
+    /// </summary>
+    private void Withdraw(int count) =>
+        _diagnostics.RemoveRange(count, _diagnostics.Count - count);
 }
 
 file delegate bool Step(out string value);

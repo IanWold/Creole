@@ -2,12 +2,13 @@ namespace Creole;
 
 internal sealed partial class PlanBuilder
 {
-    public Plan<TIn, T> Expression<TIn, T>(Parser<TIn, T> atom, IReadOnlyList<IReadOnlyList<ExpressionOperator<TIn, T>>> levels)
+    private ExpressionPlan<TIn, T, TMark> Expression<TIn, T, TMark>(Parser<TIn, T> atom, IReadOnlyList<IReadOnlyList<ExpressionOperator<TIn, T>>> levels)
+        where TMark : struct, IMark<TMark>
     {
         var atomPlan = Lower(atom);
-        var operators = levels.SelectMany((level, index) => level.Select(op => op.Lower(this, index))).ToArray();
+        var operators = levels.SelectMany((level, index) => level.Select(op => op.Lower<TMark>(this, index))).ToArray();
 
-        return new ExpressionPlan<TIn, T>(
+        return new ExpressionPlan<TIn, T, TMark>(
             atomPlan,
             [.. operators.Where(op => op.Fixity == Fixity.Prefix)],
             [.. operators.Where(op => op.Fixity != Fixity.Prefix)],
@@ -15,8 +16,14 @@ internal sealed partial class PlanBuilder
         );
     }
 
-    public OperatorPlan<TIn, T> Infix<TIn, TOp, T>(Fixity fixity, Parser<TIn, TOp> op, Func<T, TOp, T, T> combine, int level) =>
-        new InfixOperatorPlan<TIn, TOp, T>(fixity, Lower(op), combine, level)
+    public Plan<TIn, T> Expression<TIn, T>(Parser<TIn, T> atom, IReadOnlyList<IReadOnlyList<ExpressionOperator<TIn, T>>> levels) =>
+        FullMarks
+            ? Expression<TIn, T, FullMark>(atom, levels)
+            : Expression<TIn, T, LightMark>(atom, levels);
+
+    public OperatorPlan<TIn, T, TMark> Infix<TIn, TOp, T, TMark>(Fixity fixity, Parser<TIn, TOp> op, Func<T, TOp, T, T> combine, int level)
+        where TMark : struct, IMark<TMark> =>
+        new InfixOperatorPlan<TIn, TOp, T, TMark>(fixity, Lower(op), combine, level)
         {
             Chain = fixity == Fixity.InfixN
                 ? Chained(op)
@@ -33,9 +40,11 @@ internal sealed partial class PlanBuilder
         return new ChainMessage(label ?? primitive?.Expected);
     }
 
-    public OperatorPlan<TIn, T> Postfix<TIn, TOp, T>(Parser<TIn, TOp> op, Func<T, TOp, T> combine, int level) =>
-        new PostfixOperatorPlan<TIn, TOp, T>(Lower(op), combine, level);
+    public OperatorPlan<TIn, T, TMark> Postfix<TIn, TOp, T, TMark>(Parser<TIn, TOp> op, Func<T, TOp, T> combine, int level)
+        where TMark : struct, IMark<TMark> =>
+        new PostfixOperatorPlan<TIn, TOp, T, TMark>(Lower(op), combine, level);
 
-    public OperatorPlan<TIn, T> Prefix<TIn, TOp, T>(Parser<TIn, TOp> op, Func<TOp, T, T> combine, int level) =>
-        new PrefixOperatorPlan<TIn, TOp, T>(Lower(op), combine, level);
+    public OperatorPlan<TIn, T, TMark> Prefix<TIn, TOp, T, TMark>(Parser<TIn, TOp> op, Func<TOp, T, T> combine, int level)
+        where TMark : struct, IMark<TMark> =>
+        new PrefixOperatorPlan<TIn, TOp, T, TMark>(Lower(op), combine, level);
 }

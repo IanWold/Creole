@@ -71,7 +71,7 @@ public class DfaLoweringTests
         var interpreted = new PlanBuilder(LoweringOptions.None).Lower(parser);
         var capped = Lower(parser, dfaStateCap: 50);
 
-        Assert.IsType<LongestPlan<char, string>>(capped);
+        Assert.IsType<LongestPlan<char, string, LightMark>>(capped);
 
         for (var position = 0; position < LexerSamples.CSharpText.Length; position++)
         {
@@ -86,7 +86,7 @@ public class DfaLoweringTests
         var interpreted = new PlanBuilder(LoweringOptions.None).Lower(parser);
         var budgeted = Lower(parser, dfaWorkBudget: 1_000);
 
-        Assert.IsType<LongestPlan<char, string>>(budgeted);
+        Assert.IsType<LongestPlan<char, string, LightMark>>(budgeted);
 
         for (var position = 0; position < LexerSamples.CSharpText.Length; position++)
         {
@@ -96,7 +96,7 @@ public class DfaLoweringTests
 
     [Fact]
     public void ALongestOverTokensRunsOnTheInterpreter() =>
-        Assert.IsType<LongestPlan<int, int>>(Lower(Grammar<int>.Longest(Grammar<int>.Token(1), Grammar<int>.Token(2))));
+        Assert.IsType<LongestPlan<int, int, LightMark>>(Lower(Grammar<int>.Longest(Grammar<int>.Token(1), Grammar<int>.Token(2))));
 
     [Fact]
     public void ALongestThatOutgrowsTheStateCapFallsBackCheaply()
@@ -105,7 +105,7 @@ public class DfaLoweringTests
         Plan<char, int>? plan = null;
         var allocated = Allocation.Fewest(() => plan = Lower(parser));
 
-        Assert.IsType<LongestPlan<char, int>>(plan);
+        Assert.IsType<LongestPlan<char, int, LightMark>>(plan);
         Assert.InRange(allocated, 0, MaxFallbackBytes);
     }
 
@@ -115,7 +115,7 @@ public class DfaLoweringTests
         var outsideEPrime = Atomic(Seq(new CharClassNode(CharSet.Of('a', 'c'), null), String("cbc")).SkipMany()).Or(Atomic(Char('b')).SkipMany());
         var parser = Longest(outsideEPrime.As("outside"), Char('a').As("a"));
 
-        Assert.IsType<LongestPlan<char, string>>(Lower(parser));
+        Assert.IsType<LongestPlan<char, string, LightMark>>(Lower(parser));
 
         foreach (var input in new[] { "", "a", "c", "b", "acbc", "acbcb", "acb", "bbc" })
         {
@@ -126,7 +126,7 @@ public class DfaLoweringTests
 
     [Fact]
     public void ALongestWithAnAlternativeThatIsNotRegularRunsOnTheInterpreter() =>
-        Assert.IsType<LongestPlan<char, char>>(Lower(Longest(Char('a'), Satisfy(char.IsDigit))));
+        Assert.IsType<LongestPlan<char, char, LightMark>>(Lower(Longest(Char('a'), Satisfy(char.IsDigit))));
 
     [Theory]
     [InlineData("JSON", false)]
@@ -185,5 +185,5 @@ public class DfaLoweringTests
 
     [Fact]
     public void WithoutTheRewriteALongestRunsOnTheInterpreter() =>
-        Assert.IsType<LongestPlan<char, string>>(new PlanBuilder(LoweringOptions.None).Lower(Longest(String("<"), String("<="))));
+        Assert.IsType<LongestPlan<char, string, FullMark>>(new PlanBuilder(LoweringOptions.None).Lower(Longest(String("<"), String("<="))));
 }

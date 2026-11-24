@@ -34,7 +34,7 @@ public ref struct Cursor<T>
     /// </summary>
     /// <remarks>
     /// Each layer has its own cursor, so this is the one cut flag per layer that the cut rule needs.
-    /// <c>Atomic</c>, <c>Lookahead</c>, <c>Not</c>, <c>Longest</c> alternatives and every <see cref="LightMark"/> save and restore it.
+    /// <c>Atomic</c>, <c>Lookahead</c>, <c>Not</c>, <c>Longest</c> alternatives and every mark (<see cref="IMark{TSelf}"/>) save and restore it.
     /// </remarks>
     internal bool Cut { get; set; }
 
@@ -46,6 +46,11 @@ public ref struct Cursor<T>
     /// Each layer has its own cursor, so each layer counts its own depth.
     /// </remarks>
     internal int Depth { get; private set; }
+
+    /// <summary>
+    /// How many diagnostics this layer has raised and not withdrawn, or 0 in a parse that records no failures and so raises none.
+    /// </summary>
+    internal readonly int DiagnosticCount => Failures?.DiagnosticCount ?? 0;
 
     /// <summary>
     /// Where this layer's parse records its failures, or null to record none.
@@ -341,6 +346,11 @@ public ref struct Cursor<T>
     }
 
     /// <summary>
+    /// Puts the furthest failure back as it was at a <see cref="SaveFailures"/>, which stays open, as a <c>Longest</c> does before it runs its winner again.
+    /// </summary>
+    internal readonly void ResetFailures(in FailureMark mark) => Failures?.Reset(in mark);
+
+    /// <summary>
     /// Ends a <see cref="SaveFailures"/> and puts the furthest failure back as it was then.
     /// </summary>
     internal readonly void RestoreFailures(in FailureMark mark) => Failures?.Restore(in mark);
@@ -406,6 +416,11 @@ public ref struct Cursor<T>
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void Unpin(long floor) => Floor = floor;
+
+    /// <summary>
+    /// Withdraws the diagnostics this layer raised after the first <paramref name="count"/>, giving back the failures those built from the furthest failure took.
+    /// </summary>
+    internal readonly void WithdrawDiagnostics(int count) => Failures?.Withdraw(count);
 
     /// <summary>
     /// Moves past <paramref name="count"/> items, which may span several segments.

@@ -65,3 +65,61 @@ internal class CutThenPlan<T>(Plan<char, T> inner) : Plan<char, T>
         return inner.TryParse(ref cursor, ref result);
     }
 }
+
+/// <summary>
+/// Raises a diagnostic that reports <paramref name="message"/> where it is, and succeeds without consuming. Produces the empty string.
+/// </summary>
+/// <remarks>
+/// It reports itself as a <c>Return</c>. Lowering cannot see that it raises diagnostics, so a grammar that holds it must be lowered without <see cref="LoweringOptions.LightMarks"/>.
+/// </remarks>
+internal class RaiseNode(string message) : Parser<char, string>
+{
+    internal override IReadOnlyList<INode> Children => [];
+
+    internal override NodeKind Kind => NodeKind.Return;
+
+    internal override Plan<char, string> Lower(PlanBuilder builder) => new RaisePlan(message);
+}
+
+internal class RaisePlan(string message) : Plan<char, string>
+{
+    public override bool TryParse(ref Cursor<char> cursor, ref string result)
+    {
+        cursor.Failures?.Raise(cursor.Position, message);
+        result = "";
+        return true;
+    }
+}
+
+/// <summary>
+/// Runs <paramref name="item"/>, and if it fails, reports the furthest failure as a diagnostic and succeeds where the item left the cursor, as a <c>Recover</c> that skips nothing would.
+/// </summary>
+/// <remarks>
+/// Lowering cannot see that it raises diagnostics, so a grammar that holds it must be lowered without <see cref="LoweringOptions.LightMarks"/>.
+/// </remarks>
+internal class ReportNode<T>(Parser<char, T> item) : Parser<char, Maybe<T>>
+{
+    internal override IReadOnlyList<INode> Children => [item];
+
+    internal override NodeKind Kind => NodeKind.Return;
+
+    internal override Plan<char, Maybe<T>> Lower(PlanBuilder builder) => new ReportPlan<T>(builder.Lower(item));
+}
+
+internal class ReportPlan<T>(Plan<char, T> item) : Plan<char, Maybe<T>>
+{
+    public override bool TryParse(ref Cursor<char> cursor, ref Maybe<T> result)
+    {
+        T value = default!;
+
+        if (item.TryParse(ref cursor, ref value))
+        {
+            result = value;
+            return true;
+        }
+
+        cursor.Failures?.RaiseFromFurthestFailure(cursor.Position);
+        result = default;
+        return true;
+    }
+}

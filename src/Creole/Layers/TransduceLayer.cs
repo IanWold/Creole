@@ -97,6 +97,7 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
         var cursor = new Cursor<TIn>(_input) { Failures = _failures, Floor = floor, MaxDepth = _maxDepth };
         var outputs = default(Emit<TOut>);
 
+        _failures?.StepStart = stepStart;
         _input.Release(floor, _failures);
         cursor.Reset(stepStart);
 

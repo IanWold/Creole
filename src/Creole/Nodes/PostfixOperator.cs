@@ -13,6 +13,6 @@ internal sealed class PostfixOperator<TIn, TOp, T>(Parser<TIn, TOp> op, Func<T, 
 
     public Parser<TIn, TOp> Op { get; } = op;
 
-    internal override OperatorPlan<TIn, T> Lower(PlanBuilder builder, int level) =>
-        builder.Postfix(Op, Combine, level);
+    internal override OperatorPlan<TIn, T, TMark> Lower<TMark>(PlanBuilder builder, int level) =>
+        builder.Postfix<TIn, TOp, T, TMark>(Op, Combine, level);
 }

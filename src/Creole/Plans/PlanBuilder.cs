@@ -65,6 +65,8 @@ internal sealed partial class PlanBuilder(LoweringOptions options = LoweringOpti
     /// <exception cref="GrammarException">The grammar has a cycle of <c>Rec</c> nodes that never reaches a parser.</exception>
     public Plan<TIn, TOut> Lower<TIn, TOut>(Parser<TIn, TOut> parser)
     {
+        ChooseMarks(parser);
+
         if (_plans.TryGetValue(parser, out var existing))
         {
             return (Plan<TIn, TOut>)existing;

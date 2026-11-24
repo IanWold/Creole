@@ -8,14 +8,15 @@ namespace Creole;
 /// A cut passed inside does not survive leaving it (ADR-0011 point 4).
 /// Its start is pinned while it runs, so a stream buffer keeps the input it may rewind to.
 /// </remarks>
-internal sealed class LookaheadPlan<TIn, T>(Plan<TIn, T> item) : Plan<TIn, T>
+internal sealed class LookaheadPlan<TIn, T, TMark>(Plan<TIn, T> item) : Plan<TIn, T>
+    where TMark : struct, IMark<TMark>
 {
     private readonly Plan<TIn, T> _item = item;
 
     public override bool TryParse(ref Cursor<TIn> cursor, ref T result)
     {
         var outerCut = cursor.Cut;
-        var start = cursor.Position;
+        var mark = TMark.Take(ref cursor);
         var floor = cursor.Pin();
         var failures = cursor.SaveFailures();
         cursor.Cut = false;
@@ -24,7 +25,8 @@ internal sealed class LookaheadPlan<TIn, T>(Plan<TIn, T> item) : Plan<TIn, T>
 
         if (ok)
         {
-            cursor.Reset(start);
+            mark.Rewind(ref cursor);
+            cursor.Reset(mark.Position);
             cursor.RestoreFailures(in failures);
         }
         else

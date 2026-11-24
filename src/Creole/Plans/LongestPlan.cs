@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Creole;
 
 /// <summary>
@@ -9,28 +11,53 @@ namespace Creole;
 /// Each alternative starts with no cut in force, and a cut passed inside one does not survive leaving it (ADR-0011 point 4).
 /// When every alternative is Regular, <see cref="DfaLongestPlan{T}"/> replaces this plan (<see cref="LoweringOptions.Dfa"/>).
 /// Its start is pinned while it runs, so a stream buffer keeps the input every alternative starts from.
+/// Each alternative starts from the parts the mark saved, as if it alone had run.
+/// When the mark saves more than the position and the cut flag, a run with a failure log runs the winner again whenever there are several alternatives, from the furthest failure the plan started with, so the winner's diagnostics are those it raises when it runs alone.
 /// </remarks>
-internal sealed class LongestPlan<TIn, T>(Plan<TIn, T>[] alternatives) : Plan<TIn, T>
+internal sealed class LongestPlan<TIn, T, TMark>(Plan<TIn, T>[] alternatives) : Plan<TIn, T>
+    where TMark : struct, IMark<TMark>
 {
     private readonly Plan<TIn, T>[] _alternatives = alternatives;
 
     public override bool TryParse(ref Cursor<TIn> cursor, ref T result)
     {
+        var alternatives = _alternatives;
         var outerCut = cursor.Cut;
-        var start = cursor.Position;
+        var mark = TMark.Take(ref cursor);
         var floor = cursor.Pin();
         var failures = cursor.SaveFailures();
         var bestEnd = -1L;
+        var winner = -1;
 
-        foreach (var alternative in _alternatives)
+        for (var i = 0; i < alternatives.Length; i++)
         {
-            cursor.Reset(start);
+            mark.Rewind(ref cursor);
+            cursor.Reset(mark.Position);
             cursor.Cut = false;
             T value = default!;
 
-            if (alternative.TryParse(ref cursor, ref value) && cursor.Position > bestEnd)
+            if (alternatives[i].TryParse(ref cursor, ref value) && cursor.Position > bestEnd)
             {
                 bestEnd = cursor.Position;
+                result = value;
+                winner = i;
+            }
+        }
+
+        if (TMark.Rewinds && winner >= 0 && alternatives.Length > 1 && cursor.Failures is not null)
+        {
+            mark.Rewind(ref cursor);
+            cursor.Reset(mark.Position);
+            cursor.ResetFailures(in failures);
+            cursor.Cut = false;
+            T value = default!;
+
+            var again = alternatives[winner].TryParse(ref cursor, ref value);
+
+            Debug.Assert(again && cursor.Position == bestEnd, "The winner of a Longest ended somewhere else when it ran again.");
+
+            if (again)
+            {
                 result = value;
             }
         }
@@ -40,7 +67,8 @@ internal sealed class LongestPlan<TIn, T>(Plan<TIn, T>[] alternatives) : Plan<TI
 
         if (bestEnd < 0)
         {
-            cursor.Reset(start);
+            mark.Rewind(ref cursor);
+            cursor.Reset(mark.Position);
             cursor.KeepFailures(in failures);
             return false;
         }

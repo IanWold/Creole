@@ -4,7 +4,8 @@ namespace Creole;
 /// Tries each alternative in order, each as one attempt, while the previous one failed without consuming.
 /// Fails when an alternative fails after consuming, or when every alternative fails without consuming.
 /// </summary>
-internal sealed class OrPlan<TIn, T>(Plan<TIn, T>[] alternatives) : Plan<TIn, T>
+internal sealed class OrPlan<TIn, T, TMark>(Plan<TIn, T>[] alternatives) : Plan<TIn, T>
+    where TMark : struct, IMark<TMark>
 {
     /// <summary>
     /// The alternatives, in order.
@@ -15,7 +16,7 @@ internal sealed class OrPlan<TIn, T>(Plan<TIn, T>[] alternatives) : Plan<TIn, T>
     {
         foreach (var alternative in alternatives)
         {
-            var mark = LightMark.Take(ref cursor);
+            var mark = TMark.Take(ref cursor);
 
             if (alternative.TryParse(ref cursor, ref result))
             {

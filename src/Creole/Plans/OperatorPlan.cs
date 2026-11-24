@@ -1,12 +1,13 @@
 namespace Creole;
 
 /// <summary>
-/// The plan for one operator of an <see cref="ExpressionPlan{TIn, T}"/>, which hides the type its parser produces.
+/// The plan for one operator of an <see cref="ExpressionPlan{TIn, T, TMark}"/>, which hides the type its parser produces.
 /// </summary>
 /// <remarks>
 /// <see cref="TryApply"/> sets the value only on success, so after an attempt that fails without consuming, the expression still holds its left operand.
 /// </remarks>
-internal abstract class OperatorPlan<TIn, T>(Fixity fixity, int level)
+internal abstract class OperatorPlan<TIn, T, TMark>(Fixity fixity, int level)
+    where TMark : struct, IMark<TMark>
 {
     /// <summary>
     /// What a second operator from this operator's non-associative level reports, or null for an operator of another fixity.
@@ -24,7 +25,7 @@ internal abstract class OperatorPlan<TIn, T>(Fixity fixity, int level)
     /// Runs the operator, and for a prefix or infix operator the operand after it, then combines them into <paramref name="value"/>.
     /// For a postfix or infix operator, <paramref name="value"/> holds the left operand on entry.
     /// </summary>
-    public abstract bool TryApply(ref Cursor<TIn> cursor, ExpressionPlan<TIn, T> expression, ref T value);
+    public abstract bool TryApply(ref Cursor<TIn> cursor, ExpressionPlan<TIn, T, TMark> expression, ref T value);
 
     /// <summary>
     /// Runs only the operator's parser and reports whether it matched.

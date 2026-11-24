@@ -7,7 +7,8 @@ namespace Creole;
 /// A terminator that succeeds ends the repetition, consumed.
 /// An item that fails, with or without consuming, fails the repetition, as does a terminator that fails after consuming.
 /// </remarks>
-internal sealed class UntilPlan<TIn, T, TTerm>(Plan<TIn, T> item, Plan<TIn, TTerm> terminator) : Plan<TIn, IReadOnlyList<T>>
+internal sealed class UntilPlan<TIn, T, TTerm, TMark>(Plan<TIn, T> item, Plan<TIn, TTerm> terminator) : Plan<TIn, IReadOnlyList<T>>
+    where TMark : struct, IMark<TMark>
 {
     private readonly Plan<TIn, T> _item = item;
     private readonly Plan<TIn, TTerm> _terminator = terminator;
@@ -19,7 +20,7 @@ internal sealed class UntilPlan<TIn, T, TTerm>(Plan<TIn, T> item, Plan<TIn, TTer
 
         while (true)
         {
-            var mark = LightMark.Take(ref cursor);
+            var mark = TMark.Take(ref cursor);
 
             if (_terminator.TryParse(ref cursor, ref terminator))
             {
