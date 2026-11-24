@@ -17,6 +17,7 @@ A mode change discards items lexed under the old mode and re-produces them corre
 - Check dropped outputs equal the consumed ones; report CRL0008 at run time if not.
 - Append (index i, previous mode stack) to the mode log.
 - Lower the furthest failure at *i*: a failure past *i* becomes a bare failure at *i*, and a failure whose span reaches past *i* loses that end and a rejection's or chained operator's message. Saves note the mode log's length and are lowered when restored, by the changes still in effect ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 3).
+- This is the first caller of `FailureLog.WithdrawFromStep`. Test that `Tokens` and `Transduce` tag each diagnostic with its step's start, so the withdrawal takes exactly the re-run steps' diagnostics ([ERR-04](../04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md) Outcome).
 
 ## Acceptance criteria
 

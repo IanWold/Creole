@@ -24,6 +24,7 @@ Chain layers into a parser and run it over in-memory or reader input.
 - Over streamed input, make sure `Parse`'s fallback errors read nothing the buffer may have released: `NothingRecorded` reads position 0, and `DepthError` the depth limit's position.
 - Under `ParseMany`, each item starts with no furthest failure. Decide, with STRM-02, which item's result holds a diagnostic a lexer raised while producing lookahead past an item's end ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) points 4 and 7).
 - A layer whose step fails throws the internal `LayerFailedException`, which carries that layer's error, named for the layer, with spans in the source. `Parse` catches it and returns `Failed` with that error. `Layer.Open` takes `recordFailures`; LAY-03's tests always pass true. Pass false in a first run over in-memory input, and true when it runs again ([LAY-03](LAY-03-layer-abstraction-and-emit.md) Outcome).
+- Test [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 4's example once layers run in a pipeline: a parser's mark never withdraws a diagnostic its lexer raised. ERR-04 holds this by giving each layer its own failure log, without a test ([ERR-04](../04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md) Outcome).
 
 ## Acceptance criteria
 

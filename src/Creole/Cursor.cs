@@ -346,6 +346,11 @@ public ref struct Cursor<T>
     }
 
     /// <summary>
+    /// Puts the furthest failure back as it was at a <see cref="SaveFailures"/>, which stays open, as a <c>Longest</c> does before it runs its winner again.
+    /// </summary>
+    internal readonly void ResetFailures(in FailureMark mark) => Failures?.Reset(in mark);
+
+    /// <summary>
     /// Ends a <see cref="SaveFailures"/> and puts the furthest failure back as it was then.
     /// </summary>
     internal readonly void RestoreFailures(in FailureMark mark) => Failures?.Restore(in mark);

@@ -480,11 +480,11 @@ internal sealed partial class FailureLog<T>
     }
 
     /// <summary>
-    /// Ends a <see cref="Save"/> and puts the furthest failure back as it was then.
+    /// Puts the furthest failure back as it was at the innermost open <see cref="Save"/>, which stays open.
     /// </summary>
-    public void Restore(in FailureMark mark)
+    public void Reset(in FailureMark mark)
     {
-        var saved = _saves[--_saveCount];
+        var saved = _saves[_saveCount - 1];
 
         Position = mark.Position;
         _start = mark.Start;
@@ -496,9 +496,16 @@ internal sealed partial class FailureLog<T>
         _at = saved.At;
         _context = mark.Context;
         _records = mark.Records;
-        _protected = mark.Protected;
-        _frameFloor = mark.FrameFloor;
         _generation = mark.Generation;
+    }
+
+    /// <summary>
+    /// Ends a <see cref="Save"/> and puts the furthest failure back as it was then.
+    /// </summary>
+    public void Restore(in FailureMark mark)
+    {
+        Reset(in mark);
+        Keep(in mark);
     }
 
     /// <summary>

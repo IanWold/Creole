@@ -59,6 +59,18 @@ public class DiagnosticWithdrawalTests
         return Renumber(shape);
     }
 
+    private static List<ParseError> Raised<T>(Parser<char, T> grammar, string input)
+    {
+        var log = new FailureLog<char>();
+        var cursor = Cursor<char>.FromMemory(input.AsMemory()) with { Failures = log };
+        var plan = new PlanBuilder(FullMarks).Lower(grammar);
+        T value = default!;
+
+        _ = plan.TryParse(ref cursor, ref value);
+
+        return [.. log.ToDiagnostics(in cursor, "parser", SpanOf)];
+    }
+
     private static (Outcome Outcome, IReadOnlyList<string> Diagnostics) Run(ControlShape shape, string input)
     {
         var log = new FailureLog<char>();
@@ -119,17 +131,8 @@ public class DiagnosticWithdrawalTests
     private static SourceSpan SpanOf(long start, long end) =>
         new(SourceId.Unnamed, start, end);
 
-    private static List<string> Survivors<T>(Parser<char, T> grammar, string input)
-    {
-        var log = new FailureLog<char>();
-        var cursor = Cursor<char>.FromMemory(input.AsMemory()) with { Failures = log };
-        var plan = new PlanBuilder(FullMarks).Lower(grammar);
-        T value = default!;
-
-        _ = plan.TryParse(ref cursor, ref value);
-
-        return [.. log.ToDiagnostics(in cursor, "parser", SpanOf).Select(error => ((CustomMessage)error.Unexpected.Value!).Text)];
-    }
+    private static List<string> Survivors<T>(Parser<char, T> grammar, string input) =>
+        [.. Raised(grammar, input).Select(error => ((CustomMessage)error.Unexpected.Value!).Text)];
 
     [Fact]
     public void NoDiagnosticSurvivesFromAnAbandonedPathInAnyShapeToDepthThree()
@@ -181,6 +184,18 @@ public class DiagnosticWithdrawalTests
         Assert.False(Parsing.TryParse(log, plan, ";".AsMemory(), ParseOptions.Default, out _, out var error));
         Assert.Equal(new ParseError(SpanOf(0, 1), "parser", new UnexpectedItem("';'"), [new ExpectedItem("'i'"), new ExpectedItem("'l'"), new ExpectedItem("'n'")], []), error);
         Assert.Equal(0, log.DiagnosticCount);
+    }
+
+    [Fact]
+    public void ALongestWinnerReportsWhatItReportsWhenItRunsAlone()
+    {
+        var winner = new ReportNode<char>(Char('q')).Then(String("ab")).Select(_ => 0);
+        var loser = Char('a').Then(Char('z')).Select(_ => 0);
+        ParseError[] alone = [new(SpanOf(0, 1), "parser", new UnexpectedItem("'a'"), [new ExpectedItem("'q'")], [])];
+
+        Assert.Equal(alone, Raised(winner, "ab"));
+        Assert.Equal(alone, Raised(Longest(winner, loser), "ab"));
+        Assert.Equal(alone, Raised(Longest(loser, winner), "ab"));
     }
 
     [Fact]

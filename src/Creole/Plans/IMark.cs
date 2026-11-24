@@ -13,7 +13,7 @@ namespace Creole;
 /// Choices and repetitions take a mark before each attempt and call <see cref="FailedEmpty"/> when it fails.
 /// <c>Atomic</c>, <c>Lookahead</c>, <c>Not</c> and <c>Longest</c> take one at their start and call <see cref="Rewind"/> wherever they go back to it.
 /// They restore the position and the cut flag themselves, because each has its own rule for the cut.
-/// A <c>Longest</c> whose mark <see cref="Rewinds"/> runs its winner again when another alternative ran after it, so the parts the mark saves are as the winner left them.
+/// A <c>Longest</c> whose mark <see cref="Rewinds"/> runs its winner again, so the parts the mark saves are what the winner leaves when it runs alone.
 /// </para>
 /// </remarks>
 /// <typeparam name="TSelf">The mark type itself.</typeparam>
