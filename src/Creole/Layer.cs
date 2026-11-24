@@ -8,7 +8,7 @@ namespace Creole;
 public static class Layer
 {
     /// <summary>
-    /// The layer that passes its items through unchanged: the unit of <see cref="Layer{TIn, TOut}.Then{TNext}"/>.
+    /// The layer that passes its items through unchanged: the unit of <see cref="Layer{TIn, TOut}.Then{TNext}(Layer{TOut, TNext}, string)"/>.
     /// </summary>
     /// <typeparam name="T">The type of item.</typeparam>
     /// <returns>A layer whose items, and their spans, are its input's.</returns>

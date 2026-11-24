@@ -26,6 +26,8 @@ public class ParseResultTests
         "Creole.Parsing: Creole.ParseResult`1[TOut] Parse[TOut](Creole.Parser`2[System.Char,TOut], System.String, System.String, Creole.ParseOptions, System.String)",
         "Creole.Parsing: Creole.ParseResult`1[TOut] Parse[TOut](Creole.Parser`2[System.Char,TOut], System.ReadOnlyMemory`1[System.Char], System.String, Creole.ParseOptions, System.String)",
         "Creole.Parsing: Creole.ParseResult`1[TOut] Parse[TIn,TOut](Creole.Parser`2[TIn,TOut], System.ReadOnlyMemory`1[TIn], Creole.ParseOptions, System.String)",
+        "Creole.Pipeline: Creole.ParseResult`1[TOut] Parse[TOut](Creole.Pipeline`2[System.Char,TOut], System.String, System.String, Creole.ParseOptions, System.String)",
+        "Creole.Pipeline: Creole.ParseResult`1[TOut] Parse[TOut](Creole.Pipeline`2[System.Char,TOut], System.ReadOnlyMemory`1[System.Char], System.String, Creole.ParseOptions, System.String)",
     ];
     private static readonly Diagnostics _oneError = new([new ParseError(new SourceSpan(SourceId.Unnamed, 3, 4), "parser", new UnexpectedItem("'x'"), [new ExpectedItem("','")], [])]);
 
@@ -161,6 +163,7 @@ public class ParseResultTests
         int[] two = [2];
         int[] deep = [0, 0, 1];
         var shallow = new ParseOptions { MaxDepth = 1 };
+        var pipeline = Pipeline.From(Layer.Tokens(CharGrammar.Satisfy(static c => c != '!'))).Then(nested);
         ParseResult<char>[] results =
         [
             nested.Parse("x"),
@@ -169,6 +172,14 @@ public class ParseResultTests
             nested.Parse("x".AsMemory()),
             nested.Parse("y".AsMemory()),
             nested.Parse("[[x".AsMemory(), options: shallow),
+            pipeline.Parse("x"),
+            pipeline.Parse("y"),
+            pipeline.Parse("!"),
+            pipeline.Parse("[[x", options: shallow),
+            pipeline.Parse("x".AsMemory()),
+            pipeline.Parse("y".AsMemory()),
+            pipeline.Parse("!".AsMemory()),
+            pipeline.Parse("[[x".AsMemory(), options: shallow),
         ];
         ParseResult<int>[] itemResults =
         [

@@ -2,7 +2,7 @@
 
 A layer turns a stream of one item type into a stream of another, such as characters into tokens, or tokens into tokens with INDENT and DEDENT added. A `Layer<TIn, TOut>` is data, as a parser is: building one runs nothing, and one layer can be shared between threads and used in any number of chains. The design is in the [whitepaper's § Layers, streams and pipelines](../../whitepaper.md#layers-streams-and-pipelines).
 
-This version builds and chains layers, but has no public way to run them yet.
+To run layers, end them in a parser and parse with the [pipeline](pipelines.md) that makes: `Pipeline.From(lexer).Then(parser).Parse(text)`.
 
 ## Making layers
 

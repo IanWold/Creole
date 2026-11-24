@@ -17,7 +17,7 @@ Run a whole sub-pipeline over a token's text, such as SQL in a string literal, w
 - The sub-pipeline's root reports `InputStart` and `InputEnd` as the mapped start and end of the token's text, so its trivia stays inside that text ([ADR-0036](../../docs/decisions/0036-trivia-is-the-source-between-items-read-with-a-zero-width-parser.md) point 5).
 - Sub-pipeline diagnostics land in the parent's bag.
 - Add `Embed` to the nodes that give a grammar full marks in [PlanBuilder.Marks.cs](../../../src/Creole/Plans/PlanBuilder.Marks.cs) ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 9, [ERR-04](../04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md) Outcome).
-- If this card is the first to let a layer below the parser raise a diagnostic, it runs the `ParseMany` tests listed in [ERR-07](../04-errors-and-recovery/ERR-07-lexer-recovery-and-cascade-suppression.md) ([ADR-0038](../../docs/decisions/0038-pipelines-end-in-a-parser-run-again-whole-and-name-sources-without-a-registry.md) point 4).
+- If this card is the first to let a layer below the parser raise a diagnostic, it puts layer diagnostics in a pipeline's results and builds and tests what is listed for them in [ERR-07](../04-errors-and-recovery/ERR-07-lexer-recovery-and-cascade-suppression.md) ([ADR-0038](../../docs/decisions/0038-pipelines-end-in-a-parser-run-again-whole-and-name-sources-without-a-registry.md) point 4).
 
 ## Acceptance criteria
 

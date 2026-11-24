@@ -38,6 +38,8 @@ file sealed class TokensUpstream<TIn, TOut>(
     private LayerFailedException Failed(ref readonly Cursor<TIn> cursor, long position) =>
         new(ParseErrors.Failure(in cursor, _failures, position, _name, _input.SpanOf));
 
+    public void Dispose() => _input.Dispose();
+
     public bool TryStep(StreamBuffer<TOut> buffer)
     {
         var stepStart = _position;

@@ -339,6 +339,39 @@ public class StreamBufferTests
     }
 
     [Fact]
+    public void DisposingABufferReturnsEverySegmentAndDisposesItsUpstream()
+    {
+        var upstream = new ArrayUpstream<char>("abcde".ToCharArray());
+        var pool = new OverwritingPool<char>('?');
+        var buffer = new StreamBuffer<char>(upstream, segmentSize: 2, pool);
+        var cursor = new Cursor<char>(buffer);
+
+        while (cursor.TryRead(out _)) { }
+
+        var released = pool.Returns;
+
+        buffer.Dispose();
+
+        Assert.Equal(1, released);
+        Assert.Equal(3, pool.Returns);
+        Assert.True(upstream.Disposed);
+    }
+
+    [Fact]
+    public void DisposingTheBufferAboveALayerChainDisposesEveryBufferBelow()
+    {
+        var lexer = Layer.Tokens(Letter.AtLeastOnce().Text(), skip: Whitespace.SkipMany()).Then(Layer.Where<string>(static word => word != "b"));
+        var words = LayerRun.Open(lexer, "a b c", out var root, segmentSize: 1);
+        var cursor = new Cursor<string>(words);
+
+        while (cursor.TryRead(out _)) { }
+
+        words.Dispose();
+
+        Assert.True(root.Disposed);
+    }
+
+    [Fact]
     public void EveryControlShapeToDepthThreeRunsOverTheBufferAsInMemoryAndProducesEachItemOnce()
     {
         var inputs = ControlModel.AllInputs(3).ToArray();

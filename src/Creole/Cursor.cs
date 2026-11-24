@@ -30,6 +30,18 @@ public ref struct Cursor<T>
     private ReadOnlySpan<T> _span;
 
     /// <summary>
+    /// Whether the segment is the caller's memory, which slices may view instead of copying.
+    /// </summary>
+    /// <remarks>
+    /// It is for a cursor created by <see cref="FromMemory"/>, the only constructor that sets the segment without a source, and for one over a <see cref="MemorySource{T}"/>.
+    /// A cursor created from a span leaves the segment empty.
+    /// </remarks>
+    private readonly bool ViewsCallerMemory =>
+        _source is null
+        ? _segment.Length == _span.Length
+        : _source is MemorySource<T>;
+
+    /// <summary>
     /// Whether a cut is in force in this layer's parse.
     /// </summary>
     /// <remarks>
@@ -422,8 +434,8 @@ public ref struct Cursor<T>
     /// The items from <paramref name="start"/> up to the cursor, which must be a position this cursor has already reached and the input still holds.
     /// </summary>
     /// <remarks>
-    /// The result is a view of the input only for a cursor created by <see cref="FromMemory"/>, whose memory belongs to the caller.
-    /// Otherwise it is a copy: a span has no memory to view, and a source's segments may be pooled and refilled once released (ADR-0013).
+    /// The result is a view of the input only for a cursor created by <see cref="FromMemory"/>, or over a <see cref="MemorySource{T}"/>, whose memory belongs to the caller.
+    /// Otherwise it is a copy: a span has no memory to view, and a buffer's segments may be pooled and refilled once released (ADR-0013).
     /// </remarks>
     internal readonly ReadOnlyMemory<T> Since(long start)
     {
@@ -432,8 +444,7 @@ public ref struct Cursor<T>
 
         if (offset >= 0)
         {
-            // Only FromMemory sets _segment without a source. A cursor created from a span leaves it empty.
-            return _source is null && _segment.Length == _span.Length
+            return ViewsCallerMemory
                 ? _segment.Slice((int)offset, length)
                 : _span.Slice((int)offset, length).ToArray();
         }

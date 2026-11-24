@@ -176,7 +176,7 @@ public class LayerTests
         Assert.Throws<GrammarException>(static () => Layer.Tokens(Letter, name: ""));
         Assert.Throws<GrammarException>(static () => Layer.Where<char>(null!));
         Assert.Throws<GrammarException>(static () => Layer.Select<char, char>(null!));
-        Assert.Throws<GrammarException>(static () => _lexer.Then<string>(null!));
+        Assert.Throws<GrammarException>(static () => _lexer.Then((Layer<string, string>)null!));
     }
 
     [Fact]

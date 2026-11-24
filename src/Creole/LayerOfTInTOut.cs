@@ -11,7 +11,7 @@ namespace Creole;
 /// <para>
 /// A layer is data, as a parser is: building one runs nothing.
 /// Layers are immutable, so a layer can be shared between threads and used in any number of chains.
-/// Make layers with the methods of <see cref="Layer"/>, and chain them with <see cref="Then{TNext}"/>.
+/// Make layers with the methods of <see cref="Layer"/>, and chain them with <see cref="Then{TNext}(Layer{TOut, TNext}, string)"/>.
 /// </para>
 /// <para>
 /// A layer runs in steps, each reading some of its input and producing zero or more items.
@@ -62,4 +62,18 @@ public abstract class Layer<TIn, TOut>
                 ? (Layer<TIn, TNext>)(object)this
                 : new ComposedLayer<TIn, TOut, TNext>(this, next);
     }
+
+    /// <summary>
+    /// A pipeline that runs this layer and then <paramref name="parser"/> over its items, such as a lexer and a parser over its tokens.
+    /// </summary>
+    /// <typeparam name="TValue">The type of <paramref name="parser"/>'s value.</typeparam>
+    /// <param name="parser">The parser to run over this layer's items.</param>
+    /// <param name="parserExpression">Filled in by the compiler with the expression for <paramref name="parser"/>.</param>
+    /// <returns>A pipeline from this layer's input to <paramref name="parser"/>'s value, which the <c>Parse</c> methods of <see cref="Pipeline"/> run.</returns>
+    /// <exception cref="GrammarException"><paramref name="parser"/> is null.</exception>
+    /// <remarks>
+    /// Between this layer and <paramref name="parser"/> sits a buffer of this layer's items, so <paramref name="parser"/> can rewind over them without this layer running again.
+    /// </remarks>
+    public Pipeline<TIn, TValue> Then<TValue>(Parser<TOut, TValue> parser, [CallerArgumentExpression(nameof(parser))] string parserExpression = "") =>
+        new LayeredPipeline<TIn, TOut, TValue>(this, Guard.NotNull(parser, parserExpression));
 }

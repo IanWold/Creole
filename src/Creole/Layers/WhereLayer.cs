@@ -17,6 +17,8 @@ file sealed class WhereUpstream<T>(ICursorSource<T> input, Func<T, bool> predica
 
     public SourceSpan InputStart => _input.InputStart;
 
+    public void Dispose() => _input.Dispose();
+
     public bool TryStep(StreamBuffer<T> buffer)
     {
         if (!_input.TryGetSegment(_position, out var segment, out var segmentStart))

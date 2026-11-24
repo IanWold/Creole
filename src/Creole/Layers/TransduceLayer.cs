@@ -92,6 +92,8 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
     private LayerFailedException Failed(ref readonly Cursor<TIn> cursor, long position) =>
         new(ParseErrors.Failure(in cursor, _failures, position, _name, _input.SpanOf));
 
+    public void Dispose() => _input.Dispose();
+
     public bool TryStep(StreamBuffer<TOut> buffer)
     {
         if (_ended)

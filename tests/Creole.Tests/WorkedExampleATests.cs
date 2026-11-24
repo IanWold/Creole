@@ -87,6 +87,8 @@ file sealed partial class JsonLexer : CharGrammar
         Tok(String("true"), J.True), Tok(String("false"), J.False), Tok(String("null"), J.Null));
 
     public static readonly Parser<char, Unit> Skip = Whitespace.SkipMany();
+
+    public static readonly Layer<char, JTok> Lexer = Layer.Tokens(item: Item, skip: Skip);
 }
 
 file sealed partial class JsonGrammar : TokenGrammar<JTok, J>
@@ -214,6 +216,8 @@ file static class HandLexer
 
 file static class JsonExample
 {
+    public static readonly Pipeline<char, JsonValue> Json = Pipeline.From(JsonLexer.Lexer).Then(JsonGrammar.Document);
+
     public static readonly Parser<char, IReadOnlyList<JTok>> Tokens =
         JsonLexer.Skip.Then(JsonLexer.Item.Before(JsonLexer.Skip).Many()).Before(Grammar<char>.End);
 
@@ -377,6 +381,49 @@ public class WorkedExampleATests
             """
                 .ReplaceLineEndings("\n"),
             new Diagnostics([error]).Render(new SourceText(text, "config.json"))
+        );
+    }
+
+    [Fact]
+    public void ThePipelineParsesADocument()
+    {
+        var result = JsonExample.Json.Parse("""{ "name": "Cre\"ole", "tags": ["parser", "dotnet"], "version": -0.1, "stable": false, "next": null, "empty": {} }""");
+
+        Assert.Equal(
+            "{\"name\":\"Cre\"ole\",\"tags\":[\"parser\",\"dotnet\"],\"version\":-0.1,\"stable\":false,\"next\":null,\"empty\":{}}",
+            JsonExample.Render(Assert.IsType<Parsed<JsonValue>>(result.Value).Value)
+        );
+    }
+
+    [Fact]
+    public void ThePipelineReportsALexerErrorAgainstTheFile()
+    {
+        var result = JsonExample.Json.Parse("[1,\n  ?]", source: "config.json");
+        var error = Assert.Single(result.Diagnostics);
+
+        Assert.Equal("lexer", error.Layer);
+        Assert.Equal(new SourceSpan(SourceId.Unnamed, 6, 7), error.Span);
+        Assert.Contains(" --> config.json:2:3", result.Diagnostics.Render(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ThePipelineReportsDiagnosticsAgainstTheFile()
+    {
+        var json = Pipeline.From(JsonLexer.Lexer).Then(JsonGrammar.Document);
+        var result = json.Parse("[\n{\n  \"port\": 8080 \"host\": \"x\"\n}\n]", source: "config.json");
+
+        Assert.True(result is not Parsed<JsonValue>);
+        Assert.Equal(
+            """
+            error[parser]: expected ',' or '}'
+             --> config.json:3:16
+              |
+            3 |   "port": 8080 "host": "x"
+              |                ^^^^^^ unexpected string "host"
+              = note: in object starting at 2:1
+            """
+                .ReplaceLineEndings("\n"),
+            result.Diagnostics.Render()
         );
     }
 

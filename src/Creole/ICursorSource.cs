@@ -3,7 +3,11 @@ namespace Creole;
 /// <summary>
 /// Supplies a <see cref="Cursor{T}"/> with the segments of an input that is not held as one span, such as a layer boundary's stream buffer.
 /// </summary>
-internal interface ICursorSource<T>
+/// <remarks>
+/// Disposing a source returns what it rents to its pools and disposes what it reads from, so a parse that disposes its last buffer returns every buffer below it.
+/// Nothing may read a source after it is disposed.
+/// </remarks>
+internal interface ICursorSource<T> : IDisposable
 {
     /// <summary>
     /// A zero-width span where the input of the layer that produced these items ends in the source, after any input that layer skipped after its last item.
@@ -17,6 +21,11 @@ internal interface ICursorSource<T>
     /// A zero-width span where the input of the layer that produced these items starts in the source, before any input that layer skipped before its first item.
     /// </summary>
     SourceSpan InputStart { get; }
+
+    /// <summary>
+    /// Does nothing, for a source that rents nothing and reads from nothing it must dispose.
+    /// </summary>
+    void IDisposable.Dispose() { }
 
     /// <summary>
     /// Stops holding the position that the matching <see cref="HoldSpan"/> held.

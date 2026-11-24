@@ -17,6 +17,8 @@ file sealed class SelectUpstream<TIn, TOut>(ICursorSource<TIn> input, Func<TIn, 
 
     public SourceSpan InputStart => _input.InputStart;
 
+    public void Dispose() => _input.Dispose();
+
     public bool TryStep(StreamBuffer<TOut> buffer)
     {
         if (!_input.TryGetSegment(_position, out var segment, out var segmentStart))

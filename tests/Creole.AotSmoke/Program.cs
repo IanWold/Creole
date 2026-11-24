@@ -28,6 +28,9 @@ if (parsed != 2
     || Lists.Depth.Parse("[[x]]", options: new ParseOptions { MaxDepth = 1 }).Value is not Failed
     || TokenLists.Count.Parse(new[] { new Tok(K.Word, "a"), new Tok(K.Comma, ","), new Tok(K.Word, "b") }).Value is not Parsed<int> { Value: 2 }
     || TokenLists.Count.Parse(new[] { new Tok(K.Word, "a"), new Tok(K.Word, "b") }).Diagnostics.Render() != "error[parser] at 1..2: unexpected word b; expected ',' or end of input"
+    || Pipelines.Count.Parse("a, b").Value is not Parsed<int> { Value: 2 }
+    || !Pipelines.Count.Parse("a b", source: "smoke.txt").Diagnostics.Render().Contains(" --> smoke.txt:1:3", StringComparison.Ordinal)
+    || Pipelines.Count.Parse("a, 1".AsMemory()).Diagnostics is not [{ Layer: "lexer" }]
 )
 {
     return 1;
@@ -135,6 +138,19 @@ internal class TokenLists : TokenGrammar<Tok, K>
 {
     public static readonly Parser<Tok, int> Count =
         Kind(K.Word).SepBy(Kind(K.Comma)).Before(End).Select(static words => words.Count);
+}
+
+internal class TokenLexer : CharGrammar
+{
+    public static readonly Layer<char, Tok> Lexer = Layer.Tokens(
+        Char(',').As(new Tok(K.Comma, ",")).Or(Letter.AtLeastOnce().Text().Select(static text => new Tok(K.Word, text))),
+        skip: Whitespace.SkipMany()
+    );
+}
+
+internal static class Pipelines
+{
+    public static readonly Pipeline<char, int> Count = Pipeline.From(TokenLexer.Lexer).Then(TokenLists.Count);
 }
 
 internal static class Tokens

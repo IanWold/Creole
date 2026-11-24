@@ -1,6 +1,6 @@
 # Running a parser
 
-`parser.Parse(input)` runs a parser on text, or on tokens in memory, and returns a [`ParseResult<T>`](errors.md): the value, or the error that stopped the parse. The samples use `CharJson`, the character-level JSON grammar in [ParsingTests.cs](../../tests/Creole.Tests/ParsingTests.cs), whose tests check the output shown here.
+`parser.Parse(input)` runs a parser on text, or on tokens in memory, and returns a [`ParseResult<T>`](errors.md): the value, or the error that stopped the parse. To run a lexer layer before the parser, build a [pipeline](pipelines.md) and call its `Parse`. The samples use `CharJson`, the character-level JSON grammar in [ParsingTests.cs](../../tests/Creole.Tests/ParsingTests.cs), whose tests check the output shown here.
 
 ```csharp
 var result = CharJson.Document.Parse(File.ReadAllText(path), source: path);

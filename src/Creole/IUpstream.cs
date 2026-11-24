@@ -6,8 +6,9 @@ namespace Creole;
 /// <remarks>
 /// A step is one run of the producing layer's item parser, or one chunk of the source at the root layer.
 /// It may add any number of items, including none.
+/// Disposing an upstream disposes the input it reads, so the buffers below it return their segments.
 /// </remarks>
-internal interface IUpstream<T>
+internal interface IUpstream<T> : IDisposable
 {
     /// <summary>
     /// A zero-width span where the input this upstream reads ends in the source.
@@ -25,6 +26,11 @@ internal interface IUpstream<T>
     /// A layer gives its input's, and a root gives the start of its source, so input the layer skipped before its first item lies after it.
     /// </remarks>
     SourceSpan InputStart { get; }
+
+    /// <summary>
+    /// Does nothing, for an upstream that reads from nothing it must dispose.
+    /// </summary>
+    void IDisposable.Dispose() { }
 
     /// <summary>
     /// Runs one step, adding its outputs to <paramref name="buffer"/> with <see cref="StreamBuffer{T}.Add"/>.

@@ -156,7 +156,7 @@ The reasons are in [ADR-0002](../../work/docs/decisions/0002-parseresult-as-a-pl
 - Errors are ordered by source, then start offset, then end offset. Errors with equal spans keep the order they were given in. Errors in `SourceId.Unnamed`, the source of every parse, come first.
 - `Diagnostics.Empty` has no errors.
 - `new Diagnostics(errors)` sorts `errors`. It throws `ArgumentException` if one is null.
-- A collection can also hold the text of the sources its errors point into, so that `Render()` can show the errors against it. The errors from `Parse` over text hold that text; those from a token parse hold none. A collection made with `new Diagnostics(errors)` holds none.
+- A collection can also hold the text of the sources its errors point into, so that `Render()` can show the errors against it. The errors from `Parse` over text, whether a parser's or a [pipeline's](pipelines.md), hold that text; those from a token parse hold none. A collection made with `new Diagnostics(errors)` holds none.
 - Two collections are equal when they hold equal errors in the same order, whatever source texts they hold.
 
 ### Rendering against the source
