@@ -11,7 +11,7 @@ namespace Creole;
 /// Each step starts by releasing the input below that floor, since a step that starts in a new segment reaches it without the cursor releasing anything.
 /// </remarks>
 file sealed class TokensUpstream<TIn, TOut>(
-    StreamBuffer<TIn> input,
+    ICursorSource<TIn> input,
     Plan<TIn, TOut> item,
     Plan<TIn, Unit>? skip,
     InitialState? initialState,
@@ -23,7 +23,7 @@ file sealed class TokensUpstream<TIn, TOut>(
 {
     private readonly FailureLog<TIn>? _failures = failures;
     private readonly InitialState? _initialState = initialState;
-    private readonly StreamBuffer<TIn> _input = input;
+    private readonly ICursorSource<TIn> _input = input;
     private readonly Plan<TIn, TOut> _item = item;
     private readonly int _maxDepth = maxDepth;
     private readonly string _name = name;
@@ -112,7 +112,7 @@ internal sealed class TokensLayer<TIn, TOut>(Parser<TIn, TOut> item, Parser<TIn,
 
     public Parser<TIn, Unit>? Skip { get; } = skip;
 
-    internal override IUpstream<TOut> Open(StreamBuffer<TIn> input, ParseOptions options, bool recordFailures) =>
+    internal override IUpstream<TOut> Open(ICursorSource<TIn> input, ParseOptions options, bool recordFailures) =>
         new TokensUpstream<TIn, TOut>(
             input,
             PlanCache.Get(Item),

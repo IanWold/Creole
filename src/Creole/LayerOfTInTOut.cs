@@ -29,11 +29,11 @@ public abstract class Layer<TIn, TOut>
     /// <summary>
     /// Starts a run of this layer over <paramref name="input"/>.
     /// </summary>
-    /// <param name="input">The buffer holding this layer's input, which pulls from the layer below.</param>
+    /// <param name="input">This layer's input: the buffer holding the items of the layer below, which pulls from it, or the root of the source.</param>
     /// <param name="options">The settings for the parse, whose depth limit applies to each step.</param>
     /// <param name="recordFailures">Whether the run keeps a failure log, so that a failed step reports what it expected.</param>
     /// <returns>The upstream that produces this layer's items into the buffer above it.</returns>
-    internal abstract IUpstream<TOut> Open(StreamBuffer<TIn> input, ParseOptions options, bool recordFailures);
+    internal abstract IUpstream<TOut> Open(ICursorSource<TIn> input, ParseOptions options, bool recordFailures);
 
     /// <summary>
     /// A layer that runs this layer and then <paramref name="next"/> over its items.
