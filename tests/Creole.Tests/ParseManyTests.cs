@@ -126,8 +126,8 @@ public class ParseManyTests
         var early = new ArrayUpstream<char>("a b c".ToCharArray());
         var whole = new ArrayUpstream<char>("a b c".ToCharArray());
 
-        Assert.Equal("a", Describe(_word.ParseMany(() => new StreamBuffer<char>(early, segmentSize: 1), ParseOptions.Default, text: null).First()));
-        Assert.Equal(3, _word.ParseMany(() => new StreamBuffer<char>(whole, segmentSize: 1), ParseOptions.Default, text: null).Count());
+        Assert.Equal("a", Describe(_word.ParseMany(() => new StreamBuffer<char>(early, segmentSize: 1), ParseOptions.Default, text: static () => null).First()));
+        Assert.Equal(3, _word.ParseMany(() => new StreamBuffer<char>(whole, segmentSize: 1), ParseOptions.Default, text: static () => null).Count());
         Assert.True(early.Disposed);
         Assert.True(whole.Disposed);
     }

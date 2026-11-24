@@ -21,6 +21,11 @@ namespace Creole;
 /// </remarks>
 public abstract class Pipeline<TIn, TOut>
 {
+    /// <summary>
+    /// Whether the first layer is <see cref="Layer.Utf8"/>, so the input is UTF-8 that decodes to the text a result can hold.
+    /// </summary>
+    internal abstract bool DecodesUtf8 { get; }
+
     internal Pipeline() { }
 
     /// <summary>
@@ -28,13 +33,13 @@ public abstract class Pipeline<TIn, TOut>
     /// </summary>
     /// <param name="openRoot">Makes the first layer's input, once for each enumeration.</param>
     /// <param name="options">The settings for the parse, whose depth limit applies to each layer and to the parser.</param>
-    /// <param name="text">The text a failed result holds for rendering, or null to hold none.</param>
+    /// <param name="text">Makes the text a failed result holds for rendering, or null to hold none. It is called at most once for each enumeration.</param>
     /// <returns>Each item's result. A failed item is the last.</returns>
     /// <remarks>
     /// Each item starts with no furthest failure in any layer.
     /// The buffers of an enumeration return their segments to their pools when it ends or is disposed.
     /// </remarks>
-    internal abstract IEnumerable<ParseResult<TOut>> ParseMany(Func<ICursorSource<TIn>> openRoot, ParseOptions options, SourceText? text);
+    internal abstract IEnumerable<ParseResult<TOut>> ParseMany(Func<ICursorSource<TIn>> openRoot, ParseOptions options, Func<SourceText?> text);
 
     /// <summary>
     /// Runs the pipeline once over <paramref name="root"/>, with new buffers.

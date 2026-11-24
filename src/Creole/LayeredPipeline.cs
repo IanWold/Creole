@@ -12,6 +12,8 @@ internal sealed class LayeredPipeline<TIn, TItem, TOut>(Layer<TIn, TItem> layers
 {
     private const string ParserLayer = "parser";
 
+    internal override bool DecodesUtf8 => Layers.DecodesUtf8;
+
     public Layer<TIn, TItem> Layers { get; } = layers;
 
     public Parser<TItem, TOut> Parser { get; } = parser;
@@ -20,7 +22,7 @@ internal sealed class LayeredPipeline<TIn, TItem, TOut>(Layer<TIn, TItem> layers
     /// Parses the item that starts at <paramref name="start"/>, with every layer's furthest failure forgotten first.
     /// </summary>
     /// <returns><see langword="false"/> if no item remains at <paramref name="start"/>.</returns>
-    private static bool TryNext(Plan<TItem, TOut> plan, StreamBuffer<TItem> items, FailureLog<TItem> log, ParseOptions options, SourceText? text, long start, out ParseResult<TOut> result, out long end)
+    private static bool TryNext(Plan<TItem, TOut> plan, StreamBuffer<TItem> items, FailureLog<TItem> log, ParseOptions options, Func<SourceText?> text, long start, out ParseResult<TOut> result, out long end)
     {
         log.ForgetFailure();
         items.ForgetFailures();
@@ -62,16 +64,12 @@ internal sealed class LayeredPipeline<TIn, TItem, TOut>(Layer<TIn, TItem> layers
             error = ParseErrors.Depth(exception, in cursor, log, ParserLayer, items.SpanOf);
         }
 
-        result = new Failed(
-            text is null
-            ? new Diagnostics([error])
-            : new Diagnostics([error], text)
-        );
+        result = new Failed(Diagnostics.Of(error, text()));
 
         return true;
     }
 
-    internal override IEnumerable<ParseResult<TOut>> ParseMany(Func<ICursorSource<TIn>> openRoot, ParseOptions options, SourceText? text)
+    internal override IEnumerable<ParseResult<TOut>> ParseMany(Func<ICursorSource<TIn>> openRoot, ParseOptions options, Func<SourceText?> text)
     {
         var plan = PlanCache.Get(Parser);
 

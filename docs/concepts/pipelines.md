@@ -29,6 +29,7 @@ A pipeline is data, as its layers and parser are: building one runs nothing. It 
 | `Parse(string input, string? source = null, ParseOptions? options = null)` | `Pipeline<char, TOut>` | A string. |
 | `Parse(ReadOnlyMemory<char> input, string? source = null, ParseOptions? options = null)` | `Pipeline<char, TOut>` | Characters in memory, such as part of a buffer, or a `char[]`. |
 | `Parse(TextReader input, ParseOptions? options = null)` | `Pipeline<char, TOut>` | A reader, read as the layers pull ([Readers](#readers)). |
+| `Parse(ReadOnlyMemory<byte> input, string? source = null, ParseOptions? options = null)` | `Pipeline<byte, TOut>` | Bytes in memory, or a `byte[]`, which the first layer decodes ([Bytes in memory](#bytes-in-memory)). |
 
 - `source` and `options` work as they do for a parser ([Running a parser](parsing.md#parse)). Pass options by name: `Parse(text, options: limits)`.
 - The depth limit applies to each layer's steps and to the parser, each counting its own depth.
@@ -80,6 +81,7 @@ foreach (var result in word.ParseMany(" a bc  d "))
 | `ParseMany(string input, string? source = null, ParseOptions? options = null)` | A string. |
 | `ParseMany(ReadOnlyMemory<char> input, string? source = null, ParseOptions? options = null)` | Characters in memory. |
 | `ParseMany(TextReader input, ParseOptions? options = null)` | A reader ([Readers](#readers)). |
+| `ParseMany(ReadOnlyMemory<byte> input, string? source = null, ParseOptions? options = null)` | Bytes in memory, on a `Pipeline<byte, TOut>` ([Bytes in memory](#bytes-in-memory)). |
 
 - **It is lazy.** Nothing runs until you enumerate the results, and each item is parsed when you ask for it. A reader is read only as far as that item needs.
 - **A failed item is the last.** Each result is `Parsed<T>` or `Failed`. After a failure nothing says where the next item would start, so the sequence ends there.
@@ -100,6 +102,29 @@ Over a string or memory, a failed result holds the whole text, so its error rend
 - A failed result holds no text, so `Render()` writes its error on one line, as `ToString()` does: `error[lexer] at 4..5: unexpected '1'; expected whitespace or letter`.
 - Slices, such as `Slice` values in tokens, are copies.
 - The reader is yours: a parse leaves it open. Enumerate `ParseMany` over a reader once, since a second enumeration reads on from wherever the reader is, counting offsets from 0 again.
+
+## Bytes in memory
+
+A pipeline whose first layer reads bytes, such as one that starts with [`Layer.Utf8()`](layers.md#decoding-bytes-layerutf8), parses bytes held in memory with `Parse` and `ParseMany`. From [ByteSourceDiagnosticsTests.cs](../../tests/Creole.Tests/ByteSourceDiagnosticsTests.cs), with a lexer over the decoded characters and a parser of `name = value` settings:
+
+```csharp
+var settings = Pipeline.From(Layer.Utf8().Then(lexer)).Then(parser);
+var result = settings.Parse(File.ReadAllBytes(path), source: path);
+```
+
+```text
+error[parser]: expected name or end of input
+ --> settings.txt:2:13
+  |
+2 | emoji = "😀" 7
+  |              ^ unexpected 7
+```
+
+- Spans hold byte offsets in `Start` and `End`, and offsets in the decoded text in `CharStart` and `CharEnd` ([Source spans](spans.md#lines-and-columns)).
+- When the first layer is `Layer.Utf8()`, a failed result holds the text that `Encoding.UTF8` decodes from the bytes, after any byte-order mark, so `Render()` shows the error at its line and column. The text is decoded only when the parse fails. It matches the decoder's characters up to the first invalid sequence, where the decoder ends the parse, so an error from any layer renders in the right place.
+- A pipeline from bytes whose first layer is anything else, even a layer before `Layer.Utf8()`, holds no text, and its errors render on one line.
+- `Parse` over bytes runs twice when it fails, as over text. `ParseMany` records as it goes.
+- Slices are copies, since the decoded characters are not the caller's memory.
 
 ## Input in memory
 

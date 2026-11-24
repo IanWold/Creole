@@ -29,6 +29,8 @@ public class ParseResultTests
         "Creole.Pipeline: Creole.ParseResult`1[TOut] Parse[TOut](Creole.Pipeline`2[System.Char,TOut], System.String, System.String, Creole.ParseOptions, System.String)",
         "Creole.Pipeline: Creole.ParseResult`1[TOut] Parse[TOut](Creole.Pipeline`2[System.Char,TOut], System.ReadOnlyMemory`1[System.Char], System.String, Creole.ParseOptions, System.String)",
         "Creole.Pipeline: Creole.ParseResult`1[TOut] Parse[TOut](Creole.Pipeline`2[System.Char,TOut], System.IO.TextReader, Creole.ParseOptions, System.String)",
+        "Creole.Pipeline: Creole.ParseResult`1[TOut] Parse[TOut](Creole.Pipeline`2[System.Byte,TOut], System.ReadOnlyMemory`1[System.Byte], System.String, Creole.ParseOptions, System.String)",
+        "Creole.Pipeline: System.Collections.Generic.IEnumerable`1[Creole.ParseResult`1[TOut]] ParseMany[TOut](Creole.Pipeline`2[System.Byte,TOut], System.ReadOnlyMemory`1[System.Byte], System.String, Creole.ParseOptions, System.String)",
         "Creole.Pipeline: System.Collections.Generic.IEnumerable`1[Creole.ParseResult`1[TOut]] ParseMany[TOut](Creole.Pipeline`2[System.Char,TOut], System.String, System.String, Creole.ParseOptions, System.String)",
         "Creole.Pipeline: System.Collections.Generic.IEnumerable`1[Creole.ParseResult`1[TOut]] ParseMany[TOut](Creole.Pipeline`2[System.Char,TOut], System.ReadOnlyMemory`1[System.Char], System.String, Creole.ParseOptions, System.String)",
         "Creole.Pipeline: System.Collections.Generic.IEnumerable`1[Creole.ParseResult`1[TOut]] ParseMany[TOut](Creole.Pipeline`2[System.Char,TOut], System.IO.TextReader, Creole.ParseOptions, System.String)",
@@ -168,6 +170,7 @@ public class ParseResultTests
         int[] deep = [0, 0, 1];
         var shallow = new ParseOptions { MaxDepth = 1 };
         var pipeline = Pipeline.From(Layer.Tokens(CharGrammar.Satisfy(static c => c != '!'))).Then(nested);
+        var bytes = Pipeline.From(Layer.Utf8().Then(Layer.Tokens(CharGrammar.Satisfy(static c => c != '!')))).Then(nested);
         ParseResult<char>[] results =
         [
             nested.Parse("x"),
@@ -197,6 +200,15 @@ public class ParseResultTests
             .. pipeline.ParseMany(new StringReader("xx y")),
             .. pipeline.ParseMany(new StringReader("x!")),
             .. pipeline.ParseMany(new StringReader("x[[x"), options: shallow),
+            bytes.Parse("x"u8.ToArray()),
+            bytes.Parse("y"u8.ToArray()),
+            bytes.Parse("!"u8.ToArray()),
+            bytes.Parse(new byte[] { 0xFF }),
+            bytes.Parse("[[x"u8.ToArray(), options: shallow),
+            .. bytes.ParseMany("xx y"u8.ToArray()),
+            .. bytes.ParseMany("x!"u8.ToArray()),
+            .. bytes.ParseMany(new byte[] { 0x78, 0xFF }),
+            .. bytes.ParseMany("x[[x"u8.ToArray(), options: shallow),
         ];
         ParseResult<int>[] itemResults =
         [

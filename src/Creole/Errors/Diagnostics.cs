@@ -154,6 +154,14 @@ public sealed class Diagnostics : IReadOnlyList<ParseError>, IEquatable<Diagnost
     }
 
     /// <summary>
+    /// A collection of one error, which holds <paramref name="text"/> for <see cref="Render()"/> unless it is null.
+    /// </summary>
+    internal static Diagnostics Of(ParseError error, SourceText? text) =>
+        text is null
+        ? new([error])
+        : new([error], text);
+
+    /// <summary>
     /// Returns <paramref name="diagnostics"/>, or throws if it is null or empty.
     /// </summary>
     internal static Diagnostics RequireAny(Diagnostics diagnostics, [CallerArgumentExpression(nameof(diagnostics))] string? name = null)

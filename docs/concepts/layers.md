@@ -99,7 +99,7 @@ Layer<char, int> lengths = lexer.Then(Layer.Select<string, int>(static token => 
 
 ## Decoding bytes: `Layer.Utf8`
 
-`Layer.Utf8()` is a `Layer<byte, char>` that decodes UTF-8. Chain a lexer over characters after it to read bytes:
+`Layer.Utf8()` is a `Layer<byte, char>` that decodes UTF-8. Chain a lexer over characters after it to read bytes, and run it on bytes in memory with a [pipeline](pipelines.md#bytes-in-memory):
 
 ```csharp
 Layer<byte, string> words = Layer.Utf8().Then(Layer.Tokens(Letter.AtLeastOnce().Text(), skip: Whitespace.SkipMany()));

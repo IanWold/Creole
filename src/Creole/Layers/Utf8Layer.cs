@@ -147,6 +147,8 @@ internal sealed class Utf8Layer : Layer<byte, char>
     /// </summary>
     public const string Name = "decoder";
 
+    internal override bool DecodesUtf8 => true;
+
     public static Utf8Layer Instance { get; } = new();
 
     internal override IUpstream<char> Open(ICursorSource<byte> input, ParseOptions options, bool recordFailures) =>

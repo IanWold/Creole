@@ -8,6 +8,8 @@ namespace Creole;
 /// </remarks>
 internal sealed class ComposedLayer<TIn, TMiddle, TOut>(Layer<TIn, TMiddle> first, Layer<TMiddle, TOut> second) : Layer<TIn, TOut>
 {
+    internal override bool DecodesUtf8 => First.DecodesUtf8;
+
     public Layer<TIn, TMiddle> First { get; } = first;
 
     public Layer<TMiddle, TOut> Second { get; } = second;

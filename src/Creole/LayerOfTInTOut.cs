@@ -24,6 +24,11 @@ namespace Creole;
 /// </remarks>
 public abstract class Layer<TIn, TOut>
 {
+    /// <summary>
+    /// Whether this layer, or the first layer of this chain, is <see cref="Layer.Utf8"/>, so the input is UTF-8 that decodes to the text a result can hold.
+    /// </summary>
+    internal virtual bool DecodesUtf8 => false;
+
     internal Layer() { }
 
     /// <summary>
