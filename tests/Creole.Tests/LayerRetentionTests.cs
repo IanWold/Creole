@@ -1,3 +1,4 @@
+using System.Text;
 using static Creole.CharGrammar;
 
 namespace Creole.Tests;
@@ -14,6 +15,8 @@ public class LayerRetentionTests
 {
     private const string Text = "  abc de   fghij k  lm nopq r stu   vw xyz  ";
 
+    private static readonly byte[] _encoded = Encoding.UTF8.GetBytes("  ab\u00E9 \u20AC de   f\U0001F600hij k  lm \u00F6pq r stu   vw xyz  ");
+
     private static readonly bool[] _pinFirst = [false, true];
 
     private static readonly int[] _segmentSizes = [1, 2];
@@ -26,10 +29,10 @@ public class LayerRetentionTests
 
     private static readonly Layer<char, char> _where = Layer.Where<char>(static c => c != ' ');
 
-    private static string? Difference<T>(string name, Layer<char, T> layer, int segmentSize, bool pinFirst)
+    private static string? Difference<TIn, T>(string name, Layer<TIn, T> layer, TIn[] input, TIn filler, int segmentSize, bool pinFirst)
     {
-        var expected = LayerRun.Items(layer, Text).Select(static entry => entry.Slot.Span).ToList();
-        var characters = new StreamBuffer<char>(new ArrayUpstream<char>(Text.ToCharArray()), segmentSize, new OverwritingPool<char>('#'));
+        var expected = LayerRun.Items(layer, input).Select(static entry => entry.Slot.Span).ToList();
+        var characters = new StreamBuffer<TIn>(new ArrayUpstream<TIn>(input), segmentSize, new OverwritingPool<TIn>(filler));
         var output = new StreamBuffer<T>(layer.Open(characters, ParseOptions.Default, recordFailures: true), segmentSize, new OverwritingPool<T>(default!));
         var reader = new Cursor<T>(output);
         var spans = new List<SourceSpan>();
@@ -68,9 +71,12 @@ public class LayerRetentionTests
     }
 
     private static IEnumerable<string> Differences<T>(string name, Layer<char, T> layer) =>
+        Differences(name, layer, Text.ToCharArray(), '#');
+
+    private static IEnumerable<string> Differences<TIn, T>(string name, Layer<TIn, T> layer, TIn[] input, TIn filler) =>
         from size in _segmentSizes
         from pinFirst in _pinFirst
-        select Difference(name, layer, size, pinFirst) into difference
+        select Difference(name, layer, input, filler, size, pinFirst) into difference
         where difference is not null
         select difference;
 
@@ -81,5 +87,6 @@ public class LayerRetentionTests
             .. Differences("Transduce", _transduce),
             .. Differences("Select", _select),
             .. Differences("Where", _where),
+            .. Differences("Utf8", Layer.Utf8(), _encoded, (byte)'#'),
         ]);
 }

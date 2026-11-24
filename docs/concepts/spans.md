@@ -41,6 +41,7 @@ Each [layer](layers.md) gives every item it produces a span in the original sour
 - An item from `Layer.Tokens` spans from the start of the first input item its parser consumed to the end of the last. Input that `skip` consumed is left out, so a token's span never includes the whitespace before it.
 - An output of a `Layer.Transduce` step that is derived spans the input the step consumed. A synthetic one is zero-width at the start of the next input item ([Layers § `Layer.Transduce`](layers.md#layertransduce)).
 - An item from `Layer.Where` or `Layer.Select` keeps the span of the input item it came from.
+- A character from `Layer.Utf8` spans the bytes it was decoded from, and its `CharStart` and `CharEnd` give its place in the decoded text ([Layers § Decoding bytes](layers.md#decoding-bytes-layerutf8)). Layers above it keep both units, so their items' `Start` and `End` are byte offsets, and `CharStart` and `CharEnd` are character offsets.
 
 ### Synthetic items
 
@@ -137,6 +138,8 @@ long lines = map.LineCount;                 // 3
 - Columns count Unicode scalar values, so an emoji written as a surrogate pair is one column. A lone surrogate is also one column.
 - The LF of a CRLF is on the same line as its CR. An offset on the second half of a surrogate pair has the same column as the first half.
 - Any offset from 0 to the text's length is valid. The length itself is the position just past the last character. Other offsets throw `ArgumentOutOfRangeException`.
+
+For a byte source, look up `CharStart`, the offset in the decoded text, not the byte offset `Start`.
 
 To show errors against a source, wrap its text in a `SourceText`, which builds the `LineMap` on first use. Columns in a rendered location count scalar values as above, while the carets under the line follow what a terminal shows: grapheme clusters, wide characters and tab stops ([Errors § Rendering against the source](errors.md#rendering-against-the-source)).
 

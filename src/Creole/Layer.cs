@@ -125,6 +125,29 @@ public static class Layer
         new TransduceLayer<TIn, TOut, TState>(initialState, Guard.NotNull(step, stepExpression), atEnd, Guard.NotNullOrEmpty(name));
 
     /// <summary>
+    /// A layer that decodes UTF-8 bytes into characters, so that layers over characters can read a byte source.
+    /// </summary>
+    /// <returns>A layer that produces the UTF-16 characters its input encodes.</returns>
+    /// <remarks>
+    /// <para>
+    /// Each step decodes one Unicode scalar value into one character, or into the two halves of a surrogate pair.
+    /// A byte-order mark (EF BB BF) at the start of the input is skipped, so the characters are those a <see cref="StreamReader"/> would read.
+    /// </para>
+    /// <para>
+    /// Each character's span gives both units.
+    /// <see cref="SourceSpan.Start"/> and <see cref="SourceSpan.End"/> cover the bytes it was decoded from.
+    /// <see cref="SourceSpan.CharStart"/> and <see cref="SourceSpan.CharEnd"/> are its offsets in the decoded text, counted from 0 after any byte-order mark.
+    /// Both halves of a surrogate pair get the pair's whole span.
+    /// Layers above keep both units, so an error anywhere above points at the bytes in the source and has character offsets for its line and column.
+    /// </para>
+    /// <para>
+    /// Bytes that are not valid UTF-8 end the parse with an error from the layer named <c>decoder</c>, such as <c>invalid UTF-8 bytes E2 82</c>.
+    /// Its span covers the bytes a decoder would replace with one U+FFFD, and is zero-width in the decoded text, where those bytes stand.
+    /// </para>
+    /// </remarks>
+    public static Layer<byte, char> Utf8() => Utf8Layer.Instance;
+
+    /// <summary>
     /// A layer that keeps the items for which <paramref name="predicate"/> is true and drops the rest.
     /// </summary>
     /// <typeparam name="T">The type of item.</typeparam>
