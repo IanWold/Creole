@@ -83,10 +83,10 @@ error[parser] at 4..5: unexpected string "host"; expected ',' or '}'; in object 
 
 Errors show tokens as their type describes them ([How errors show tokens](primitives.md#how-errors-show-tokens)). They point into the input differently from errors in text:
 
-- Spans count tokens, not characters. The fifth token, `"host"`, is at `4..5`, and the object started at token 0. Until pipelines give each token a span in the text it came from (LAY-05 and SPAN-02), a token parse cannot point into that text.
+- Spans count tokens, not characters. The fifth token, `"host"`, is at `4..5`, and the object started at token 0. Tokens in an array carry no span in the text they came from, so a token parse cannot point into that text. A [pipeline](pipelines.md#what-it-returns) can: its lexer layer gives each token a span in the text, so the same error renders against the line it is on.
 - The input is not text, so the result holds none, and `Render()` writes [one line per error](errors.md#one-line-per-error).
 
-Everything else works as it does for text: the result, the [options](#options), the depth limit, and what a parse allocates. To lex with a `CharGrammar`, parse the text with a rule that returns a list of tokens, then pass them on as an array.
+Everything else works as it does for text: the result, the [options](#options), the depth limit, and what a parse allocates. To lex with a `CharGrammar` and keep errors in the text, make the lexer a [layer](layers.md) and run it with the parser as a [pipeline](pipelines.md).
 
 ## Options
 
