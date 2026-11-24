@@ -10,7 +10,7 @@ namespace Creole;
 /// <remarks>
 /// <para>
 /// Errors are ordered by source, then by start offset, then by end offset. Errors with equal spans keep the order they were given in.
-/// Sources are ordered as their <see cref="SourceRegistry"/> issued them, with <see cref="SourceId.Unnamed"/> first.
+/// Errors in <see cref="SourceId.Unnamed"/>, the source of every parse, come first.
 /// </para>
 /// <para>
 /// The errors from a parse come with the text of the sources they point into, so <see cref="Render()"/> can show them against it.

@@ -362,10 +362,8 @@ public class WorkedExampleATests
     [Fact]
     public void AnErrorRendersAsTheWhitepaperShowsIt()
     {
-        var registry = new SourceRegistry();
-        var config = registry.Add("config.json");
         var text = "[\n{\n  \"port\": 8080 \"host\": \"x\"\n}\n]";
-        var error = JsonExample.Error(text, config);
+        var error = JsonExample.Error(text, SourceId.Unnamed);
 
         Assert.NotNull(error);
         Assert.Equal(
@@ -378,7 +376,7 @@ public class WorkedExampleATests
               = note: in object starting at 2:1
             """
                 .ReplaceLineEndings("\n"),
-            new Diagnostics([error]).Render(new SourceText(config, "config.json", text))
+            new Diagnostics([error]).Render(new SourceText(text, "config.json"))
         );
     }
 

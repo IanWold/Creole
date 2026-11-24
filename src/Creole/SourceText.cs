@@ -1,7 +1,7 @@
 namespace Creole;
 
 /// <summary>
-/// The text of one source, with the name and id its diagnostics are shown under.
+/// The text of one source, with the name its diagnostics are shown under.
 /// </summary>
 /// <remarks>
 /// Pass sources to <see cref="Diagnostics.Render(ReadOnlySpan{SourceText})"/> to show errors against the lines they point into.
@@ -9,17 +9,16 @@ namespace Creole;
 /// The text is held as given, not copied. Text over memory that is later changed shows the new contents, so render before reusing the memory.
 /// A source text is safe to use from several threads.
 /// </remarks>
-/// <param name="id">The source's id.</param>
-/// <param name="name">The name to show in diagnostics, usually the one the registry has for <paramref name="id"/>, or <see langword="null"/> to show none.</param>
 /// <param name="text">The full text of the source.</param>
-public sealed class SourceText(SourceId id, string? name, ReadOnlyMemory<char> text)
+/// <param name="name">The name to show in diagnostics, such as <c>config.json</c>, or <see langword="null"/> to show none.</param>
+public sealed class SourceText(ReadOnlyMemory<char> text, string? name = null)
 {
     private LineMap? _lineMap;
 
     /// <summary>
     /// The source's id, which errors from it carry in <see cref="SourceSpan.Source"/>.
     /// </summary>
-    public SourceId Id { get; } = id;
+    public SourceId Id { get; }
 
     /// <summary>
     /// Lines and columns for <see cref="Text"/>, built on first use.
@@ -38,19 +37,18 @@ public sealed class SourceText(SourceId id, string? name, ReadOnlyMemory<char> t
     public ReadOnlyMemory<char> Text { get; } = text;
 
     /// <summary>
-    /// Creates the text of a source that has no <see cref="SourceRegistry"/> id, such as the input to a parse given no source.
+    /// Creates the text of a source with an id other than <see cref="SourceId.Unnamed"/>.
     /// </summary>
-    /// <param name="text">The full text of the source.</param>
-    /// <param name="name">The name to show in diagnostics, or <see langword="null"/> to show none.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="text"/> is null.</exception>
-    public SourceText(string text, string? name = null) : this(SourceId.Unnamed, name, text) { }
+    internal SourceText(SourceId id, string? name, ReadOnlyMemory<char> text) : this(text, name)
+    {
+        Id = id;
+    }
 
     /// <summary>
-    /// Creates the text of a source with an id from a <see cref="SourceRegistry"/>.
+    /// Creates the text of a source from a string.
     /// </summary>
-    /// <param name="id">The source's id.</param>
-    /// <param name="name">The name to show in diagnostics, usually the one the registry has for <paramref name="id"/>, or <see langword="null"/> to show none.</param>
     /// <param name="text">The full text of the source.</param>
+    /// <param name="name">The name to show in diagnostics, such as <c>config.json</c>, or <see langword="null"/> to show none.</param>
     /// <exception cref="ArgumentNullException"><paramref name="text"/> is null.</exception>
-    public SourceText(SourceId id, string? name, string text) : this(id, name, (text ?? throw new ArgumentNullException(nameof(text))).AsMemory()) { }
+    public SourceText(string text, string? name = null) : this((text ?? throw new ArgumentNullException(nameof(text))).AsMemory(), name) { }
 }

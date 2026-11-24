@@ -43,8 +43,7 @@ public class DiagnosticsTests
     [Fact]
     public void ErrorsAreOrderedWhateverOrderTheyArriveIn()
     {
-        var registry = new SourceRegistry();
-        SourceId[] sources = [SourceId.Unnamed, registry.Add("a.json"), registry.Add("b.json")];
+        SourceId[] sources = [SourceId.Unnamed, new SourceId(1), new SourceId(2)];
         string[] layers = ["lexer", "layout", "parser"];
 
         var gen =

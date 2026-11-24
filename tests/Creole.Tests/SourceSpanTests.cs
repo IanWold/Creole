@@ -44,8 +44,7 @@ public class SourceSpanTests
     [Fact]
     public void SpansWithEqualFieldsAreEqual()
     {
-        var registry = new SourceRegistry();
-        var file = registry.Add("a.json");
+        var file = new SourceId(1);
 
         Assert.Equal(new SourceSpan(file, 1, 2), new SourceSpan(file, 1, 2, 1, 2));
         Assert.NotEqual(new SourceSpan(file, 1, 2), new SourceSpan(SourceId.Unnamed, 1, 2));
@@ -63,55 +62,14 @@ public class SourceSpanTests
     }
 
     [Fact]
+    public void UnnamedIsDefault() =>
+        Assert.Equal(default, SourceId.Unnamed);
+
+    [Fact]
     public void ZeroWidthSpanIsAllowed()
     {
         var span = new SourceSpan(SourceId.Unnamed, 4, 4);
 
         Assert.Equal(0, span.Length);
-    }
-}
-
-public class SourceRegistryTests
-{
-    [Fact]
-    public void AddIssuesDistinctIdsAndKeepsNames()
-    {
-        var registry = new SourceRegistry();
-        var a = registry.Add("a.json");
-        var b = registry.Add("a.json");
-
-        Assert.NotEqual(a, b);
-        Assert.NotEqual(SourceId.Unnamed, a);
-        Assert.Equal("a.json", registry.GetName(a));
-        Assert.Equal("a.json", registry.GetName(b));
-        Assert.Equal(2, registry.Count);
-    }
-
-    [Fact]
-    public void IdFromAnotherRegistryIsRejected()
-    {
-        var other = new SourceRegistry();
-
-        other.Add("x");
-        var foreign = other.Add("y");
-
-        var registry = new SourceRegistry();
-
-        registry.Add("only");
-
-        Assert.Throws<ArgumentException>(() => registry.GetName(foreign));
-    }
-
-    [Fact]
-    public void NullNameIsRejected() =>
-        Assert.Throws<ArgumentNullException>(() => new SourceRegistry().Add(null!));
-
-    [Fact]
-    public void UnnamedIsDefaultAndHasNoName()
-    {
-        var registry = new SourceRegistry();
-
-        Assert.Equal(default, SourceId.Unnamed);
-        Assert.Null(registry.GetName(SourceId.Unnamed));
     }
 }

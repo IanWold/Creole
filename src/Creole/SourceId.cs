@@ -1,28 +1,23 @@
 namespace Creole;
 
 /// <summary>
-/// Identifies one source text, such as a file, within a <see cref="SourceRegistry"/>.
+/// Identifies the source text a span points into.
 /// </summary>
 /// <remarks>
-/// <para>
-/// <see langword="default"/> is <see cref="Unnamed"/>, the source of a parse that was given no name.
-/// Every other id is issued by <see cref="SourceRegistry.Add(string)"/>.
-/// </para>
-/// <para>
-/// An id is meaningful only in the registry that issued it. Ids from two different registries may compare equal.
-/// </para>
+/// Every parse reads from <see cref="Unnamed"/>, which is also <see langword="default"/>.
+/// A parse given a name shows it through the <see cref="SourceText"/> its result holds, not through the id.
 /// </remarks>
 public readonly record struct SourceId
 {
     private readonly int _value;
 
     /// <summary>
-    /// The registry's index for this id, starting at 1. Zero for <see cref="Unnamed"/>.
+    /// The id's number, which orders sources. Zero for <see cref="Unnamed"/>.
     /// </summary>
     internal int Value => _value;
 
     /// <summary>
-    /// The id of a source that has no name. Equal to <see langword="default"/>.
+    /// The id of the source every parse reads from. Equal to <see langword="default"/>.
     /// </summary>
     public static SourceId Unnamed => default;
 

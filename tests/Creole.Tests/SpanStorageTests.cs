@@ -64,7 +64,7 @@ file sealed class StrideUpstream(long first, int stride, int count, long? firstC
 
 public class SpanStorageTests
 {
-    private static readonly SourceId _other = new SourceRegistry().Add("other.txt");
+    private static readonly SourceId _other = new SourceId(1);
 
     private static readonly Gen<SourceSpan> _spans = Gen.Select(
         Gen.OneOf(Gen.Long[0, 100], Gen.Long[(1L << 31) - 100, (1L << 31) + 100], Gen.Long[(1L << 32) - 100, (1L << 32) + 100], Gen.Long[0, 1L << 40]),

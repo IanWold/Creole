@@ -24,8 +24,6 @@ public class DiagnosticRenderingTests
     [Fact]
     public void RendersTheWhitepaperExample()
     {
-        var registry = new SourceRegistry();
-        var id = registry.Add("config.json");
         var text = Lines("""
             [
             {
@@ -35,7 +33,7 @@ public class DiagnosticRenderingTests
             """
         );
         var start = text.IndexOf("\"host\"", StringComparison.Ordinal);
-        var error = Error(start, start + 6, new UnexpectedItem("string \"host\""), [new ExpectedItem("','"), new ExpectedItem("'}'")], [new ContextLine("in object", new SourceSpan(id, 2, 3))], source: id);
+        var error = Error(start, start + 6, new UnexpectedItem("string \"host\""), [new ExpectedItem("','"), new ExpectedItem("'}'")], [new ContextLine("in object", new SourceSpan(SourceId.Unnamed, 2, 3))]);
 
         Assert.Equal(
             Lines("""
@@ -47,7 +45,7 @@ public class DiagnosticRenderingTests
                   = note: in object starting at 2:1
                 """
             ),
-            new Diagnostics([error]).Render(new SourceText(id, registry.GetName(id), text))
+            new Diagnostics([error]).Render(new SourceText(text, "config.json"))
         );
     }
 
@@ -254,11 +252,10 @@ public class DiagnosticRenderingTests
     }
 
     [Fact]
-    public void ErrorsAreGroupedBySourceInRegistryOrder()
+    public void ErrorsAreGroupedBySourceInIdOrder()
     {
-        var registry = new SourceRegistry();
-        var a = registry.Add("a.json");
-        var b = registry.Add("b.json");
+        var a = new SourceId(1);
+        var b = new SourceId(2);
 
         var diagnostics = new Diagnostics([
             Error(2, 3, new UnexpectedItem("number 2"), [new EndOfInput()], source: b),
@@ -287,7 +284,7 @@ public class DiagnosticRenderingTests
                   |   ^ unexpected number 2
                 """
             ),
-            diagnostics.Render(new SourceText(b, "b.json", "1 2"), new SourceText(a, "a.json", "x y"), new SourceText("?"))
+            diagnostics.Render(new SourceText(b, "b.json", "1 2".AsMemory()), new SourceText(a, "a.json", "x y".AsMemory()), new SourceText("?"))
         );
     }
 
@@ -329,8 +326,7 @@ public class DiagnosticRenderingTests
     [Fact]
     public void AnErrorInASourceWithNoTextThrows()
     {
-        var registry = new SourceRegistry();
-        var diagnostics = new Diagnostics([Error(0, 1, new EndOfInput(), source: registry.Add("a.json"))]);
+        var diagnostics = new Diagnostics([Error(0, 1, new EndOfInput(), source: new SourceId(1))]);
 
         Assert.Throws<ArgumentException>("sources", () => diagnostics.Render(new SourceText("abc")));
     }
@@ -346,8 +342,7 @@ public class DiagnosticRenderingTests
     [Fact]
     public void AContextLineInASourceWithNoTextThrows()
     {
-        var registry = new SourceRegistry();
-        var diagnostics = new Diagnostics([Error(0, 1, new EndOfInput(), context: [new ContextLine("in a", new SourceSpan(registry.Add("a.json"), 0, 1))])]);
+        var diagnostics = new Diagnostics([Error(0, 1, new EndOfInput(), context: [new ContextLine("in a", new SourceSpan(new SourceId(1), 0, 1))])]);
 
         Assert.Throws<ArgumentException>("sources", () => diagnostics.Render(new SourceText("abc")));
     }
@@ -363,9 +358,8 @@ public class DiagnosticRenderingTests
     [Fact]
     public void AContextLineShowsWhereItStartedInItsOwnSource()
     {
-        var registry = new SourceRegistry();
-        var host = registry.Add("page.html");
-        var script = registry.Add("script.js");
+        var host = new SourceId(1);
+        var script = new SourceId(2);
         var error = Error(1, 2, new EndOfInput(), [new Label("value")], [new ContextLine("in script tag", new SourceSpan(host, 7, 8))], source: script);
 
         Assert.Equal(
@@ -378,7 +372,7 @@ public class DiagnosticRenderingTests
                   = note: in script tag starting at 2:1
                 """
             ),
-            new Diagnostics([error]).Render(new SourceText(host, "page.html", "<html>\n<script>"), new SourceText(script, "script.js", "x;"))
+            new Diagnostics([error]).Render(new SourceText(host, "page.html", "<html>\n<script>".AsMemory()), new SourceText(script, "script.js", "x;".AsMemory()))
         );
     }
 
@@ -548,8 +542,7 @@ public class DiagnosticRenderingTests
     [Fact]
     public void ErrorsRenderOneLineEachWhenTheHeldSourcesDoNotCoverThem()
     {
-        var registry = new SourceRegistry();
-        var other = registry.Add("b.json");
+        var other = new SourceId(1);
         var held = new SourceText("abc", "a.json");
         Diagnostics[] uncovered =
         [
@@ -590,7 +583,7 @@ public class DiagnosticRenderingTests
 
         Assert.Equal(
             diagnostics.Render(new SourceText(text, "a.json")),
-            diagnostics.Render(new SourceText(SourceId.Unnamed, "a.json", buffer.AsMemory(2, text.Length)))
+            diagnostics.Render(new SourceText(buffer.AsMemory(2, text.Length), "a.json"))
         );
     }
 
@@ -603,7 +596,7 @@ public class DiagnosticRenderingTests
         Assert.True(MemoryMarshal.TryGetString(new SourceText(text).Text, out var held, out var start, out var length));
         Assert.Same(text, held);
         Assert.Equal((0, 3), (start, length));
-        Assert.True(new SourceText(SourceId.Unnamed, null, memory).Text.Equals(memory));
+        Assert.True(new SourceText(memory).Text.Equals(memory));
     }
 
     [Fact]
@@ -615,8 +608,7 @@ public class DiagnosticRenderingTests
         Assert.Equal("x.txt", source.Name);
         Assert.Same(source.LineMap, source.LineMap);
         Assert.Equal(2, source.LineMap.LineCount);
-        Assert.Throws<ArgumentNullException>(() => new SourceText(null!));
-        Assert.Throws<ArgumentNullException>(() => new SourceText(SourceId.Unnamed, null, (string)null!));
+        Assert.Throws<ArgumentNullException>(() => new SourceText((string)null!));
     }
 
     [Fact]

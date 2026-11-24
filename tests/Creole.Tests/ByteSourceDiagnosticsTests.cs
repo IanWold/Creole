@@ -33,7 +33,7 @@ public class ByteSourceDiagnosticsTests
         .Before(End);
 
     private static string Render(ParseError error, byte[] bytes) =>
-        new Diagnostics([error]).Render(new SourceText(SourceId.Unnamed, "settings.txt", Encoding.UTF8.GetString(bytes.AsSpan(_byteOrderMark.Length))));
+        new Diagnostics([error]).Render(new SourceText(Encoding.UTF8.GetString(bytes.AsSpan(_byteOrderMark.Length)), "settings.txt"));
 
     private static byte[] Source(string text) =>
         [.. _byteOrderMark, .. Encoding.UTF8.GetBytes(text)];
