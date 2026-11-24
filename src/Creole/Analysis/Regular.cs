@@ -50,7 +50,7 @@ internal static class Regular
         NodeKind.Repeat or NodeKind.SkipRepeat => Repetition((IRepetitionNode)node),
         NodeKind.Atomic => From(node.Children[0]) is { } item ? new RegularTerm.Atomic(item) : null,
         NodeKind.Context or NodeKind.Map or NodeKind.Named or NodeKind.Slice or NodeKind.Spanned or NodeKind.Text or NodeKind.WithSpan => From(node.Children[0]),
-        NodeKind.Position => RegularTerm.Empty.Instance,
+        NodeKind.LeadingTrivia or NodeKind.Position => RegularTerm.Empty.Instance,
         NodeKind.Adjacent or NodeKind.Bind or NodeKind.Case or NodeKind.Custom or NodeKind.Cut or NodeKind.End or NodeKind.Expression
             or NodeKind.Fail or NodeKind.Filter or NodeKind.Kind or NodeKind.Longest or NodeKind.Lookahead
             or NodeKind.Match or NodeKind.Not or NodeKind.Rec or NodeKind.Return or NodeKind.Satisfy

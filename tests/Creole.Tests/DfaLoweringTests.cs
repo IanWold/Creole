@@ -16,6 +16,7 @@ file static class Alternatives
         new(Seq(Char('a'), Any).Select(static (a, any) => $"{a}{any}"), "Seq(a, Any).Select()"),
         new(Seq(Char('a'), Any).Spanned().Select(static spanned => $"spanned {spanned.Span.Start}..{spanned.Span.End}"), "Seq(a, Any).Spanned().Select()"),
         new(Seq(Position, Range('a', 'c').WithSpan(static (c, span) => $"{c}@{span.Start}")).Select(static (at, text) => $"{at.Start} {text}"), "Seq(Position, Range(a, c).WithSpan())"),
+        new(Seq(Range('a', 'c'), LeadingTrivia).Select(static (c, trivia) => $"{c} trivia {trivia.Start}..{trivia.End}"), "Seq(Range(a, c), LeadingTrivia)"),
     ];
 
     public static Gen<Alternative> Of(int depth) =>

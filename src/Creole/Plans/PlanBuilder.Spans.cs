@@ -15,6 +15,8 @@ internal sealed partial class PlanBuilder
     public Plan<TIn, (T1, T2)> Adjacent<TIn, T1, T2>(Parser<TIn, T1> first, Parser<TIn, T2> second) =>
         new AdjacentPlan<TIn, T1, T2>(Lower(first), Lower(second), NameOf(first), NameOf(second));
 
+    public static Plan<TIn, SourceSpan> LeadingTrivia<TIn>() => new LeadingTriviaPlan<TIn>();
+
     public static Plan<TIn, SourceSpan> Position<TIn>() => new PositionPlan<TIn>();
 
     public Plan<TIn, Spanned<T>> Spanned<TIn, T>(Parser<TIn, T> item) =>

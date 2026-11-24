@@ -5,6 +5,34 @@ namespace Creole;
 public abstract partial class Grammar<TIn>
 {
     /// <summary>
+    /// A parser that succeeds without consuming input and produces the trivia before the next item: the source between the end of the item before it and its start, such as whitespace and comments a lexer skipped.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Before the first item the trivia starts where the source starts, and at the end of the input it runs from the last item to where the source ends, so with no items it is the whole source.
+    /// <c>Seq(LeadingTrivia, Any.Spanned()).Many()</c> reads each item with the trivia before it, and <c>LeadingTrivia</c> before <c>End</c> reads the trivia after the last.
+    /// When the items are in order and do not overlap, as a lexer's tokens are, those ranges cover the source exactly once, so a formatter can reproduce it from them.
+    /// </para>
+    /// <para>
+    /// Trivia is whatever source no item covers: input a lexer skipped, and items a layer dropped, such as comment tokens removed with <c>Layer.Where</c>.
+    /// All of it belongs to the item after it, so there is no trailing trivia.
+    /// A synthetic item takes the gap before it, and an item at the same place after it gets zero-width trivia.
+    /// If the next item starts before the item before it ends, or in another source, the trivia is zero-width at the next item's start.
+    /// </para>
+    /// <para>
+    /// Over input held whole in memory, items are adjacent, so the trivia is always zero-width at the current position.
+    /// </para>
+    /// <para>
+    /// It reads the next item to find where it starts, as a lookahead would.
+    /// Nothing is stored for trivia: it is worked out from the spans of the items on either side.
+    /// </para>
+    /// <para>
+    /// Every use refers to the same parser.
+    /// </para>
+    /// </remarks>
+    public static Parser<TIn, SourceSpan> LeadingTrivia { get; } = new LeadingTriviaNode<TIn>();
+
+    /// <summary>
     /// A parser that succeeds without consuming input and produces a zero-width <see cref="SourceSpan"/> at the current position.
     /// </summary>
     /// <remarks>

@@ -59,6 +59,7 @@ A grammar can read spans as it parses, to give syntax nodes their location.
 | `p.Spanned()` | A `Spanned<T>`: `p`'s result as `Value`, and the span of the input `p` consumed as `Span` |
 | `p.WithSpan((value, span) => …)` | What the function builds from `p`'s result and that span |
 | `Position` | A zero-width `SourceSpan` where the next item starts |
+| `LeadingTrivia` | The `SourceSpan` of the source before the next item that no item covers ([below](#trivia)) |
 | `Adjacent(p, q)` | `p`'s and `q`'s results as a tuple, if `q` starts exactly where `p` ended ([below](#joining-split-tokens)) |
 
 ```csharp
@@ -97,6 +98,28 @@ Over the tokens of a lexer that skips whitespace, `a >> b` gives `(a >> b)`, `a 
 - `Adjacent` commits as `Seq` does: once `p` has consumed input, a failure is committed. Wrap it in `Atomic` where the grammar should then try something shorter. Above, `a > b` reads its `>` as the start of a shift, and `Atomic` lets the comparison level read it instead.
 - When the two do not touch, it fails as a rejected `Where` does ([Sequencing § `Bind`, `where` and `let`](sequencing.md#bind-where-and-let)): at `p`'s start, over the input both consumed. The message names both, as in `'>' must come right after '>', with nothing between them`, each by its label or by what its leading primitive expects. If either has no name, it is `these items must touch, with nothing between them`.
 - Over input held whole in memory, consecutive items always touch, so telling `>>` from `> >` needs a layer's spans.
+
+### Trivia
+
+Trivia is the source that no item covers: the whitespace and comments a lexer's `skip` consumed, and any items a layer dropped. Creole stores none of it. `LeadingTrivia` works it out from the spans of the items on either side, so it costs nothing unless a grammar reads it ([ADR-0036](../../work/docs/decisions/0036-trivia-is-the-source-between-items-read-with-a-zero-width-parser.md)).
+
+```csharp
+// Each token with the trivia before it, then the trivia after the last token.
+var file = Seq(Seq(LeadingTrivia, Any.Spanned()).Many(), LeadingTrivia).Before(End);
+```
+
+Over the tokens of a lexer that skips whitespace and comments, `  a /* c */ b ` gives `a` the trivia 0..2 and `b` the trivia 3..12, and the trivia at the end is 13..14.
+
+- `LeadingTrivia` succeeds without consuming input. It produces the span from the end of the item before the cursor to the start of the next item.
+- Before the first item, the trivia starts where the source starts. At the end of the input, it runs from the last item to where the source ends. With no items, that is the whole source.
+- If the items are in order and do not overlap, as a lexer's tokens are, their trivia and spans cover the source exactly once. Reading them from the text, in order, reproduces the source.
+- All of a gap belongs to the item after it. There is no trailing trivia, so a tool that wants a same-line comment to belong to the token before it has to split the gap itself.
+- A trivia span is one range. To tell comments from whitespace, run a grammar for trivia over its text.
+- Comment tokens that a `Layer.Where` drops are part of the trivia of the next token that is kept.
+- A [synthetic item](#synthetic-items) takes the gap before it. An item at the same place after it gets zero-width trivia, so in a layout pass the indentation before a dedented line is the trivia of its first DEDENT.
+- If an item starts before the item before it ends, its trivia is zero-width at its own start. This happens with the outputs of a `Layer.Transduce` step that emits several derived outputs over one span.
+- Over input held whole in memory, items are adjacent, so trivia is always zero-width.
+- It reads the next item to find where that item starts, as `Position` does.
 
 ## Lines and columns
 

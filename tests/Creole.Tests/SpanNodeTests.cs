@@ -20,6 +20,16 @@ public class SpanNodeTests
     }
 
     [Fact]
+    public void LeadingTriviaIsOneSharedLeafNode()
+    {
+        INode node = Assert.IsType<LeadingTriviaNode<char>>(LeadingTrivia);
+
+        Assert.Equal(NodeKind.LeadingTrivia, node.Kind);
+        Assert.Empty(node.Children);
+        Assert.Same(LeadingTrivia, CharGrammar.LeadingTrivia);
+    }
+
+    [Fact]
     public void NullArgumentsNameTheirExpressions()
     {
         Parser<char, int> item = null!;
