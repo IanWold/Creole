@@ -211,7 +211,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-None yet.
+- [STRM-01](active/08-streaming/STRM-01-starved-outcome.md) Starved outcome — Building
 
 ### Can start now
 
@@ -225,7 +225,6 @@ These items have all their blockers done:
 - [LAY-07](active/06-layers-and-pipelines/LAY-07-three-layer-demo-and-bounded-memory-check.md) Three-layer demo and bounded-memory check
 - [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) Invalidation rule
 - [MODE-05](active/07-mode-channels/MODE-05-mode-payloads.md) Mode payloads
-- [STRM-01](active/08-streaming/STRM-01-starved-outcome.md) Starved outcome
 - [STRM-04](active/08-streaming/STRM-04-huge-single-documents.md) Huge single documents
 - [ANA-01](active/09-static-analysis/ANA-01-grammar-property-analysis.md) Grammar property analysis
 - [GEN-11](active/11-source-generator/GEN-11-runtime-support-surface-for-generated-code.md) Runtime support surface for generated code

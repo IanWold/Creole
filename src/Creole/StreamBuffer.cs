@@ -23,6 +23,7 @@ namespace Creole;
 /// <para>
 /// A <see cref="Cursor{T}"/> reads the buffer as its <see cref="ICursorSource{T}"/>.
 /// Asking for a position past the filled items runs upstream steps until that position is filled or the input ends, and no further, so no item is produced before the layer above asks for it.
+/// If a step starves instead, because the input has run out of what it has received but has not ended, the buffer is <see cref="Starved"/> and runs no more steps until the parse restarts.
 /// Reading a filled position again, after a rewind, never runs the upstream.
 /// Each such read states the reader's horizon, and the upstream keeps only the input it needs to produce again the items at or above it (<see cref="OldestStepStart"/>).
 /// </para>
@@ -152,6 +153,12 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     /// </summary>
     public long Start => _released * _segmentSize;
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// It is set when a step of the upstream returns <see langword="false"/> with <see cref="IUpstream{T}.Starved"/> set, so the buffer has not ended.
+    /// </remarks>
+    public bool Starved { get; private set; }
+
     private void CopyHeldSpans(long start, long end)
     {
         for (var i = 0; i < _heldCount; i++)
@@ -170,9 +177,15 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     {
         while (position >= Filled)
         {
-            if (_ended || !_upstream.TryStep(this))
+            if (_ended || Starved)
             {
-                _ended = true;
+                return false;
+            }
+
+            if (!_upstream.TryStep(this))
+            {
+                Starved = _upstream.Starved;
+                _ended = !Starved;
                 return false;
             }
 

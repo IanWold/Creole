@@ -5,12 +5,14 @@ namespace Creole.Tests;
 /// </summary>
 /// <remarks>
 /// Item <c>i</c> has the span <c>[i, i + 1)</c>, as a character of a root layer does.
+/// With <paramref name="starves"/>, the array is only the input received so far: when it runs out, the upstream starves instead of ending.
 /// </remarks>
-internal sealed class ArrayUpstream<T>(T[] items, int itemsPerStep = 1) : IUpstream<T>
+internal sealed class ArrayUpstream<T>(T[] items, int itemsPerStep = 1, bool starves = false) : IUpstream<T>
 {
     private readonly T[] _items = items;
     private readonly int _itemsPerStep = itemsPerStep;
     private int _next;
+    private readonly bool _starves = starves;
 
     public SourceSpan InputEnd => new(SourceId.Unnamed, _items.Length, _items.Length);
 
@@ -25,6 +27,11 @@ internal sealed class ArrayUpstream<T>(T[] items, int itemsPerStep = 1) : IUpstr
     /// How many times each item has been produced.
     /// </summary>
     public int[] Produced { get; } = new int[items.Length];
+
+    /// <summary>
+    /// Whether the items have run out and the upstream starves there, rather than ending.
+    /// </summary>
+    public bool Starved => _starves && _next == _items.Length;
 
     /// <summary>
     /// How many steps have run.

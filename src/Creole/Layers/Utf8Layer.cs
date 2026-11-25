@@ -16,6 +16,9 @@ namespace Creole;
 /// A read that would hold more of its input than the buffer's limit ends the parse with an error at the pin, whose character offset is that of the output whose step began there.
 /// </para>
 /// <para>
+/// Where the input runs out of what it has received inside a sequence, the input has not ended, so the step starves instead of reporting the sequence as invalid.
+/// </para>
+/// <para>
 /// Each output's root offsets are its input's, and its character offsets count the UTF-16 characters produced before it.
 /// Where its input starts and ends keep their root offsets, at character 0 and at the number of characters decoded.
 /// </para>
@@ -46,6 +49,8 @@ file sealed class Utf8Upstream(ICursorSource<byte> input) : IUpstream<char>
             return new SourceSpan(start.Source, start.Start, start.End, 0, 0);
         }
     }
+
+    public bool Starved => _input.Starved;
 
     private LayerFailedException Invalid(ReadOnlySpan<byte> bytes, long stepStart)
     {
@@ -97,6 +102,11 @@ file sealed class Utf8Upstream(ICursorSource<byte> input) : IUpstream<char>
 
         if (status != OperationStatus.Done)
         {
+            if (_input.Starved)
+            {
+                return false;
+            }
+
             throw Invalid(bytes[..consumed], stepStart);
         }
 

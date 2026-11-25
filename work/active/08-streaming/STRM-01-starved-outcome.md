@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Streaming and async input](../../README.md#strm--streaming-and-async-input) |
 | Phase | Phase 1 — Layers |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -39,3 +39,8 @@ In streaming mode, running out of buffered data is neither success nor failure.
 ## Artifacts
 
 - [Research: Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) Eight reviewers and two critics on what is unnecessary, what could be simpler, where decisions drifted and what was missed, with gate measurements
+
+## Progress notes
+
+- 2026-11-25 (Building): Started. Plan: keep the Starved flag on each layer's cursor source (the stream buffer), so cursor copies share it and reads through `Available` set it; a buffer whose upstream starves stays unended; choices and repetitions check it through `IMark.FailedEmpty`, and `Atomic`, `Not`, `Lookahead`, `Longest` (both engines), dispatch, `End` and each layer's step check it directly. No source starves until STRM-02, so tests use an internal starving upstream. Next: `/build` plan.
+- 2026-11-25 (Building): Increment 1 done: the flag, set by reads and passed up through layers. `StreamBuffer` keeps a `Starved` flag behind `ICursorSource`, so cursor copies and reads through `Available` set it; an upstream that starves leaves its buffer unended and stepping stops. Tokens, Transduce, Utf8, Select and Where pass their input's flag up, and a starved step adds nothing, raises no error and does not run `atEnd`; `End` fails where the input received so far runs out. Found and fixed a spurious starve: `Cursor.Reset` fetched new input when a `Longest` (interpreted, light marks) moved forward to a winner that ended exactly at the end of the input received so far; it now moves to the segment holding the item before the position, so a rewind never fetches. Tests in `StarvedTests`, including every control shape to depth 3 on every starving prefix, under three lowerings (mutation-checked). All 1,914 tests pass. Next: increment 2, the combinator checks and the gate benchmark before and after.

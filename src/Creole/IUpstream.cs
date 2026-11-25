@@ -28,6 +28,16 @@ internal interface IUpstream<T> : IDisposable
     SourceSpan InputStart { get; }
 
     /// <summary>
+    /// Whether the input has run out of what it has received so far but has not ended, so a step could not tell what to produce.
+    /// </summary>
+    /// <remarks>
+    /// It is read once <see cref="TryStep"/> has returned <see langword="false"/>, and tells a starved step from the end of the input.
+    /// A layer gives its input's, so starvation at the root reaches every layer above it.
+    /// The default is false, for an upstream whose input always ends where it has run out.
+    /// </remarks>
+    bool Starved => false;
+
+    /// <summary>
     /// Does nothing, for an upstream that reads from nothing it must dispose.
     /// </summary>
     void IDisposable.Dispose() { }
@@ -43,6 +53,9 @@ internal interface IUpstream<T> : IDisposable
     /// <summary>
     /// Runs one step, adding its outputs to <paramref name="buffer"/> with <see cref="StreamBuffer{T}.Add"/>.
     /// </summary>
-    /// <returns><see langword="false"/> if the input is exhausted, so no step ran.</returns>
+    /// <remarks>
+    /// A step whose input starves adds nothing and returns <see langword="false"/>, with <see cref="Starved"/> set.
+    /// </remarks>
+    /// <returns><see langword="false"/> if the input is exhausted, or has starved, so no step ran.</returns>
     bool TryStep(StreamBuffer<T> buffer);
 }

@@ -23,6 +23,15 @@ internal interface ICursorSource<T> : IDisposable
     SourceSpan InputStart { get; }
 
     /// <summary>
+    /// Whether a read has found the end of the items received so far before the true end of the input, so the parse cannot yet tell what follows.
+    /// </summary>
+    /// <remarks>
+    /// Once set, it stays set until the parse restarts, and the source receives no more items until then.
+    /// The default is false, for a source that holds its whole input.
+    /// </remarks>
+    bool Starved => false;
+
+    /// <summary>
     /// Does nothing, for a source that rents nothing and reads from nothing it must dispose.
     /// </summary>
     void IDisposable.Dispose() { }
@@ -76,6 +85,6 @@ internal interface ICursorSource<T> : IDisposable
     /// <param name="horizon">The lowest position the reader may still go back to: the minimum of its cursor and its floor, or a layer's own pin. It must not be above the reader's true horizon, which never falls.</param>
     /// <param name="segment">The segment, which holds the item at <paramref name="position"/>.</param>
     /// <param name="segmentStart">The absolute position of the segment's first item.</param>
-    /// <returns><see langword="false"/> if no item exists at <paramref name="position"/>.</returns>
+    /// <returns><see langword="false"/> if no item exists at <paramref name="position"/>, or none has been received there yet and the source has <see cref="Starved"/>.</returns>
     bool TryGetSegment(long position, long horizon, out ReadOnlyMemory<T> segment, out long segmentStart);
 }
