@@ -48,4 +48,7 @@ internal enum NodeKind
     GetState,
     SetState,
     Scan,
+    SetMode,
+    PushMode,
+    PopMode,
 }

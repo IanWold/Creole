@@ -87,6 +87,14 @@ public ref struct Cursor<T>
     internal int MaxDepth { get; init; } = int.MaxValue;
 
     /// <summary>
+    /// The mode channels this layer's grammar writes, or null until a parser run on its own first changes a mode.
+    /// </summary>
+    /// <remarks>
+    /// <c>SetMode</c>, <c>PushMode</c> and <c>PopMode</c> change the stacks it holds.
+    /// </remarks>
+    internal ModeWriter? Modes { get; set; }
+
+    /// <summary>
     /// This layer's state, as <see cref="StateBox"/> holds it, or null when the layer has no state.
     /// </summary>
     /// <remarks>

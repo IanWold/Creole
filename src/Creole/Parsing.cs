@@ -20,7 +20,7 @@ namespace Creole;
 /// </remarks>
 public static class Parsing
 {
-    private const string Layer = "parser";
+    internal const string Layer = "parser";
 
     extension<TOut>(Parser<char, TOut> parser)
     {
