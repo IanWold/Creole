@@ -33,11 +33,11 @@ internal readonly struct FullMark : IMark<FullMark>
     }
 
     /// <summary>
-    /// Call after the attempt failed. Returns whether it failed without consuming, and if so withdraws the diagnostics raised since the mark and restores the state and the cut flag.
+    /// Call after the attempt failed. Returns whether it failed without consuming and without starving, and if so withdraws the diagnostics raised since the mark and restores the state and the cut flag.
     /// </summary>
     public bool FailedEmpty<T>(ref Cursor<T> cursor)
     {
-        if (cursor.Position != Position)
+        if (cursor.Position != Position || cursor.Starved)
         {
             return false;
         }

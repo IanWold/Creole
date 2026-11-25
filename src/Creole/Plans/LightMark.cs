@@ -28,11 +28,11 @@ internal readonly struct LightMark : IMark<LightMark>
     }
 
     /// <summary>
-    /// Call after the attempt failed. Returns whether it failed without consuming, and if so restores the cut flag.
+    /// Call after the attempt failed. Returns whether it failed without consuming and without starving, and if so restores the cut flag.
     /// </summary>
     public bool FailedEmpty<T>(ref Cursor<T> cursor)
     {
-        if (cursor.Position != Position)
+        if (cursor.Position != Position || cursor.Starved)
         {
             return false;
         }

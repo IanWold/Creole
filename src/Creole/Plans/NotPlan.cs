@@ -8,6 +8,7 @@ namespace Creole;
 /// <remarks>
 /// A cut passed inside does not survive leaving it (ADR-0011 point 4).
 /// Its start is pinned while it runs, so a stream buffer keeps the input it rewinds to.
+/// An item that starved fails it without rewinding, whether the item succeeded or failed.
 /// </remarks>
 internal sealed class NotPlan<TIn, T, TMark>(Plan<TIn, T> item) : Plan<TIn, Unit>
     where TMark : struct, IMark<TMark>
@@ -24,12 +25,22 @@ internal sealed class NotPlan<TIn, T, TMark>(Plan<TIn, T> item) : Plan<TIn, Unit
         T value = default!;
 
         var ok = _item.TryParse(ref cursor, ref value);
+        var starved = cursor.Starved;
 
-        mark.Rewind(ref cursor);
-        cursor.Reset(mark.Position);
+        if (!starved)
+        {
+            mark.Rewind(ref cursor);
+            cursor.Reset(mark.Position);
+        }
+
         cursor.Unpin(floor);
         cursor.RestoreFailures(in failures);
         cursor.Cut = outerCut;
+
+        if (starved)
+        {
+            return false;
+        }
 
         if (ok)
         {
