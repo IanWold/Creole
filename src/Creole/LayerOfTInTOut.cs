@@ -29,6 +29,11 @@ public abstract class Layer<TIn, TOut>
     /// </summary>
     internal virtual bool DecodesUtf8 => false;
 
+    /// <summary>
+    /// The mode channels this layer, or the layers of this chain, read with <c>Layer.Modal</c>, each with the name of the layer that reads it.
+    /// </summary>
+    internal virtual IEnumerable<(object Channel, string Layer)> Readers => [];
+
     internal Layer() { }
 
     /// <summary>
@@ -46,7 +51,7 @@ public abstract class Layer<TIn, TOut>
     /// <param name="next">The layer to run over this layer's items.</param>
     /// <param name="nextExpression">Filled in by the compiler with the expression for <paramref name="next"/>.</param>
     /// <returns>A layer from this layer's input to <paramref name="next"/>'s items.</returns>
-    /// <exception cref="GrammarException"><paramref name="next"/> is null.</exception>
+    /// <exception cref="GrammarException"><paramref name="next"/> is null, or a <c>Layer.Modal</c> in this chain and one in <paramref name="next"/> read the same <see cref="ModeChannel{TMode}"/>.</exception>
     /// <remarks>
     /// <para>
     /// Chaining is associative: <c>a.Then(b).Then(c)</c> and <c>a.Then(b.Then(c))</c> produce the same items with the same spans.
@@ -59,6 +64,17 @@ public abstract class Layer<TIn, TOut>
     public Layer<TIn, TNext> Then<TNext>(Layer<TOut, TNext> next, [CallerArgumentExpression(nameof(next))] string nextExpression = "")
     {
         Guard.NotNull(next, nextExpression);
+
+        foreach (var (channel, reader) in next.Readers)
+        {
+            foreach (var (held, holder) in Readers)
+            {
+                if (ReferenceEquals(channel, held))
+                {
+                    throw new GrammarException($"The {holder} layer and the {reader} layer both read a {channel}. A chain has one Layer.Modal for each channel.");
+                }
+            }
+        }
 
         return this is IdentityLayer<TIn>
             ? (Layer<TIn, TNext>)(object)next

@@ -10,6 +10,8 @@ internal sealed class ComposedLayer<TIn, TMiddle, TOut>(Layer<TIn, TMiddle> firs
 {
     internal override bool DecodesUtf8 => First.DecodesUtf8;
 
+    internal override IEnumerable<(object Channel, string Layer)> Readers => First.Readers.Concat(Second.Readers);
+
     public Layer<TIn, TMiddle> First { get; } = first;
 
     public Layer<TMiddle, TOut> Second { get; } = second;

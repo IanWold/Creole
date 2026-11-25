@@ -11,6 +11,7 @@ To run layers, end them in a parser and parse with the [pipeline](pipelines.md) 
 | `Layer.Tokens(item)` | The value of `item`, run repeatedly to the end of the input |
 | `Layer.Tokens(item, skip)` | The same, running `skip` before each item, such as whitespace between tokens |
 | `Layer.Tokens(initialState, item, skip)` | The same, with a [state](layer-state.md) that starts as `initialState`, such as how deeply braces nest |
+| `Layer.Modal(channel, selector)`, `Layer.Modal(channel, selector, skip)` and `Layer.Modal(initialState, channel, selector, skip)` | As `Layer.Tokens`, with each step's item parser chosen by a [mode channel](mode-channels.md)'s current mode, which the parser sets |
 | `Layer.Transduce(initialState, step, atEnd)` | The outputs of `step`, run repeatedly to the end of the input, then those of `atEnd`: none, one or several per step, such as a layout pass adding INDENT and DEDENT |
 | `Layer.Where<T>(predicate)` | The items for which `predicate` is true |
 | `Layer.Select<TIn, TOut>(selector)` | `selector` applied to each item |
@@ -44,6 +45,23 @@ error[lexer] at 3..4: unexpected '?'; expected whitespace, letter, digit, "<", "
 ```
 
 The error's `Layer` is `lexer` unless the layer is given a name: `Layer.Tokens(item, skip, name: "words")`. A step that goes deeper than `ParseOptions.MaxDepth`, or would hold more of its input than `ParseOptions.MaxBufferedItems`, ends the parse with that limit's error, also named for the layer ([The buffer limit](#the-buffer-limit)).
+
+## `Layer.Modal`
+
+`Layer.Modal` is a lexer whose parser tells it how to read the next token, such as whether `/` starts a regex or divides. It runs as `Layer.Tokens` does, except that each step reads the current mode of a [mode channel](mode-channels.md) and runs that mode's item parser:
+
+```csharp
+public static readonly Layer<char, Lexeme> Lexer = Layer.Modal(Modes, static mode => mode switch
+{
+    LexMode.Operand => _name.Or(_regex),
+    _ => _name.Or(_slash),
+}, Whitespace.SkipMany());
+```
+
+- The selector runs at most once for each mode, for the life of the layer, and its result is kept, so building parsers inside it is safe. Each mode's item parser is planned once. A selector that returns null throws `GrammarException` when the parse first reaches that mode.
+- Every mode shares `skip`. In a mode where whitespace is content, skip whitespace only and read it back in the parser with [`LeadingTrivia`](spans.md).
+- A lexer with a [state](layer-state.md) passes it first, `Layer.Modal(initialState, channel, selector, skip)`, as `Layer.Tokens` does.
+- Spans, errors, the layer's name and the rule that an item must consume input are as for `Layer.Tokens`.
 
 ## `Layer.Transduce`
 
@@ -130,6 +148,7 @@ The one-line form shows character offsets. The error's `Span.Start` and `Span.En
 
 - Chaining is associative: `a.Then(b).Then(c)` and `a.Then(b.Then(c))` produce the same items with the same spans.
 - `Layer.Identity<T>()` is its unit: `a.Then(Layer.Identity<T>())` and `Layer.Identity<T>().Then(a)` return `a` itself.
+- A chain has one `Layer.Modal` for each [mode channel](mode-channels.md#who-reads-and-writes-a-channel). `Then` throws `GrammarException` if `a` and `b` both read the same channel.
 
 ## The buffer limit
 

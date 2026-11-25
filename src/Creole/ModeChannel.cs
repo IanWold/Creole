@@ -12,6 +12,10 @@ namespace Creole;
 /// <see cref="Grammar{TIn}.SetMode{TMode}"/>, <see cref="Grammar{TIn}.PushMode{TMode}"/> and <see cref="Grammar{TIn}.PopMode{TMode}"/> change the stack.
 /// </para>
 /// <para>
+/// In a pipeline, a <c>Layer.Modal</c> reads the channel: each of its steps runs the item parser for the mode on top of the stack.
+/// The grammar of one layer above it, or the parser that ends the pipeline, changes the mode.
+/// </para>
+/// <para>
 /// A channel is known by its instance, not by its type or initial mode, so keep it in a <see langword="static"/> <see langword="readonly"/> field and use that field everywhere.
 /// Modes are compared with <see cref="EqualityComparer{T}.Default"/>.
 /// </para>
