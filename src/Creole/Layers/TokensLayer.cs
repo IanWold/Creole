@@ -126,7 +126,7 @@ internal sealed class TokensLayer<TIn, TOut>(Parser<TIn, TOut> item, Parser<TIn,
 
     public Parser<TIn, Unit>? Skip { get; } = skip;
 
-    internal override IUpstream<TOut> Open(ICursorSource<TIn> input, ParseOptions options, bool recordFailures) =>
+    internal override IUpstream<TOut> Open(ICursorSource<TIn> input, PipelineRun run) =>
         new TokensUpstream<TIn, TOut>(
             input,
             PlanCache.Get(Item),
@@ -135,8 +135,8 @@ internal sealed class TokensLayer<TIn, TOut>(Parser<TIn, TOut> item, Parser<TIn,
                 : PlanCache.Get(Skip),
             InitialState,
             Name,
-            options.MaxDepth,
-            recordFailures
+            run.Options.MaxDepth,
+            run.RecordFailures
                 ? new FailureLog<TIn>()
                 : null
         );

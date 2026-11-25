@@ -77,7 +77,7 @@ internal sealed class LayeredPipeline<TIn, TItem, TOut>(Layer<TIn, TItem> layers
     {
         var plan = PlanCache.Get(Parser);
 
-        using var items = new StreamBuffer<TItem>(Layers.Open(openRoot(), options, recordFailures: true));
+        using var items = new StreamBuffer<TItem>(Layers.Open(openRoot(), new PipelineRun(options, recordFailures: true)));
 
         var log = new FailureLog<TItem>();
 
@@ -96,7 +96,7 @@ internal sealed class LayeredPipeline<TIn, TItem, TOut>(Layer<TIn, TItem> layers
     {
         var plan = PlanCache.Get(Parser);
 
-        using var items = new StreamBuffer<TItem>(Layers.Open(root, options, recordFailures));
+        using var items = new StreamBuffer<TItem>(Layers.Open(root, new PipelineRun(options, recordFailures)));
 
         var log = recordFailures
             ? new FailureLog<TItem>()

@@ -83,7 +83,7 @@ internal static class LayerRun
 
         var buffer = new StreamBuffer<TIn>(root, segmentSize, maxBufferedItems: options.MaxBufferedItems);
 
-        return new StreamBuffer<T>(layer.Open(buffer, options, recordFailures), segmentSize, maxBufferedItems: options.MaxBufferedItems);
+        return new StreamBuffer<T>(layer.Open(buffer, new PipelineRun(options, recordFailures)), segmentSize, maxBufferedItems: options.MaxBufferedItems);
     }
 
     /// <summary>

@@ -14,6 +14,7 @@ Support the rare data-carrying mode, at the cost of analysis precision and fusio
 
 - Union-typed `TMode` with exhaustive `Layer.Modal` switches.
 - `ModeData<T>()` for reading a payload; the node is opaque to analysis.
+- `Layer.Modal` caches the selector's result per distinct mode value ([ADR-0041](../../docs/decisions/0041-a-channel-has-one-reader-below-one-writer-and-a-write-nothing-reads-or-a-pop-of-the-last-mode-throws.md) point 6). A case that carries data gets one entry per value, so bound the cache or key it by case.
 - Document that lexer-decidable data belongs in layer state.
 
 ## Acceptance criteria

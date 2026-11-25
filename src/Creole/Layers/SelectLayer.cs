@@ -72,6 +72,6 @@ internal sealed class SelectLayer<TIn, TOut>(Func<TIn, TOut> selector) : Layer<T
 
     public Func<TIn, TOut> Selector { get; } = selector;
 
-    internal override IUpstream<TOut> Open(ICursorSource<TIn> input, ParseOptions options, bool recordFailures) =>
+    internal override IUpstream<TOut> Open(ICursorSource<TIn> input, PipelineRun run) =>
         new SelectUpstream<TIn, TOut>(input, Selector);
 }

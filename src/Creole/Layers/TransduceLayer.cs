@@ -177,15 +177,15 @@ internal sealed class TransduceLayer<TIn, TOut, TState>(TState initialState, Par
 
     public Parser<TIn, Emit<TOut>> Step { get; } = step;
 
-    internal override IUpstream<TOut> Open(ICursorSource<TIn> input, ParseOptions options, bool recordFailures) =>
+    internal override IUpstream<TOut> Open(ICursorSource<TIn> input, PipelineRun run) =>
         new TransduceUpstream<TIn, TOut, TState>(
             input,
             PlanCache.Get(Step),
             InitialState,
             AtEnd,
             Name,
-            options.MaxDepth,
-            recordFailures
+            run.Options.MaxDepth,
+            run.RecordFailures
                 ? new FailureLog<TIn>()
                 : null
         );

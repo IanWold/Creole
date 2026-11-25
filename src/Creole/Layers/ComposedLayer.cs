@@ -14,6 +14,6 @@ internal sealed class ComposedLayer<TIn, TMiddle, TOut>(Layer<TIn, TMiddle> firs
 
     public Layer<TMiddle, TOut> Second { get; } = second;
 
-    internal override IUpstream<TOut> Open(ICursorSource<TIn> input, ParseOptions options, bool recordFailures) =>
-        Second.Open(new StreamBuffer<TMiddle>(First.Open(input, options, recordFailures)), options, recordFailures);
+    internal override IUpstream<TOut> Open(ICursorSource<TIn> input, PipelineRun run) =>
+        Second.Open(new StreamBuffer<TMiddle>(First.Open(input, run)), run);
 }
