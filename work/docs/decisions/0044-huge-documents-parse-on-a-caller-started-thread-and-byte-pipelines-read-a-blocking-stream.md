@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| Status | Proposed |
+| Status | Accepted |
 | Date | 2026-11-26 |
 | Cards | [STRM-04](../../active/08-streaming/STRM-04-huge-single-documents.md), [STRM-02](../../active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md), [STRM-03](../../active/08-streaming/STRM-03-streaming-diagnostics.md) |
 | Whitepaper | [§ Why not async combinators](../../../whitepaper.md#why-not-async-combinators), [§ Sources](../../../whitepaper.md#sources) |
@@ -108,7 +108,7 @@ An internal root `IUpstream<byte>` reads the caller's `Stream` synchronously, as
   - Next to STRM-02's `ParseManyAsync(Stream)`, callers must tell a blocking `ParseMany(Stream)` from the async one. Their names and return types differ, as `ParseMany(TextReader)` already does.
   - A failed result holds no text until STRM-03 captures lines, as over a `TextReader`.
 
-**Result:** Chosen by the maintainer on 2026-11-26. Built in a9b7dc7 as `StreamUpstream` and the two overloads. Criterion 2: on eight sources, through a `MemoryStream` and a stream that gives one byte per read, `Parse` and `ParseMany` over a stream return the values and errors of the in-memory overloads; shifting the root's offsets by one fails 10 of those tests. Criterion 1, measured on cce1483 with the `json-document` harness input uncommitted: 145,320, 148,952 and 153,744 bytes retained at 10 MB, 100 MB and 1 GB, 1.06×. A byte buffer that releases nothing fails the same measurement at 15.08× from 2 MB to 20 MB. Criterion 4: all 2,025 tests pass on a9b7dc7, and the AOT smoke publishes with no warnings.
+**Result:** Chosen by the maintainer on 2026-11-26. Built in a9b7dc7 as `StreamUpstream` and the two overloads. Criterion 2: on eight sources, through a `MemoryStream` and a stream that gives one byte per read, `Parse` and `ParseMany` over a stream return the values and errors of the in-memory overloads; shifting the root's offsets by one fails 10 of those tests. Criterion 1, measured on cce1483 with the `json-document` harness input uncommitted: 145,320, 148,952 and 153,744 bytes retained at 10 MB, 100 MB and 1 GB, 1.06×. Again on a9aafc2, with nothing uncommitted: 145,200, 148,920 and 149,536 bytes, 1.03×. The 1 GB peak moved by 4 KB between the runs, so the rise across sizes is within the samples' spread. A byte buffer that releases nothing fails the same measurement at 15.08× from 2 MB to 20 MB. Criterion 4: all 2,025 tests pass on a9b7dc7, and the AOT smoke publishes with no warnings.
 
 #### 2C. Overloads that take a `PipeReader` directly
 
@@ -154,7 +154,7 @@ The parse has no cancellation check. The caller cancels the read: `cancellationT
 
 ## Decision
 
-Options **1A, 2B, 3A and 4A** are recommended. The maintainer chose 1A and 2B on 2026-11-26. 3A and 4A follow from the facts under Context.
+Options **1A, 2B, 3A and 4A**. Accepted by the maintainer on 2026-11-26. The maintainer chose 1A and 2B; 3A and 4A follow from the facts under Context.
 
 1. **No new API to run a parse on a thread.** The docs show the recipe under 1A: a dedicated thread, `LongRunning` by default or `new Thread(start, maxStackSize)` for deep documents, never `Task.Run`, with the one-thread cost stated.
 2. **Byte pipelines read a blocking `Stream`.** `Pipeline<byte, TOut>` gets `Parse(Stream input, ParseOptions? options = null)` and `ParseMany(Stream input, ParseOptions? options = null)`, mirroring the `TextReader` overloads:
@@ -170,11 +170,17 @@ No option is open, and no trial decides between them. The build checked the chos
 
 | Criterion | Result | Evidence |
 | --- | --- | --- |
-| 1. Bounded memory | Met: 1.06× from 10 MB to 1 GB | `python3 scripts/memory-gate.py --inputs json-document` on cce1483 plus the harness input; 2B's Result |
+| 1. Bounded memory | Met: 1.03× from 10 MB to 1 GB | `python3 scripts/memory-gate.py --inputs json-document` on a9aafc2; 2B's Result |
 | 2. Same results as bytes in memory | Met | `ByteSourceDiagnosticsTests`, a9b7dc7 |
 | 3. Cancellation and source errors | Met | `PipeTests`, cce1483; `PipelineTests` and `ParseManyTests`, a9b7dc7 |
-| 4. Nothing else changes | Met | 2,025 tests pass and the AOT smoke publishes cleanly on a9b7dc7 |
+| 4. Nothing else changes | Met | 2,025 tests pass and the AOT smoke publishes cleanly on a9b7dc7; 2,031 pass on a9aafc2 |
 | 5. Documented | Met | [docs/concepts/pipelines.md](../../../docs/concepts/pipelines.md) § Streams and § Huge documents from a pipe |
+
+Deciding reasons:
+
+- **1A:** no new API, and the recipe is the whitepaper's design; `ParseAsync` can follow without breaking anything.
+- **2B:** spans keep byte offsets and invalid UTF-8 ends the parse as it does in memory, where `StreamReader` decoding would lose both.
+- **3A and 4A:** a blocked pool thread can starve the pool, and cancelling the read needs no API and no check on the hot path.
 
 What would change this:
 
@@ -198,12 +204,12 @@ What would change this:
 
 ## Changes made
 
-Filled in on acceptance. Expected:
-
 - **Whitepaper.**
-  - [§ Why not async combinators](../../../whitepaper.md#why-not-async-combinators): the first route parses over the pipe's blocking `Stream`, decoded by `Layer.Utf8()`, on a thread the caller starts.
-  - [§ Sources](../../../whitepaper.md#sources): a `Stream` row for blocking `Parse` and `ParseMany`.
+  - [§ Why not async combinators](../../../whitepaper.md#why-not-async-combinators): the first route parses over the pipe's blocking `Stream`, with `Layer.Utf8()` decoding, on a thread the caller starts, which is a dedicated one, cancelled by cancelling the pipe's pending read. It cites criterion 1's measurement and links this record.
+  - [§ Sources](../../../whitepaper.md#sources): a `Stream` row for blocking `Parse` and `ParseMany`, and a sentence saying a blocking `Stream` gives the results of the same bytes in memory but holds no text.
+  - Checked and unchanged: § The restart protocol; the Resumable async item in § Questions raised in review, which already says a dedicated-thread option covers huge documents; § Comparison with existing .NET libraries, whose Creole streaming cell ("Any source at the root of a pipeline") still holds.
 - **Cards.**
-  - [STRM-04](../../active/08-streaming/STRM-04-huge-single-documents.md): scope states the decision.
-  - [STRM-03](../../active/08-streaming/STRM-03-streaming-diagnostics.md): captured lines for `Parse` and `ParseMany` over a `Stream`.
-  - [STRM-02](../../active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md): a progress note pointing at the blocking byte root.
+  - [STRM-04](../../active/08-streaming/STRM-04-huge-single-documents.md): scope states the decision, and the card is Done.
+  - [STRM-03](../../active/08-streaming/STRM-03-streaming-diagnostics.md): `Parse` and `ParseMany` over a `Stream` hold captured lines too, and take `source:`, as over a `TextReader`.
+  - [STRM-02](../../active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md): a progress note pointing at `StreamUpstream` and this record's "What would change this" for 2B.
+- **Code and docs** were built under STRM-04 in a9b7dc7, cce1483 and a9aafc2: `StreamUpstream`, the two overloads, docs/concepts/pipelines.md § Streams and § Huge documents from a pipe, and the `json-document` memory input.

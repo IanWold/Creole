@@ -18,6 +18,7 @@ Streaming parses discard text, so diagnostics resolve their position and snippet
 - `Diagnostics.Render()` uses the captured lines, so streamed and whole-input results render with the same call ([ADR-0024](../../docs/decisions/0024-a-parses-diagnostics-hold-their-source-text.md) point 5).
 - Over a byte root, count lines and columns in the decoded text, not in bytes, so a captured position matches what `LineMap` gives for that text: columns in scalar values, from the first character after any leading byte-order mark ([SPAN-06](../05-source-spans/SPAN-06-byte-sources-and-the-decoding-layer.md)).
 - `Parse` and `ParseMany` over a `TextReader` hold captured lines too. Until this card, their errors render one line each, and they take no `source:`, since nothing shows a name. Add `source:` after the reader, where the overloads over text have it ([ADR-0038](../../docs/decisions/0038-pipelines-end-in-a-parser-run-again-whole-and-name-sources-without-a-registry.md) point 2).
+- So do `Parse` and `ParseMany` over a blocking `Stream` on byte pipelines, which STRM-04 added with the same limits: one-line errors and no `source:` until this card. Count their lines in the decoded text, as for any byte root ([ADR-0044](../../docs/decisions/0044-huge-documents-parse-on-a-caller-started-thread-and-byte-pipelines-read-a-blocking-stream.md) point 2).
 
 ## Acceptance criteria
 
@@ -35,3 +36,11 @@ Streaming parses discard text, so diagnostics resolve their position and snippet
 ## Whitepaper references
 
 - [§ Streaming and async input](../../../whitepaper.md#streaming-and-async-input)
+
+## Artifacts
+
+- [ADR-0044](../../docs/decisions/0044-huge-documents-parse-on-a-caller-started-thread-and-byte-pipelines-read-a-blocking-stream.md) Accepted: `Parse` and `ParseMany` over a blocking `Stream` hold no text until this card captures lines
+
+## Progress notes
+
+- 2026-11-26 (Not started): STRM-04 added `Parse(Stream)` and `ParseMany(Stream)` on byte pipelines (ADR-0044). Scope now covers their captured lines and `source:`. Next: unchanged.
