@@ -20,6 +20,7 @@ public class MemoryGateTests
     [Theory]
     [InlineData("example-b", "53ad565d8b908ba7f923b7aa1d3a804b69f5362ceccd3a7826f84c3c7e8ab0cc")]
     [InlineData("json-lines", "e9c6ebe2f2da1546da0304665317b9bac971da7de8032ac336af4ded0797ac66")]
+    [InlineData("json-document", "e9c6ebe2f2da1546da0304665317b9bac971da7de8032ac336af4ded0797ac66")]
     public void EachInputIsUnchanged(string name, string hash) =>
         Assert.Equal(hash, Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(GeneratedReader.Text(Input(name), Length)))));
 

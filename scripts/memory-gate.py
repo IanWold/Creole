@@ -2,12 +2,13 @@
 """Run the Phase 1 memory gate with benchmarks/Creole.MemoryGate.
 
 The gate (ADR-0003) parses Example B and a JSON-lines stream at 10 MB, 100 MB and 1 GB, each in its
-own process. Each run samples the retained heap after a forced full blocking GC every 1,000 records,
+own process. --inputs runs other inputs of the harness instead, such as json-document, one JSON
+array of the JSON-lines records parsed from a pipe (STRM-04), against the same threshold. Each run samples the retained heap after a forced full blocking GC every 1,000 records,
 and subtracts the retained heap after a 1 MB warm-up run. The gate passes when, for both inputs, the
 peak at the largest size is at most 1.5 times the peak at the smallest.
 
 Usage:
-    python3 scripts/memory-gate.py [--sizes N N ...]
+    python3 scripts/memory-gate.py [--sizes N N ...] [--inputs NAME ...]
 
 --sizes replaces the default sizes, in characters; the threshold compares the largest with the
 smallest. The script builds the harness in Release, prints each run's JSON line and a table, and warns
@@ -23,6 +24,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 PROJECT = ROOT / "benchmarks" / "Creole.MemoryGate"
 INPUTS = ["example-b", "json-lines"]
+OTHER_INPUTS = ["json-document"]
 SIZES = [10_000_000, 100_000_000, 1_000_000_000]
 THRESHOLD = 1.5
 
@@ -52,7 +54,10 @@ def run(input_name: str, size: int) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run the Phase 1 memory gate.")
     parser.add_argument("--sizes", type=int, nargs="+", default=SIZES, help="input sizes in characters")
-    sizes = sorted(parser.parse_args().sizes)
+    parser.add_argument("--inputs", nargs="+", choices=INPUTS + OTHER_INPUTS, default=INPUTS, help="the inputs to run, by default the gate's")
+    arguments = parser.parse_args()
+    sizes = sorted(arguments.sizes)
+    inputs = arguments.inputs
     if len(sizes) < 2:
         sys.exit("memory-gate: give at least two sizes")
 
@@ -68,22 +73,22 @@ def main() -> int:
     if build.returncode != 0:
         sys.exit(f"memory-gate: the build failed\n{build.stdout}")
 
-    runs = {(name, size): run(name, size) for name in INPUTS for size in sizes}
+    runs = {(name, size): run(name, size) for name in inputs for size in sizes}
 
     print()
-    print(f"{'Input':<12} {'Characters':>15} {'Records':>12} {'Samples':>8} {'Retained (bytes)':>17} {'Ratio':>6} {'Seconds':>8}")
-    for name in INPUTS:
+    print(f"{'Input':<14} {'Characters':>15} {'Records':>12} {'Samples':>8} {'Retained (bytes)':>17} {'Ratio':>6} {'Seconds':>8}")
+    for name in inputs:
         smallest = runs[(name, sizes[0])]["retainedBytes"]
         for size in sizes:
             result = runs[(name, size)]
             print(
-                f"{name:<12} {result['characters']:>15,} {result['records']:>12,} {result['samples']:>8,} "
+                f"{name:<14} {result['characters']:>15,} {result['records']:>12,} {result['samples']:>8,} "
                 f"{result['retainedBytes']:>17,} {ratio(result['retainedBytes'], smallest):>6.2f} {result['seconds']:>8.1f}"
             )
 
     print()
     passed = True
-    for name in INPUTS:
+    for name in inputs:
         growth = ratio(runs[(name, sizes[-1])]["retainedBytes"], runs[(name, sizes[0])]["retainedBytes"])
         passed &= growth <= THRESHOLD
         verdict = "pass" if growth <= THRESHOLD else "FAIL"

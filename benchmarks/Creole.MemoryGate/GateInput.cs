@@ -12,11 +12,12 @@ namespace Creole.MemoryGate;
 public sealed record GateInput(string Name, int Seed, Action<Random, StringBuilder> WriteRecord, Func<TextReader, bool> Parse)
 {
     /// <summary>
-    /// Every input of the gate: Example B, then JSON lines.
+    /// Every input the harness runs: the Phase 1 gate's Example B and JSON lines, then one JSON document of the JSON-lines records, parsed from a pipe.
     /// </summary>
     public static IReadOnlyList<GateInput> All { get; } =
     [
         new("example-b", 1, ExampleBInput.Write, ExampleBInput.Parse),
         new("json-lines", 2, JsonLinesInput.Write, JsonLinesInput.Parse),
+        new("json-document", 2, JsonLinesInput.Write, JsonDocumentInput.Parse),
     ];
 }

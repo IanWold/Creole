@@ -44,6 +44,7 @@ Single runs on this machine vary by up to 1.3× per benchmark, so one run decide
 | Run the gate | `python3 scripts/memory-gate.py` |
 | A quicker check at other sizes | `python3 scripts/memory-gate.py --sizes 2000000 20000000` |
 | One input at one size | `dotnet run -c Release --project benchmarks/Creole.MemoryGate -- example-b 10000000` |
+| A huge JSON document from a pipe ([STRM-04](../work/active/08-streaming/STRM-04-huge-single-documents.md)) | `python3 scripts/memory-gate.py --inputs json-document` |
 
 The script builds the harness in Release, runs each input at 10, 100 and 1,000 million characters in its own process, and prints each run's JSON line and a table. It compares the largest size with the smallest, warns if the working tree has uncommitted changes, and exits with 1 when a run fails or the threshold is missed. A gate run should measure a commit. It needs no quiet machine: a 1 GB JSON-lines run beside the test suite measured the same peak as one on a quiet machine. JSON lines grows about 9.5 KB above its baseline, so it fails on less than 5 KB more. If a run fails, log each sample before treating the failure as real.
 
@@ -57,7 +58,9 @@ Each run:
 
 The heap a GC retained is what that GC recorded as it ended: `HeapSizeBytes` less `FragmentedBytes` from `GC.GetGCMemoryInfo(GCKind.FullBlocking)`, which counts the large object heap. `GC.GetTotalMemory` read after the GC is not used. It also counts an allocation context that another thread takes between the GC and the read. On a busy machine that added exactly 8 KB to some samples, which made the JSON-lines peak at 1 GB 1.9× the peak at 10 MB.
 
-`MemoryGateTests` checks that both inputs parse, pins the SHA-256 hash of their first 100,000 characters, and checks where the reader ends and samples. LAY-07's progress notes record each gate run's values.
+**The JSON document.** `--inputs json-document` runs a third input against the same threshold. It is not part of the gate. It generates the JSON-lines records, joins them into one JSON array as it writes them as UTF-8 into a `System.IO.Pipelines.Pipe`, and parses the pipe with `Parse(Stream)` on a `LongRunning` thread, as [docs/concepts/pipelines.md § Huge documents from a pipe](../docs/concepts/pipelines.md#huge-documents-from-a-pipe) shows. The pipeline is `Layer.Utf8()`, the token lexer, and a root that reads each element with `CreoleTokenJson.Value` and skips it. The samples are taken on the writing thread, so the parse is mid-step when they are taken, and up to about 64 KiB of unread bytes, the pipe's default pause threshold, may sit between the two. Sizes count the records' characters; the array adds two bytes per record.
+
+`MemoryGateTests` checks that every input parses, pins the SHA-256 hash of their first 100,000 characters, and checks where the reader ends and samples. LAY-07's progress notes record each gate run's values, and STRM-04's record the JSON document's.
 
 ## What is measured
 

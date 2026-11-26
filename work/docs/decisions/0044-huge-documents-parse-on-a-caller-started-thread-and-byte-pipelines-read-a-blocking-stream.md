@@ -64,7 +64,7 @@ var result = await Task.Factory.StartNew(
   - A caller who writes `Task.Run` blocks a pool thread for the whole parse (fork 3). The docs must say why not.
   - Harder to find than a method on `Pipeline`.
 
-**Result:** Chosen by the maintainer on 2026-11-26.
+**Result:** Chosen by the maintainer on 2026-11-26. Built in cce1483: [docs/concepts/pipelines.md § Huge documents from a pipe](../../../docs/concepts/pipelines.md#huge-documents-from-a-pipe) gives the recipe, and [PipeTests.cs](../../../tests/Creole.Tests/PipeTests.cs) runs it over a `Pipe` written in three parts that split two characters, which parses on a thread outside the pool.
 
 #### 1B. `ParseAsync(PipeReader | Stream, ParseOptions?, CancellationToken)`
 
@@ -108,7 +108,7 @@ An internal root `IUpstream<byte>` reads the caller's `Stream` synchronously, as
   - Next to STRM-02's `ParseManyAsync(Stream)`, callers must tell a blocking `ParseMany(Stream)` from the async one. Their names and return types differ, as `ParseMany(TextReader)` already does.
   - A failed result holds no text until STRM-03 captures lines, as over a `TextReader`.
 
-**Result:** Chosen by the maintainer on 2026-11-26.
+**Result:** Chosen by the maintainer on 2026-11-26. Built in a9b7dc7 as `StreamUpstream` and the two overloads. Criterion 2: on eight sources, through a `MemoryStream` and a stream that gives one byte per read, `Parse` and `ParseMany` over a stream return the values and errors of the in-memory overloads; shifting the root's offsets by one fails 10 of those tests. Criterion 1, measured on cce1483 with the `json-document` harness input uncommitted: 145,320, 148,952 and 153,744 bytes retained at 10 MB, 100 MB and 1 GB, 1.06×. A byte buffer that releases nothing fails the same measurement at 15.08× from 2 MB to 20 MB. Criterion 4: all 2,025 tests pass on a9b7dc7, and the AOT smoke publishes with no warnings.
 
 #### 2C. Overloads that take a `PipeReader` directly
 
@@ -125,7 +125,7 @@ An internal root `IUpstream<byte>` reads the caller's `Stream` synchronously, as
   - The stack check ends a parse sooner on a small stack ([§ Limits for untrusted input](../../../whitepaper.md#limits-for-untrusted-input): "the stack used per level depends on the grammar, the JIT tier and the thread"). With `new Thread(start, maxStackSize)` the caller can give a deep document more stack; a pool thread cannot.
 - **Against:** creating a thread costs more than borrowing one. That is small against a document large enough to need this.
 
-**Result:** Chosen, by argument.
+**Result:** Chosen, by argument. In cce1483, `PipeTests` shows 10,000 nested levels fail on a 512 KiB stack and parse on a 256 MiB one, which the docs' advice on `maxStackSize` rests on.
 
 #### 3B. A pool thread, as Parlot 2.0.0 does
 
@@ -143,7 +143,7 @@ The parse has no cancellation check. The caller cancels the read: `cancellationT
 - **For:** no API, and no check on the engines' hot path.
 - **Against:** it cannot stop a parse that is busy rather than waiting, such as a slow grammar over data already buffered. Over a pipe the parse soon needs more data, so in practice it stops at its next read.
 
-**Result:** Chosen, by argument and the check under Context.
+**Result:** Chosen, by argument and the check under Context. Criterion 3, in cce1483: `PipeTests` shows `CancelPendingRead`, registered with a token, ends `Parse` with `OperationCanceledException`, and a writer's `Complete(IOException)` ends it with that exception. a9b7dc7's tests show the stream is left open.
 
 #### 4B. A `CancellationToken` that the parse checks
 
@@ -166,7 +166,15 @@ Options **1A, 2B, 3A and 4A** are recommended. The maintainer chose 1A and 2B on
    - A blocking read never starves, so this root never ends an attempt Starved.
 3. **Cancellation is the source's.** The docs show `CancelPendingRead` through a token registration, and say that the exception the read throws leaves `Parse` unchanged.
 
-No option is open, and no trial decides between them. The build checks 2B against criteria 1 to 4.
+No option is open, and no trial decides between them. The build checked the chosen options against the criteria:
+
+| Criterion | Result | Evidence |
+| --- | --- | --- |
+| 1. Bounded memory | Met: 1.06× from 10 MB to 1 GB | `python3 scripts/memory-gate.py --inputs json-document` on cce1483 plus the harness input; 2B's Result |
+| 2. Same results as bytes in memory | Met | `ByteSourceDiagnosticsTests`, a9b7dc7 |
+| 3. Cancellation and source errors | Met | `PipeTests`, cce1483; `PipelineTests` and `ParseManyTests`, a9b7dc7 |
+| 4. Nothing else changes | Met | 2,025 tests pass and the AOT smoke publishes cleanly on a9b7dc7 |
+| 5. Documented | Met | [docs/concepts/pipelines.md](../../../docs/concepts/pipelines.md) § Streams and § Huge documents from a pipe |
 
 What would change this:
 
@@ -184,7 +192,7 @@ What would change this:
   - Two more public overloads to keep in step with the `TextReader` ones.
 - **Ruled out:** `ParseAsync` in 1.0, a public adapter type, and cancellation checks in the engines, unless a later decision adds them.
 - **Risks and how they are watched:**
-  - **A single long `Parse` holds more than `ParseMany` does.** The memory gate measures `ParseMany`, whose driver lets go of each item. One `Parse` over a 1 GB document depends on the grammar's repetition leaving nothing pinned. Criterion 1 measures it. If it fails, the cause is a retention bug in the engine, to fix or to card, not a reason to change these options.
+  - **A single long `Parse` holds more than `ParseMany` does.** One `Parse` over a 1 GB document depends on the grammar's repetition leaving nothing pinned. Criterion 1 measures it over a stream. If it fails, the cause is a retention bug in the engine, to fix or to card, not a reason to change these options. (Corrected 2026-11-26: this record first said the memory gate measures only `ParseMany`. Its Example B input is one long `Parse` over a `TextReader`, and measured 1.02×.)
   - **The two byte roots drift apart.** Criterion 2 compares `Parse(Stream)` with `Parse(ReadOnlyMemory<byte>)` on the same bytes, including sequences split across reads.
   - **STRM-03 misses the new source.** STRM-03's scope gains `Parse` and `ParseMany` over a `Stream` when this record is accepted.
 
