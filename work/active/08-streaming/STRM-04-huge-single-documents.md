@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Streaming and async input](../../README.md#strm--streaming-and-async-input) |
 | Phase | Phase 1 — Layers |
-| Status | Not started |
+| Status | Designing |
 
 ## Summary
 
@@ -34,7 +34,10 @@ Nothing directly.
 ## Artifacts
 
 - [Research: Parlot 2.0 baselines and generator](../../docs/research/2026-10-24-parlot-2-0-baselines-and-generator.md) Prior art: Parlot 2.0.0 parses large `TextReader` input synchronously on a pool thread over a compacting buffer (finding 23)
+- [ADR-0044](../../docs/decisions/0044-huge-documents-parse-on-a-caller-started-thread-and-byte-pipelines-read-a-blocking-stream.md) Proposed: no `ParseAsync`, a documented recipe on a dedicated thread; `Parse(Stream)` and `ParseMany(Stream)` on byte pipelines; cancel at the source
 
 ## Progress notes
 
 - 2026-10-24 (Not started): FND-10 research found Parlot 2.0.0 runs large `TextReader` parses synchronously on a pool thread, as Creole plans (note, finding 23). Next: unchanged.
+- 2026-11-26 (Designing): Started. `Parse(TextReader)` already reads with bounded memory, and `System.IO.Pipelines` ships in the .NET 11 shared framework (`Microsoft.NETCore.App` 11.0.0), so the open questions are the public surface (a documented recipe, a `ParseAsync` convenience or an adapter type) and whether decoding happens in a `StreamReader` (character offsets only) or in the pipeline's `Layer.Utf8()` over a blocking byte source (byte offsets kept, as § Sources promises). Next: draft the decision record with `/decide`.
+- 2026-11-26 (Designing): Drafted ADR-0044 (Proposed). The maintainer chose a documented recipe over `ParseAsync`, and a blocking byte source over `StreamReader` decoding. A check on the 11.0.0 runtime showed `StreamReader` over `PipeReader.AsStream()` blocks, and `CancelPendingRead` makes the read throw `OperationCanceledException`. The record's criteria and plan await approval; it is the working spec in place of the scope's `TextReader` adapter line. Next: on approval, move to Building and run `/build`.

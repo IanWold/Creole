@@ -211,7 +211,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-None yet.
+- [STRM-04](active/08-streaming/STRM-04-huge-single-documents.md) Huge single documents — Designing
 
 ### Can start now
 
@@ -226,7 +226,6 @@ These items have all their blockers done:
 - [MODE-03](active/07-mode-channels/MODE-03-rollback-rule.md) Rollback rule
 - [MODE-04](active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md) Multi-layer invalidation cascade
 - [STRM-02](active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md) Restart protocol and ParseManyAsync
-- [STRM-04](active/08-streaming/STRM-04-huge-single-documents.md) Huge single documents
 - [ANA-01](active/09-static-analysis/ANA-01-grammar-property-analysis.md) Grammar property analysis
 - [GEN-11](active/11-source-generator/GEN-11-runtime-support-surface-for-generated-code.md) Runtime support surface for generated code
 - [TOOL-01](active/12-grammar-author-tooling/TOOL-01-creoletesting-assertions.md) Creole.Testing assertions
