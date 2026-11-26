@@ -31,10 +31,11 @@ file sealed class SlotUpstream(StreamSlot[] slots) : IUpstream<int>
     }
 }
 
-file sealed class StrideUpstream(long first, int stride, int count) : IUpstream<char>
+file sealed class StrideUpstream(long first, int stride, int count, long? firstChar) : IUpstream<char>
 {
     private readonly int _count = count;
     private readonly long _first = first;
+    private readonly long? _firstChar = firstChar;
     private int _next;
     private readonly int _stride = stride;
 
@@ -51,7 +52,11 @@ file sealed class StrideUpstream(long first, int stride, int count) : IUpstream<
 
         var start = _first + (long)_next * _stride;
 
-        buffer.Add('x', new StreamSlot(new SourceSpan(SourceId.Unnamed, start, start + _stride - 1), start, null, 0));
+        var span = _firstChar is { } firstChar
+            ? new SourceSpan(SourceId.Unnamed, start, start + _stride - 1, firstChar + _next, firstChar + _next + 1)
+            : new SourceSpan(SourceId.Unnamed, start, start + _stride - 1);
+
+        buffer.Add('x', new StreamSlot(span, start, null, 0));
         _next++;
         return true;
     }
@@ -66,9 +71,12 @@ public class SpanStorageTests
         Gen.OneOf(Gen.Long[0, 10], Gen.Long[int.MaxValue - 2L, int.MaxValue + 2L]),
         Gen.Int[0, 4],
         Gen.Int[0, 4],
-        static (start, length, decoding, source) => decoding == 0
-            ? new SourceSpan(source == 0 ? _other : SourceId.Unnamed, start, start + length, start / 2, start / 2 + length / 2)
-            : new SourceSpan(source == 0 ? _other : SourceId.Unnamed, start, start + length)
+        static (start, length, decoding, source) => decoding switch
+        {
+            0 => new SourceSpan(source == 0 ? _other : SourceId.Unnamed, start, start + length, start / 2, start / 2 + length / 2),
+            1 => new SourceSpan(source == 0 ? _other : SourceId.Unnamed, start, start + length, start + 3, start + 3 + length),
+            _ => new SourceSpan(source == 0 ? _other : SourceId.Unnamed, start, start + length),
+        }
     );
 
     private static readonly Gen<StreamSlot> _slots = Gen.Select(
@@ -114,13 +122,26 @@ public class SpanStorageTests
             return before && ReadsBack(buffer, slots);
         });
 
-    [Fact]
-    public void ReadingSpansPast4GBAllocatesNothingPerItem()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ReadingSpansPast4GBAllocatesNothingPerItem(bool decoded)
     {
         const int length = 1 << 20;
         const long first = 5L << 30;
+        const long firstChar = first / 3;
 
-        var buffer = new StreamBuffer<char>(new StrideUpstream(first, stride: 3, count: 8 * length), segmentSize: 1024);
+        var buffer = new StreamBuffer<char>(
+            new StrideUpstream(
+                first,
+                stride: 3,
+                count: 8 * length,
+                decoded
+                    ? firstChar
+                    : null
+            ),
+            segmentSize: 1024
+        );
         var position = 0L;
 
         void Read()
@@ -143,10 +164,16 @@ public class SpanStorageTests
 
         var allocated = Allocation.Fewest(Read, attempts: 5);
         var last = first + (position - 1) * 3;
+        var lastChar = firstChar + position - 1;
+
+        var expected = decoded
+            ? new SourceSpan(SourceId.Unnamed, last, last + 2, lastChar, lastChar + 1)
+            : new SourceSpan(SourceId.Unnamed, last, last + 2);
 
         Assert.True(position >= 2 * length, $"Read only {position} items.");
         Assert.True(allocated < 4096, $"{allocated} bytes allocated over {length} items.");
-        Assert.Equal(new SourceSpan(SourceId.Unnamed, last, last + 2), buffer.SpanOf(position - 1, position));
+        Assert.Equal(expected, buffer.SpanOf(position - 1, position));
+        Assert.Equal(decoded, buffer.StoresCharOffsets(position - 1));
     }
 
     [Fact]
@@ -162,12 +189,16 @@ public class SpanStorageTests
             Slot(new SourceSpan(SourceId.Unnamed, base3GB, 2 * base3GB)),
             Slot(new SourceSpan(_other, base3GB + 1, base3GB + 2)),
             Slot(new SourceSpan(SourceId.Unnamed, base3GB + 10, base3GB + 14, 4, 6)),
+            Slot(new SourceSpan(SourceId.Unnamed, base3GB + 14, base3GB + 15, base3GB, base3GB + 1)),
+            Slot(new SourceSpan(SourceId.Unnamed, base3GB + 15, base3GB + 16, 7, 7 + (1L << 31))),
+            Slot(new SourceSpan(SourceId.Unnamed, base3GB + 16, base3GB + 18, 8, 9)),
             Slot(new SourceSpan(SourceId.Unnamed, base3GB + 20, base3GB + 21)),
         ];
 
-        var buffer = Filled(slots, segmentSize: 8);
+        var buffer = Filled(slots, segmentSize: 16);
 
         Assert.Equal(slots, Enumerable.Range(0, slots.Length).Select(i => buffer.SlotAt(i)));
         Assert.Equal(new SourceSpan(SourceId.Unnamed, base3GB, base3GB + 21), buffer.SpanOf(0, slots.Length));
+        Assert.Equal(new SourceSpan(SourceId.Unnamed, base3GB + 10, base3GB + 18, 4, 9), buffer.SpanOf(5, 9));
     }
 }

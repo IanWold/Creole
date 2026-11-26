@@ -15,8 +15,10 @@ namespace Creole;
 /// </para>
 /// <para>
 /// A span is stored as two 32-bit numbers: its start as an offset from its segment's base, which is the start of the segment's first span, and its length.
-/// A span that does not fit is kept whole in a list beside its segment: one whose offset or length is out of range, one from another source than the segment's first span, or one whose character offsets differ from its root offsets.
-/// So every span reads back exactly as it was added, and over a text root nothing is allocated per item.
+/// A span whose character offsets differ from its root offsets, as an item decoded from bytes has, also stores its character offsets as two 32-bit numbers, from its segment's character base.
+/// A segment rents the array for them only when it stores its first such span, so a segment over text keeps none.
+/// A span that does not fit is kept whole in a list beside its segment: one whose offset or length is out of range in either unit, or one from another source than the segment's first span.
+/// So every span reads back exactly as it was added, and nothing is allocated per item, over a text root or a byte root.
 /// </para>
 /// <para>
 /// A <see cref="Cursor{T}"/> reads the buffer as its <see cref="ICursorSource{T}"/>.
@@ -52,7 +54,9 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     /// <param name="SpanBase">The start of the segment's first span, from which its spans' offsets count.</param>
     /// <param name="Source">The source of the segment's first span, which every span stored in its slots shares.</param>
     /// <param name="Wide">The spans kept whole because they do not fit in a <see cref="PackedSpan"/>, or null if there are none.</param>
-    private record struct Segment(T[] Items, PackedSlot[] Slots, long SpanBase, SourceId Source, List<SourceSpan>? Wide);
+    /// <param name="Chars">The character offsets of each slot's span, from <paramref name="CharBase"/>, or null if every span stored so far has character offsets equal to its root offsets.</param>
+    /// <param name="CharBase">The character start of the first span whose character offsets differ from its root offsets, from which the offsets in <paramref name="Chars"/> count.</param>
+    private record struct Segment(T[] Items, PackedSlot[] Slots, long SpanBase, SourceId Source, List<SourceSpan>? Wide, PackedSpan[]? Chars, long CharBase);
 
     /// <summary>
     /// A <see cref="StreamSlot"/> as the buffer stores it, with its span packed.
@@ -64,9 +68,11 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     /// </summary>
     /// <remarks>
     /// A <paramref name="Length"/> of <see cref="WideLength"/> marks a span kept whole, and <paramref name="Offset"/> is then its index in the segment's list of wide spans.
+    /// The character offsets beside a span are packed the same way, from the segment's character base, and a <paramref name="Length"/> of <see cref="SameAsRoot"/> there marks character offsets equal to the root offsets.
     /// </remarks>
     internal readonly record struct PackedSpan(int Offset, int Length);
 
+    private const int SameAsRoot = -2;
     private const int WideLength = -1;
 
     private bool _ended;
@@ -170,15 +176,14 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
         return (IndexOf(position), (int)(position % _segmentSize));
     }
 
-    private static PackedSpan Pack(ref Segment segment, SourceSpan span)
+    private PackedSpan Pack(ref Segment segment, int index, SourceSpan span)
     {
         var offset = span.Start - segment.SpanBase;
 
         if (span.Source == segment.Source
-            && span.CharStart == span.Start
-            && span.CharEnd == span.End
             && offset is >= int.MinValue and <= int.MaxValue
             && span.Length <= int.MaxValue
+            && TryPackChars(ref segment, index, span)
         )
         {
             return new PackedSpan((int)offset, (int)span.Length);
@@ -193,15 +198,64 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     private SourceSpan SpanAt(long position)
     {
         var (index, offset) = Locate(position);
-        var segment = _segments[index];
 
-        return Unpack(in segment, segment.Slots[offset].Span);
+        return Unpack(_segments[index], offset);
     }
 
-    private static SourceSpan Unpack(in Segment segment, PackedSpan span) =>
-        span.Length == WideLength
-        ? segment.Wide![span.Offset]
-        : new SourceSpan(segment.Source, segment.SpanBase + span.Offset, segment.SpanBase + span.Offset + span.Length);
+    /// <summary>
+    /// Stores the character offsets of <paramref name="span"/> beside slot <paramref name="index"/>, renting the segment's array for them on its first span whose character offsets differ from its root offsets.
+    /// </summary>
+    /// <returns><see langword="false"/> if they do not fit, so the span must be kept whole.</returns>
+    private bool TryPackChars(ref Segment segment, int index, SourceSpan span)
+    {
+        var sameAsRoot = span.CharStart == span.Start && span.CharEnd == span.End;
+
+        if (segment.Chars is null)
+        {
+            if (sameAsRoot)
+            {
+                return true;
+            }
+
+            segment.Chars = ArrayPool<PackedSpan>.Shared.Rent(_segmentSize);
+            segment.Chars.AsSpan(0, index).Fill(new PackedSpan(0, SameAsRoot));
+            segment.CharBase = span.CharStart;
+        }
+
+        if (sameAsRoot)
+        {
+            segment.Chars[index] = new PackedSpan(0, SameAsRoot);
+            return true;
+        }
+
+        var offset = span.CharStart - segment.CharBase;
+        var length = span.CharEnd - span.CharStart;
+
+        if (offset is < int.MinValue or > int.MaxValue || length > int.MaxValue)
+        {
+            return false;
+        }
+
+        segment.Chars[index] = new PackedSpan((int)offset, (int)length);
+        return true;
+    }
+
+    private static SourceSpan Unpack(in Segment segment, int index)
+    {
+        var span = segment.Slots[index].Span;
+
+        if (span.Length == WideLength)
+        {
+            return segment.Wide![span.Offset];
+        }
+
+        var start = segment.SpanBase + span.Offset;
+        var end = start + span.Length;
+
+        return segment.Chars is { } chars && chars[index] is { Length: not SameAsRoot } decoded
+            ? new SourceSpan(segment.Source, start, end, segment.CharBase + decoded.Offset, segment.CharBase + decoded.Offset + decoded.Length)
+            : new SourceSpan(segment.Source, start, end);
+    }
 
     /// <summary>
     /// Adds <paramref name="item"/> at the end of the filled items, with <paramref name="slot"/> beside it. Called by the upstream during a step.
@@ -212,13 +266,13 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
 
         if (offset == 0)
         {
-            _segments.Add(new Segment(_pool.Rent(_segmentSize), ArrayPool<PackedSlot>.Shared.Rent(_segmentSize), slot.Span.Start, slot.Span.Source, Wide: null));
+            _segments.Add(new Segment(_pool.Rent(_segmentSize), ArrayPool<PackedSlot>.Shared.Rent(_segmentSize), slot.Span.Start, slot.Span.Source, Wide: null, Chars: null, CharBase: 0));
         }
 
         ref var segment = ref CollectionsMarshal.AsSpan(_segments)[^1];
 
         segment.Items[offset] = item;
-        segment.Slots[offset] = new PackedSlot(Pack(ref segment, slot.Span), slot.StepStart, slot.StateBefore, slot.GroupIndex);
+        segment.Slots[offset] = new PackedSlot(Pack(ref segment, offset, slot.Span), slot.StepStart, slot.StateBefore, slot.GroupIndex);
         _lastSpan = slot.Span;
         Filled++;
     }
@@ -280,6 +334,11 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
         {
             _pool.Return(_segments[i].Items, RuntimeHelpers.IsReferenceOrContainsReferences<T>());
             ArrayPool<PackedSlot>.Shared.Return(_segments[i].Slots, clearArray: true);
+
+            if (_segments[i].Chars is { } chars)
+            {
+                ArrayPool<PackedSpan>.Shared.Return(chars);
+            }
         }
 
         _segments.RemoveRange(0, count);
@@ -296,7 +355,7 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
         var segment = _segments[index];
         var slot = segment.Slots[offset];
 
-        return new StreamSlot(Unpack(in segment, slot.Span), slot.StepStart, slot.StateBefore, slot.GroupIndex);
+        return new StreamSlot(Unpack(in segment, offset), slot.StepStart, slot.StateBefore, slot.GroupIndex);
     }
 
     /// <summary>
@@ -327,6 +386,13 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
 
         return new SourceSpan(_lastSpan.Source, _lastSpan.End, _lastSpan.End, _lastSpan.CharEnd, _lastSpan.CharEnd);
     }
+
+    /// <summary>
+    /// Whether the segment holding <paramref name="position"/> keeps character offsets beside its spans, which it does once it stores a span whose character offsets differ from its root offsets.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The buffer does not hold an item at <paramref name="position"/>: it was released or has not been produced.</exception>
+    public bool StoresCharOffsets(long position) =>
+        _segments[Locate(position).Segment].Chars is not null;
 
     /// <inheritdoc/>
     public bool TryGetSegment(long position, out ReadOnlyMemory<T> segment, out long segmentStart)

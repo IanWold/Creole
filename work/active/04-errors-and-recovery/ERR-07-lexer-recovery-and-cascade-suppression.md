@@ -16,6 +16,7 @@ Lexer layers recover like parsers, and downstream layers do not re-report lexer 
 - `Kind(k)` never matches an error token.
 - Drop downstream diagnostics whose unexpected item is an error token.
 - Lexer diagnostics belong to the lexer layer. A parser's mark never withdraws them; they are withdrawn only when the step that raised them is run again or its tokens are discarded ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 4).
+- `Layer.Utf8()` ends the parse at the first invalid sequence. Decide whether it recovers as a lexer does: replace each invalid sequence with U+FFFD, raise a diagnostic over its bytes, and carry on ([SPAN-06](../05-source-spans/SPAN-06-byte-sources-and-the-decoding-layer.md)).
 
 ## Acceptance criteria
 

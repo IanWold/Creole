@@ -19,6 +19,7 @@ Async record streams parse one top-level item at a time and restart that item wh
 - A streamed parse records failures as it goes. Measure whether an item that fails can run again from its bookmark with a log instead, as in-memory parses do, and adopt it only for a measured gain ([ADR-0027](../../docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)).
 - On Starved, undo mode changes, clear every layer's failure record and the Starved flag, and reset scoped state to its base. Keep the pins the layers and the driver hold ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 7).
 - Decide, with LAY-05, which item's result holds a diagnostic a lexer raised while producing lookahead past an item's end ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 4).
+- A `Stream` or `PipeReader` is a byte root: byte *i* has \[*i*, *i* + 1), and a pipeline over it starts with `Layer.Utf8()`. The decoder treats input that ends inside a sequence as invalid, so when buffered data runs out the root must end the attempt Starved, not report the end of its input ([SPAN-06](../05-source-spans/SPAN-06-byte-sources-and-the-decoding-layer.md)).
 
 ## Acceptance criteria
 

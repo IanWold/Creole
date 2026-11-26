@@ -14,6 +14,7 @@ This version builds and chains layers, but has no public way to run them yet.
 | `Layer.Where<T>(predicate)` | The items for which `predicate` is true |
 | `Layer.Select<TIn, TOut>(selector)` | `selector` applied to each item |
 | `Layer.Identity<T>()` | Its input, unchanged |
+| `Layer.Utf8()` | The characters that UTF-8 bytes encode, so layers over characters can read a byte source |
 
 A layer runs in steps. It runs a step only when the layer above it needs another item, so it never reads further ahead than that. Every item carries a span in the original source, so an error at any layer points at the characters behind it ([Source spans](spans.md#spans-of-a-layers-items)).
 
@@ -93,6 +94,31 @@ In every layer above, an output is synthetic exactly when its span is zero-width
 Layer<char, string> noLessThan = lexer.Then(Layer.Where<string>(static token => token != "<"));
 Layer<char, int> lengths = lexer.Then(Layer.Select<string, int>(static token => token.Length));
 ```
+
+## Decoding bytes: `Layer.Utf8`
+
+`Layer.Utf8()` is a `Layer<byte, char>` that decodes UTF-8. Chain a lexer over characters after it to read bytes:
+
+```csharp
+Layer<byte, string> words = Layer.Utf8().Then(Layer.Tokens(Letter.AtLeastOnce().Text(), skip: Whitespace.SkipMany()));
+```
+
+Each step decodes one Unicode scalar value into one character, or into both halves of a surrogate pair. A byte-order mark (EF BB BF) at the start of the input is skipped, so the characters are the ones `StreamReader` would read. Its bytes are in the [leading trivia](spans.md#trivia) of the first item above, which is three bytes wide and zero-width in characters. A byte-order mark anywhere else is the character U+FEFF.
+
+Each character's span gives two units ([Source spans](spans.md#spans-of-a-layers-items)):
+
+- `Start` and `End` cover the bytes it was decoded from.
+- `CharStart` and `CharEnd` are its offsets in the decoded text, counted from 0 after any byte-order mark. Both halves of a surrogate pair get the pair's whole span.
+
+Layers above keep both units. Over `héllo wörld` encoded after a byte-order mark, `words` produces `héllo` at bytes 3..9 and characters 0..5, and `wörld` at bytes 10..16 and characters 6..11.
+
+Bytes that are not valid UTF-8 end the parse with an error from the layer named `decoder`. Its span covers the bytes a decoder would replace with one U+FFFD, such as a byte that cannot start a sequence, or the start of a sequence that a later byte or the end of the input cuts short. In the decoded text the span is zero-width, where those bytes stand. Over the bytes `61 0A 62 FF`:
+
+```text
+error[decoder] at 3..3: invalid UTF-8 byte FF
+```
+
+The one-line form shows character offsets. The error's `Span.Start` and `Span.End` hold the byte offsets, 3..4. The decoder does not replace invalid bytes and carry on.
 
 ## Chaining layers: `Then`
 
