@@ -34,6 +34,7 @@ SKIP_DIRS = {".git", "bin", "obj", "node_modules", "artifacts", "TestResults"}
 LINK_RE = re.compile(r"(?<!!)\[(?:[^\]\[]|\[[^\]]*\])*\]\(([^)\s]+)\)")
 CARD_FILE_RE = re.compile(r"^([A-Z]+-\d+)-.+\.md$")
 CARD_REF_RE = re.compile(r"\[([A-Z]+-\d+)\b")
+DECISION_OWNER_RE = re.compile(r"^\| Cards \| \[([A-Z]+-\d+)\]", re.M)
 
 
 # ---------------------------------------------------------------- markdown helpers
@@ -282,6 +283,15 @@ def collect() -> tuple[list[str], list[str], dict[str, Card]]:
             errors.append(f"work/README.md: 'In progress' lists {sorted(listed_ip)}, cards say {sorted(expected_ip)}")
         errors.extend(check_waves(rtext, cards))
 
+    # A Proposed decision record is settled before its owning card (first in its Cards row) is Done.
+    for path, owner in proposed_decisions():
+        if owner is None:
+            errors.append(f"{path}: Proposed, but its Cards row names no owning card")
+        elif owner not in cards:
+            errors.append(f"{path}: owning card {owner} does not exist")
+        elif cards[owner].status == "Done":
+            errors.append(f"{path}: Proposed, but its owning card {owner} is Done; accept or reject it")
+
     # Index READMEs for research and decisions list every document.
     for sub in ("research", "decisions", "archive"):
         d = WORK / "docs" / sub
@@ -306,10 +316,28 @@ def cmd_check() -> int:
     return 1 if errors else 0
 
 
-def proposed_decisions() -> list[str]:
+def proposed_decisions() -> list[tuple[str, str | None]]:
+    """Proposed decision records, each with its owning card: the first in its Cards row."""
     d = WORK / "docs" / "decisions"
-    return [rel(p) for p in sorted(d.glob("[0-9]*.md"))
-            if re.search(r"^\| Status \| Proposed \|", p.read_text(encoding="utf-8"), re.M)] if d.exists() else []
+    out: list[tuple[str, str | None]] = []
+    for p in sorted(d.glob("[0-9]*.md")) if d.exists() else []:
+        text = p.read_text(encoding="utf-8")
+        if re.search(r"^\| Status \| Proposed \|", text, re.M):
+            m = DECISION_OWNER_RE.search(text)
+            out.append((rel(p), m.group(1) if m else None))
+    return out
+
+
+def split_proposed(cards: dict[str, Card]) -> tuple[list[tuple[str, str]], list[str]]:
+    """Proposed records whose owning card is Building, and the rest, which wait on the maintainer."""
+    building: list[tuple[str, str]] = []
+    waiting: list[str] = []
+    for path, owner in proposed_decisions():
+        if owner in cards and cards[owner].status == "Building":
+            building.append((path, owner))
+        else:
+            waiting.append(path)
+    return building, waiting
 
 
 def cmd_brief() -> int:
@@ -323,7 +351,10 @@ def cmd_brief() -> int:
     for c in active:
         notes = re.findall(r"^- (\d{4}-\d{2}-\d{2}.*)$", section(c.text, "Progress notes"), re.M)
         print(f"- {c.id} [{c.status}] {c.title} ({rel(c.path)})" + (f"\n  last note: {notes[-1]}" if notes else ""))
-    for d in proposed_decisions():
+    building, waiting = split_proposed(cards)
+    for d, owner in building:
+        print(f"- Decision being built in {owner}: {d}")
+    for d in waiting:
         print(f"- Decision awaiting the maintainer: {d}")
     return 0
 
@@ -379,9 +410,13 @@ def cmd_status() -> int:
         print(f"  {c.id} [{c.status}] {c.title}  ({rel(c.path)})")
     if not active:
         print("  (none)")
+    building, waiting = split_proposed(cards)
     print("\nDecisions awaiting the maintainer:")
-    for d in proposed_decisions() or ["(none)"]:
+    for d in waiting or ["(none)"]:
         print(f"  {d}")
+    print("\nDecisions being built (Proposed, owning card Building):")
+    for d, owner in building or [("(none)", "")]:
+        print(f"  {d}" + (f" in {owner}" if owner else ""))
     cmd_ready(cards)
     return 0
 

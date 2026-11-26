@@ -27,7 +27,7 @@ Give the maintainer a short, accurate picture of the project and a recommendatio
 
 ```text
 In progress: <ID> [stage] title — last note, next step
-Waiting on you: proposed decisions, criteria awaiting verification
+Waiting on you: Proposed decisions to approve or accept (not those being built), criteria awaiting verification
 Ready: <count>; recommended next: <ID> (why), …
 Phase progress: Phase 0 n/m, …
 Tracker health: clean | <n> problems (run /sync)

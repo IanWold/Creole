@@ -20,7 +20,7 @@ Mechanical drift is fixed directly. Semantic drift (disagreement about the desig
    - In-progress cards with no progress note in a long time: ask whether they are still active.
    - Cards whose criteria look satisfied by existing code or docs but are not Done: suggest `/complete`.
    - Done cards without an Outcome, or whose Outcome mentions follow-ups that have no card.
-   - Proposed decisions waiting on the maintainer.
+   - Proposed decisions waiting on the maintainer, and Proposed decisions whose owning card (first in the `Cards` row) is not in progress.
    - Epics whose cards are all Done but still in `work/active/`.
 4. **Semantic drift.** Report, do not fix:
    - Accepted decisions not reflected in the whitepaper.

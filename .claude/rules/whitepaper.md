@@ -7,7 +7,7 @@ paths:
 
 Full rules: CONTRIBUTING.md § Changing the whitepaper.
 
-- The whitepaper is a living specification of the intended design. Design changes come only through an Accepted decision record, edited in the same change and linked from the section it changes.
+- The whitepaper is a living specification of the intended design. Design changes come only through an Accepted decision record, edited in the same change and linked from the section it changes. While a record is Proposed, its design lives in the record: do not edit the whitepaper ahead of acceptance.
 - Editorial fixes (typos, inconsistencies, clarity, broken references) are fine without a decision. If an "editorial" fix changes what the system would do, it is a design change.
 - Never change the design to match code that drifted from it. Report the drift instead.
 - When a decision closes an item under § Risks and open questions → Still open, move it to "Questions raised in review" with "Decided: …" and a link.
