@@ -139,11 +139,11 @@ Creole may run a function you put in a grammar more than once, and may skip a ca
 | Role | Functions | Creole may |
 | --- | --- | --- |
 | Produces a value | `Select`, on one value and on a `Seq` tuple; a query's `select`; a `Match` case's combine function; `Expression.Build`'s operator functions | Run it more than once, and skip it when the parse does not use the value |
-| Decides the parse | `Where`, `Bind` and a query's dependent `from`, `Satisfy`, a custom scanner's `Scan`, and `Equals` and `Kind` on your token and key types | Run it more than once, and skip it only when it already knows the answer |
+| Decides the parse | `Where`, `Bind` and a query's dependent `from`, `Satisfy`, a custom scanner's `Scan`, the function of `p.Scan`, which returns the [state](layer-state.md), and `Equals` and `Kind` on your token and key types | Run it more than once, and skip it only when it already knows the answer |
 
 A value is unused when it is discarded: the value of a `Longest` alternative that loses, of a parser inside `Lookahead` or `Not`, of a parser under `As`, `Ignore` or a skip form, or of an attempt that backtracks. A compiled `Longest`, for example, runs only the winner's functions, while the interpreter's `Longest` runs every alternative's (see [Interpreter](../engines/interpreter.md#when-a-longest-compiles)). Both are correct, and both give the same result for a grammar that follows these rules.
 
-So a function should not count, log or collect anything the grammar relies on. A value function should also not throw on a value its parser can match. In this grammar, `integer`'s function throws on a number too large for a `long`:
+So a function should not count, log or collect anything the grammar relies on. Keep what the grammar needs in its [state](layer-state.md), which backtracking puts back. A value function should also not throw on a value its parser can match. In this grammar, `integer`'s function throws on a number too large for a `long`:
 
 ```csharp
 var digits = Range('0', '9').SkipAtLeastOnce();

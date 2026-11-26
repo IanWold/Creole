@@ -12,7 +12,8 @@ namespace Creole;
 /// When every alternative is Regular, <see cref="DfaLongestPlan{T}"/> replaces this plan (<see cref="LoweringOptions.Dfa"/>).
 /// Its start is pinned while it runs, so a stream buffer keeps the input every alternative starts from.
 /// Each alternative starts from the parts the mark saved, as if it alone had run.
-/// When the mark saves more than the position and the cut flag, a run with a failure log runs the winner again whenever there are several alternatives, from the furthest failure the plan started with, so the winner's diagnostics are those it raises when it runs alone.
+/// When the mark saves more than the position and the cut flag, the plan runs the winner again from the furthest failure it started with, so the winner's diagnostics and state are those it leaves when it runs alone.
+/// It does so whenever another alternative ran after the winner, and in a run with a failure log whenever there are several alternatives.
 /// </remarks>
 internal sealed class LongestPlan<TIn, T, TMark>(Plan<TIn, T>[] alternatives) : Plan<TIn, T>
     where TMark : struct, IMark<TMark>
@@ -44,7 +45,10 @@ internal sealed class LongestPlan<TIn, T, TMark>(Plan<TIn, T>[] alternatives) : 
             }
         }
 
-        if (TMark.Rewinds && winner >= 0 && alternatives.Length > 1 && cursor.Failures is not null)
+        if (TMark.Rewinds
+            && winner >= 0
+            && alternatives.Length > 1
+            && (winner < alternatives.Length - 1 || cursor.Failures is not null))
         {
             mark.Rewind(ref cursor);
             cursor.Reset(mark.Position);

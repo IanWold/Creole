@@ -6,18 +6,30 @@ namespace Creole;
 /// <remarks>
 /// Each step runs on a cursor of its own, so a cut, the depth and any rewind inside the step stay inside it.
 /// The failure log lasts the whole run, so the layer reports its furthest failure across its steps.
+/// So does the state: each step's cursor starts with the state the step before left, and each item's slot records the state its step started with.
 /// The cursor's floor starts where the oldest step whose items are still held began, or at the step's own start, so the input of the running step and of every held item stays in the buffer.
 /// Each step starts by releasing the input below that floor, since a step that starts in a new segment reaches it without the cursor releasing anything.
 /// </remarks>
-file sealed class TokensUpstream<TIn, TOut>(StreamBuffer<TIn> input, Plan<TIn, TOut> item, Plan<TIn, Unit>? skip, string name, int maxDepth, FailureLog<TIn>? failures) : IUpstream<TOut>
+file sealed class TokensUpstream<TIn, TOut>(
+    StreamBuffer<TIn> input,
+    Plan<TIn, TOut> item,
+    Plan<TIn, Unit>? skip,
+    InitialState? initialState,
+    string name,
+    int maxDepth,
+    FailureLog<TIn>? failures
+)
+    : IUpstream<TOut>
 {
     private readonly FailureLog<TIn>? _failures = failures;
+    private readonly InitialState? _initialState = initialState;
     private readonly StreamBuffer<TIn> _input = input;
     private readonly Plan<TIn, TOut> _item = item;
     private readonly int _maxDepth = maxDepth;
     private readonly string _name = name;
     private long _position;
     private readonly Plan<TIn, Unit>? _skip = skip;
+    private object? _state = initialState?.Held;
 
     public SourceSpan InputEnd => _input.InputEnd;
 
@@ -30,7 +42,7 @@ file sealed class TokensUpstream<TIn, TOut>(StreamBuffer<TIn> input, Plan<TIn, T
     {
         var stepStart = _position;
         var floor = buffer.OldestStepStart ?? stepStart;
-        var cursor = new Cursor<TIn>(_input) { Failures = _failures, Floor = floor, MaxDepth = _maxDepth };
+        var cursor = new Cursor<TIn>(_input) { Failures = _failures, Floor = floor, MaxDepth = _maxDepth, State = _state };
         var itemStart = stepStart;
         var skipped = default(Unit);
         var value = default(TOut)!;
@@ -63,14 +75,20 @@ file sealed class TokensUpstream<TIn, TOut>(StreamBuffer<TIn> input, Plan<TIn, T
         {
             throw new LayerFailedException(ParseErrors.Depth(exception, in cursor, _failures, _name, _input.SpanOf));
         }
+        catch (LayerStateException exception)
+        {
+            throw exception.ToGrammarException(_name);
+        }
 
         if (cursor.Position == itemStart)
         {
             throw NullableRepetition.LayerItem();
         }
 
-        buffer.Add(value, new StreamSlot(_input.SpanOf(itemStart, cursor.Position), stepStart, StateBefore: null, GroupIndex: 0));
+        _initialState?.Check(cursor.State, _name);
+        buffer.Add(value, new StreamSlot(_input.SpanOf(itemStart, cursor.Position), stepStart, StateBefore: _state, GroupIndex: 0));
         _position = cursor.Position;
+        _state = cursor.State;
 
         return true;
     }
@@ -80,8 +98,14 @@ file sealed class TokensUpstream<TIn, TOut>(StreamBuffer<TIn> input, Plan<TIn, T
 /// Runs <see cref="Skip"/> and then <see cref="Item"/> repeatedly to the end of its input, and produces each value of <see cref="Item"/>.
 /// Backs <c>Layer.Tokens</c>.
 /// </summary>
-internal sealed class TokensLayer<TIn, TOut>(Parser<TIn, TOut> item, Parser<TIn, Unit>? skip, string name) : Layer<TIn, TOut>
+/// <remarks>
+/// A layer given an <see cref="InitialState"/> starts with it and checks that each step leaves a state of its type.
+/// Otherwise it starts with no state, which its grammar may set.
+/// </remarks>
+internal sealed class TokensLayer<TIn, TOut>(Parser<TIn, TOut> item, Parser<TIn, Unit>? skip, InitialState? initialState, string name) : Layer<TIn, TOut>
 {
+    public InitialState? InitialState { get; } = initialState;
+
     public Parser<TIn, TOut> Item { get; } = item;
 
     public string Name { get; } = name;
@@ -95,6 +119,7 @@ internal sealed class TokensLayer<TIn, TOut>(Parser<TIn, TOut> item, Parser<TIn,
             Skip is null
                 ? null
                 : PlanCache.Get(Skip),
+            InitialState,
             Name,
             options.MaxDepth,
             recordFailures

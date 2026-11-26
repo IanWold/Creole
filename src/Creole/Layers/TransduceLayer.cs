@@ -6,13 +6,15 @@ namespace Creole;
 /// <remarks>
 /// Each step runs on a cursor of its own, so a cut, the depth and any rewind inside the step stay inside it.
 /// The failure log lasts the whole run, so the layer reports its furthest failure across its steps.
+/// So does the state: each step's cursor starts with the state the step before left, and each output's slot records the state its step started with.
+/// <c>atEnd</c> gets the state the last step left.
 /// The cursor's floor starts where the oldest step whose outputs are still held began, or at the step's own start, so the input of the running step and of every held output stays in the buffer.
 /// Each step starts by releasing the input below that floor, since a step that starts in a new segment reaches it without the cursor releasing anything.
 /// </remarks>
 file sealed class TransduceUpstream<TIn, TOut, TState>(
     StreamBuffer<TIn> input,
     Plan<TIn, Emit<TOut>> step,
-    TState state,
+    InitialState initialState,
     Func<TState, Emit<TOut>>? atEnd,
     string name,
     int maxDepth,
@@ -23,18 +25,19 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
     private readonly Func<TState, Emit<TOut>>? _atEnd = atEnd;
     private bool _ended;
     private readonly FailureLog<TIn>? _failures = failures;
+    private readonly InitialState _initialState = initialState;
     private readonly StreamBuffer<TIn> _input = input;
     private readonly int _maxDepth = maxDepth;
     private readonly string _name = name;
     private long _position;
-    private readonly TState _state = state;
+    private object? _state = initialState.Held;
     private readonly Plan<TIn, Emit<TOut>> _step = step;
 
     public SourceSpan InputEnd => _input.InputEnd;
 
     public SourceSpan InputStart => _input.InputStart;
 
-    private void Add(StreamBuffer<TOut> buffer, Emit<TOut> outputs, ref Cursor<TIn> cursor, long stepStart)
+    private void Add(StreamBuffer<TOut> buffer, Emit<TOut> outputs, ref Cursor<TIn> cursor, long stepStart, object? stateBefore)
     {
         var derived = _input.SpanOf(stepStart, cursor.Position);
         var before = _input.SpanOf(stepStart, stepStart);
@@ -66,7 +69,7 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
                 span = before;
             }
 
-            buffer.Add(output.Item, new StreamSlot(span, stepStart, StateBefore: null, groupIndex++));
+            buffer.Add(output.Item, new StreamSlot(span, stepStart, stateBefore, groupIndex++));
         }
     }
 
@@ -80,9 +83,9 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
         var end = _input.SpanOf(_position, _position);
         var groupIndex = 0;
 
-        foreach (var output in _atEnd(_state))
+        foreach (var output in _atEnd(StateBox.Read<TState>(_state)))
         {
-            buffer.Add(output.Item, new StreamSlot(end, _position, StateBefore: null, groupIndex++));
+            buffer.Add(output.Item, new StreamSlot(end, _position, _state, groupIndex++));
         }
     }
 
@@ -98,7 +101,7 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
 
         var stepStart = _position;
         var floor = buffer.OldestStepStart ?? stepStart;
-        var cursor = new Cursor<TIn>(_input) { Failures = _failures, Floor = floor, MaxDepth = _maxDepth };
+        var cursor = new Cursor<TIn>(_input) { Failures = _failures, Floor = floor, MaxDepth = _maxDepth, State = _state };
         var outputs = default(Emit<TOut>);
 
         _failures?.StepStart = stepStart;
@@ -123,14 +126,20 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
         {
             throw new LayerFailedException(ParseErrors.Depth(exception, in cursor, _failures, _name, _input.SpanOf));
         }
+        catch (LayerStateException exception)
+        {
+            throw exception.ToGrammarException(_name);
+        }
 
         if (cursor.Position == stepStart)
         {
             throw NullableRepetition.LayerStep();
         }
 
-        Add(buffer, outputs, ref cursor, stepStart);
+        _initialState.Check(cursor.State, _name);
+        Add(buffer, outputs, ref cursor, stepStart, _state);
         _position = cursor.Position;
+        _state = cursor.State;
 
         return true;
     }
@@ -140,11 +149,14 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
 /// Runs <see cref="Step"/> repeatedly to the end of its input, producing the outputs of each run, then the outputs of <see cref="AtEnd"/>.
 /// Backs <c>Layer.Transduce</c>.
 /// </summary>
+/// <remarks>
+/// The layer starts with its <see cref="InitialState"/> and checks that each step leaves a state of its type, which <see cref="AtEnd"/> takes.
+/// </remarks>
 internal sealed class TransduceLayer<TIn, TOut, TState>(TState initialState, Parser<TIn, Emit<TOut>> step, Func<TState, Emit<TOut>>? atEnd, string name) : Layer<TIn, TOut>
 {
     public Func<TState, Emit<TOut>>? AtEnd { get; } = atEnd;
 
-    public TState InitialState { get; } = initialState;
+    public InitialState InitialState { get; } = InitialState.Of(initialState);
 
     public string Name { get; } = name;
 

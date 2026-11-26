@@ -405,7 +405,7 @@ Layer<char, Tok> modal = Layer.Modal(modes, mode => mode switch
 });
 ```
 
-`Layer.Tokens` loops: run `skip`; stop at end of input; run `item`; emit its value. An item parser that can succeed without consuming would loop forever, so analysis rejects it (CRL0003). `Layer.Transduce` loops the same way without `skip`, and its step is held to the same rule.
+`Layer.Tokens` loops: run `skip`; stop at end of input; run `item`; emit its value. An item parser that can succeed without consuming would loop forever, so analysis rejects it (CRL0003). `Layer.Transduce` loops the same way without `skip`, and its step is held to the same rule. A lexer with layer state passes it first, `Layer.Tokens(initialState, item, skip)`, and always passes `skip`, because an overload without it would make `Layer.Tokens(item, skip)` ambiguous (§ 2. Layer-local state).
 
 `Emit<T>` is the list of outputs a step produces: zero, one or several, each either derived from the input the step consumed or synthetic. An item converts to one derived output, `Emit.Synthetic(item)` makes a synthetic one, and a collection expression builds several, as in `[newline, Emit.Synthetic(indent)]`. Synthetic outputs such as INDENT and DEDENT are emitted this way, and § Span rules places them. `atEnd` runs once at the end of input with the layer's final state, and every output it returns is synthetic ([ADR-0032](work/docs/decisions/0032-emit-is-a-list-of-outputs-each-derived-or-synthetic.md)).
 
@@ -494,6 +494,8 @@ A layer can thread an immutable state value through its item parser:
 
 - `GetState<S>()` and `SetState<S>(s)` read and write it.
 - `p.Scan<S, R>((value, state, span) => (result, newState))` maps a value and updates state in one analyzable node.
+
+Every layer that runs a grammar has one state, and so does every parser. `Layer.Transduce` takes an `initialState`, and so does `Layer.Tokens(initialState, item, skip)`, the form of a lexer with state. Any other layer, and every parser, starts with no state. A parser sets its own at its root: `SetState(0).Then(Root)`. Reading state that is missing or not an `S` throws `GrammarException`, and so does a step that leaves a layer's state of another type than its `initialState`. Both are mistakes in the grammar, not the input ([ADR-0037](work/docs/decisions/0037-lexers-take-an-initial-state-parsers-set-theirs-and-a-mistyped-read-throws.md)).
 
 Bookmarks snapshot the state by reference, so backtracking restores it automatically. State must be immutable (`ImmutableStack<int>`, records); the analyzer warns on mutable reference types (CRL0204).
 

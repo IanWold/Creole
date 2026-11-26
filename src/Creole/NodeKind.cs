@@ -45,4 +45,7 @@ internal enum NodeKind
     Context,
     Rec,
     Bind,
+    GetState,
+    SetState,
+    Scan,
 }

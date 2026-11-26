@@ -10,6 +10,7 @@ This version builds and chains layers, but has no public way to run them yet.
 | --- | --- |
 | `Layer.Tokens(item)` | The value of `item`, run repeatedly to the end of the input |
 | `Layer.Tokens(item, skip)` | The same, running `skip` before each item, such as whitespace between tokens |
+| `Layer.Tokens(initialState, item, skip)` | The same, with a [state](layer-state.md) that starts as `initialState`, such as how deeply braces nest |
 | `Layer.Transduce(initialState, step, atEnd)` | The outputs of `step`, run repeatedly to the end of the input, then those of `atEnd`: none, one or several per step, such as a layout pass adding INDENT and DEDENT |
 | `Layer.Where<T>(predicate)` | The items for which `predicate` is true |
 | `Layer.Select<TIn, TOut>(selector)` | `selector` applied to each item |
@@ -34,6 +35,7 @@ Over `"  ab 12\t<=x "` this produces `ab`, `12`, `<=` and `x`, with the spans 2.
 - `skip` must succeed, so it usually repeats, as `SkipMany` does. A `skip` that fails ends the parse like a failed item.
 - An `item` that succeeds without consuming input, such as `Digit.Many()` before a letter, would never let the layer reach the end of its input, so the step throws `GrammarException`.
 - Each step runs on its own. Backtracking, cuts and the depth count inside a step stay inside it, so the layer above sees only finished items, and rewinding over them never runs the layer again.
+- The layer's [state](layer-state.md) is the one thing a step hands to the next. To give a lexer a state to start with, pass it first: `Layer.Tokens(initialState, item, skip)`. That form always takes `skip`; pass `Return(new Unit())` to skip nothing.
 
 If `item` or `skip` fails, the parse ends with an error from this layer. The error is the furthest failure the layer's steps recorded, from all its steps together, merged as [Errors § What a failure reports](errors.md#what-a-failure-reports) describes. So `skip` stopping where `item` then failed adds its expectation:
 
@@ -82,7 +84,7 @@ error[parser]: expected statement
 
 In every layer above, an output is synthetic exactly when its span is zero-width ([Source spans § Synthetic items](spans.md#synthetic-items)).
 
-- `atEnd` is optional. It receives the layer's state, which starts as `initialState`. In this version nothing changes the state, so `atEnd` receives `initialState`.
+- `atEnd` is optional. It receives the layer's [state](layer-state.md), which starts as `initialState` and which `step` can read and change, as the last step left it.
 - A `step` that succeeds without consuming input would never let the layer reach the end of its input, so it throws `GrammarException`. Outputs that stand for no input are synthetic outputs of a step that consumes some, or come from `atEnd`.
 - If `step` fails, the parse ends with an error from this layer, as for `Layer.Tokens`. Its `Layer` is `layout` unless the layer is given a name: `Layer.Transduce(0, step, name: "indents")`.
 

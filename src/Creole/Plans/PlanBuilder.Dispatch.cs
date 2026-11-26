@@ -66,16 +66,16 @@ internal sealed partial class PlanBuilder
     /// </remarks>
     private static IPrimitiveNode? KeyedPrimitive(INode node) => node.Kind switch
     {
-        NodeKind.Adjacent or NodeKind.Atomic or NodeKind.Bind or NodeKind.Context or NodeKind.Filter or NodeKind.Map or NodeKind.Named or NodeKind.Sequence or NodeKind.Slice or NodeKind.Spanned
-            or NodeKind.Text or NodeKind.WithSpan =>
+        NodeKind.Adjacent or NodeKind.Atomic or NodeKind.Bind or NodeKind.Context or NodeKind.Filter or NodeKind.Map or NodeKind.Named or NodeKind.Scan or NodeKind.Sequence or NodeKind.Slice
+            or NodeKind.Spanned or NodeKind.Text or NodeKind.WithSpan =>
             KeyedPrimitive(node.Children[0]),
         NodeKind.Any or NodeKind.Case or NodeKind.CharClass or NodeKind.Custom or NodeKind.End or NodeKind.Kind or NodeKind.Satisfy or NodeKind.String or NodeKind.Token =>
             node is IPrimitiveNode { Nullable: false, Opaque: false, First: { MatchesAnyItem: false, MatchesEnd: false, Cases.Count: 0, Values.Count: 0 } } primitive
             ? primitive
             : null,
-        NodeKind.Cut or NodeKind.Expression or NodeKind.Fail or NodeKind.LeadingTrivia or NodeKind.Longest or NodeKind.Lookahead
+        NodeKind.Cut or NodeKind.Expression or NodeKind.Fail or NodeKind.GetState or NodeKind.LeadingTrivia or NodeKind.Longest or NodeKind.Lookahead
             or NodeKind.Match or NodeKind.Not or NodeKind.Optional or NodeKind.Or or NodeKind.Position or NodeKind.Rec
-            or NodeKind.Repeat or NodeKind.Return or NodeKind.Separated or NodeKind.SkipRepeat
+            or NodeKind.Repeat or NodeKind.Return or NodeKind.Separated or NodeKind.SetState or NodeKind.SkipRepeat
             or NodeKind.Switch or NodeKind.Until =>
             null,
     };

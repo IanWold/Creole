@@ -53,7 +53,7 @@ public static class Layer
     /// </para>
     /// </remarks>
     public static Layer<TIn, TOut> Tokens<TIn, TOut>(Parser<TIn, TOut> item, string name = "lexer", [CallerArgumentExpression(nameof(item))] string itemExpression = "") =>
-        new TokensLayer<TIn, TOut>(Guard.NotNull(item, itemExpression), skip: null, Guard.NotNullOrEmpty(name));
+        new TokensLayer<TIn, TOut>(Guard.NotNull(item, itemExpression), skip: null, initialState: null, Guard.NotNullOrEmpty(name));
 
     /// <summary>
     /// A layer that runs <paramref name="skip"/> and then <paramref name="item"/> repeatedly to the end of its input and produces each value of <paramref name="item"/>, such as a lexer that skips whitespace between tokens.
@@ -84,7 +84,45 @@ public static class Layer
         [CallerArgumentExpression(nameof(item))] string itemExpression = "",
         [CallerArgumentExpression(nameof(skip))] string skipExpression = ""
     ) =>
-        new TokensLayer<TIn, TOut>(Guard.NotNull(item, itemExpression), Guard.NotNull(skip, skipExpression), Guard.NotNullOrEmpty(name));
+        new TokensLayer<TIn, TOut>(Guard.NotNull(item, itemExpression), Guard.NotNull(skip, skipExpression), initialState: null, Guard.NotNullOrEmpty(name));
+
+    /// <summary>
+    /// A layer that runs <paramref name="skip"/> and then <paramref name="item"/> repeatedly to the end of its input and produces each value of <paramref name="item"/>, with a state that starts as <paramref name="initialState"/>, such as a lexer that tracks how deeply braces nest.
+    /// </summary>
+    /// <typeparam name="TIn">The type of item the layer reads, such as <see cref="char"/>.</typeparam>
+    /// <typeparam name="TOut">The type of item the layer produces, such as a token type.</typeparam>
+    /// <typeparam name="TState">The type of the layer's state.</typeparam>
+    /// <param name="initialState">The layer's state when it starts. It should be immutable, because backtracking restores the state by keeping a reference to it.</param>
+    /// <param name="item">The parser for one item, usually a <c>Longest</c> over the token rules.</param>
+    /// <param name="skip">The parser for the input to skip before each item, such as <c>Whitespace.SkipMany()</c>. It must succeed, so it usually repeats. Pass <c>Return(new Unit())</c> to skip nothing.</param>
+    /// <param name="name">The layer's name in errors, which <see cref="ParseError.Layer"/> holds.</param>
+    /// <param name="itemExpression">Filled in by the compiler with the expression for <paramref name="item"/>.</param>
+    /// <param name="skipExpression">Filled in by the compiler with the expression for <paramref name="skip"/>.</param>
+    /// <returns>A layer that produces the value of each run of <paramref name="item"/>.</returns>
+    /// <exception cref="GrammarException"><paramref name="item"/> or <paramref name="skip"/> is null, or <paramref name="name"/> is null or empty.</exception>
+    /// <remarks>
+    /// <para>
+    /// It runs as the overload without <paramref name="initialState"/> does.
+    /// <paramref name="skip"/> and <paramref name="item"/> read and change the state with <see cref="Grammar{TIn}.GetState{TState}"/>, <see cref="Grammar{TIn}.SetState{TState}"/> and <see cref="Parser{TIn, TOut}.Scan{TState, TResult}"/>.
+    /// Each step starts with the state the step before left, and backtracking inside a step puts it back.
+    /// </para>
+    /// <para>
+    /// There is no overload that takes <paramref name="initialState"/> and <paramref name="item"/> alone, because a call such as <c>Layer.Tokens(item, skip)</c> would then be ambiguous.
+    /// </para>
+    /// <para>
+    /// If a step leaves a state that is not a <typeparamref name="TState"/>, the layer throws <see cref="GrammarException"/>.
+    /// So does a read of the state as another type.
+    /// </para>
+    /// </remarks>
+    public static Layer<TIn, TOut> Tokens<TIn, TOut, TState>(
+        TState initialState,
+        Parser<TIn, TOut> item,
+        Parser<TIn, Unit> skip,
+        string name = "lexer",
+        [CallerArgumentExpression(nameof(item))] string itemExpression = "",
+        [CallerArgumentExpression(nameof(skip))] string skipExpression = ""
+    ) =>
+        new TokensLayer<TIn, TOut>(Guard.NotNull(item, itemExpression), Guard.NotNull(skip, skipExpression), InitialState.Of(initialState), Guard.NotNullOrEmpty(name));
 
     /// <summary>
     /// A layer that runs <paramref name="step"/> repeatedly to the end of its input and produces the outputs of each run, then the outputs of <paramref name="atEnd"/>, such as a layout pass that adds INDENT and DEDENT tokens.
@@ -92,7 +130,7 @@ public static class Layer
     /// <typeparam name="TIn">The type of item the layer reads.</typeparam>
     /// <typeparam name="TOut">The type of item the layer produces.</typeparam>
     /// <typeparam name="TState">The type of the layer's state.</typeparam>
-    /// <param name="initialState">The layer's state when it starts.</param>
+    /// <param name="initialState">The layer's state when it starts. It should be immutable, because backtracking restores the state by keeping a reference to it.</param>
     /// <param name="step">The parser for one step, which produces that step's outputs: none, one or several, each derived or synthetic.</param>
     /// <param name="atEnd">The function from the layer's state at the end of its input to the outputs it adds there, such as the DEDENTs that close every open block; or null to add none.</param>
     /// <param name="name">The layer's name in errors, which <see cref="ParseError.Layer"/> holds.</param>
@@ -109,6 +147,12 @@ public static class Layer
     /// <para>
     /// When the input ends, the layer runs <paramref name="atEnd"/> once with its state and produces its outputs.
     /// They stand for no input, so each is synthetic, with a zero-width span at the end of the input, whether or not it is marked.
+    /// </para>
+    /// <para>
+    /// <paramref name="step"/> reads and changes the state with <see cref="Grammar{TIn}.GetState{TState}"/>, <see cref="Grammar{TIn}.SetState{TState}"/> and <see cref="Parser{TIn, TOut}.Scan{TState, TResult}"/>.
+    /// Each step starts with the state the step before left, backtracking inside a step puts it back, and <paramref name="atEnd"/> gets the state the last step left.
+    /// If a step leaves a state that is not a <typeparamref name="TState"/>, the layer throws <see cref="GrammarException"/>.
+    /// So does a read of the state as another type.
     /// </para>
     /// <para>
     /// If <paramref name="step"/> fails, the parse ends with an error from this layer: the furthest failure its steps recorded.
