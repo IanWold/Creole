@@ -1138,7 +1138,7 @@ public sealed partial class MiniGrammar : TokenGrammar<Tok, K>
 var mini = Pipeline.From(MiniLexer.Lexer).Then(Layout.Pass).Then(MiniGrammar.Root);
 ```
 
-A DEDENT's span is zero-width at the start of the first token on the dedented line, so an error at a DEDENT, such as a block with no body, points at that line. An "expected statement" error after a block points there too: at the next token, or at the Error token of an inconsistent dedent, which is placed as a DEDENT is.
+A DEDENT's span is zero-width at the start of the first token on the dedented line, so an error at a DEDENT, such as a block with no body, points at that line. An "expected statement" error after a block points there too: at the next token, or at the Error token of an inconsistent dedent, which is placed as a DEDENT is. The DEDENTs that close the blocks still open at the end of the input are zero-width there, so an error at one points at the end of the input.
 
 ### C. A parser that steers its lexer
 

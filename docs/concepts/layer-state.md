@@ -138,7 +138,7 @@ public sealed class Layout : TokenGrammar<Token, TokenKind>
 
 Each step either reads a newline and emits it with the INDENT or DEDENTs it stands for, or passes another token on. At the end of the input, `atEnd` closes the blocks still open. The state is immutable, so a parser above the pass can backtrack freely. A line indented less than the line before, but not as far back as any open block, gets an error token after its DEDENTs, which the parser rejects.
 
-INDENT and DEDENT are [synthetic](layers.md#a-steps-outputs-emitt), so each is zero-width at the start of the first token on the next line. An error at a DEDENT shows on the dedented line. Here the block after `if b:` is missing:
+INDENT and DEDENT are [synthetic](layers.md#a-steps-outputs-emitt), so each is zero-width at the start of the first token on the next line, and the DEDENTs `atEnd` adds are zero-width at the end of the input. An error at a DEDENT shows on the dedented line, or at the end of the input. Here the block after `if b:` is missing:
 
 ```text
 while a:

@@ -106,6 +106,19 @@ public class WorkedExampleBTests
         );
 
     [Fact]
+    public void ADedentThatClosesABlockAtTheEndOfTheInputReportsThere() =>
+        Assert.Equal(
+            """
+            error[parser]: expected newline
+             --> 2:10
+              |
+            2 |     if b:
+              |          ^ unexpected dedent
+            """,
+            _mini.Parse("while a:\n    if b:").Diagnostics.Render()
+        );
+
+    [Fact]
     public void AnExpectedStatementErrorAfterABlockPointsAtTheDedentedLine() =>
         Assert.Equal(
             """

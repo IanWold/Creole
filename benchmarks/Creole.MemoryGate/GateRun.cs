@@ -14,7 +14,8 @@ namespace Creole.MemoryGate;
 public sealed record GateRun(string Input, long Length, long Characters, long Records, int Samples, long BaselineBytes, long PeakBytes, double Seconds)
 {
     /// <summary>
-    /// The peak less the baseline: what the parse itself retained at most.
+    /// The peak less the baseline: how much more the heap held at this run's peak than after the warm-up run.
+    /// Arrays the warm-up run left in a pool are in the baseline.
     /// </summary>
     public long RetainedBytes => PeakBytes - BaselineBytes;
 }

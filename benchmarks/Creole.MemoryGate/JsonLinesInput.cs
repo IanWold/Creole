@@ -9,7 +9,7 @@ namespace Creole.MemoryGate;
 /// </summary>
 /// <remarks>
 /// Each record is one object with nested objects up to two deep, strings with escapes, numbers with fractions and exponents, and arrays.
-/// The text is ASCII, so its length in characters is its length in UTF-8 bytes.
+/// The text is ASCII but for an occasional <c>é</c>, so it is at least as many UTF-8 bytes as it has characters.
 /// </remarks>
 public static class JsonLinesInput
 {
