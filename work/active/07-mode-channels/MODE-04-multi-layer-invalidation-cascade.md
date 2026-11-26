@@ -16,7 +16,8 @@ A channel may skip intermediate layers, such as a parser steering the lexer bene
 - Intermediate layers restore `stateBefore` and re-run over re-lexed items.
 - No storage beyond existing slot fields.
 - A synthetic output's span reads the start of the item after its step. Test a cascade that re-lexes that item under a mode that skips differently: an unconsumed synthetic output is produced again with the new start, and a consumed one keeps the old start ([ADR-0032](../../docs/decisions/0032-emit-is-a-list-of-outputs-each-derived-or-synthetic.md) Consequences).
-- Each layer whose input is truncated at *j* lowers its failures at *j*, and a producing layer that re-runs a step from `stepStart` *s* lowers its own at *s*. An intermediate layer discards input it had consumed; its pin at the `stepStart` of its oldest retained output kept that input from being released, so its copies stay correct ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 3).
+- Each layer whose input is truncated at *j* lowers its failures at *j*, and a producing layer that re-runs a step from `stepStart` *s* lowers its own at *s*. An intermediate layer discards input it had consumed; its pin at the `stepStart` of the oldest output its reader can still go back to kept that input from being released, so its copies stay correct ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 3, [ADR-0040](../../docs/decisions/0040-a-producing-layer-keeps-input-only-for-outputs-its-reader-can-go-back-to.md) point 4).
+- Run the model-based tests over streamed input as well, in segments of one and two items with the overwriting pool LAY-02's tests use, so a cascade that needs released input fails (ADR-0040 Consequences).
 
 ## Acceptance criteria
 
@@ -39,3 +40,4 @@ A channel may skip intermediate layers, such as a parser steering the lexer bene
 ## Artifacts
 
 - [ADR-0032: `Emit<T>` is a list of outputs, each derived or synthetic, not a union](../../docs/decisions/0032-emit-is-a-list-of-outputs-each-derived-or-synthetic.md)
+- [ADR-0040: A producing layer keeps its input only for the outputs its reader can still go back to](../../docs/decisions/0040-a-producing-layer-keeps-input-only-for-outputs-its-reader-can-go-back-to.md) Why a cascade never truncates input a layer below has released

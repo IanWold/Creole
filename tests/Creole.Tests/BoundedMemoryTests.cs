@@ -167,49 +167,100 @@ file sealed class MeasuringUpstream<T>(IUpstream<T> inner) : IUpstream<T>
 /// Guarantee 2: choices and repetitions pin nothing, so however deeply choices nest and however long the input, each boundary holds a constant number of items.
 /// </summary>
 /// <remarks>
+/// <para>
 /// With nothing pinned, a buffer keeps the segment before the reader's and the reader's own, and fills one item past the reader: at most two segments and one item.
-/// Below a lexer of one-character tokens, the input also holds the step of every token still held, and the segment before the oldest.
+/// A producing layer reads its input the same way when its steps read one item each, as every layer here does.
+/// It keeps its input only from the step of the output its reader reads next, or from the step it is running, so the buffer below it holds the same.
+/// </para>
+/// <para>
+/// A layer that drops most of its input keeps the same bound.
+/// No output it has produced lies at or above its reader's horizon while it drops a run, so it lets the run go as it drops it, however long the run.
+/// </para>
 /// </remarks>
 public class BoundedMemoryTests
 {
+    private const char Noise = '#';
+
+    private static readonly Layer<char, char>[][] _filters =
+    [
+        [Layer.Where<char>(static c => c != Noise)],
+        [Layer.Transduce(0, Any.Select(static c => c == Noise ? default : Emit.One(c)))],
+        [Layer.Tokens(Any), Layer.Where<char>(static c => c != Noise)],
+    ];
+
+    private static readonly Layer<char, char>[][] _lexers =
+    [
+        [Layer.Tokens(Any)],
+        [Layer.Transduce(0, Any.Select(static c => Emit.One(c)))],
+    ];
+
+    private static readonly int[] _runLengths = [10, 100, 1_000, 10_000];
+
     private static readonly Gen<(int Seed, int Depth, int Length, int SegmentSize)> _runs =
         Gen.Select(Gen.Int, Gen.Int[1, 64], Gen.Int[1_000, 20_000], Gen.OneOf(1, 2, 16));
 
-    [Fact]
-    public void AParseOfDeeplyNestedChoicesHoldsTwoSegmentsAndOneItem() =>
-        _runs.Sample(static (seed, depth, length, segmentSize) =>
-        {
-            var grammar = new NestedChoices(seed, depth);
-            var input = grammar.Input(length);
-            var characters = new MeasuringUpstream<char>(new ArrayUpstream<char>(input.ToCharArray()));
-            var cursor = new Cursor<char>(new StreamBuffer<char>(characters, segmentSize)) { Failures = new FailureLog<char>() };
-            var plan = new PlanBuilder(LoweringOptions.All).Lower(grammar.Parser);
-            var value = default(Unit);
+    private static readonly int[] _segmentSizes = [1, 2, 16];
 
-            return plan.TryParse(ref cursor, ref value)
-                && cursor.Position == input.Length
-                && characters.MostHeld <= 2 * segmentSize + 1;
-        }, iter: 50);
+    private static bool BoundedUnder(Layer<char, char>[] layers, Parser<char, Unit> parser, string input, int length, int segmentSize) =>
+        Held(layers, parser, input, length, segmentSize) is { } held
+        && held.All(most => most <= 2 * segmentSize + 1);
 
-    private static readonly Layer<char, char>[] _lexers =
-    [
-        Layer.Tokens(Any),
-        Layer.Transduce(0, Any.Select(static c => Emit.One(c))),
-    ];
+    private static string Describe(Layer<char, char>[] layers) =>
+        string.Join(" then ", layers.Select(static layer => layer.GetType().Name.Split('`')[0]));
 
-    private static bool BoundedUnder(Layer<char, char> lexer, Parser<char, Unit> parser, string input, int segmentSize)
+    /// <summary>
+    /// The most items each boundary held while <paramref name="parser"/> read the top layer's items to <paramref name="length"/>, from the root up, or null if it did not.
+    /// </summary>
+    private static long[]? Held(Layer<char, char>[] layers, Parser<char, Unit> parser, string input, int length, int segmentSize)
     {
-        var characters = new MeasuringUpstream<char>(new ArrayUpstream<char>(input.ToCharArray()));
-        var tokens = new MeasuringUpstream<char>(lexer.Open(new StreamBuffer<char>(characters, segmentSize), ParseOptions.Default, recordFailures: true));
-        var cursor = new Cursor<char>(new StreamBuffer<char>(tokens, segmentSize)) { Failures = new FailureLog<char>() };
+        var boundaries = new List<MeasuringUpstream<char>> { new(new ArrayUpstream<char>(input.ToCharArray())) };
+
+        foreach (var layer in layers)
+        {
+            boundaries.Add(new MeasuringUpstream<char>(layer.Open(new StreamBuffer<char>(boundaries[^1], segmentSize), ParseOptions.Default, recordFailures: true)));
+        }
+
+        var cursor = new Cursor<char>(new StreamBuffer<char>(boundaries[^1], segmentSize)) { Failures = new FailureLog<char>() };
         var plan = new PlanBuilder(LoweringOptions.All).Lower(parser);
         var value = default(Unit);
 
-        return plan.TryParse(ref cursor, ref value)
-            && cursor.Position == input.Length
-            && tokens.MostHeld <= 2 * segmentSize + 1
-            && characters.MostHeld <= 3 * segmentSize + 2;
+        return plan.TryParse(ref cursor, ref value) && cursor.Position == length
+            ? [.. boundaries.Select(static boundary => boundary.MostHeld)]
+            : null;
     }
+
+    /// <summary>
+    /// <paramref name="input"/> with a run of 1 to 256 <see cref="Noise"/> characters after about one character in sixteen, so most of the result is noise.
+    /// </summary>
+    private static string WithNoise(string input, int seed)
+    {
+        var random = new Random(seed);
+        var text = new StringBuilder();
+
+        foreach (var c in input)
+        {
+            text.Append(c);
+
+            if (random.Next(16) == 0)
+            {
+                text.Append(Noise, random.Next(1, 257));
+            }
+        }
+
+        return text.ToString();
+    }
+
+    [Fact]
+    public void ALayerThatDropsALongRunHoldsTheSameWhateverTheRunsLength() =>
+        Assert.Empty(
+            from length in _runLengths
+            from segmentSize in _segmentSizes
+            from layers in _filters
+            let run = new string(Noise, length)
+            let held = Held(layers, Any.SkipMany(), $"{run}a{run}b{run}c{run}", 3, segmentSize)
+            where held is null || held.Any(most => most > 2 * segmentSize + 1)
+            select $"{Describe(layers)} over runs of {length} in segments of {segmentSize}: held {(held is null ? "nothing, as the parse failed" : string.Join(", ", held))}"
+        );
 
     [Fact]
     public void ALexerAndAParserOfDeeplyNestedChoicesHoldAConstantNumberOfItemsAtEachBoundary() => _runs.Sample(
@@ -218,7 +269,30 @@ public class BoundedMemoryTests
             var grammar = new NestedChoices(seed, depth);
             var input = grammar.Input(length);
 
-            return _lexers.All(lexer => BoundedUnder(lexer, grammar.Parser, input, segmentSize));
+            return _lexers.All(layers => BoundedUnder(layers, grammar.Parser, input, input.Length, segmentSize));
+        },
+        iter: 50
+    );
+
+    [Fact]
+    public void AParseOfDeeplyNestedChoicesHoldsTwoSegmentsAndOneItem() =>
+        _runs.Sample(static (seed, depth, length, segmentSize) =>
+        {
+            var grammar = new NestedChoices(seed, depth);
+            var input = grammar.Input(length);
+
+            return BoundedUnder([], grammar.Parser, input, input.Length, segmentSize);
+        }, iter: 50);
+
+    [Fact]
+    public void LayersThatDropMostOfTheirInputUnderAParserOfDeeplyNestedChoicesHoldAConstantNumberOfItemsAtEachBoundary() => _runs.Sample(
+        static (seed, depth, length, segmentSize) =>
+        {
+            var grammar = new NestedChoices(seed, depth);
+            var input = grammar.Input(length);
+            var noisy = WithNoise(input, seed);
+
+            return _filters.All(layers => BoundedUnder(layers, grammar.Parser, noisy, input.Length, segmentSize));
         },
         iter: 50
     );

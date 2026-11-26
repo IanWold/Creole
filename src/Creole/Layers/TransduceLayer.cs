@@ -8,7 +8,8 @@ namespace Creole;
 /// The failure log lasts the whole run, so the layer reports its furthest failure across its steps.
 /// So does the state: each step's cursor starts with the state the step before left, and each output's slot records the state its step started with.
 /// <c>atEnd</c> gets the state the last step left.
-/// The cursor's floor starts where the oldest step whose outputs are still held began, or at the step's own start, so the input of the running step and of every held output stays in the buffer.
+/// The cursor's floor starts at the layer's pin: where the step began that produced the oldest output its reader can still go back to, or the step's own start if there is none.
+/// So the input of the running step and of every output the reader can still go back to stays in the buffer, and the cursor states the floor as the layer's horizon when it pulls.
 /// Each step starts by releasing the input below that floor, since a step that starts in a new segment reaches it without the cursor releasing anything.
 /// </remarks>
 file sealed class TransduceUpstream<TIn, TOut, TState>(

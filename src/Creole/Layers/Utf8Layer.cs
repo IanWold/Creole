@@ -10,7 +10,9 @@ namespace Creole;
 /// <remarks>
 /// <para>
 /// It reads its input without a cursor, one byte at a time, so it never reads past the byte that ends or breaks a sequence.
-/// It releases the input itself: on reaching a new segment, it releases what lies below the input of the oldest output still held.
+/// It states its own pin as its horizon with each read, and releases the input itself.
+/// The pin is where the oldest output its reader can still go back to began, or the step it is running if there is none.
+/// On reaching a new segment, it releases what lies below the pin.
 /// </para>
 /// <para>
 /// Each output's root offsets are its input's, and its character offsets count the UTF-16 characters produced before it.
@@ -64,9 +66,9 @@ file sealed class Utf8Upstream(ICursorSource<byte> input) : IUpstream<char>
         );
     }
 
-    private bool TryRead(long position, out byte value)
+    private bool TryRead(long position, long pin, out byte value)
     {
-        if (!_input.TryGetSegment(position, out var segment, out var segmentStart))
+        if (!_input.TryGetSegment(position, pin, out var segment, out var segmentStart))
         {
             value = 0;
             return false;
@@ -83,8 +85,9 @@ file sealed class Utf8Upstream(ICursorSource<byte> input) : IUpstream<char>
     public bool TryStep(StreamBuffer<char> buffer)
     {
         var stepStart = _position;
+        var pin = buffer.OldestStepStart ?? stepStart;
 
-        if (!_input.TryGetSegment(stepStart, out _, out var segmentStart))
+        if (!_input.TryGetSegment(stepStart, pin, out _, out var segmentStart))
         {
             return false;
         }
@@ -92,7 +95,7 @@ file sealed class Utf8Upstream(ICursorSource<byte> input) : IUpstream<char>
         if (segmentStart != _segmentStart)
         {
             _segmentStart = segmentStart;
-            _input.Release(buffer.OldestStepStart ?? stepStart, failures: null);
+            _input.Release(pin, failures: null);
         }
 
         Span<byte> bytes = stackalloc byte[4];
@@ -101,7 +104,7 @@ file sealed class Utf8Upstream(ICursorSource<byte> input) : IUpstream<char>
         var rune = default(Rune);
         var consumed = 0;
 
-        while (status == OperationStatus.NeedMoreData && TryRead(stepStart + count, out bytes[count]))
+        while (status == OperationStatus.NeedMoreData && TryRead(stepStart + count, pin, out bytes[count]))
         {
             count++;
             status = Rune.DecodeFromUtf8(bytes[..count], out rune, out consumed);

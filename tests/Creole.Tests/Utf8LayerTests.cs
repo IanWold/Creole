@@ -48,7 +48,7 @@ public class Utf8LayerTests
 
         try
         {
-            for (var position = 0L; output.TryGetSegment(position, out _, out _); position++)
+            for (var position = 0L; output.TryGetSegment(position, horizon: 0, out _, out _); position++)
             {
                 items.Add((output.ItemAt(position), output.SlotAt(position)));
             }

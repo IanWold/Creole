@@ -24,7 +24,7 @@ file sealed class ReleasingSource(string text) : ICursorSource<char>
     public SourceSpan SpanOf(long start, long end) =>
         new(SourceId.Unnamed, start, end);
 
-    public bool TryGetSegment(long position, out ReadOnlyMemory<char> segment, out long segmentStart)
+    public bool TryGetSegment(long position, long horizon, out ReadOnlyMemory<char> segment, out long segmentStart)
     {
         if (position < _released || position >= text.Length)
         {
