@@ -180,7 +180,7 @@ public class DiagnosticLogTests
 
         log.Record(2, _x);
 
-        var save = log.Save();
+        var save = log.Save(modeLength: 0);
 
         log.Record(5, _y);
         log.RaiseFromFurthestFailure(6);
@@ -214,7 +214,7 @@ public class DiagnosticLogTests
         log.Record(0, _x);
 
         var note = log.Note();
-        var save = log.Save();
+        var save = log.Save(modeLength: 0);
 
         log.RaiseFromFurthestFailure(0);
         log.Restore(in save);

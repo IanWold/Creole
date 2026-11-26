@@ -96,3 +96,15 @@ A parser run on its own, with `Parse` over text or over a list of tokens, has no
 ## Where each parse starts
 
 Each parse starts every channel at its initial mode. Under [`ParseMany`](pipelines.md#parsemany), each item starts the channels the parser writes at their initial modes, so an item is lexed as it would be at the start of the input. A layer that writes a channel runs once for the whole input, so its changes last across items.
+
+## What a change does to errors
+
+A write changes the mode only when it leaves a different mode on top of the stack, compared with `EqualityComparer<TMode>.Default`. A `SetMode` to the current mode, a `PushMode` of it, and a `PopMode` that uncovers the same mode change nothing.
+
+A change of mode forgets what the parse's furthest failure says about the input from the change on, because the lexer may read that input differently in the new mode ([whitepaper § Failure positions](../../whitepaper.md#failure-positions), [ADR-0042](../../work/docs/decisions/0042-a-write-discards-only-when-it-changes-the-top-mode-and-the-mode-log-keeps-only-what-a-rewind-can-reach.md)):
+
+- A failure past the change becomes a failure where the change was made, which expects nothing. The next failure recorded there adds its expectations and its context.
+- A rejected value or a chained operator whose input runs past the change no longer widens the error, and its message no longer takes the place of what was found.
+- A failure that a construct puts back, as a filter does before it reports its rejection, is treated the same way for the changes made since it was saved.
+
+So with `Modes` in operand mode, `Atomic(Char('a').Then(Char('b')).Then(Char('c'))).Or(SetMode(Modes, LexMode.Operator).Then(Char('z')))` on `abx` reports "expected 'z'" at the `a`, not "expected 'c'" at the `x`. With `SetMode(Modes, LexMode.Operand)`, which keeps the mode, the report stays at the `x`.

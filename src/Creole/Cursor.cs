@@ -439,17 +439,53 @@ public ref struct Cursor<T>
     /// <summary>
     /// Puts the furthest failure back as it was at a <see cref="SaveFailures"/>, which stays open, as a <c>Longest</c> does before it runs its winner again.
     /// </summary>
-    internal readonly void ResetFailures(in FailureMark mark) => Failures?.Reset(in mark);
+    /// <remarks>
+    /// The failure put back forgets what it says about the items at the first change of mode since the save, and after it, as <see cref="FailureLog{T}.LowerAt"/> does.
+    /// </remarks>
+    internal readonly void ResetFailures(in FailureMark mark)
+    {
+        if (Failures is not { } failures)
+        {
+            return;
+        }
+
+        var change = Modes?.FirstChangeSince(failures.SavedModeLength) ?? -1;
+
+        failures.Reset(in mark);
+
+        if (change >= 0)
+        {
+            failures.LowerAt(change);
+        }
+    }
 
     /// <summary>
     /// Ends a <see cref="SaveFailures"/> and puts the furthest failure back as it was then.
     /// </summary>
-    internal readonly void RestoreFailures(in FailureMark mark) => Failures?.Restore(in mark);
+    /// <remarks>
+    /// The failure put back forgets what it says about the items at the first change of mode since the save, and after it, as <see cref="FailureLog{T}.LowerAt"/> does.
+    /// </remarks>
+    internal readonly void RestoreFailures(in FailureMark mark)
+    {
+        if (Failures is not { } failures)
+        {
+            return;
+        }
+
+        var change = Modes?.FirstChangeSince(failures.SavedModeLength) ?? -1;
+
+        failures.Restore(in mark);
+
+        if (change >= 0)
+        {
+            failures.LowerAt(change);
+        }
+    }
 
     /// <summary>
     /// Saves the furthest failure until <see cref="RestoreFailures"/> or <see cref="KeepFailures"/>, as <c>Lookahead</c>, <c>Not</c> and <c>Longest</c> do.
     /// </summary>
-    internal readonly FailureMark SaveFailures() => Failures?.Save() ?? default;
+    internal readonly FailureMark SaveFailures() => Failures?.Save(Modes?.Length ?? 0) ?? default;
 
     /// <summary>
     /// The items from <paramref name="start"/> up to the cursor, which must be a position this cursor has already reached and the input still holds.

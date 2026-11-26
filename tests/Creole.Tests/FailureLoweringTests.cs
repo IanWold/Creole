@@ -111,7 +111,7 @@ public class FailureLoweringTests
         log.Record(5, _x);
         log.LowerAt(3);
 
-        var mark = log.Save();
+        var mark = log.Save(modeLength: 0);
 
         log.Record(7, _y);
         log.Restore(in mark);
@@ -129,7 +129,7 @@ public class FailureLoweringTests
 
         log.Reject(2, 6, "too big", null);
 
-        var mark = log.Save();
+        var mark = log.Save(modeLength: 0);
 
         log.Record(7, _x);
         log.Restore(in mark);

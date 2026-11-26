@@ -16,11 +16,14 @@ internal sealed class SetModePlan<TIn, TMode>(ModeChannel<TMode> channel, TMode 
 
     public override bool TryParse(ref Cursor<TIn> cursor, ref Unit result)
     {
-        var link = ModeWriter.Of(ref cursor).Link(_channel);
+        var writer = ModeWriter.Of(ref cursor);
+        var link = writer.Link(_channel);
 
-        link.Stack = link.Stack.Rest is null
+        var next = link.Stack.Rest is null
             ? _single
             : new ModeStack<TMode>(_mode, link.Stack.Rest);
+
+        writer.Write(ref cursor, link, next);
 
         return true;
     }

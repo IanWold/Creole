@@ -1,9 +1,14 @@
 namespace Creole;
 
 /// <summary>
-/// The mode channels one layer's grammar writes in one run: each channel's stack, found by its channel.
+/// The mode channels one layer's grammar writes in one run: each channel's stack, found by its channel, and the log of the writes.
 /// </summary>
 /// <remarks>
+/// <para>
+/// Each write appends an entry to the log: where the layer's cursor was, the channel, and its stack before.
+/// A write changes the mode when the top of the stack after it differs from the top before it.
+/// Only a change makes the layer forget its failures past the cursor, because only a change can make the layer below read the next item differently.
+/// </para>
 /// <para>
 /// In a pipeline, a writer holds the links of the channels read below its layer, and changes only those.
 /// A change to any other channel throws, and so does a change to a channel another layer has already changed in the run.
@@ -11,16 +16,35 @@ namespace Creole;
 /// <para>
 /// A parser run on its own has no layer below it to read a channel.
 /// Its writer keeps a stack for each channel it writes, which nothing else reads, so its grammar still runs as written.
-/// It makes the writer when its grammar first changes a mode, so a parse that changes none allocates nothing for modes.
+/// It takes the writer when its grammar first changes a mode, so a parse that changes none uses none.
+/// Each thread keeps a spare writer for parsers run on their own, which a parse takes and gives back when it ends, so the log keeps its storage from one parse to the next.
 /// </para>
 /// </remarks>
 /// <param name="layer">The name of the layer whose grammar writes, which errors give.</param>
 /// <param name="below">In a pipeline, the links of the channels read below the layer; null for a parser run on its own.</param>
 internal sealed class ModeWriter(string layer, ModeLink[]? below)
 {
+    /// <summary>
+    /// One write, as the log keeps it.
+    /// </summary>
+    /// <param name="Index">The position of the writing layer's cursor in its input.</param>
+    /// <param name="Link">The channel whose stack the write replaced.</param>
+    /// <param name="Previous">The stack before the write.</param>
+    /// <param name="Changed">Whether the write changed the mode: whether the top after it differs from the top before it.</param>
+    private readonly record struct Entry(long Index, ModeLink Link, object Previous, bool Changed);
+
     private readonly ModeLink[]? _below = below;
     private readonly string _layer = layer;
+    private readonly List<Entry> _log = [];
     private List<ModeLink>? _own;
+
+    [ThreadStatic]
+    private static ModeWriter? _spare;
+
+    /// <summary>
+    /// The number of writes in the log, which a save notes so that its restore can find the changes made since.
+    /// </summary>
+    public long Length => _log.Count;
 
     private ModeLink<TMode> Own<TMode>(ModeChannel<TMode> channel)
     {
@@ -38,6 +62,25 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
         _own.Add(made);
 
         return made;
+    }
+
+    /// <summary>
+    /// The position of the first change of mode at or after entry <paramref name="length"/> of the log, or -1 if there is none.
+    /// </summary>
+    /// <remarks>
+    /// Entries are in the order of their positions, so it is the lowest position of those changes.
+    /// </remarks>
+    public long FirstChangeSince(long length)
+    {
+        for (var i = (int)length; i < _log.Count; i++)
+        {
+            if (_log[i].Changed)
+            {
+                return _log[i].Index;
+            }
+        }
+
+        return -1;
     }
 
     /// <summary>
@@ -69,7 +112,31 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
     }
 
     /// <summary>
-    /// Returns every channel this writer has changed to its initial mode alone, as a <c>ParseMany</c> item starts.
+    /// The writer on <paramref name="cursor"/>, which a parser run on its own takes the first time its grammar changes a mode: the thread's spare, or a new one.
+    /// </summary>
+    public static ModeWriter Of<T>(ref Cursor<T> cursor)
+    {
+        if (cursor.Modes is { } modes)
+        {
+            return modes;
+        }
+
+        var writer = _spare ?? new ModeWriter(Parsing.Layer, below: null);
+
+        _spare = null;
+        cursor.Modes = writer;
+
+        return writer;
+    }
+
+    /// <summary>
+    /// The exception for a <c>PopMode</c> of <paramref name="channel"/> when its stack holds only one mode.
+    /// </summary>
+    public GrammarException PoppedLast(object channel) =>
+        new($"The {_layer} layer pops the last mode of a {channel}. Each PopMode needs a PushMode on the same channel before it.");
+
+    /// <summary>
+    /// Returns every channel this writer has changed to its initial mode alone, with an empty log, as a <c>ParseMany</c> item starts.
     /// </summary>
     public void Reset()
     {
@@ -82,17 +149,41 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
         }
 
         _own?.Clear();
+        _log.Clear();
     }
 
     /// <summary>
-    /// The writer on <paramref name="cursor"/>, which a parser run on its own makes the first time its grammar changes a mode.
+    /// Gives back the writer a parser run on its own took, if it took one, as the thread's spare, with no channels and an empty log.
     /// </summary>
-    public static ModeWriter Of<T>(ref Cursor<T> cursor) =>
-        cursor.Modes ??= new ModeWriter(Parsing.Layer, below: null);
+    public static void Return(ModeWriter? writer)
+    {
+        if (writer is null)
+        {
+            return;
+        }
+
+        writer._own?.Clear();
+        writer._log.Clear();
+        _spare = writer;
+    }
 
     /// <summary>
-    /// The exception for a <c>PopMode</c> of <paramref name="channel"/> when its stack holds only one mode.
+    /// Replaces the stack of <paramref name="link"/> with <paramref name="next"/>, logging the write at <paramref name="cursor"/>'s position.
     /// </summary>
-    public GrammarException PoppedLast(object channel) =>
-        new($"The {_layer} layer pops the last mode of a {channel}. Each PopMode needs a PushMode on the same channel before it.");
+    /// <remarks>
+    /// If the write changes the mode, the layer forgets its failures past the cursor.
+    /// </remarks>
+    public void Write<T, TMode>(ref Cursor<T> cursor, ModeLink<TMode> link, ModeStack<TMode> next)
+    {
+        var previous = link.Stack;
+        var changed = !EqualityComparer<TMode>.Default.Equals(previous.Top, next.Top);
+
+        _log.Add(new Entry(cursor.Position, link, previous, changed));
+        link.Stack = next;
+
+        if (changed)
+        {
+            cursor.Failures?.LowerAt(cursor.Position);
+        }
+    }
 }

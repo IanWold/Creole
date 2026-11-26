@@ -167,6 +167,10 @@ public static class Parsing
         {
             throw exception.ToGrammarException(Layer);
         }
+        finally
+        {
+            ModeWriter.Return(cursor.Modes);
+        }
     }
 
     /// <summary>
@@ -195,6 +199,10 @@ public static class Parsing
         catch (LayerStateException exception)
         {
             throw exception.ToGrammarException(Layer);
+        }
+        finally
+        {
+            ModeWriter.Return(cursor.Modes);
         }
 
         return false;

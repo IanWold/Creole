@@ -47,7 +47,10 @@ internal sealed partial class FailureLog<T>
 
     private readonly record struct ItemCopy(T Item, SourceSpan Span);
 
-    private readonly record struct SavedFailure(long Position, long End, ItemCopy? At, SourceSpan? EndSpan);
+    /// <summary>
+    /// The parts of a saved failure that a stream buffer may need to copy before it releases input, and the length of the layer's mode log when it was saved.
+    /// </summary>
+    private readonly record struct SavedFailure(long Position, long End, ItemCopy? At, SourceSpan? EndSpan, long ModeLength);
 
     /// <summary>
     /// The context of a failure that a mode change lowered: none yet, because the next failure recorded at its position supplies it.
@@ -86,6 +89,11 @@ internal sealed partial class FailureLog<T>
     /// The position of the furthest failure, or -1 if none has been recorded.
     /// </summary>
     public long Position { get; private set; } = -1;
+
+    /// <summary>
+    /// The length of the layer's mode log when the innermost open <see cref="Save"/> was taken.
+    /// </summary>
+    public long SavedModeLength => _saves[_saveCount - 1].ModeLength;
 
     private void Add(Expected expected)
     {
@@ -597,7 +605,8 @@ internal sealed partial class FailureLog<T>
     /// <summary>
     /// Saves the furthest failure so that <see cref="Restore"/> can put it back, protecting its expectations and context frames until <see cref="Restore"/> or <see cref="Keep"/> ends the save.
     /// </summary>
-    public FailureMark Save()
+    /// <param name="modeLength">The length of the layer's mode log, so that a restore can be lowered by the changes of mode made since.</param>
+    public FailureMark Save(long modeLength)
     {
         var mark = Note();
 
@@ -606,7 +615,7 @@ internal sealed partial class FailureLog<T>
             Array.Resize(ref _saves, _saveCount * 2);
         }
 
-        _saves[_saveCount++] = new SavedFailure(Position, _end, _at, _endSpan);
+        _saves[_saveCount++] = new SavedFailure(Position, _end, _at, _endSpan, modeLength);
         _protected = _count;
         _frameFloor = _frameCount;
 
