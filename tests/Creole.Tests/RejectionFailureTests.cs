@@ -8,6 +8,10 @@ file sealed class ReleasingSource(string text) : ICursorSource<char>
 {
     private long _released;
 
+    public SourceSpan InputEnd => new(SourceId.Unnamed, text.Length, text.Length);
+
+    public SourceSpan InputStart => new(SourceId.Unnamed, 0, 0);
+
     public void DropSpan() { }
 
     public void HoldSpan(long position) { }

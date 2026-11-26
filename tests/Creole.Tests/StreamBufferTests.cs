@@ -10,6 +10,10 @@ file sealed class GroupUpstream(char[][] steps, object?[] states) : IUpstream<ch
     private readonly char[][] _steps = steps;
     private int _step;
 
+    public SourceSpan InputEnd => new(SourceId.Unnamed, _steps.Length, _steps.Length);
+
+    public SourceSpan InputStart => new(SourceId.Unnamed, 0, 0);
+
     public bool TryStep(StreamBuffer<char> buffer)
     {
         if (_step == _steps.Length)
@@ -35,6 +39,10 @@ file sealed class RepeatUpstream(char item, int count) : IUpstream<char>
     private readonly char _item = item;
     private int _next;
 
+    public SourceSpan InputEnd => new(SourceId.Unnamed, _count, _count);
+
+    public SourceSpan InputStart => new(SourceId.Unnamed, 0, 0);
+
     public bool TryStep(StreamBuffer<char> buffer)
     {
         if (_next == _count)
@@ -54,6 +62,16 @@ file sealed class SpanUpstream(string[] tokens, SourceSpan[] spans) : IUpstream<
     private readonly string[] _tokens = tokens;
     private int _next;
 
+    public SourceSpan InputEnd =>
+        _spans is [.., var last]
+        ? new SourceSpan(last.Source, last.End, last.End)
+        : default;
+
+    public SourceSpan InputStart =>
+        _spans is [var first, ..]
+        ? new SourceSpan(first.Source, first.Start, first.Start)
+        : default;
+
     public bool TryStep(StreamBuffer<string> buffer)
     {
         if (_next == _tokens.Length)
@@ -72,6 +90,10 @@ file sealed class TokenUpstream(StreamBuffer<char> characters, Plan<char, string
     private readonly StreamBuffer<char> _characters = characters;
     private readonly Plan<char, string> _item = item;
     private long _position;
+
+    public SourceSpan InputEnd => _characters.InputEnd;
+
+    public SourceSpan InputStart => _characters.InputStart;
 
     public List<string> Produced { get; } = [];
 

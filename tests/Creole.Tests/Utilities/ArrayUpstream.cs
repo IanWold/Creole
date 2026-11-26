@@ -12,6 +12,10 @@ internal sealed class ArrayUpstream<T>(T[] items, int itemsPerStep = 1) : IUpstr
     private readonly int _itemsPerStep = itemsPerStep;
     private int _next;
 
+    public SourceSpan InputEnd => new(SourceId.Unnamed, _items.Length, _items.Length);
+
+    public SourceSpan InputStart => new(SourceId.Unnamed, 0, 0);
+
     /// <summary>
     /// How many times each item has been produced.
     /// </summary>

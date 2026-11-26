@@ -288,6 +288,40 @@ public ref struct Cursor<T>
     internal readonly void KeepFailures(in FailureMark mark) => Failures?.Keep(in mark);
 
     /// <summary>
+    /// The source between the end of the item before the cursor and the start of the next item: the next item's leading trivia.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// At the first item it starts where the input starts, and at the end of the input it runs to where the input ends.
+    /// If the next item starts before the item before it ends, or in another source, it is zero-width at the next item's start.
+    /// </para>
+    /// <para>
+    /// Over input held whole in memory, items are adjacent, so it is zero-width at the cursor.
+    /// Over a source, the cursor peeks, so the next item has been read.
+    /// The item before the cursor is one the source still holds, since it keeps the item below its horizon.
+    /// </para>
+    /// </remarks>
+    internal SourceSpan LeadingTrivia()
+    {
+        if (_source is null)
+        {
+            return new SourceSpan(SourceId.Unnamed, Position, Position);
+        }
+
+        var after = Position == 0
+            ? _source.InputStart
+            : _source.SpanOf(Position - 1, Position);
+
+        var before = TryPeek(out _)
+            ? _source.SpanOf(Position, Position)
+            : _source.InputEnd;
+
+        return after.Source == before.Source && after.End <= before.Start && after.CharEnd <= before.CharStart
+            ? new SourceSpan(after.Source, after.End, before.Start, after.CharEnd, before.CharStart)
+            : before;
+    }
+
+    /// <summary>
     /// Leaves the context the matching <see cref="EnterContext"/> entered.
     /// </summary>
     internal readonly void LeaveContext() => Failures?.Leave();

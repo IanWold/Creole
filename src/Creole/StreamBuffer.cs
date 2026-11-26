@@ -86,6 +86,18 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     /// </summary>
     public long Filled { get; private set; }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// It is the upstream's <see cref="IUpstream{T}.InputEnd"/>.
+    /// </remarks>
+    public SourceSpan InputEnd => _upstream.InputEnd;
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// It is the upstream's <see cref="IUpstream{T}.InputStart"/>.
+    /// </remarks>
+    public SourceSpan InputStart => _upstream.InputStart;
+
     /// <summary>
     /// Where the step that produced the oldest item the buffer still holds began in the upstream's input, or null when the buffer holds no item.
     /// </summary>

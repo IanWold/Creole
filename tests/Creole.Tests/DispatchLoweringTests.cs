@@ -65,6 +65,7 @@ public class DispatchLoweringTests
         Char('b').Spanned().Select(static spanned => $"b@{spanned.Span.Start}"),
         Char('a').WithSpan(static (_, span) => $"a@{span.Start}"),
         Position.Then(Char('c')).Select(static _ => "@c"),
+        LeadingTrivia.Then(Char('d')).Select(static _ => "~d"),
         Adjacent(Char('a'), Char('d')).Select(static (_, _) => "a~d"),
         Char('c').Optional().Select(static _ => "c?"),
         new CutThenNode<string>(String("b")),

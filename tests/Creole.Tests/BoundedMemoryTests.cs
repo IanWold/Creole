@@ -149,6 +149,10 @@ file sealed class MeasuringUpstream<T>(IUpstream<T> inner) : IUpstream<T>
 {
     private readonly IUpstream<T> _inner = inner;
 
+    public SourceSpan InputEnd => _inner.InputEnd;
+
+    public SourceSpan InputStart => _inner.InputStart;
+
     public long MostHeld { get; private set; }
 
     public bool TryStep(StreamBuffer<T> buffer)

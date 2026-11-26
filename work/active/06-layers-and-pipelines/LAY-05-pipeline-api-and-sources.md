@@ -15,6 +15,7 @@ Chain layers into a parser and run it over in-memory or reader input.
 - `Pipeline.From(layer).Then(...)`.
 - `Parse(text, source:)` and lazy `ParseMany` returning `IEnumerable<ParseResult<T>>`.
 - `TextReader` sources with blocking pulls. Each character gets the root-layer span (§ Span rules, rule 1): character *i* has \[*i*, *i* + 1).
+- Each root source's upstream reports `InputStart` and `InputEnd`, the zero-width spans where its source starts and ends: 0 and the text's length in memory, and the number of characters read once a reader ends. Every layer above takes them, and `LeadingTrivia` reads them for the trivia before the first item and at the end ([ADR-0036](../../docs/decisions/0036-trivia-is-the-source-between-items-read-with-a-zero-width-parser.md) point 5, [SPAN-05](../05-source-spans/SPAN-05-trivia-attach-mode.md)).
 - Slices follow [ADR-0013](../../docs/decisions/0013-slices-view-in-memory-input-and-copy-streamed-input.md): `Parse(text)` builds its root cursor over the caller's memory, so slices are views; over a `TextReader` they are copies.
 - Immutable, thread-shareable pipelines; each call owns its buffers and state.
 - `SourceRegistry` has no producer: `Parse` always uses `SourceId.Unnamed`, and a source's name is held both in the registry and in `SourceText.Name`. Decide whether pipelines take registry ids or the registry goes ([Phase 0 review](../../docs/research/2026-10-25-phase-0-review.md) finding 25).

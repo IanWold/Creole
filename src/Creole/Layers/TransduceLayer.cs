@@ -30,6 +30,10 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
     private readonly TState _state = state;
     private readonly Plan<TIn, Emit<TOut>> _step = step;
 
+    public SourceSpan InputEnd => _input.InputEnd;
+
+    public SourceSpan InputStart => _input.InputStart;
+
     private void Add(StreamBuffer<TOut> buffer, Emit<TOut> outputs, ref Cursor<TIn> cursor, long stepStart)
     {
         var derived = _input.SpanOf(stepStart, cursor.Position);

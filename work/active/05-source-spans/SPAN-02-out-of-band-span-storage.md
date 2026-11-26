@@ -30,7 +30,7 @@ Spans travel beside items in the stream buffer, never inside user token types.
 
 - [SPAN-03 Synthetic items](../05-source-spans/SPAN-03-synthetic-items.md)
 - [SPAN-04 Span combinators](../05-source-spans/SPAN-04-span-combinators.md)
-- [SPAN-05 Trivia attach mode](../05-source-spans/SPAN-05-trivia-attach-mode.md)
+- [SPAN-05 Trivia from the gaps between spans](../05-source-spans/SPAN-05-trivia-attach-mode.md)
 - [SPAN-06 Byte sources and the decoding layer](../05-source-spans/SPAN-06-byte-sources-and-the-decoding-layer.md)
 - [SPAN-07 Embedded languages](../05-source-spans/SPAN-07-embedded-languages.md)
 

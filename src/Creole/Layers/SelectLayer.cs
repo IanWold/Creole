@@ -13,6 +13,10 @@ file sealed class SelectUpstream<TIn, TOut>(StreamBuffer<TIn> input, Func<TIn, T
     private long _segmentStart;
     private readonly Func<TIn, TOut> _selector = selector;
 
+    public SourceSpan InputEnd => _input.InputEnd;
+
+    public SourceSpan InputStart => _input.InputStart;
+
     public bool TryStep(StreamBuffer<TOut> buffer)
     {
         if (!_input.TryGetSegment(_position, out var segment, out var segmentStart))
