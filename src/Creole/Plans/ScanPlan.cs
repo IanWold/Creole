@@ -13,6 +13,7 @@ namespace Creole;
 /// A character class never touches the cut flag and never succeeds without consuming.
 /// So each character needs no light mark, the nullable-repetition guard can never fire, and stopping the run is always a failure without consuming.
 /// Unless the run stopped at its maximum, that failure is recorded where it stopped, as the class's own plan would record it.
+/// Where the input runs out of what it has received, the run might go on, so the plan fails, as a starved attempt fails the repetition it replaces.
 /// </para>
 /// </remarks>
 internal sealed class ScanPlan : Plan<char, Unit>
@@ -80,6 +81,11 @@ internal sealed class ScanPlan : Plan<char, Unit>
 
             if (available.IsEmpty)
             {
+                if (cursor.Starved)
+                {
+                    return false;
+                }
+
                 cursor.Fail(_expected);
                 break;
             }

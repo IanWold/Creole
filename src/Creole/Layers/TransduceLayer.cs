@@ -12,6 +12,7 @@ namespace Creole;
 /// The cursor's floor starts at the layer's pin: where the step began that produced the oldest output its reader can still go back to, or the step's own start if there is none.
 /// So the input of the running step and of every output the reader can still go back to stays in the buffer, and the cursor states the floor as the layer's horizon when it pulls.
 /// Each step starts by releasing the input below that floor, since a step that starts in a new segment reaches it without the cursor releasing anything.
+/// A step whose input starves produces nothing and reports no failure, and where the input has run out of what it has received, <c>atEnd</c> does not run.
 /// </remarks>
 file sealed class TransduceUpstream<TIn, TOut, TState>(
     ICursorSource<TIn> input,
@@ -40,6 +41,8 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
     public SourceSpan InputEnd => _input.InputEnd;
 
     public SourceSpan InputStart => _input.InputStart;
+
+    public bool Starved => _input.Starved;
 
     private void Add(StreamBuffer<TOut> buffer, Emit<TOut> outputs, ref Cursor<TIn> cursor, long stepStart, object? stateBefore)
     {
@@ -125,12 +128,24 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
 
             if (cursor.IsAtEnd)
             {
+                if (cursor.Starved)
+                {
+                    return false;
+                }
+
                 _ended = true;
                 AddAtEnd(buffer);
                 return true;
             }
 
-            if (!_step.TryParse(ref cursor, ref outputs))
+            var parsed = _step.TryParse(ref cursor, ref outputs);
+
+            if (cursor.Starved)
+            {
+                return false;
+            }
+
+            if (!parsed)
             {
                 throw Failed(in cursor, stepStart);
             }

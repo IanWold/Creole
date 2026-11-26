@@ -7,6 +7,7 @@ namespace Creole;
 /// The item starts with no cut in force, so a cut passed before the <c>Atomic</c> does not stop it rewinding.
 /// On exit, a cut passed inside stays in force for the enclosing parse, whether the item succeeded or failed (ADR-0011 points 2 and 7).
 /// Its start is pinned while it runs, so a stream buffer keeps the input it may rewind to.
+/// It never rewinds an item that starved.
 /// </remarks>
 internal sealed class AtomicPlan<TIn, T, TMark>(Plan<TIn, T> item) : Plan<TIn, T>
     where TMark : struct, IMark<TMark>
@@ -22,7 +23,7 @@ internal sealed class AtomicPlan<TIn, T, TMark>(Plan<TIn, T> item) : Plan<TIn, T
 
         var ok = _item.TryParse(ref cursor, ref result);
 
-        if (!ok && !cursor.Cut)
+        if (!ok && !cursor.Cut && !cursor.Starved)
         {
             mark.Rewind(ref cursor);
             cursor.Reset(mark.Position);

@@ -95,6 +95,16 @@ public ref struct Cursor<T>
     internal ModeWriter? Modes { get; set; }
 
     /// <summary>
+    /// Whether a read in this layer's parse has found the end of the input received so far before the true end of the input, so the attempt can neither succeed nor fail.
+    /// </summary>
+    /// <remarks>
+    /// The source keeps it, so a copy of the cursor that reads to the end sets it for the original too, and so does a read through <see cref="Available"/>.
+    /// It stays set until the parse restarts, and until then a read where the input ran out looks like the end of the input.
+    /// Input held whole in memory never starves.
+    /// </remarks>
+    internal readonly bool Starved => _source is not null && _source.Starved;
+
+    /// <summary>
     /// This layer's state, as <see cref="StateBox"/> holds it, or null when the layer has no state.
     /// </summary>
     /// <remarks>
@@ -397,7 +407,9 @@ public ref struct Cursor<T>
     /// Moves the cursor to <paramref name="position"/>, which must be a position this cursor has already reached and the input still holds.
     /// </summary>
     /// <remarks>
-    /// The end of the input holds no item, so no segment holds it; the cursor then stands at the end of the segment that holds the last item.
+    /// It moves to the segment that holds the item before <paramref name="position"/>, which the cursor has passed, so it never reads input the source has not received.
+    /// Where <paramref name="position"/> starts a segment, or is the end of the input, the cursor stands at the end of the segment before.
+    /// Only at the start of the input, or where the item before has been released, does it move to the segment that holds <paramref name="position"/>.
     /// </remarks>
     internal void Reset(long position)
     {
@@ -409,13 +421,13 @@ public ref struct Cursor<T>
             return;
         }
 
-        if (_source is not null && position >= 0 && _source.TryGetSegment(position, Math.Min(position, Floor), out var segment, out var start))
+        if (_source is not null && position > 0 && _source.TryGetSegment(position - 1, Math.Min(position, Floor), out var segment, out var start))
         {
             SetSegment(segment, start, position);
             return;
         }
 
-        if (_source is not null && position > 0 && _source.TryGetSegment(position - 1, Math.Min(position, Floor), out segment, out start) && start + segment.Length == position)
+        if (_source is not null && position >= 0 && _source.TryGetSegment(position, Math.Min(position, Floor), out segment, out start))
         {
             SetSegment(segment, start, position);
             return;

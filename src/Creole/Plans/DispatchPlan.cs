@@ -8,6 +8,7 @@ namespace Creole;
 /// Each alternative either has keys, the FIRST keys of its leading primitive, or none.
 /// The candidates for a key are the alternatives whose keys contain it and every alternative with no keys, in their original order.
 /// At the end of the input the candidates are the alternatives with no keys.
+/// Where the input has run out of what it has received, the next item is not known, so the plan fails without running any alternative.
 /// The candidates run exactly as <see cref="OrPlan{TIn, T, TMark}"/> runs its alternatives, each with its mark.
 /// </para>
 /// <para>
@@ -125,6 +126,10 @@ internal sealed class DispatchPlan<TIn, T, TMark> : Plan<TIn, T>
         {
             var key = _read(item);
             steps = (ulong)key < DirectKeys ? _direct[key] : Search(key);
+        }
+        else if (cursor.Starved)
+        {
+            return false;
         }
         else
         {

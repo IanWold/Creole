@@ -33,6 +33,9 @@ internal interface IMark<TSelf>
     /// <summary>
     /// Call after the attempt failed. Returns whether it failed without consuming, and if so puts back the cut flag and every other part the mark saved.
     /// </summary>
+    /// <remarks>
+    /// A starved attempt counts as consumed, so the plan that took the mark fails at once instead of trying another alternative or ending its loop, and nothing is put back.
+    /// </remarks>
     bool FailedEmpty<T>(ref Cursor<T> cursor);
 
     /// <summary>

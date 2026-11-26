@@ -20,6 +20,8 @@ file sealed class SelectUpstream<TIn, TOut>(ICursorSource<TIn> input, Func<TIn, 
 
     public SourceSpan InputStart => _input.InputStart;
 
+    public bool Starved => _input.Starved;
+
     private bool TryGetSegment(long pin, out ReadOnlyMemory<TIn> segment, out long segmentStart)
     {
         try

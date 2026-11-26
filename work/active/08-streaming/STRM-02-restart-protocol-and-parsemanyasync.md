@@ -52,3 +52,4 @@ Async record streams parse one top-level item at a time and restart that item wh
 ## Progress notes
 
 - 2026-10-24 (Not started): FND-10 research found Parlot 2.0.0's `ParseManyAsync` uses a restart protocol close to Creole's Starved retry (note, finding 23). Read it before designing. Next: unchanged.
+- 2026-11-25 (Not started): STRM-01 is done. The restart clears `StreamBuffer.Starved`, which has only a private setter. Once a starving source exists, docs/engines/cursor.md and docs/concepts/custom-scanners.md should say that where streamed input runs out, `TryPeek`, `IsAtEnd` and an empty `Available` look like the end, and the item is restarted. Dispatch fails on a starved look at the next item, even where trying alternatives in order would have succeeded first with one that reads nothing; at an item's end that means waiting for data past it, so check it against request-and-response protocols. Next: unchanged.

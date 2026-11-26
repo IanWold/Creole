@@ -20,6 +20,8 @@ file sealed class WhereUpstream<T>(ICursorSource<T> input, Func<T, bool> predica
 
     public SourceSpan InputStart => _input.InputStart;
 
+    public bool Starved => _input.Starved;
+
     private bool TryGetSegment(long pin, out ReadOnlyMemory<T> segment, out long segmentStart)
     {
         try

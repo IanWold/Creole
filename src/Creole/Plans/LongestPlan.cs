@@ -14,6 +14,7 @@ namespace Creole;
 /// Each alternative starts from the parts the mark saved, as if it alone had run.
 /// When the mark saves more than the position and the cut flag, the plan runs the winner again from the furthest failure it started with, so the winner's diagnostics and state are those it leaves when it runs alone.
 /// It does so whenever another alternative ran after the winner, and in a run with a failure log whenever there are several alternatives.
+/// An alternative that starves fails the plan at once, without rewinding or trying the alternatives after it.
 /// </remarks>
 internal sealed class LongestPlan<TIn, T, TMark>(Plan<TIn, T>[] alternatives) : Plan<TIn, T>
     where TMark : struct, IMark<TMark>
@@ -37,7 +38,17 @@ internal sealed class LongestPlan<TIn, T, TMark>(Plan<TIn, T>[] alternatives) : 
             cursor.Cut = false;
             T value = default!;
 
-            if (alternatives[i].TryParse(ref cursor, ref value) && cursor.Position > bestEnd)
+            var ok = alternatives[i].TryParse(ref cursor, ref value);
+
+            if (cursor.Starved)
+            {
+                cursor.Cut = outerCut;
+                cursor.Unpin(floor);
+                cursor.KeepFailures(in failures);
+                return false;
+            }
+
+            if (ok && cursor.Position > bestEnd)
             {
                 bestEnd = cursor.Position;
                 result = value;

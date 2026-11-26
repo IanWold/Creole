@@ -12,6 +12,8 @@ namespace Creole;
 /// </para>
 /// <para>
 /// The scan stops at the end of the input without taking the automaton's end-of-input transition: the paths still reading can only die there, which removes no match.
+/// Where the input runs out of what it has received instead, a path still reading might match further, so the plan fails without choosing a winner or rewinding.
+/// Nor does it run a winner again once an earlier read has starved, because the winner's own choices would then fail where the automaton matched.
 /// When nothing matches, the interpreter's <see cref="LongestPlan{TIn, T, TMark}"/> runs instead, so a failure never comes from the tables.
 /// It also runs when the winner, run again, does not match the input the automaton gave it, which would mean the automaton is wrong; Debug builds assert instead.
 /// A match records no failure, as the interpreter's plan records none once it has a winner; running the winner again puts the furthest failure back afterwards.
@@ -79,6 +81,12 @@ internal sealed class DfaLongestPlan<T>(CommitAutomaton automaton, Plan<char, T>
 
             if (available.IsEmpty)
             {
+                if (cursor.Starved)
+                {
+                    cursor.Unpin(floor);
+                    return false;
+                }
+
                 break;
             }
 
@@ -128,6 +136,12 @@ internal sealed class DfaLongestPlan<T>(CommitAutomaton automaton, Plan<char, T>
             result = value(ref cursor, start);
             cursor.Unpin(floor);
             return true;
+        }
+
+        if (cursor.Starved)
+        {
+            cursor.Unpin(floor);
+            return false;
         }
 
         var rerun = Rerun(ref cursor, winner, start, ref result);

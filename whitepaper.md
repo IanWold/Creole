@@ -255,7 +255,7 @@ Every parse step ends in one of four outcomes:
 
 A fifth outcome, **Starved**, exists only in streaming mode and is never visible to combinators (see § Streaming).
 
-**Representation.** These outcomes are a model, not a type. On the hot path a step returns `bool`, and consumption is read from the cursor: a step consumed input if the cursor moved. Starved is a sticky flag on the parse state. `Or`, `Atomic`, `Not`, `Lookahead` and `Recover` check it before acting on a failure, so a starved attempt is never mistaken for an ordinary empty failure.
+**Representation.** These outcomes are a model, not a type. On the hot path a step returns `bool`, and consumption is read from the cursor: a step consumed input if the cursor moved. Starved is a sticky flag on the parse state. Every combinator that acts on a failure checks it first: choices, `Optional`, repetitions, `Expression.Build`, `Longest`, `Atomic`, `Not`, `Lookahead` and `Recover`. So a starved attempt is never mistaken for an ordinary empty failure.
 
 ### Choice and backtracking
 
@@ -942,7 +942,7 @@ Byte sources decode through a `Layer<byte, char>`, so decoding is just another l
 3. If a root read reaches the end of buffered data before the true end of the stream, the attempt ends **Starved**.
 4. The driver awaits more data, rewinds every layer to the bookmark and retries. The rewind undoes mode changes, clears every layer's failure record and resets the state that nodes open and close, such as context frames and saved failures, so a starved attempt leaves none behind. It keeps the pins that the layers and the driver hold ([ADR-0030](work/docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md)).
 
-Starved is not a failure. `Or`, `Atomic`, `Not`, `Lookahead` and `Recover` all treat it as an abort that propagates unchanged, because trying another alternative on incomplete data would produce a wrong parse.
+Starved is not a failure. Every combinator that acts on a failure treats it as an abort that propagates unchanged, because trying another alternative, or ending a repetition, on incomplete data would produce a wrong parse.
 
 **Cost.** Before retrying, the driver at least doubles the buffered data beyond what the failed attempt saw. The total re-parsing work per item is then a geometric series, linear in the item's size. The bookmark is part of each layer's horizon, so `ParseOptions.MaxBufferedItems` also caps how large one item may grow, and the driver stops doubling at it (§ Limits for untrusted input).
 

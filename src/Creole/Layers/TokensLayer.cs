@@ -12,6 +12,7 @@ namespace Creole;
 /// Each step starts by releasing the input below that floor, since a step that starts in a new segment reaches it without the cursor releasing anything.
 /// Each step asks for its item plan when it reaches its item: <c>Layer.Tokens</c> always gives the same one, and <c>Layer.Modal</c> gives the current mode's.
 /// Each step's cursor carries the layer's mode writer, so the layer's grammar changes only channels read below it.
+/// A step whose input starves, wherever it was, produces nothing and reports no failure.
 /// </remarks>
 file sealed class TokensUpstream<TIn, TOut>(
     ICursorSource<TIn> input,
@@ -39,6 +40,8 @@ file sealed class TokensUpstream<TIn, TOut>(
     public SourceSpan InputEnd => _input.InputEnd;
 
     public SourceSpan InputStart => _input.InputStart;
+
+    public bool Starved => _input.Starved;
 
     private LayerFailedException Failed(ref readonly Cursor<TIn> cursor, long position) =>
         new(ParseErrors.Failure(in cursor, _failures, position, _name, _input.SpanOf));
@@ -69,18 +72,34 @@ file sealed class TokensUpstream<TIn, TOut>(
 
             if (_skip is not null && !_skip.TryParse(ref cursor, ref skipped))
             {
+                if (cursor.Starved)
+                {
+                    return false;
+                }
+
                 throw Failed(in cursor, stepStart);
             }
 
             if (cursor.IsAtEnd)
             {
-                _position = cursor.Position;
+                if (!cursor.Starved)
+                {
+                    _position = cursor.Position;
+                }
+
                 return false;
             }
 
             itemStart = cursor.Position;
 
-            if (!_item().TryParse(ref cursor, ref value))
+            var parsed = _item().TryParse(ref cursor, ref value);
+
+            if (cursor.Starved)
+            {
+                return false;
+            }
+
+            if (!parsed)
             {
                 throw Failed(in cursor, itemStart);
             }
