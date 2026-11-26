@@ -66,6 +66,96 @@ error[parser]: expected '(' or end of input
   |   ^ no '(' to close
 ```
 
+## A layout pass
+
+A layer's state can carry what a language's layout means. This pass turns indentation into INDENT and DEDENT tokens, as Python's tokenizer does. Its lexer ends each line with a newline token whose `Width` is the next line's indentation, and the pass keeps the indentation of each open block:
+
+```csharp
+public sealed record IndentLevels(int Width, IndentLevels? Enclosing)
+{
+    private static readonly Token _dedent = new(TokenKind.Dedent, ReadOnlyMemory<char>.Empty);
+
+    private static readonly Token _inconsistentDedent = new(TokenKind.Error, ReadOnlyMemory<char>.Empty);
+
+    private static readonly Token _indent = new(TokenKind.Indent, ReadOnlyMemory<char>.Empty);
+
+    public static IndentLevels Root { get; } = new(0, null);
+
+    public (Emit<Token> Tokens, IndentLevels Levels) Adjust(Token newline)
+    {
+        if (newline.Width == Width)
+        {
+            return (newline, this);
+        }
+
+        if (newline.Width > Width)
+        {
+            return ([newline, Emit.Synthetic(_indent)], new IndentLevels(newline.Width, this));
+        }
+
+        List<Emitted<Token>> tokens = [newline];
+        var levels = this;
+
+        while (newline.Width < levels.Width)
+        {
+            tokens.Add(Emit.Synthetic(_dedent));
+            levels = levels.Enclosing!;
+        }
+
+        if (newline.Width != levels.Width)
+        {
+            tokens.Add(Emit.Synthetic(_inconsistentDedent));
+        }
+
+        return ([.. tokens], levels);
+    }
+
+    public Emit<Token> CloseAll()
+    {
+        List<Emitted<Token>> dedents = [];
+
+        for (var levels = this; levels.Enclosing is not null; levels = levels.Enclosing)
+        {
+            dedents.Add(Emit.Synthetic(_dedent));
+        }
+
+        return [.. dedents];
+    }
+}
+
+public sealed class Layout : TokenGrammar<Token, TokenKind>
+{
+    public static readonly Layer<Token, Token> Pass = Layer.Transduce(
+        initialState: IndentLevels.Root,
+        step: OneOf(
+            Kind(TokenKind.Newline).Scan<IndentLevels, Emit<Token>>(static (newline, levels, _) => levels.Adjust(newline)),
+            Any.Select(static token => Emit.One(token))
+        ),
+        atEnd: static levels => levels.CloseAll()
+    );
+}
+```
+
+Each step either reads a newline and emits it with the INDENT or DEDENTs it stands for, or passes another token on. At the end of the input, `atEnd` closes the blocks still open. The state is immutable, so a parser above the pass can backtrack freely. A line indented less than the line before, but not as far back as any open block, gets an error token after its DEDENTs, which the parser rejects.
+
+INDENT and DEDENT are [synthetic](layers.md#a-steps-outputs-emitt), so each is zero-width at the start of the first token on the next line, and the DEDENTs `atEnd` adds are zero-width at the end of the input. An error at a DEDENT shows on the dedented line, or at the end of the input. Here the block after `if b:` is missing:
+
+```text
+while a:
+    if b:
+c = 1
+```
+
+```text
+error[parser]: expected indent
+ --> 3:1
+  |
+3 | c = 1
+  | ^ unexpected dedent
+```
+
+The whole language, with its lexer and parser, is the sample [Creole.Samples.Indentation](../../samples/Creole.Samples.Indentation/).
+
 ## Backtracking puts the state back
 
 Wherever a parse goes back, the state goes back with it, to what it was at that point:

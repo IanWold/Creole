@@ -8,7 +8,10 @@ namespace Creole.Benchmarks;
 /// </summary>
 public static class CreoleTokenJson
 {
-    private static readonly Parser<JsonToken, Unit> _value = Rec(() => OneOf(
+    /// <summary>
+    /// One JSON value, which a JSON-lines stream parses one at a time.
+    /// </summary>
+    public static readonly Parser<JsonToken, Unit> Value = Rec(() => OneOf(
         Kind(JsonKind.StringLiteral).Ignore(),
         Kind(JsonKind.Number).Ignore(),
         Kind(JsonKind.True).Ignore(),
@@ -19,13 +22,13 @@ public static class CreoleTokenJson
     ));
 
     private static readonly Parser<JsonToken, Unit> _valueArray =
-        _value.SepBy(Kind(JsonKind.Comma)).Between(Kind(JsonKind.LBracket), Kind(JsonKind.RBracket)).Ignore();
+        Value.SepBy(Kind(JsonKind.Comma)).Between(Kind(JsonKind.LBracket), Kind(JsonKind.RBracket)).Ignore();
 
     private static readonly Parser<JsonToken, Unit> _valueObject =
-        Seq(Kind(JsonKind.StringLiteral), Kind(JsonKind.Colon), _value)
+        Seq(Kind(JsonKind.StringLiteral), Kind(JsonKind.Colon), Value)
         .SepBy(Kind(JsonKind.Comma))
         .Between(Kind(JsonKind.LBrace), Kind(JsonKind.RBrace))
         .Ignore();
 
-    public static readonly Parser<JsonToken, Unit> Document = _value.Before(End);
+    public static readonly Parser<JsonToken, Unit> Document = Value.Before(End);
 }

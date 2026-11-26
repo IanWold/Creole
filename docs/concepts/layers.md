@@ -100,7 +100,7 @@ error[parser]: expected statement
   |   ^ unexpected <dedent>
 ```
 
-In every layer above, an output is synthetic exactly when its span is zero-width ([Source spans § Synthetic items](spans.md#synthetic-items)).
+In every layer above, an output is synthetic exactly when its span is zero-width ([Source spans § Synthetic items](spans.md#synthetic-items)). A pass that emits INDENT and DEDENT from the indentation of each line keeps the open blocks in its [state](layer-state.md#a-layout-pass).
 
 - `atEnd` is optional. It receives the layer's [state](layer-state.md), which starts as `initialState` and which `step` can read and change, as the last step left it.
 - A `step` that succeeds without consuming input would never let the layer reach the end of its input, so it throws `GrammarException`. Outputs that stand for no input are synthetic outputs of a step that consumes some, or come from `atEnd`.

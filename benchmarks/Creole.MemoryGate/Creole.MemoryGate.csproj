@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Creole\Creole.csproj" />
+    <!-- The JSON-lines input uses the benchmarks' token lexer and parser. -->
+    <ProjectReference Include="..\Creole.Benchmarks\Creole.Benchmarks.csproj" />
+    <!-- Example B, the three-layer worked example. -->
+    <ProjectReference Include="..\..\samples\Creole.Samples.Indentation\Creole.Samples.Indentation.csproj" />
+  </ItemGroup>
+
+</Project>
