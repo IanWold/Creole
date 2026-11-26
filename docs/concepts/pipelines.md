@@ -144,6 +144,26 @@ var result = settings.Parse(file);
 - The stream is yours: a parse leaves it open. Enumerate `ParseMany` over a stream once, since a second enumeration reads on from wherever the stream is, counting offsets from 0 again.
 - A read blocks the thread that called `Parse` until bytes arrive. A `PipeReader` becomes such a stream with `AsStream()`.
 
+## Huge documents from a pipe
+
+A document that arrives through a `PipeReader`, such as a request body, may be too large to read into memory first. Parse it as a stream on a thread of its own:
+
+```csharp
+var result = await Task.Factory.StartNew(
+    () => settings.Parse(reader.AsStream()),
+    CancellationToken.None,
+    TaskCreationOptions.LongRunning,
+    TaskScheduler.Default);
+```
+
+[PipeTests.cs](../../tests/Creole.Tests/PipeTests.cs) runs this with a document written to a `Pipe` in parts that split its characters.
+
+- **It costs one thread.** Parsing is synchronous: each layer pulls from the one below, down to the stream, whose `Read` blocks until the pipe has bytes. So the parse holds its thread from start to end, including while it waits. Creole does not make its combinators async, because a state machine for every call costs more than a parse step ([whitepaper § Why not async combinators](../../whitepaper.md#why-not-async-combinators)).
+- **Start a thread, not a `Task.Run`.** `Task.Run` borrows a thread-pool thread and blocks it for the whole parse. Several such parses at once can starve the pool, including the code that writes to the pipe. `TaskCreationOptions.LongRunning` starts a thread of its own.
+- **Cancel the read.** The parse takes no cancellation token. `reader.CancelPendingRead()` makes the blocked read throw `OperationCanceledException`, which ends the parse, so register it with your token: `using var registration = cancellationToken.Register(reader.CancelPendingRead);`. A writer that completes with an exception, as `writer.Complete(exception)` does, ends the parse with that exception. A parse busy with bytes it already has stops at its next read.
+- **Deep nesting needs stack.** A parse that runs short of its thread's stack fails ([Options](parsing.md#options)), and `LongRunning` cannot choose the stack size. For deeply nested documents, start a `Thread` with a larger `maxStackSize` yourself, and raise `MaxDepth` to match. In the tests, 10,000 levels of parentheses fail on a 512 KiB stack and parse on a 256 MiB one.
+- **What the grammar keeps is yours.** The layers keep only what they may still go back to ([Chaining layers](layers.md#chaining-layers-then)). A value built from every part of the document still grows with it: a list of a million records holds a million records. A grammar for a document too large to hold skips what it does not need, as `SkipMany` does.
+
 ## Input in memory
 
 Over a string or memory, `Parse` and `ParseMany` copy none of their input. The first layer reads the string or memory it was given, so slices a lexer takes, such as `Slice` values in tokens, are views of it, and a failed result refers to the same text to render it. If the input is a buffer you reuse, finish with the slices and render the errors before you reuse it.
@@ -156,4 +176,4 @@ As a parser's `Parse` does, a pipeline's `Parse` over a string or memory runs wi
 
 ## Exceptions
 
-`Parse` and `ParseMany` throw `GrammarException` if the pipeline is null, if a grammar in it is not valid, which is found when it first runs, or if a layer or the parser reads its [state](layer-state.md#types) as a type it is not. They throw `ArgumentNullException` for a null string, reader or stream. Exceptions from the reader or stream, such as an `IOException`, pass through. Exceptions from your own code, such as a `Select` function in a layer or in the parser, pass through.
+`Parse` and `ParseMany` throw `GrammarException` if the pipeline is null, if a grammar in it is not valid, which is found when it first runs, or if a layer or the parser reads its [state](layer-state.md#types) as a type it is not. They throw `ArgumentNullException` for a null string, reader or stream. Exceptions from the reader or stream, such as an `IOException`, or the `OperationCanceledException` of a cancelled read, pass through. Exceptions from your own code, such as a `Select` function in a layer or in the parser, pass through.
