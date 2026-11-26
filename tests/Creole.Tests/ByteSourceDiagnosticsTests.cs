@@ -32,8 +32,36 @@ public class ByteSourceDiagnosticsTests
         .Many()
         .Before(End);
 
+    private static readonly Parser<string, string> _setting = Satisfy(static token => char.IsLetter(token[0])).Named("name")
+        .Before(Token("="))
+        .Then(Satisfy(static token => char.IsDigit(token[0]) || token[0] == '"').Named("value"));
+
+    private static readonly Pipeline<byte, IReadOnlyList<string>> _pipeline = Pipeline.From(_lexer).Then(_settings);
+
+    public static TheoryData<byte[]> FailingSources => new()
+    {
+        InvalidSource(),
+        Source("naïve = 1\r\ngröße = 2€\r\n"),
+        Source("naïve = 1\r\nemoji = \"😀\" 7\r\n"),
+    };
+
+    private static ParseError ErrorOfOneRecordingRun(byte[] bytes)
+    {
+        try
+        {
+            return LayerRun.Error(_lexer, _settings, bytes)!;
+        }
+        catch (LayerFailedException exception)
+        {
+            return exception.Error;
+        }
+    }
+
+    private static byte[] InvalidSource() =>
+        [.. Source("naïve = 1\r\ngrö"), 0xFF, .. Encoding.UTF8.GetBytes("ße = 2\r\n")];
+
     private static string Render(ParseError error, byte[] bytes) =>
-        new Diagnostics([error]).Render(new SourceText(SourceId.Unnamed, "settings.txt", Encoding.UTF8.GetString(bytes.AsSpan(_byteOrderMark.Length))));
+        new Diagnostics([error]).Render(new SourceText(Encoding.UTF8.GetString(bytes.AsSpan(_byteOrderMark.Length)), "settings.txt"));
 
     private static byte[] Source(string text) =>
         [.. _byteOrderMark, .. Encoding.UTF8.GetBytes(text)];
@@ -93,5 +121,55 @@ public class ByteSourceDiagnosticsTests
             """.ReplaceLineEndings("\n"),
             Render(error, bytes)
         );
+    }
+
+    [Fact]
+    public void AByteParseSucceeds() =>
+        Assert.Equal(["1", "\"x\""], Assert.IsType<Parsed<IReadOnlyList<string>>>(_pipeline.Parse(Source("naïve = 1\r\nb = \"x\"\r\n")).Value).Value);
+
+    [Fact]
+    public void AFailedItemOfParseManyOverBytesHoldsTheDecodedText()
+    {
+        var results = Pipeline.From(_lexer).Then(_setting).ParseMany(Source("naïve = 1\r\nemoji = \"😀\" 7\r\n"), source: "settings.txt").ToList();
+
+        Assert.Equal(3, results.Count);
+        Assert.Equal(["1", "\"😀\""], results.Take(2).Select(static result => Assert.IsType<Parsed<string>>(result.Value).Value));
+        Assert.Equal(
+            """
+            error[parser]: expected name
+             --> settings.txt:2:13
+              |
+            2 | emoji = "😀" 7
+              |              ^ unexpected 7
+            """.ReplaceLineEndings("\n"),
+            results[2].Diagnostics.Render()
+        );
+    }
+
+    [Fact]
+    public void BytesWithoutAByteOrderMarkRenderAgainstTheirText() =>
+        Assert.Contains(" --> settings.txt:2:5", _pipeline.Parse(Encoding.UTF8.GetBytes("é = 1\r\nb = =\r\n"), source: "settings.txt").Diagnostics.Render(), StringComparison.Ordinal);
+
+    [Theory]
+    [MemberData(nameof(FailingSources))]
+    public void ParseOverBytesReportsTheErrorOfOneRecordingRunAgainstTheDecodedText(byte[] bytes)
+    {
+        var expected = ErrorOfOneRecordingRun(bytes);
+        var result = _pipeline.Parse(bytes, source: "settings.txt");
+
+        Assert.Equal(expected, Assert.Single(result.Diagnostics));
+        Assert.Equal(Render(expected, bytes), result.Diagnostics.Render());
+    }
+
+    [Fact]
+    public void PipelinesWhoseFirstLayerDoesNotDecodeHoldNoText()
+    {
+        var bytes = Source("naïve = 1\r\nb = =\r\n");
+        var filtered = Pipeline.From(Layer.Where<byte>(static _ => true).Then(_lexer)).Then(_settings).Parse(bytes);
+        var counted = Pipeline.From(Layer.Where<byte>(static value => value != 0)).Then(Grammar<byte>.Token(0x41).Many().Before(Grammar<byte>.End)).Parse(new byte[] { 0x41, 0x42 });
+
+        Assert.Equal(Assert.Single(filtered.Diagnostics).ToString(), filtered.Diagnostics.Render());
+        Assert.Equal(Assert.Single(counted.Diagnostics).ToString(), counted.Diagnostics.Render());
+        Assert.Contains(" --> ", _pipeline.Parse(bytes).Diagnostics.Render(), StringComparison.Ordinal);
     }
 }

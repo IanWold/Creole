@@ -28,6 +28,7 @@ namespace Creole;
 /// <para>
 /// <see cref="Release"/> returns whole segments below a position to the pool, which may hand their arrays to anything else.
 /// Nothing may read a released position afterwards, so the layer above first copies out what its pending errors need.
+/// <see cref="Dispose"/> returns every segment when the parse ends, and disposes the upstream, which disposes the buffers below it.
 /// </para>
 /// <para>
 /// The buffer also keeps a stack of the positions its reader's span combinators hold (<see cref="HoldSpan"/>).
@@ -195,6 +196,22 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
         return new PackedSpan(segment.Wide.Count - 1, WideLength);
     }
 
+    private void ReturnSegments(int count)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            _pool.Return(_segments[i].Items, RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+            ArrayPool<PackedSlot>.Shared.Return(_segments[i].Slots, clearArray: true);
+
+            if (_segments[i].Chars is { } chars)
+            {
+                ArrayPool<PackedSpan>.Shared.Return(chars);
+            }
+        }
+
+        _segments.RemoveRange(0, count);
+    }
+
     private SourceSpan SpanAt(long position)
     {
         var (index, offset) = Locate(position);
@@ -277,8 +294,23 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
         Filled++;
     }
 
+    /// <summary>
+    /// Returns every segment the buffer holds to the pool, and disposes the upstream, so the buffers below return theirs.
+    /// </summary>
+    /// <remarks>
+    /// Nothing may read the buffer afterwards. A parse calls this when it ends, however it ends.
+    /// </remarks>
+    public void Dispose()
+    {
+        ReturnSegments(_segments.Count);
+        _upstream.Dispose();
+    }
+
     /// <inheritdoc/>
     public void DropSpan() => _heldCount--;
+
+    /// <inheritdoc/>
+    public void ForgetFailures() => _upstream.ForgetFailures();
 
     /// <inheritdoc/>
     public void HoldSpan(long position)
@@ -330,18 +362,7 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
         failures?.Preserve(this, Start, end);
         CopyHeldSpans(Start, end);
 
-        for (var i = 0; i < count; i++)
-        {
-            _pool.Return(_segments[i].Items, RuntimeHelpers.IsReferenceOrContainsReferences<T>());
-            ArrayPool<PackedSlot>.Shared.Return(_segments[i].Slots, clearArray: true);
-
-            if (_segments[i].Chars is { } chars)
-            {
-                ArrayPool<PackedSpan>.Shared.Return(chars);
-            }
-        }
-
-        _segments.RemoveRange(0, count);
+        ReturnSegments(count);
         _released += count;
     }
 

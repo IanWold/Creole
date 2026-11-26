@@ -17,6 +17,11 @@ internal sealed class ArrayUpstream<T>(T[] items, int itemsPerStep = 1) : IUpstr
     public SourceSpan InputStart => new(SourceId.Unnamed, 0, 0);
 
     /// <summary>
+    /// Whether the buffer above has disposed this upstream.
+    /// </summary>
+    public bool Disposed { get; private set; }
+
+    /// <summary>
     /// How many times each item has been produced.
     /// </summary>
     public int[] Produced { get; } = new int[items.Length];
@@ -25,6 +30,8 @@ internal sealed class ArrayUpstream<T>(T[] items, int itemsPerStep = 1) : IUpstr
     /// How many steps have run.
     /// </summary>
     public int Steps { get; private set; }
+
+    public void Dispose() => Disposed = true;
 
     public bool TryStep(StreamBuffer<T> buffer)
     {

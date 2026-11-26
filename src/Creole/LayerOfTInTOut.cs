@@ -11,7 +11,7 @@ namespace Creole;
 /// <para>
 /// A layer is data, as a parser is: building one runs nothing.
 /// Layers are immutable, so a layer can be shared between threads and used in any number of chains.
-/// Make layers with the methods of <see cref="Layer"/>, and chain them with <see cref="Then{TNext}"/>.
+/// Make layers with the methods of <see cref="Layer"/>, and chain them with <see cref="Then{TNext}(Layer{TOut, TNext}, string)"/>.
 /// </para>
 /// <para>
 /// A layer runs in steps, each reading some of its input and producing zero or more items.
@@ -24,16 +24,21 @@ namespace Creole;
 /// </remarks>
 public abstract class Layer<TIn, TOut>
 {
+    /// <summary>
+    /// Whether this layer, or the first layer of this chain, is <see cref="Layer.Utf8"/>, so the input is UTF-8 that decodes to the text a result can hold.
+    /// </summary>
+    internal virtual bool DecodesUtf8 => false;
+
     internal Layer() { }
 
     /// <summary>
     /// Starts a run of this layer over <paramref name="input"/>.
     /// </summary>
-    /// <param name="input">The buffer holding this layer's input, which pulls from the layer below.</param>
+    /// <param name="input">This layer's input: the buffer holding the items of the layer below, which pulls from it, or the root of the source.</param>
     /// <param name="options">The settings for the parse, whose depth limit applies to each step.</param>
     /// <param name="recordFailures">Whether the run keeps a failure log, so that a failed step reports what it expected.</param>
     /// <returns>The upstream that produces this layer's items into the buffer above it.</returns>
-    internal abstract IUpstream<TOut> Open(StreamBuffer<TIn> input, ParseOptions options, bool recordFailures);
+    internal abstract IUpstream<TOut> Open(ICursorSource<TIn> input, ParseOptions options, bool recordFailures);
 
     /// <summary>
     /// A layer that runs this layer and then <paramref name="next"/> over its items.
@@ -62,4 +67,18 @@ public abstract class Layer<TIn, TOut>
                 ? (Layer<TIn, TNext>)(object)this
                 : new ComposedLayer<TIn, TOut, TNext>(this, next);
     }
+
+    /// <summary>
+    /// A pipeline that runs this layer and then <paramref name="parser"/> over its items, such as a lexer and a parser over its tokens.
+    /// </summary>
+    /// <typeparam name="TValue">The type of <paramref name="parser"/>'s value.</typeparam>
+    /// <param name="parser">The parser to run over this layer's items.</param>
+    /// <param name="parserExpression">Filled in by the compiler with the expression for <paramref name="parser"/>.</param>
+    /// <returns>A pipeline from this layer's input to <paramref name="parser"/>'s value, which the <c>Parse</c> methods of <see cref="Pipeline"/> run.</returns>
+    /// <exception cref="GrammarException"><paramref name="parser"/> is null.</exception>
+    /// <remarks>
+    /// Between this layer and <paramref name="parser"/> sits a buffer of this layer's items, so <paramref name="parser"/> can rewind over them without this layer running again.
+    /// </remarks>
+    public Pipeline<TIn, TValue> Then<TValue>(Parser<TOut, TValue> parser, [CallerArgumentExpression(nameof(parser))] string parserExpression = "") =>
+        new LayeredPipeline<TIn, TOut, TValue>(this, Guard.NotNull(parser, parserExpression));
 }

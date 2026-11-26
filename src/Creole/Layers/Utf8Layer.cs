@@ -17,10 +17,10 @@ namespace Creole;
 /// Where its input starts and ends keep their root offsets, at character 0 and at the number of characters decoded.
 /// </para>
 /// </remarks>
-file sealed class Utf8Upstream(StreamBuffer<byte> input) : IUpstream<char>
+file sealed class Utf8Upstream(ICursorSource<byte> input) : IUpstream<char>
 {
     private long _chars;
-    private readonly StreamBuffer<byte> _input = input;
+    private readonly ICursorSource<byte> _input = input;
     private long _position;
     private long _segmentStart;
 
@@ -75,6 +75,10 @@ file sealed class Utf8Upstream(StreamBuffer<byte> input) : IUpstream<char>
         value = segment.Span[(int)(position - segmentStart)];
         return true;
     }
+
+    public void Dispose() => _input.Dispose();
+
+    public void ForgetFailures() => _input.ForgetFailures();
 
     public bool TryStep(StreamBuffer<char> buffer)
     {
@@ -143,8 +147,10 @@ internal sealed class Utf8Layer : Layer<byte, char>
     /// </summary>
     public const string Name = "decoder";
 
+    internal override bool DecodesUtf8 => true;
+
     public static Utf8Layer Instance { get; } = new();
 
-    internal override IUpstream<char> Open(StreamBuffer<byte> input, ParseOptions options, bool recordFailures) =>
+    internal override IUpstream<char> Open(ICursorSource<byte> input, ParseOptions options, bool recordFailures) =>
         new Utf8Upstream(input);
 }

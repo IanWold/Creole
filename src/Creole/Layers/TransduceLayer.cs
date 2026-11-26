@@ -12,7 +12,7 @@ namespace Creole;
 /// Each step starts by releasing the input below that floor, since a step that starts in a new segment reaches it without the cursor releasing anything.
 /// </remarks>
 file sealed class TransduceUpstream<TIn, TOut, TState>(
-    StreamBuffer<TIn> input,
+    ICursorSource<TIn> input,
     Plan<TIn, Emit<TOut>> step,
     InitialState initialState,
     Func<TState, Emit<TOut>>? atEnd,
@@ -26,7 +26,7 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
     private bool _ended;
     private readonly FailureLog<TIn>? _failures = failures;
     private readonly InitialState _initialState = initialState;
-    private readonly StreamBuffer<TIn> _input = input;
+    private readonly ICursorSource<TIn> _input = input;
     private readonly int _maxDepth = maxDepth;
     private readonly string _name = name;
     private long _position;
@@ -91,6 +91,14 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
 
     private LayerFailedException Failed(ref readonly Cursor<TIn> cursor, long position) =>
         new(ParseErrors.Failure(in cursor, _failures, position, _name, _input.SpanOf));
+
+    public void Dispose() => _input.Dispose();
+
+    public void ForgetFailures()
+    {
+        _failures?.ForgetFailure();
+        _input.ForgetFailures();
+    }
 
     public bool TryStep(StreamBuffer<TOut> buffer)
     {
@@ -162,7 +170,7 @@ internal sealed class TransduceLayer<TIn, TOut, TState>(TState initialState, Par
 
     public Parser<TIn, Emit<TOut>> Step { get; } = step;
 
-    internal override IUpstream<TOut> Open(StreamBuffer<TIn> input, ParseOptions options, bool recordFailures) =>
+    internal override IUpstream<TOut> Open(ICursorSource<TIn> input, ParseOptions options, bool recordFailures) =>
         new TransduceUpstream<TIn, TOut, TState>(
             input,
             PlanCache.Get(Step),

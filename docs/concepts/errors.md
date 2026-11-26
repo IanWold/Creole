@@ -153,10 +153,10 @@ The reasons are in [ADR-0002](../../work/docs/decisions/0002-parseresult-as-a-pl
 
 `Diagnostics` is an immutable, ordered collection of `ParseError`. It implements `IReadOnlyList<ParseError>`.
 
-- Errors are ordered by source, then start offset, then end offset. Errors with equal spans keep the order they were given in. Sources are ordered as their `SourceRegistry` issued them, with `SourceId.Unnamed` first.
+- Errors are ordered by source, then start offset, then end offset. Errors with equal spans keep the order they were given in. Errors in `SourceId.Unnamed`, the source of every parse, come first.
 - `Diagnostics.Empty` has no errors.
 - `new Diagnostics(errors)` sorts `errors`. It throws `ArgumentException` if one is null.
-- A collection can also hold the text of the sources its errors point into, so that `Render()` can show the errors against it. The errors from `Parse` over text hold that text; those from a token parse hold none. A collection made with `new Diagnostics(errors)` holds none.
+- A collection can also hold the text of the sources its errors point into, so that `Render()` can show the errors against it. The errors from `Parse` over text, whether a parser's or a [pipeline's](pipelines.md), hold that text; those from a token parse hold none. A collection made with `new Diagnostics(errors)` holds none.
 - Two collections are equal when they hold equal errors in the same order, whatever source texts they hold.
 
 ### Rendering against the source
@@ -164,11 +164,8 @@ The reasons are in [ADR-0002](../../work/docs/decisions/0002-parseresult-as-a-pl
 `Render(sources)` shows each error against the line it points into, in the format of the whitepaper's [§ The error model](../../whitepaper.md#the-error-model). Pass a `SourceText` for every source the errors point into. `Render(sources)` uses only the texts it is given, not any the collection holds:
 
 ```csharp
-var sources = new SourceRegistry();
-var config = sources.Add("config.json");
-
-// diagnostics: the errors from parsing text, with spans that point into config.
-string report = diagnostics.Render(new SourceText(config, sources.GetName(config), text));
+// diagnostics: the errors from parsing text.
+string report = diagnostics.Render(new SourceText(text, "config.json"));
 ```
 
 ```text
@@ -183,18 +180,15 @@ error[parser]: expected ',' or '}'
 - **Headline.** `error[layer]:` and what was expected. The carets are labelled with what was found. When nothing was expected, the headline says what was found and the carets have no label. A `CustomMessage` is shown as its text.
 - **Location.** ` --> name:line:column`, or ` --> line:column` for a source with no name. Lines and columns start at 1, and columns count Unicode scalar values, as [`LineMap`](spans.md) does.
 - **Notes.** One `= note:` line per context line, innermost first, ending with where the construct started, as `starting at line:column`. The start may lie in another source, such as the file an embedded script sits in. An error with many context lines shows only the innermost and outermost ones ([Limits on what is shown](#limits-on-what-is-shown)).
-- **Order.** Errors come in span order, so they are grouped by source, in the order the `SourceRegistry` issued the ids, with `SourceId.Unnamed` first. A blank line separates errors, and lines are joined by `\n`.
+- **Order.** Errors come in span order, so they are grouped by source, with `SourceId.Unnamed` first. A blank line separates errors, and lines are joined by `\n`.
 
 `Render()`, with no arguments, writes the same as `Render(sources)` when the collection holds a text for every source its errors and their context lines point into, and each text is long enough for its spans. Otherwise it writes [one line per error](#one-line-per-error). It never throws. The errors from `Parse` over text hold that text, so `result.Diagnostics.Render()` shows them against it.
 
 #### `SourceText`
 
-A `SourceText` holds a source's full text with the id and name to show it under. It builds the source's `LineMap` on first use and keeps it, so many errors in one source share it.
+A `SourceText` holds a source's full text with the name to show it under. It builds the source's `LineMap` on first use and keeps it, so many errors in one source share it.
 
-| Constructor | Use |
-| --- | --- |
-| `new SourceText(text, name)` | A `string` source with no registry id (`SourceId.Unnamed`). `name` may be omitted or null. |
-| `new SourceText(id, name, text)` | A source with an id from a `SourceRegistry`, or `SourceId.Unnamed`. `text` is a `string` or a `ReadOnlyMemory<char>`. `name` is usually `registry.GetName(id)`. |
+`new SourceText(text, name)` takes the text as a `string` or a `ReadOnlyMemory<char>`, and a name, which may be omitted or null. Its `Id` is `SourceId.Unnamed`, the source every parse reads from.
 
 `Text` is a `ReadOnlyMemory<char>` over the text as given. Nothing is copied. If you change memory after wrapping it, rendering shows the new contents, so render before you reuse a buffer.
 

@@ -2,7 +2,7 @@
 
 A layer turns a stream of one item type into a stream of another, such as characters into tokens, or tokens into tokens with INDENT and DEDENT added. A `Layer<TIn, TOut>` is data, as a parser is: building one runs nothing, and one layer can be shared between threads and used in any number of chains. The design is in the [whitepaper's § Layers, streams and pipelines](../../whitepaper.md#layers-streams-and-pipelines).
 
-This version builds and chains layers, but has no public way to run them yet.
+To run layers, end them in a parser and parse with the [pipeline](pipelines.md) that makes: `Pipeline.From(lexer).Then(parser).Parse(text)`.
 
 ## Making layers
 
@@ -99,7 +99,7 @@ Layer<char, int> lengths = lexer.Then(Layer.Select<string, int>(static token => 
 
 ## Decoding bytes: `Layer.Utf8`
 
-`Layer.Utf8()` is a `Layer<byte, char>` that decodes UTF-8. Chain a lexer over characters after it to read bytes:
+`Layer.Utf8()` is a `Layer<byte, char>` that decodes UTF-8. Chain a lexer over characters after it to read bytes, and run it on bytes in memory with a [pipeline](pipelines.md#bytes-in-memory):
 
 ```csharp
 Layer<byte, string> words = Layer.Utf8().Then(Layer.Tokens(Letter.AtLeastOnce().Text(), skip: Whitespace.SkipMany()));

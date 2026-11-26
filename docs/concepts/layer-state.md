@@ -19,7 +19,7 @@ A grammar can keep a value as it parses and decide from it later, such as how de
 | `Layer.Transduce(initialState, step, atEnd)` | `initialState` |
 | `Layer.Tokens(initialState, item, skip)` | `initialState` |
 | `Layer.Tokens(item)` and `Layer.Tokens(item, skip)` | no state, until the grammar sets one |
-| A parser run with `Parse` | no state, so the grammar sets its own at its root: `SetState(0).Then(Root)` |
+| A parser run with `Parse`, alone or at the end of a [pipeline](pipelines.md) | no state, so the grammar sets its own at its root: `SetState(0).Then(Root)`. Under `ParseMany`, each item starts with no state |
 
 A layer runs in steps, and each step starts with the state the step before left, so a lexer can carry what it has seen from one token to the next. `skip` and `item` share it. `atEnd` receives the state the last step left. A `SetState` at the start of a layer's `item` would run on every step, so a layer that needs a state to start with takes an `initialState` instead.
 
@@ -85,7 +85,7 @@ The state should be immutable: a value type, a record, or an immutable collectio
 
 `GetState<TState>()` reads the state when it is a `TState`: of that type, or of a type derived from it. A state set to null reads as null when `TState` allows null, such as `string?` or `int?`. `Scan` reads the state the same way. A layer given an `initialState` also checks, at the end of each step, that the state is still of `initialState`'s type, because later steps and `atEnd` read it as one.
 
-Anything else is a mistake in the grammar, not in the input, so the parse throws `GrammarException` rather than returning an error. The message names the layer: `parser` for a parser run on its own, otherwise the layer's name.
+Anything else is a mistake in the grammar, not in the input, so the parse throws `GrammarException` rather than returning an error. The message names the layer: `parser` for a parser, whether run on its own or at the end of a pipeline, and otherwise the layer's name.
 
 | Mistake | Message |
 | --- | --- |

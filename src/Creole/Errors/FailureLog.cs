@@ -265,6 +265,26 @@ internal sealed partial class FailureLog<T>
     public void DropStart() => _heldCount--;
 
     /// <summary>
+    /// Forgets the furthest failure, leaving none, as each item of a <c>ParseMany</c> starts.
+    /// </summary>
+    /// <remarks>
+    /// Diagnostics, and saves held by enclosing constructs, are untouched.
+    /// </remarks>
+    public void ForgetFailure()
+    {
+        Position = -1;
+        _start = _protected;
+        _count = _protected;
+        _message = null;
+        _chain = null;
+        _end = -1;
+        _endSpan = null;
+        _at = null;
+        _context = -1;
+        _generation++;
+    }
+
+    /// <summary>
     /// Enters a context with <paramref name="text"/> whose parser starts at <paramref name="start"/>.
     /// </summary>
     public void Enter(string text, long start)

@@ -123,7 +123,7 @@ public static class Parsing
     private static ParseResult<TOut> Run<TOut>(Parser<char, TOut> parser, ReadOnlyMemory<char> input, string? source, ParseOptions options) =>
         TryRun(parser, input, options, out var value, out var error)
         ? new Parsed<TOut>(value)
-        : new Failed(new Diagnostics([error], new SourceText(SourceId.Unnamed, source, input)));
+        : new Failed(new Diagnostics([error], new SourceText(input, source)));
 
     private static SourceSpan SpanOf(long start, long end) =>
         new(SourceId.Unnamed, start, end);

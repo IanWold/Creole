@@ -6,9 +6,9 @@ namespace Creole;
 /// <remarks>
 /// It reads its input without a cursor, so it releases the input itself: on reaching a new segment, it releases what lies below the input item of the oldest output still held.
 /// </remarks>
-file sealed class WhereUpstream<T>(StreamBuffer<T> input, Func<T, bool> predicate) : IUpstream<T>
+file sealed class WhereUpstream<T>(ICursorSource<T> input, Func<T, bool> predicate) : IUpstream<T>
 {
-    private readonly StreamBuffer<T> _input = input;
+    private readonly ICursorSource<T> _input = input;
     private long _position;
     private readonly Func<T, bool> _predicate = predicate;
     private long _segmentStart;
@@ -16,6 +16,10 @@ file sealed class WhereUpstream<T>(StreamBuffer<T> input, Func<T, bool> predicat
     public SourceSpan InputEnd => _input.InputEnd;
 
     public SourceSpan InputStart => _input.InputStart;
+
+    public void Dispose() => _input.Dispose();
+
+    public void ForgetFailures() => _input.ForgetFailures();
 
     public bool TryStep(StreamBuffer<T> buffer)
     {
@@ -50,6 +54,6 @@ internal sealed class WhereLayer<T>(Func<T, bool> predicate) : Layer<T, T>
 {
     public Func<T, bool> Predicate { get; } = predicate;
 
-    internal override IUpstream<T> Open(StreamBuffer<T> input, ParseOptions options, bool recordFailures) =>
+    internal override IUpstream<T> Open(ICursorSource<T> input, ParseOptions options, bool recordFailures) =>
         new WhereUpstream<T>(input, Predicate);
 }

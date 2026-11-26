@@ -6,9 +6,9 @@ namespace Creole;
 /// <remarks>
 /// It reads its input without a cursor, so it releases the input itself: on reaching a new segment, it releases what lies below the input item of the oldest output still held.
 /// </remarks>
-file sealed class SelectUpstream<TIn, TOut>(StreamBuffer<TIn> input, Func<TIn, TOut> selector) : IUpstream<TOut>
+file sealed class SelectUpstream<TIn, TOut>(ICursorSource<TIn> input, Func<TIn, TOut> selector) : IUpstream<TOut>
 {
-    private readonly StreamBuffer<TIn> _input = input;
+    private readonly ICursorSource<TIn> _input = input;
     private long _position;
     private long _segmentStart;
     private readonly Func<TIn, TOut> _selector = selector;
@@ -16,6 +16,10 @@ file sealed class SelectUpstream<TIn, TOut>(StreamBuffer<TIn> input, Func<TIn, T
     public SourceSpan InputEnd => _input.InputEnd;
 
     public SourceSpan InputStart => _input.InputStart;
+
+    public void Dispose() => _input.Dispose();
+
+    public void ForgetFailures() => _input.ForgetFailures();
 
     public bool TryStep(StreamBuffer<TOut> buffer)
     {
@@ -46,6 +50,6 @@ internal sealed class SelectLayer<TIn, TOut>(Func<TIn, TOut> selector) : Layer<T
 {
     public Func<TIn, TOut> Selector { get; } = selector;
 
-    internal override IUpstream<TOut> Open(StreamBuffer<TIn> input, ParseOptions options, bool recordFailures) =>
+    internal override IUpstream<TOut> Open(ICursorSource<TIn> input, ParseOptions options, bool recordFailures) =>
         new SelectUpstream<TIn, TOut>(input, Selector);
 }

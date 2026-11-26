@@ -7,7 +7,7 @@ Every item Creole produces, at every layer, has a span: the range of the origina
 A `SourceSpan` is a source id and a half-open range of offsets: `Start` is the first unit in the span, and `End` is just past the last.
 
 ```csharp
-var span = new SourceSpan(file, start: 12, end: 16);   // units 12, 13, 14 and 15
+var span = new SourceSpan(SourceId.Unnamed, start: 12, end: 16);   // units 12, 13, 14 and 15
 ```
 
 - Offsets are `long`, because a streamed source can be longer than 2 GB.
@@ -17,22 +17,9 @@ var span = new SourceSpan(file, start: 12, end: 16);   // units 12, 13, 14 and 1
 - The constructor throws `ArgumentOutOfRangeException` if a start offset is negative or an end offset is before its start.
 - Spans are values. Two spans are equal when their source and all four offsets are equal.
 
-## `SourceId` and `SourceRegistry`
+## `SourceId`
 
-A `SourceId` says which source a span points into. A `SourceRegistry` issues ids and records each source's name, such as a file path, for diagnostics to show.
-
-```csharp
-var sources = new SourceRegistry();
-SourceId config = sources.Add("config.json");
-
-sources.GetName(config);              // "config.json"
-sources.GetName(SourceId.Unnamed);    // null
-```
-
-- `SourceId.Unnamed`, which is `default(SourceId)`, is the source of a parse given no name.
-- Adding the same name twice gives two different ids.
-- An id means something only in the registry that issued it. Ids from different registries can compare equal, and `GetName` throws `ArgumentException` for an id it did not issue.
-- A registry is safe to use from several threads.
+A `SourceId` says which source a span points into. Every parse reads from `SourceId.Unnamed`, which is `default(SourceId)`, so the spans it gives carry that id. A parse given a name, as in `Parse(text, source: "config.json")`, shows the name through the [`SourceText`](errors.md#sourcetext) its result holds, not through the id.
 
 ## Spans of a layer's items
 

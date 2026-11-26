@@ -8,10 +8,12 @@ namespace Creole;
 /// </remarks>
 internal sealed class ComposedLayer<TIn, TMiddle, TOut>(Layer<TIn, TMiddle> first, Layer<TMiddle, TOut> second) : Layer<TIn, TOut>
 {
+    internal override bool DecodesUtf8 => First.DecodesUtf8;
+
     public Layer<TIn, TMiddle> First { get; } = first;
 
     public Layer<TMiddle, TOut> Second { get; } = second;
 
-    internal override IUpstream<TOut> Open(StreamBuffer<TIn> input, ParseOptions options, bool recordFailures) =>
+    internal override IUpstream<TOut> Open(ICursorSource<TIn> input, ParseOptions options, bool recordFailures) =>
         Second.Open(new StreamBuffer<TMiddle>(First.Open(input, options, recordFailures)), options, recordFailures);
 }
