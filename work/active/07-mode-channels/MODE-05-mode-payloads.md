@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Mode channels](../../README.md#mode--mode-channels) |
 | Phase | Phase 1 — Layers |
-| Status | Not started |
+| Status | Designing |
 
 ## Summary
 
@@ -32,3 +32,12 @@ Nothing directly.
 ## Whitepaper references
 
 - [§ 3. Mode channels](../../../whitepaper.md#3-mode-channels)
+
+## Artifacts
+
+- [ADR-0043](../../docs/decisions/0043-layer-modal-plans-each-mode-value-and-keeps-the-64-most-recent.md): `Layer.Modal` plans each distinct mode value, data included, keeps the 64 most recently used, and needs no `ModeData<T>()` (Proposed)
+
+## Progress notes
+
+- 2026-11-26 (Design): Started. Payload modes conflict with ADR-0041 point 6, which caches the selector by distinct mode value, so a decision record settles how payload modes are cached, how `ModeData<T>()` finds and types its data, and what analysis marks before any code.
+- 2026-11-26 (Design): Drafted ADR-0043 (Proposed). Spikes on SDK 11.0.100: a union mode compares by case value but boxes, 80 B per comparison; a `Bind` continuation that builds a parser lowers it at each match. The maintainer chose per-value caching with a bound over `ModeData<T>()`. Recommends A2, B2, C2, D1 and E1. Next: the maintainer approves the options, criteria and trials (T1 and the tests), then Build.

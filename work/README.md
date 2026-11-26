@@ -211,7 +211,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-None yet.
+- [MODE-05](active/07-mode-channels/MODE-05-mode-payloads.md) Mode payloads — Design
 
 ### Can start now
 
@@ -225,7 +225,6 @@ These items have all their blockers done:
 - [SPAN-07](active/05-source-spans/SPAN-07-embedded-languages.md) Embedded languages
 - [MODE-03](active/07-mode-channels/MODE-03-rollback-rule.md) Rollback rule
 - [MODE-04](active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md) Multi-layer invalidation cascade
-- [MODE-05](active/07-mode-channels/MODE-05-mode-payloads.md) Mode payloads
 - [STRM-02](active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md) Restart protocol and ParseManyAsync
 - [STRM-04](active/08-streaming/STRM-04-huge-single-documents.md) Huge single documents
 - [ANA-01](active/09-static-analysis/ANA-01-grammar-property-analysis.md) Grammar property analysis
