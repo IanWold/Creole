@@ -51,6 +51,15 @@ internal interface IUpstream<T> : IDisposable
     void ForgetFailures() { }
 
     /// <summary>
+    /// Goes back to the step that produced the item beside <paramref name="slot"/>, so that the next step produces that item again, if this upstream reads <paramref name="channel"/>, whose mode the layer above changed.
+    /// </summary>
+    /// <remarks>
+    /// The default does nothing and returns <see langword="false"/>, for an upstream that reads no mode.
+    /// </remarks>
+    /// <returns>Whether the upstream went back, so that the buffer must discard the item and every item after it.</returns>
+    bool TryGoBack(StreamSlot slot, ModeLink channel) => false;
+
+    /// <summary>
     /// Runs one step, adding its outputs to <paramref name="buffer"/> with <see cref="StreamBuffer{T}.Add"/>.
     /// </summary>
     /// <remarks>

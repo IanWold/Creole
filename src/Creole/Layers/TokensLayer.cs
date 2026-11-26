@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Creole;
 
 /// <summary>
@@ -13,6 +15,8 @@ namespace Creole;
 /// Each step asks for its item plan when it reaches its item: <c>Layer.Tokens</c> always gives the same one, and <c>Layer.Modal</c> gives the current mode's.
 /// Each step's cursor carries the layer's mode writer, so the layer's grammar changes only channels read below it.
 /// A step whose input starves, wherever it was, produces nothing and reports no failure.
+/// When the layer above changes the mode of the channel a <c>Layer.Modal</c> reads, the run goes back to the step that produced the first item it discards.
+/// That step's diagnostics, and those of every step after it, are withdrawn, because those steps run again, and the layer forgets its failures from the step's start on.
 /// </remarks>
 file sealed class TokensUpstream<TIn, TOut>(
     ICursorSource<TIn> input,
@@ -22,7 +26,8 @@ file sealed class TokensUpstream<TIn, TOut>(
     string name,
     int maxDepth,
     FailureLog<TIn>? failures,
-    ModeWriter modes
+    ModeWriter modes,
+    ModeLink? reads
 )
     : IUpstream<TOut>
 {
@@ -34,6 +39,7 @@ file sealed class TokensUpstream<TIn, TOut>(
     private readonly ModeWriter _modes = modes;
     private readonly string _name = name;
     private long _position;
+    private readonly ModeLink? _reads = reads;
     private readonly Plan<TIn, Unit>? _skip = skip;
     private object? _state = initialState?.Held;
 
@@ -52,6 +58,23 @@ file sealed class TokensUpstream<TIn, TOut>(
     {
         _failures?.ForgetFailure();
         _input.ForgetFailures();
+    }
+
+    public bool TryGoBack(StreamSlot slot, ModeLink channel)
+    {
+        if (!ReferenceEquals(channel, _reads))
+        {
+            return false;
+        }
+
+        Debug.Assert(slot.GroupIndex == 0, "A Layer.Modal step produces one item.");
+
+        _position = slot.StepStart;
+        _state = slot.StateBefore;
+        _failures?.WithdrawFromStep(slot.StepStart);
+        _failures?.LowerAt(slot.StepStart);
+
+        return true;
     }
 
     public bool TryStep(StreamBuffer<TOut> buffer)
@@ -154,8 +177,9 @@ internal sealed class TokensLayer<TIn, TOut>(Parser<TIn, TOut> item, Parser<TIn,
     /// </summary>
     /// <remarks>
     /// <c>Layer.Tokens</c> and <c>Layer.Modal</c> both run this way.
+    /// A <c>Layer.Modal</c> passes the channel it reads as <paramref name="reads"/>, so the run goes back when the layer above changes that channel's mode.
     /// </remarks>
-    internal static IUpstream<TOut> Steps(ICursorSource<TIn> input, Func<Plan<TIn, TOut>> item, Parser<TIn, Unit>? skip, InitialState? initialState, string name, PipelineRun run, ModeWriter modes) =>
+    internal static IUpstream<TOut> Steps(ICursorSource<TIn> input, Func<Plan<TIn, TOut>> item, Parser<TIn, Unit>? skip, InitialState? initialState, string name, PipelineRun run, ModeWriter modes, ModeLink? reads) =>
         new TokensUpstream<TIn, TOut>(
             input,
             item,
@@ -165,16 +189,15 @@ internal sealed class TokensLayer<TIn, TOut>(Parser<TIn, TOut> item, Parser<TIn,
             initialState,
             name,
             run.Options.MaxDepth,
-            run.RecordFailures
-                ? new FailureLog<TIn>()
-                : null,
-            modes
+            run.Log<TIn>(),
+            modes,
+            reads
         );
 
     internal override IUpstream<TOut> Open(ICursorSource<TIn> input, PipelineRun run)
     {
         var item = PlanCache.Get(Item);
 
-        return Steps(input, () => item, Skip, InitialState, Name, run, run.Writer(Name));
+        return Steps(input, () => item, Skip, InitialState, Name, run, run.Writer(Name), reads: null);
     }
 }

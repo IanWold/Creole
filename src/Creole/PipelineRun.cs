@@ -20,6 +20,14 @@ internal sealed class PipelineRun(ParseOptions options, bool recordFailures)
     private ModeLink[] _read = [];
 
     /// <summary>
+    /// The failure logs the run's layers keep, in the order the layers open, or null to keep no list of them.
+    /// </summary>
+    /// <remarks>
+    /// A test sets it to read what a layer below the parser recorded.
+    /// </remarks>
+    public List<object>? Logs { get; init; }
+
+    /// <summary>
     /// The settings for the parse, whose depth limit applies to each step.
     /// </summary>
     public ParseOptions Options { get; } = options;
@@ -28,6 +36,23 @@ internal sealed class PipelineRun(ParseOptions options, bool recordFailures)
     /// Whether each layer keeps a failure log, so that a failed step reports what it expected.
     /// </summary>
     public bool RecordFailures { get; } = recordFailures;
+
+    /// <summary>
+    /// A new failure log for a layer that opens in this run, or null if the run records no failures.
+    /// </summary>
+    public FailureLog<T>? Log<T>()
+    {
+        if (!RecordFailures)
+        {
+            return null;
+        }
+
+        var log = new FailureLog<T>();
+
+        Logs?.Add(log);
+
+        return log;
+    }
 
     /// <summary>
     /// Adds <paramref name="channel"/> to the channels read so far, for the layers that open after this one, and returns its link.

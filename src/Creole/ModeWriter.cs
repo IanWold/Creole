@@ -8,6 +8,7 @@ namespace Creole;
 /// Each write appends an entry to the log: where the layer's cursor was, the channel, and its stack before.
 /// A write changes the mode when the top of the stack after it differs from the top before it.
 /// Only a change makes the layer forget its failures past the cursor, because only a change can make the layer below read the next item differently.
+/// A change also discards the items the <c>Layer.Modal</c> reading the channel produced from the cursor on, if the layer reads them directly, so they are read again in the new mode.
 /// </para>
 /// <para>
 /// In a pipeline, a writer holds the links of the channels read below its layer, and changes only those.
@@ -136,15 +137,18 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
         new($"The {_layer} layer pops the last mode of a {channel}. Each PopMode needs a PushMode on the same channel before it.");
 
     /// <summary>
-    /// Returns every channel this writer has changed to its initial mode alone, with an empty log, as a <c>ParseMany</c> item starts.
+    /// Returns every channel this writer has changed to its initial mode alone, with an empty log, as a <c>ParseMany</c> item starts at <paramref name="position"/> of <paramref name="input"/>.
     /// </summary>
-    public void Reset()
+    /// <remarks>
+    /// A channel whose mode that changes discards the items read ahead from <paramref name="position"/> on in the mode the last item left.
+    /// </remarks>
+    public void Reset<T>(ICursorSource<T> input, long position)
     {
         foreach (var link in _below ?? [])
         {
-            if (ReferenceEquals(link.Writer, this))
+            if (ReferenceEquals(link.Writer, this) && link.Reset())
             {
-                link.Reset();
+                input.Discard(position, link);
             }
         }
 
@@ -171,7 +175,7 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
     /// Replaces the stack of <paramref name="link"/> with <paramref name="next"/>, logging the write at <paramref name="cursor"/>'s position.
     /// </summary>
     /// <remarks>
-    /// If the write changes the mode, the layer forgets its failures past the cursor.
+    /// If the write changes the mode, the layer forgets its failures past the cursor, and discards the items read ahead from the cursor on.
     /// </remarks>
     public void Write<T, TMode>(ref Cursor<T> cursor, ModeLink<TMode> link, ModeStack<TMode> next)
     {
@@ -184,6 +188,7 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
         if (changed)
         {
             cursor.Failures?.LowerAt(cursor.Position);
+            cursor.Discard(link);
         }
     }
 }

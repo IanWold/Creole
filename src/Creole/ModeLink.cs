@@ -23,5 +23,6 @@ internal abstract class ModeLink(object channel)
     /// <summary>
     /// Returns the stack to the channel's initial mode alone, as a <c>ParseMany</c> item starts.
     /// </summary>
-    public abstract void Reset();
+    /// <returns>Whether that changed the mode: whether the mode on top differed from the initial mode.</returns>
+    public abstract bool Reset();
 }

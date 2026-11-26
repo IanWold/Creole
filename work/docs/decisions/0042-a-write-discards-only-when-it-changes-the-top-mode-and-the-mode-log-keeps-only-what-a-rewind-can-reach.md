@@ -196,6 +196,7 @@ What would change this:
 - **For MODE-03.** An undo discards and lowers only when it changes the top back. Marks keep absolute log lengths. A rewind never reaches a dropped entry, by the horizon argument under Fork C, and MODE-03's property tests should check that.
 - **For MODE-04.** It gains CRL0008 and ADR-0040 point 7, and lifts point 7's limit by adding cascades.
 - **For GEN-06.** Generated code follows the same rules.
+- **A token the old mode cannot read.** Found in MODE-02's build. A discard replaces only a token the old mode read. If the lexer fails to read the token in the old mode, its failure ends the parse before the parser can change the mode. Example C's `Primary`, which the whitepaper elides, must therefore not look past an operand for a postfix call before the operand sets operator mode: in `a / b / c;`, operand mode reads `/ c;` as an unterminated regex. MODE-02's Example C puts calls after the switch. Lexer recovery (ERR-07) would turn such a failure into an error token, which a discard drops along with its diagnostic.
 - **Tests must force a discard.** `if (ok) /x/.test(s)` lexes the regex without one: the parser reads `)` and sets Operand mode before it pulls the next item. Criterion 1 therefore needs a case where the parser reads the item first. One such case is a statement after `;`, whose first item a choice reads in Operator mode before the operand sets Operand mode.
 
 ## Changes made
@@ -212,5 +213,6 @@ On acceptance:
   - § 3. Mode channels: the invalidation rule says that a change is a write that changes the top, and that every write is logged. It says how long the log keeps an entry.
   - § Failure positions: "a mode change" becomes a change of the top.
   - § Bookmarks and retention: the writer's mode log is trimmed at release, alongside the buffer.
+  - § C. A parser that steers its lexer: the token read again must have been readable in the old mode, so `Primary` looks for postfix calls after the operand sets operator mode.
 - Cards: MODE-03's scope gains the undo test of point 1 and the absolute lengths of point 5. MODE-02 gains a scope line for C2, or MODE-03 does if C5 is chosen.
 - Index: a note that this record moves ADR-0040 point 7 to MODE-04 and refines what ADR-0030 point 3 calls a mode change.

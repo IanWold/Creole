@@ -203,9 +203,7 @@ internal sealed class TransduceLayer<TIn, TOut, TState>(TState initialState, Par
             AtEnd,
             Name,
             run.Options.MaxDepth,
-            run.RecordFailures
-                ? new FailureLog<TIn>()
-                : null,
+            run.Log<TIn>(),
             run.Writer(Name)
         );
 }

@@ -240,6 +240,24 @@ public ref struct Cursor<T>
     }
 
     /// <summary>
+    /// Discards the items from the cursor on, so that they are produced again, because this layer changed the mode of <paramref name="channel"/>.
+    /// </summary>
+    /// <remarks>
+    /// Only items that the layer reading <paramref name="channel"/> produced are discarded, so a cursor over its output does, and a cursor over any other input does not.
+    /// The cursor keeps the items before it in its segment and reads the rest afresh.
+    /// </remarks>
+    internal void Discard(ModeLink channel)
+    {
+        if (_source is null || !_source.Discard(Position, channel))
+        {
+            return;
+        }
+
+        _segment = _segment[.._index];
+        _span = _span[.._index];
+    }
+
+    /// <summary>
     /// Stops holding the position that the matching <see cref="HoldSpan"/> held.
     /// </summary>
     internal readonly void DropSpan() => _source?.DropSpan();
