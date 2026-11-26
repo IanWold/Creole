@@ -12,6 +12,7 @@ namespace Creole;
 /// <para>
 /// Offsets are <see cref="long"/> because a streamed source can be longer than 2 GB.
 /// A zero-width span (<see cref="Start"/> equal to <see cref="End"/>) marks a position, such as where an inserted item belongs.
+/// An item whose span is zero-width is synthetic: it covers no source text.
 /// </para>
 /// </remarks>
 public readonly record struct SourceSpan

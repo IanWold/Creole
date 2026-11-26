@@ -14,6 +14,7 @@ Decoding is just another layer, and spans carry both byte and character offsets.
 
 - A `Layer<byte, char>` decoder, UTF-8 at minimum, with diagnostics for invalid sequences.
 - Spans carry byte offsets and character offsets when a decoding layer exists; text-rooted pipelines skip the character fields.
+- Every decoded character covers at least one byte, so real input never gets a zero-width span, which would make it synthetic ([ADR-0034](../../docs/decisions/0034-a-synthetic-item-is-one-whose-span-is-zero-width.md) point 6). Test it.
 - Store the four offsets densely in the stream buffer. Until then, a span whose character offsets differ from its root offsets is kept whole beside its segment ([SPAN-02](SPAN-02-out-of-band-span-storage.md)).
 
 ## Acceptance criteria
@@ -33,3 +34,7 @@ Decoding is just another layer, and spans carry both byte and character offsets.
 
 - [§ Source spans and provenance](../../../whitepaper.md#source-spans-and-provenance)
 - [§ Sources](../../../whitepaper.md#sources)
+
+## Artifacts
+
+- [ADR-0034: A synthetic item is one whose span is zero-width, and no flag is stored](../../docs/decisions/0034-a-synthetic-item-is-one-whose-span-is-zero-width.md)

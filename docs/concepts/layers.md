@@ -69,7 +69,17 @@ Each output's span follows from its kind and its place in the step:
 | Synthetic, after a derived output | Zero-width at the start of the first input item after the step, or at the end of the input if there is none |
 | From `atEnd` | Zero-width at the end of the input. Each is synthetic, whether or not it is marked. |
 
-So a DEDENT emitted after a NEWLINE sits at the start of the first token on the next line, not at the end of the newline. To place it, the step reads one input item past its own input.
+So a DEDENT emitted after a NEWLINE sits at the start of the first token on the next line, not at the end of the newline. To place it, the step reads one input item past its own input. An error at the DEDENT shows on that line. Here a pass emits `[newline, Emit.Synthetic("<dedent>")]` for each newline, and a parser expects a second statement after the first line of `"a = 1\n  b = 2\n"`:
+
+```text
+error[parser]: expected statement
+ --> 2:3
+  |
+2 |   b = 2
+  |   ^ unexpected <dedent>
+```
+
+In every layer above, an output is synthetic exactly when its span is zero-width ([Source spans § Synthetic items](spans.md#synthetic-items)).
 
 - `atEnd` is optional. It receives the layer's state, which starts as `initialState`. In this version nothing changes the state, so `atEnd` receives `initialState`.
 - A `step` that succeeds without consuming input would never let the layer reach the end of its input, so it throws `GrammarException`. Outputs that stand for no input are synthetic outputs of a step that consumes some, or come from `atEnd`.
