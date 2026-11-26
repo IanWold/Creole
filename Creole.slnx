@@ -13,6 +13,9 @@
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/Creole.Benchmarks/Creole.Benchmarks.csproj" />
   </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Creole.Samples.Indentation/Creole.Samples.Indentation.csproj" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
