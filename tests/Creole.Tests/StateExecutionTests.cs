@@ -142,7 +142,8 @@ public class StateExecutionTests
               |
             1 | ())
               |   ^ no '(' to close
-            """,
+            """
+                .ReplaceLineEndings("\n"),
             Assert.IsType<Failed>(Nesting.Deepest.Parse("())").Value).Diagnostics.Render()
         );
     }
