@@ -65,7 +65,8 @@ public class SyntheticItemTests
               |
             2 |   b = 2
               |   ^ unexpected <dedent>
-            """,
+            """
+                .ReplaceLineEndings("\n"),
             Render(_lexer.Then(_dedents), statement.Then(statement), "a = 1\n  b = 2\n")
         );
     }
