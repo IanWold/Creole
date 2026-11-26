@@ -20,6 +20,9 @@ namespace Creole;
 /// A buffer releases only consumed items, which a mode change never discards, so no copy is of an item lexed under an abandoned mode.
 /// </para>
 /// <para>
+/// A mode change at a position forgets what the furthest failure says about the items there and after it, which it discarded (<see cref="LowerAt"/>).
+/// </para>
+/// <para>
 /// <c>Lookahead</c>, <c>Not</c> and <c>Longest</c> take a <see cref="Save"/> and may put the failure back as it was with <see cref="Restore"/>.
 /// While one is open, the expectations it saved are protected, so a further failure starts a new range of the array instead of overwriting them.
 /// <c>Named</c> takes a <see cref="Note"/> and relabels with <see cref="Relabel"/>.
@@ -46,6 +49,11 @@ internal sealed partial class FailureLog<T>
 
     private readonly record struct SavedFailure(long Position, long End, ItemCopy? At, SourceSpan? EndSpan);
 
+    /// <summary>
+    /// The context of a failure that a mode change lowered: none yet, because the next failure recorded at its position supplies it.
+    /// </summary>
+    private const int Bare = -2;
+
     private ItemCopy? _at;
     private ChainMessage? _chain;
     private int _context = -1;
@@ -63,6 +71,7 @@ internal sealed partial class FailureLog<T>
     private string? _message;
     private int _protected;
     private int _records;
+    private bool _rejected;
     private int[] _remap = [];
     private int _saveCount;
     private SavedFailure[] _saves = new SavedFailure[8];
@@ -165,7 +174,7 @@ internal sealed partial class FailureLog<T>
     /// The furthest failure as it is now, with its context stack copied out of the frame array.
     /// </summary>
     private FailureCopy Copy() =>
-        new(Position, _expected[_start.._count], _message, _chain, _end, _at, _endSpan, Stack(_context));
+        new(Position, _expected[_start.._count], _message, _chain, _rejected, _end, _at, _endSpan, Stack(_context), _context == Bare);
 
     private bool Reaches(long position)
     {
@@ -181,9 +190,14 @@ internal sealed partial class FailureLog<T>
             _count = _protected;
             _message = null;
             _chain = null;
+            _rejected = false;
             _end = -1;
             _endSpan = null;
             _at = null;
+            _context = _current;
+        }
+        else if (_context == Bare)
+        {
             _context = _current;
         }
 
@@ -235,6 +249,7 @@ internal sealed partial class FailureLog<T>
         _count = 0;
         _message = null;
         _chain = null;
+        _rejected = false;
         _end = -1;
         _endSpan = null;
         _at = null;
@@ -277,6 +292,7 @@ internal sealed partial class FailureLog<T>
         _count = _protected;
         _message = null;
         _chain = null;
+        _rejected = false;
         _end = -1;
         _endSpan = null;
         _at = null;
@@ -346,10 +362,58 @@ internal sealed partial class FailureLog<T>
     }
 
     /// <summary>
+    /// Forgets what the furthest failure says about the items at <paramref name="index"/> and after it, because a mode change there discarded them.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A failure past <paramref name="index"/> becomes a failure there that expects nothing and has no message and no context.
+    /// It replaces the furthest failure as a further failure does, so neither a later failure there nor <c>Named</c> brings back what it expected.
+    /// The next failure recorded there supplies the context, as the first failure at a position does.
+    /// Lowering records nothing, so it never makes <c>Named</c> relabel on its own.
+    /// </para>
+    /// <para>
+    /// A failure at or before <paramref name="index"/> whose span reaches past it, because a rejected filter or a chained operator named input there, loses that end, and the message the rejection or the operator gave it.
+    /// A message recorded with <c>Fail</c> stays.
+    /// Any other failure is unchanged.
+    /// </para>
+    /// </remarks>
+    public void LowerAt(long index)
+    {
+        if (Position > index)
+        {
+            Position = index;
+            _start = _protected;
+            _count = _protected;
+            _message = null;
+            _chain = null;
+            _rejected = false;
+            _end = -1;
+            _endSpan = null;
+            _at = null;
+            _context = Bare;
+            _generation++;
+            return;
+        }
+
+        if (_end > index)
+        {
+            _end = -1;
+            _endSpan = null;
+            _chain = null;
+
+            if (_rejected)
+            {
+                _message = null;
+                _rejected = false;
+            }
+        }
+    }
+
+    /// <summary>
     /// The furthest failure as it is now, for <see cref="Relabel"/>. Unlike <see cref="Save"/>, it protects nothing and needs no ending.
     /// </summary>
     public FailureMark Note() =>
-        new(Position, _start, _count, _message, _chain, _end, _context, _records, _protected, _frameFloor, _generation);
+        new(Position, _start, _count, _message, _chain, _rejected, _end, _context, _records, _protected, _frameFloor, _generation);
 
     /// <summary>
     /// Copies the item and span at each position an error may still read from <paramref name="start"/> up to <paramref name="end"/>, which <paramref name="buffer"/> is about to release.
@@ -468,6 +532,7 @@ internal sealed partial class FailureLog<T>
         {
             _message = message;
             _chain = chain;
+            _rejected = message is not null;
         }
 
         if (end > _end)
@@ -511,6 +576,7 @@ internal sealed partial class FailureLog<T>
         _count = mark.Count;
         _message = mark.Message;
         _chain = mark.Chain;
+        _rejected = mark.Rejected;
         _end = mark.End;
         _endSpan = saved.EndSpan;
         _at = saved.At;

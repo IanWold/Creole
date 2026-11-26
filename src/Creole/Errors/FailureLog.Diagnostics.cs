@@ -9,13 +9,17 @@ internal sealed partial class FailureLog<T>
     /// <param name="expectations">What was expected there, in the order recorded.</param>
     /// <param name="message">The first message recorded there, or null.</param>
     /// <param name="chain">The chained operator's message, if that came first, or null.</param>
+    /// <param name="rejected">Whether a rejected filter gave it <paramref name="message"/>.</param>
     /// <param name="end">The furthest end of the input a failure reported behind the cursor named there, or -1.</param>
     /// <param name="at">The item at the position, copied before a stream buffer released it, or null.</param>
     /// <param name="endSpan">The span of the item before <paramref name="end"/>, copied before a stream buffer released it, or null.</param>
     /// <param name="context">The context stack of the first failure there, innermost first.</param>
-    private sealed class FailureCopy(long position, Expected[] expectations, string? message, ChainMessage? chain, long end, ItemCopy? at, SourceSpan? endSpan, ContextFrame[] context)
+    /// <param name="bare">Whether a mode change lowered it, so that the next failure recorded there supplies its context.</param>
+    private sealed class FailureCopy(long position, Expected[] expectations, string? message, ChainMessage? chain, bool rejected, long end, ItemCopy? at, SourceSpan? endSpan, ContextFrame[] context, bool bare)
     {
         public ItemCopy? At { get; private set; } = at;
+
+        public bool Bare { get; } = bare;
 
         public ChainMessage? Chain { get; } = chain;
 
@@ -30,6 +34,8 @@ internal sealed partial class FailureLog<T>
         public string? Message { get; } = message;
 
         public long Position { get; } = position;
+
+        public bool Rejected { get; } = rejected;
 
         /// <summary>
         /// Copies the item and spans this failure may still read from <paramref name="start"/> up to <paramref name="end"/>, which <paramref name="buffer"/> is about to release.
@@ -140,10 +146,11 @@ internal sealed partial class FailureLog<T>
     /// <remarks>
     /// A failure before the furthest one is ignored. One past it replaces it and brings back its own context stack.
     /// One at the same position adds its expectations after those recorded there since, and its message only if there is none.
+    /// If a mode change lowered the furthest failure since, the failure given back supplies its context, as the next failure there does.
     /// </remarks>
     private void GiveBack(FailureCopy failure)
     {
-        var replaces = failure.Position > Position;
+        var suppliesContext = failure.Position > Position || (failure.Position == Position && _context == Bare);
 
         if (!Reaches(failure.Position))
         {
@@ -159,6 +166,7 @@ internal sealed partial class FailureLog<T>
         {
             _message = failure.Message;
             _chain = failure.Chain;
+            _rejected = failure.Rejected;
         }
 
         if (failure.End > _end)
@@ -169,9 +177,11 @@ internal sealed partial class FailureLog<T>
 
         _at ??= failure.At;
 
-        if (replaces)
+        if (suppliesContext)
         {
-            _context = Restack(failure.Context);
+            _context = failure.Bare
+                ? Bare
+                : Restack(failure.Context);
         }
     }
 
@@ -221,7 +231,7 @@ internal sealed partial class FailureLog<T>
     /// The furthest failure is untouched, and withdrawing the diagnostic gives nothing back.
     /// </summary>
     public void Raise(long position, string message) =>
-        _diagnostics.Add(new Diagnostic(new FailureCopy(position, [], message, null, -1, null, null, Stack(_current)), StepStart, GivesBack: false));
+        _diagnostics.Add(new Diagnostic(new FailureCopy(position, [], message, null, rejected: false, -1, null, null, Stack(_current), bare: false), StepStart, GivesBack: false));
 
     /// <summary>
     /// Raises a diagnostic that reports the furthest failure, and takes that failure out of the log, so it is not reported twice.
@@ -231,7 +241,7 @@ internal sealed partial class FailureLog<T>
     public void RaiseFromFurthestFailure(long position) =>
         _diagnostics.Add(
             Position < 0
-                ? new Diagnostic(new FailureCopy(position, [], null, null, -1, null, null, Stack(_current)), StepStart, GivesBack: false)
+                ? new Diagnostic(new FailureCopy(position, [], null, null, rejected: false, -1, null, null, Stack(_current), bare: false), StepStart, GivesBack: false)
                 : new Diagnostic(Take(), StepStart, GivesBack: true)
         );
 

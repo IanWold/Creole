@@ -8,8 +8,9 @@ namespace Creole;
 /// <param name="Count">Where they ended.</param>
 /// <param name="Message">Its message, if any.</param>
 /// <param name="Chain">Its chained-operator message, if that came first.</param>
+/// <param name="Rejected">Whether a rejected filter gave it <paramref name="Message"/>.</param>
 /// <param name="End">The furthest end of a span that a failure reported behind the cursor named there, or -1.</param>
-/// <param name="Context">The context frame of its first failure, or -1 for none.</param>
+/// <param name="Context">The context frame of its first failure, -1 for none, or -2 for a failure a mode change lowered, whose context the next failure there supplies.</param>
 /// <param name="Records">How many failures the log had recorded, which tells <c>Named</c> whether its parser recorded one.</param>
 /// <param name="Protected">How much of the log's array was protected for an enclosing combinator that may put it back.</param>
 /// <param name="FrameFloor">How many context frames were kept in place for an enclosing combinator that may put it back.</param>
@@ -20,6 +21,7 @@ internal readonly record struct FailureMark(
     int Count,
     string? Message,
     ChainMessage? Chain,
+    bool Rejected,
     long End,
     int Context,
     int Records,

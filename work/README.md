@@ -211,7 +211,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) Invalidation rule — Design
+- [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) Invalidation rule — Build
 
 ### Can start now
 
