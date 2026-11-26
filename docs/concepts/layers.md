@@ -43,7 +43,7 @@ If `item` or `skip` fails, the parse ends with an error from this layer. The err
 error[lexer] at 3..4: unexpected '?'; expected whitespace, letter, digit, "<", "<=" or "<<"
 ```
 
-The error's `Layer` is `lexer` unless the layer is given a name: `Layer.Tokens(item, skip, name: "words")`. A step that goes deeper than `ParseOptions.MaxDepth` ends the parse with the depth error, also named for the layer.
+The error's `Layer` is `lexer` unless the layer is given a name: `Layer.Tokens(item, skip, name: "words")`. A step that goes deeper than `ParseOptions.MaxDepth`, or would hold more of its input than `ParseOptions.MaxBufferedItems`, ends the parse with that limit's error, also named for the layer ([The buffer limit](#the-buffer-limit)).
 
 ## `Layer.Transduce`
 
@@ -86,7 +86,7 @@ In every layer above, an output is synthetic exactly when its span is zero-width
 
 - `atEnd` is optional. It receives the layer's [state](layer-state.md), which starts as `initialState` and which `step` can read and change, as the last step left it.
 - A `step` that succeeds without consuming input would never let the layer reach the end of its input, so it throws `GrammarException`. Outputs that stand for no input are synthetic outputs of a step that consumes some, or come from `atEnd`.
-- If `step` fails, the parse ends with an error from this layer, as for `Layer.Tokens`. Its `Layer` is `layout` unless the layer is given a name: `Layer.Transduce(0, step, name: "indents")`.
+- If `step` fails, or reaches the depth or buffer limit, the parse ends with an error from this layer, as for `Layer.Tokens`. Its `Layer` is `layout` unless the layer is given a name: `Layer.Transduce(0, step, name: "indents")`.
 
 ## `Where` and `Select`
 
@@ -96,6 +96,8 @@ In every layer above, an output is synthetic exactly when its span is zero-width
 Layer<char, string> noLessThan = lexer.Then(Layer.Where<string>(static token => token != "<"));
 Layer<char, int> lengths = lexer.Then(Layer.Select<string, int>(static token => token.Length));
 ```
+
+Neither can fail on its own input. The only error either can end a parse with is the [buffer limit](#the-buffer-limit)'s, named `where` or `select`.
 
 ## Decoding bytes: `Layer.Utf8`
 
@@ -128,6 +130,16 @@ The one-line form shows character offsets. The error's `Span.Start` and `Span.En
 
 - Chaining is associative: `a.Then(b).Then(c)` and `a.Then(b.Then(c))` produce the same items with the same spans.
 - `Layer.Identity<T>()` is its unit: `a.Then(Layer.Identity<T>())` and `Layer.Identity<T>().Then(a)` return `a` itself.
+
+## The buffer limit
+
+[`ParseOptions.MaxBufferedItems`](parsing.md#options), 16,777,216 by default, bounds each buffer on its own. Each time a layer pulls an item it does not have, it counts the items of the buffer it reads, from the oldest one it may still need to the last one produced. It may still need an item it can go back to, the input of the step it is running, and the input behind every item the layer above can still go back to. A layer that would hold more ends the parse with one error, named for that layer, which no combinator catches ([ADR-0039](../../work/docs/decisions/0039-each-layers-buffer-is-bounded-from-its-horizon-and-exceeding-it-ends-the-parse.md)). Its span covers that oldest item, and its message names the limit. A lexer whose string literal never closes, over `x"aaa…` with a limit of 1,000:
+
+```text
+error[lexer] at 1..2: buffered input from here exceeds ParseOptions.MaxBufferedItems of 1000
+```
+
+A lower layer keeps the input behind every item the layer above can still go back to, so it usually holds more than that layer and reaches the limit first. A `Lookahead` in the parser over a long run of tokens ends the parse with an error from the lexer, at the start of the step that produced the `Lookahead`'s first token. Over bytes, the decoder holds more still, so the error comes from `decoder`. Its span covers the first byte of the character the layer above can go back to, and is zero-width in characters where that character starts.
 
 ## A step's outputs: `Emit<T>`
 

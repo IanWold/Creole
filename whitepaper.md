@@ -468,7 +468,7 @@ Every mark, rewind, restart and reuse works on one list of per-layer parse state
 3. **Deterministic parser layers take no pinning bookmarks**, so the token buffer beneath them holds one item of lookahead. Lexer lookahead is separate. A compiled `Longest` keeps its token's start pinned while it runs, because it may run the winning alternative again, and it reads past the match before backing up to its end. So the character buffer holds the longest token plus its backup (§ Static analysis).
 4. **Upstream backtracking is private.** A layer's own `Atomic` and `Longest` happen while it runs one step and are invisible downstream. So are its cuts: each layer has its own cut flag. So are its diagnostics: a downstream mark never withdraws a diagnostic that an upstream step raised ([ADR-0030](work/docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md)).
 
-Two-pass designs that tokenize everything first hold the whole token list in memory. A Creole pipeline over a multi-gigabyte JSON-lines file needs memory proportional to its largest record plus lookahead.
+Two-pass designs that tokenize everything first hold the whole token list in memory. A Creole pipeline over a multi-gigabyte JSON-lines file needs memory proportional to its largest record plus lookahead. `ParseOptions.MaxBufferedItems` caps the window at each boundary, so input that would hold more ends the parse instead of exhausting memory (§ Limits for untrusted input).
 
 ### Failure positions
 
@@ -636,7 +636,7 @@ A long source line is shown as a window around the span, and a long run of notes
 
 ### Recovery
 
-`p.Recover(strategy, fallback)` catches any failure of `p`, records a diagnostic, repairs the input position and returns `fallback`, often an explicit error node. It never re-runs `p`. It needs the failure log to build its diagnostic, so in a parse's first run, which has no log, the first failure it would catch ends that run, and the parse runs again with the log ([ADR-0027](work/docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)). A depth limit is not a failure it can catch (§ Limits for untrusted input). Before skipping, it restores the mode stack and layer state that held when `p` started, because a half-parsed construct's mode changes no longer apply. The restore is an ordinary mode change at the current position, so any lookahead lexed under the abandoned mode is invalidated. It builds its diagnostic from the furthest failure and then clears it, so a failure it has reported is not reported again. The diagnostic keeps that failure, and if a mark later withdraws the diagnostic, the failure is recorded again ([ADR-0030](work/docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md)). Strategies follow chumsky's catalogue:
+`p.Recover(strategy, fallback)` catches any failure of `p`, records a diagnostic, repairs the input position and returns `fallback`, often an explicit error node. It never re-runs `p`. It needs the failure log to build its diagnostic, so in a parse's first run, which has no log, the first failure it would catch ends that run, and the parse runs again with the log ([ADR-0027](work/docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)). A depth or buffer limit is not a failure it can catch (§ Limits for untrusted input). Before skipping, it restores the mode stack and layer state that held when `p` started, because a half-parsed construct's mode changes no longer apply. The restore is an ordinary mode change at the current position, so any lookahead lexed under the abandoned mode is invalidated. It builds its diagnostic from the furthest failure and then clears it, so a failure it has reported is not reported again. The diagnostic keeps that failure, and if a mark later withdraws the diagnostic, the failure is recorded again ([ADR-0030](work/docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md)). Strategies follow chumsky's catalogue:
 
 | Strategy | Behavior | Typical use |
 | --- | --- | --- |
@@ -659,7 +659,7 @@ The collection holds the text of the sources its errors point into, so `Diagnost
 
 ### Limits for untrusted input
 
-`ParseOptions.MaxDepth` bounds recursion depth and `ParseOptions.MaxBufferedItems` bounds each layer's buffer. Exceeding either produces an ordinary diagnostic at the offending span, never a stack overflow. Parlot's recursion limit is the model for depth ([ADR-0020](work/docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md)):
+`ParseOptions.MaxDepth` bounds recursion depth and `ParseOptions.MaxBufferedItems` bounds each layer's buffer. Exceeding either produces an ordinary diagnostic at the offending span, never a stack overflow or a buffer that grows until memory runs out. Parlot's recursion limit is the model for depth ([ADR-0020](work/docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md)):
 
 - **What counts.** One level is counted while each of these runs: a `Rec`, the parser a `Bind` continuation returned, a prefix operator's operand, and an `InfixR` right operand. Only at these points can a parse recurse beyond a bound set by the grammar's size. The depth therefore depends only on the grammar and the input, and both engines count it alike. Each layer counts its own depth.
 - **Default.** `MaxDepth` defaults to 1,000 levels. `int.MaxValue` leaves only the stack check.
@@ -668,6 +668,12 @@ The collection holds the text of the sources its errors point into, so `Diagnost
 - **Failed parses.** A failed `Parse` over in-memory input runs twice, first without a failure log and then with one ([ADR-0027](work/docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)), and the second run also records, so it costs up to about two and a half times a successful parse of the same input. A medium JSON document broken at its end took 2.3 times as long as the valid one. The bound stays linear in the input.
 
 Recursion in user code is not counted. That includes `Select` and `Where` functions, custom scanners and code that builds grammars.
+
+**Buffers.** Parlot 2.5 bounds its streamed buffer with a similar `MaxBufferedCharacters`, off by default. Creole's limit is on by default, as its depth limit is ([ADR-0039](work/docs/decisions/0039-each-layers-buffer-is-bounded-from-its-horizon-and-exceeding-it-ends-the-parse.md)):
+
+- **What counts.** A layer may hold at most `MaxBufferedItems` items of the buffer it reads: the items from its horizon (§ Bookmarks and retention) to the last item produced. The layer checks each time it pulls an item it does not have. So the count covers the layer's pins, the step it is running when it produces items, the input it keeps so that its reader can go back, and the restart bookmark, which makes the limit also cap one item of `ParseManyAsync` (§ The restart protocol). Each buffer is bounded on its own. Input held whole in memory has no buffer, and is not counted.
+- **Default.** `MaxBufferedItems` defaults to 16,777,216 items. A buffered character costs 34 bytes with its slot, so a character buffer at the limit holds about 544 MiB. `int.MaxValue` lifts the limit in practice.
+- **Ending the parse.** Exceeding the limit ends the whole parse, as exceeding the depth does, so it never changes what a grammar accepts. The diagnostic covers the oldest item the layer still had to keep, which is where the window opened, such as a `Lookahead`'s first item or the start of an unterminated comment. It names `MaxBufferedItems` and its value. A lower layer keeps the input of every item its reader can go back to, so it usually reaches the limit before the reader does, and the diagnostic then names the lower layer.
 
 **Rendered errors.** An error on hostile input must also render small. `Render`, and `ParseError.ToString()` for the one-line form, bound the text that comes from input. The errors themselves keep everything, so engines and tools see exact data ([ADR-0029](work/docs/decisions/0029-rendered-errors-bound-text-from-input-with-caller-set-limits.md)).
 
@@ -847,7 +853,7 @@ private static bool Parse_Value(ref Cursor<JTok> c, out JsonValue result) { /* s
 
 ### Equivalence
 
-Both engines must agree on the value, the consumed position, every diagnostic's span and every expected set, for every grammar whose functions follow § Functions in grammars. How often a function runs is not part of the agreement ([ADR-0026](work/docs/decisions/0026-engines-may-skip-unused-values-and-repeat-user-functions.md)). They count depth at the same points, so they agree on a parse that `MaxDepth` ends. Where the stack check ends a parse depends on the thread and on each engine's frame sizes, so those parses are not compared (§ Limits for untrusted input). The library's CI runs property-based differential tests over randomly generated grammars and inputs. Users get the same check as `Creole.Testing.EngineAgreement.Check(grammar, inputs)`.
+Both engines must agree on the value, the consumed position, every diagnostic's span and every expected set, for every grammar whose functions follow § Functions in grammars. How often a function runs is not part of the agreement ([ADR-0026](work/docs/decisions/0026-engines-may-skip-unused-values-and-repeat-user-functions.md)). They count depth at the same points, so they agree on a parse that `MaxDepth` ends. They check `MaxBufferedItems` against the same horizon at the same pulls, so they agree on a parse it ends too. Where the stack check ends a parse depends on the thread and on each engine's frame sizes, so those parses are not compared (§ Limits for untrusted input). The library's CI runs property-based differential tests over randomly generated grammars and inputs. Users get the same check as `Creole.Testing.EngineAgreement.Check(grammar, inputs)`.
 
 ### Considered and deferred
 
@@ -936,7 +942,7 @@ Byte sources decode through a `Layer<byte, char>`, so decoding is just another l
 
 Starved is not a failure. `Or`, `Atomic`, `Not`, `Lookahead` and `Recover` all treat it as an abort that propagates unchanged, because trying another alternative on incomplete data would produce a wrong parse.
 
-**Cost.** Before retrying, the driver at least doubles the buffered data beyond what the failed attempt saw. The total re-parsing work per item is then a geometric series, linear in the item's size.
+**Cost.** Before retrying, the driver at least doubles the buffered data beyond what the failed attempt saw. The total re-parsing work per item is then a geometric series, linear in the item's size. The bookmark is part of each layer's horizon, so `ParseOptions.MaxBufferedItems` also caps how large one item may grow, and the driver stops doubling at it (§ Limits for untrusted input).
 
 ### Why not async combinators
 

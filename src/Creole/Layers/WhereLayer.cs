@@ -7,6 +7,7 @@ namespace Creole;
 /// It reads its input without a cursor, so it states its own pin as its horizon with each read, and releases the input itself.
 /// The pin is the input item of the oldest output its reader can still go back to, or the item it is reading if there is none.
 /// On reaching a new segment, it releases what lies below the pin.
+/// A read that would hold more of its input than the buffer's limit ends the parse with an error named <see cref="WhereLayer{T}.Name"/>.
 /// </remarks>
 file sealed class WhereUpstream<T>(ICursorSource<T> input, Func<T, bool> predicate) : IUpstream<T>
 {
@@ -19,6 +20,18 @@ file sealed class WhereUpstream<T>(ICursorSource<T> input, Func<T, bool> predica
 
     public SourceSpan InputStart => _input.InputStart;
 
+    private bool TryGetSegment(long pin, out ReadOnlyMemory<T> segment, out long segmentStart)
+    {
+        try
+        {
+            return _input.TryGetSegment(_position, pin, out segment, out segmentStart);
+        }
+        catch (BufferLimitExceededException exception)
+        {
+            throw new LayerFailedException(ParseErrors.BufferLimit<T>(exception, failures: null, WhereLayer<T>.Name, _input.SpanOf));
+        }
+    }
+
     public void Dispose() => _input.Dispose();
 
     public void ForgetFailures() => _input.ForgetFailures();
@@ -27,7 +40,7 @@ file sealed class WhereUpstream<T>(ICursorSource<T> input, Func<T, bool> predica
     {
         var pin = buffer.OldestStepStart ?? _position;
 
-        if (!_input.TryGetSegment(_position, pin, out var segment, out var segmentStart))
+        if (!TryGetSegment(pin, out var segment, out var segmentStart))
         {
             return false;
         }
@@ -56,6 +69,11 @@ file sealed class WhereUpstream<T>(ICursorSource<T> input, Func<T, bool> predica
 /// </summary>
 internal sealed class WhereLayer<T>(Func<T, bool> predicate) : Layer<T, T>
 {
+    /// <summary>
+    /// The layer's name in errors.
+    /// </summary>
+    public const string Name = "where";
+
     public Func<T, bool> Predicate { get; } = predicate;
 
     internal override IUpstream<T> Open(ICursorSource<T> input, ParseOptions options, bool recordFailures) =>

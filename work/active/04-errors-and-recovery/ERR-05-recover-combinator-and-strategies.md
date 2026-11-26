@@ -17,7 +17,7 @@ One parse produces many diagnostics without cascades.
 - Strategies `SkipUntil(sync)` and `SkipNested(open, close)`.
 - Repair from the cursor, not from the reported position: a committed failure may be reported before the cursor, as a rejected filter is ([ADR-0014](../../docs/decisions/0014-a-rejected-filter-reports-at-the-start-of-the-value.md)).
 - Starved propagates through `Recover` unchanged.
-- `Recover` does not catch a depth abort. It passes through, and the parse ends ([ADR-0020](../../docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md)).
+- `Recover` does not catch a depth abort or the buffer limit. Either passes through, and the parse ends ([ADR-0020](../../docs/decisions/0020-depth-counts-rec-bind-and-operands-and-ends-the-parse.md), [ADR-0039](../../docs/decisions/0039-each-layers-buffer-is-bounded-from-its-horizon-and-exceeding-it-ends-the-parse.md) point 3).
 - `Recover` takes a light mark before running `p`: if `p` fails without consuming, the cut flag is restored ([ADR-0011](../../docs/decisions/0011-a-cut-is-dropped-with-every-failed-attempt.md)). `Recover` is not a cut boundary.
 - A parse's first run has no failure log, so the first failure a `Recover` would catch ends that run, and the parse runs again with the log ([ADR-0027](../../docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)). Tests cover a parse that recovers giving the same diagnostics as one run with the log.
 - Rendering bounds each error but not how many there are ([ADR-0029](../../docs/decisions/0029-rendered-errors-bound-text-from-input-with-caller-set-limits.md) point 9). A parse that recovers can report one error per recovery, so decide here whether to cap the count.

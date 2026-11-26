@@ -3,7 +3,7 @@ using System.Globalization;
 namespace Creole;
 
 /// <summary>
-/// The error a layer's parse reports when it fails: its furthest failure, the error for a parse that recorded nothing, or the depth error.
+/// The error a layer's parse reports when it fails: its furthest failure, the error for a parse that recorded nothing, the depth error, or the buffer limit's error.
 /// </summary>
 /// <remarks>
 /// The parser layer and every other layer build these the same way, each with its own name and its own map from positions to spans.
@@ -31,6 +31,23 @@ internal static class ParseErrors
             : position;
 
         return new ParseError(spanOf(position, end), layer, unexpected, [], []);
+    }
+
+    /// <summary>
+    /// The error for a layer that would hold more items of the buffer it reads than its limit allows.
+    /// </summary>
+    /// <param name="exception">The exception that ended the parse.</param>
+    /// <param name="failures">The layer's failure log, which gives the context lines, or null if it keeps none.</param>
+    /// <param name="layer">The name of the layer.</param>
+    /// <param name="spanOf">The source span of the layer's input from a start position up to an end position.</param>
+    /// <returns>An error at the oldest item the layer still had to keep, whose message names the limit.</returns>
+    public static ParseError BufferLimit<T>(BufferLimitExceededException exception, FailureLog<T>? failures, string layer, Func<long, long, SourceSpan> spanOf)
+    {
+        var horizon = exception.Horizon;
+        var message = string.Create(CultureInfo.InvariantCulture, $"buffered input from here exceeds ParseOptions.MaxBufferedItems of {exception.Limit}");
+        var context = failures?.ContextAt(exception.Position, spanOf) ?? [];
+
+        return new ParseError(spanOf(horizon, horizon + 1), layer, new CustomMessage(message), [], context);
     }
 
     /// <summary>

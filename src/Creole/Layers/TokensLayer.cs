@@ -58,10 +58,11 @@ file sealed class TokensUpstream<TIn, TOut>(
 
         _failures?.StepStart = stepStart;
         _input.Release(floor, _failures);
-        cursor.Reset(stepStart);
 
         try
         {
+            cursor.Reset(stepStart);
+
             if (_skip is not null && !_skip.TryParse(ref cursor, ref skipped))
             {
                 throw Failed(in cursor, stepStart);
@@ -87,6 +88,10 @@ file sealed class TokensUpstream<TIn, TOut>(
         catch (LayerStateException exception)
         {
             throw exception.ToGrammarException(_name);
+        }
+        catch (BufferLimitExceededException exception)
+        {
+            throw new LayerFailedException(ParseErrors.BufferLimit(exception, _failures, _name, _input.SpanOf));
         }
 
         if (cursor.Position == itemStart)

@@ -14,6 +14,7 @@ Async record streams parse one top-level item at a time and restart that item wh
 
 - Bookmark across every layer at each item start, including layer states, mode logs and each layer's diagnostics. Each item starts with no furthest failure and no cut in force.
 - On Starved, await at least double the buffered data, rewind and retry.
+- The restart bookmark is part of each layer's horizon, so `ParseOptions.MaxBufferedItems` also caps one item. Decide how data the driver has read ahead counts toward it, and stop doubling at the limit, so an item that reaches it ends with the limit's error rather than retrying ([ADR-0039](../../docs/decisions/0039-each-layers-buffer-is-bounded-from-its-horizon-and-exceeding-it-ends-the-parse.md) point 6).
 - `ParseManyAsync` over `PipeReader` and `Stream`, returning `IAsyncEnumerable<ParseResult<T>>`.
 - Large JSON-lines peak-memory test.
 - A streamed parse records failures as it goes. Measure whether an item that fails can run again from its bookmark with a log instead, as in-memory parses do, and adopt it only for a measured gain ([ADR-0027](../../docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)). If adopted, it applies to `ParseMany` over every source too, which records as it goes until then ([ADR-0038](../../docs/decisions/0038-pipelines-end-in-a-parser-run-again-whole-and-name-sources-without-a-registry.md) point 3).

@@ -115,10 +115,11 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
 
         _failures?.StepStart = stepStart;
         _input.Release(floor, _failures);
-        cursor.Reset(stepStart);
 
         try
         {
+            cursor.Reset(stepStart);
+
             if (cursor.IsAtEnd)
             {
                 _ended = true;
@@ -130,6 +131,14 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
             {
                 throw Failed(in cursor, stepStart);
             }
+
+            if (cursor.Position == stepStart)
+            {
+                throw NullableRepetition.LayerStep();
+            }
+
+            _initialState.Check(cursor.State, _name);
+            Add(buffer, outputs, ref cursor, stepStart, _state);
         }
         catch (DepthExceededException exception)
         {
@@ -139,14 +148,11 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
         {
             throw exception.ToGrammarException(_name);
         }
-
-        if (cursor.Position == stepStart)
+        catch (BufferLimitExceededException exception)
         {
-            throw NullableRepetition.LayerStep();
+            throw new LayerFailedException(ParseErrors.BufferLimit(exception, _failures, _name, _input.SpanOf));
         }
 
-        _initialState.Check(cursor.State, _name);
-        Add(buffer, outputs, ref cursor, stepStart, _state);
         _position = cursor.Position;
         _state = cursor.State;
 

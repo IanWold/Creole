@@ -13,6 +13,7 @@ namespace Creole;
 /// It states its own pin as its horizon with each read, and releases the input itself.
 /// The pin is where the oldest output its reader can still go back to began, or the step it is running if there is none.
 /// On reaching a new segment, it releases what lies below the pin.
+/// A read that would hold more of its input than the buffer's limit ends the parse with an error at the pin, whose character offset is that of the output whose step began there.
 /// </para>
 /// <para>
 /// Each output's root offsets are its input's, and its character offsets count the UTF-16 characters produced before it.
@@ -66,23 +67,7 @@ file sealed class Utf8Upstream(ICursorSource<byte> input) : IUpstream<char>
         );
     }
 
-    private bool TryRead(long position, long pin, out byte value)
-    {
-        if (!_input.TryGetSegment(position, pin, out var segment, out var segmentStart))
-        {
-            value = 0;
-            return false;
-        }
-
-        value = segment.Span[(int)(position - segmentStart)];
-        return true;
-    }
-
-    public void Dispose() => _input.Dispose();
-
-    public void ForgetFailures() => _input.ForgetFailures();
-
-    public bool TryStep(StreamBuffer<char> buffer)
+    private bool Step(StreamBuffer<char> buffer)
     {
         var stepStart = _position;
         var pin = buffer.OldestStepStart ?? stepStart;
@@ -137,6 +122,50 @@ file sealed class Utf8Upstream(ICursorSource<byte> input) : IUpstream<char>
         _chars += length;
 
         return true;
+    }
+
+    private bool TryRead(long position, long pin, out byte value)
+    {
+        if (!_input.TryGetSegment(position, pin, out var segment, out var segmentStart))
+        {
+            value = 0;
+            return false;
+        }
+
+        value = segment.Span[(int)(position - segmentStart)];
+        return true;
+    }
+
+    public void Dispose() => _input.Dispose();
+
+    public void ForgetFailures() => _input.ForgetFailures();
+
+    public bool TryStep(StreamBuffer<char> buffer)
+    {
+        try
+        {
+            return Step(buffer);
+        }
+        catch (BufferLimitExceededException exception)
+        {
+            var chars = buffer.OldestStepStart is null
+                ? _chars
+                : buffer.SpanOf(buffer.Horizon, buffer.Horizon + 1).CharStart;
+
+            throw new LayerFailedException(
+                ParseErrors.BufferLimit<byte>(
+                    exception,
+                    failures: null,
+                    Utf8Layer.Name,
+                    (start, end) =>
+                    {
+                        var bytes = _input.SpanOf(start, end);
+
+                        return new SourceSpan(bytes.Source, bytes.Start, bytes.End, chars, chars);
+                    }
+                )
+            );
+        }
     }
 }
 
