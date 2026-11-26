@@ -101,7 +101,8 @@ public class WorkedExampleBTests
               |
             3 | c = 1
               | ^ unexpected dedent
-            """,
+            """
+                .ReplaceLineEndings("\n"),
             _mini.Parse("while a:\n    if b:\nc = 1\n").Diagnostics.Render()
         );
 
@@ -114,7 +115,8 @@ public class WorkedExampleBTests
               |
             2 |     if b:
               |          ^ unexpected dedent
-            """,
+            """
+                .ReplaceLineEndings("\n"),
             _mini.Parse("while a:\n    if b:").Diagnostics.Render()
         );
 
@@ -127,7 +129,8 @@ public class WorkedExampleBTests
               |
             3 | )
               | ^ unexpected ')'
-            """,
+            """
+                .ReplaceLineEndings("\n"),
             _mini.Parse("if a:\n    b = 1\n)\n").Diagnostics.Render()
         );
 
@@ -140,7 +143,8 @@ public class WorkedExampleBTests
               |
             3 |   c = 2
               |   ^ unexpected inconsistent dedent
-            """,
+            """
+                .ReplaceLineEndings("\n"),
             _mini.Parse("if a:\n    b = 1\n  c = 2\n").Diagnostics.Render()
         );
 
