@@ -8,10 +8,17 @@ file sealed class ReleasingSource(string text) : ICursorSource<char>
 {
     private long _released;
 
+    public void DropSpan() { }
+
+    public void HoldSpan(long position) { }
+
     public void Release(long below) =>
         _released = below;
 
     public void Release(long horizon, FailureLog<char>? failures) { }
+
+    public SourceSpan SpanOf(long start, long end) =>
+        new(SourceId.Unnamed, start, end);
 
     public bool TryGetSegment(long position, out ReadOnlyMemory<char> segment, out long segmentStart)
     {

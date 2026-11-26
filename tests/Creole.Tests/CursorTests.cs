@@ -141,6 +141,25 @@ public class CursorTests
     }
 
     [Fact]
+    public void SpanSinceOverInputInMemoryCountsItems()
+    {
+        var cursor = Cursor<char>.FromMemory("abc".AsMemory());
+        var empty = Cursor<char>.FromMemory(ReadOnlyMemory<char>.Empty);
+
+        Assert.Equal(new SourceSpan(SourceId.Unnamed, 0, 0), cursor.SpanSince(0));
+
+        cursor.Advance(2);
+
+        Assert.Equal(new SourceSpan(SourceId.Unnamed, 0, 2), cursor.SpanSince(0));
+        Assert.Equal(new SourceSpan(SourceId.Unnamed, 2, 2), cursor.SpanSince(2));
+
+        cursor.Advance(1);
+
+        Assert.Equal(new SourceSpan(SourceId.Unnamed, 3, 3), cursor.SpanSince(3));
+        Assert.Equal(new SourceSpan(SourceId.Unnamed, 0, 0), empty.SpanSince(0));
+    }
+
+    [Fact]
     public void ReadingMatchesTheInputForAnySegmentation() =>
         Gen.Int[0, 50].Array.Select(Gen.Int[1, 8], Gen.Int[1, 5].Array[0, 20]).Sample((input, segmentSize, steps) =>
         {

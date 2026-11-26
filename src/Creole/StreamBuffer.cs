@@ -27,12 +27,23 @@ namespace Creole;
 /// <see cref="Release"/> returns whole segments below a position to the pool, which may hand their arrays to anything else.
 /// Nothing may read a released position afterwards, so the layer above first copies out what its pending errors need.
 /// </para>
+/// <para>
+/// The buffer also keeps a stack of the positions its reader's span combinators hold (<see cref="HoldSpan"/>).
+/// It copies the span at each one it releases, so <see cref="SpanOf"/> can still start there, whether or not the reader keeps a failure log.
+/// </para>
 /// </remarks>
 /// <param name="upstream">The layer that produces the items.</param>
 /// <param name="segmentSize">How many items each segment holds.</param>
 /// <param name="pool">Where segments are rented from and returned to; <see cref="ArrayPool{T}.Shared"/> if null.</param>
 internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1024, ArrayPool<T>? pool = null) : ICursorSource<T>
 {
+    /// <summary>
+    /// A position a span combinator holds, and its span once the buffer has released it.
+    /// </summary>
+    /// <param name="Position">The held position.</param>
+    /// <param name="Copy">The span of the item there, copied when its segment was released, or null while the buffer still holds it.</param>
+    private readonly record struct HeldSpan(long Position, SourceSpan? Copy);
+
     /// <summary>
     /// One segment: its items and slots, and what its spans are stored relative to.
     /// </summary>
@@ -59,6 +70,8 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     private const int WideLength = -1;
 
     private bool _ended;
+    private int _heldCount;
+    private HeldSpan[] _heldSpans = [];
     private SourceSpan _lastSpan;
     private readonly ArrayPool<T> _pool = pool ?? ArrayPool<T>.Shared;
     private long _released;
@@ -89,6 +102,20 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     /// </summary>
     public long Start => _released * _segmentSize;
 
+    private void CopyHeldSpans(long start, long end)
+    {
+        for (var i = 0; i < _heldCount; i++)
+        {
+            if (_heldSpans[i] is { Copy: null } held
+                && held.Position >= start
+                && held.Position < end
+            )
+            {
+                _heldSpans[i] = held with { Copy = SpanAt(held.Position) };
+            }
+        }
+    }
+
     private bool Fill(long position)
     {
         while (position >= Filled)
@@ -101,6 +128,22 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
         }
 
         return true;
+    }
+
+    private SourceSpan FirstSpan(long position)
+    {
+        if (position < Start)
+        {
+            for (var i = _heldCount - 1; i >= 0; i--)
+            {
+                if (_heldSpans[i] is { Copy: { } copy } held && held.Position == position)
+                {
+                    return copy;
+                }
+            }
+        }
+
+        return SpanAt(position);
     }
 
     private int IndexOf(long position) => (int)(position / _segmentSize - _released);
@@ -168,6 +211,20 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
         Filled++;
     }
 
+    /// <inheritdoc/>
+    public void DropSpan() => _heldCount--;
+
+    /// <inheritdoc/>
+    public void HoldSpan(long position)
+    {
+        if (_heldCount == _heldSpans.Length)
+        {
+            Array.Resize(ref _heldSpans, Math.Max(4, _heldCount * 2));
+        }
+
+        _heldSpans[_heldCount++] = new HeldSpan(position, null);
+    }
+
     /// <summary>
     /// The item at <paramref name="position"/>.
     /// </summary>
@@ -180,7 +237,7 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     }
 
     /// <summary>
-    /// Returns to the pool every segment whose items all lie below the item just before <paramref name="horizon"/>, after <paramref name="failures"/> has copied what its errors need from them.
+    /// Returns to the pool every segment whose items all lie below the item just before <paramref name="horizon"/>, after <paramref name="failures"/> has copied what its errors need from them and the buffer has copied the span at each held position in them.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -202,7 +259,10 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
             return;
         }
 
-        failures?.Preserve(this, Start, Start + (long)count * _segmentSize);
+        var end = Start + (long)count * _segmentSize;
+
+        failures?.Preserve(this, Start, end);
+        CopyHeldSpans(Start, end);
 
         for (var i = 0; i < count; i++)
         {
@@ -233,13 +293,14 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     /// <remarks>
     /// An empty range gives a zero-width span at the start of the item at <paramref name="start"/>.
     /// At the filled end, which is the end of the input once a cursor has found it there, it gives a zero-width span at the end of the last item.
+    /// The item at <paramref name="start"/> may have been released while <see cref="HoldSpan"/> held it; its span is then the copy taken at release.
     /// </remarks>
-    /// <exception cref="ArgumentOutOfRangeException">The buffer does not hold an item the span needs.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The buffer does not hold an item the span needs, and no hold copied it.</exception>
     public SourceSpan SpanOf(long start, long end)
     {
         if (end > start)
         {
-            var first = SpanAt(start);
+            var first = FirstSpan(start);
             var last = SpanAt(end - 1);
 
             return new SourceSpan(first.Source, first.Start, last.End, first.CharStart, last.CharEnd);
@@ -247,7 +308,7 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
 
         if (start < Filled)
         {
-            var at = SpanAt(start);
+            var at = FirstSpan(start);
 
             return new SourceSpan(at.Source, at.Start, at.Start, at.CharStart, at.CharStart);
         }

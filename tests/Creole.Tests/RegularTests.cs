@@ -28,6 +28,8 @@ public class RegularTests
         ["Select, As and Ignore"] = (true, static () => Regular.Of(_a.Select(static c => c.ToString()).As(1).Ignore())),
         ["Slice and Text"] = (true, static () => Regular.Of(_a.Many().Slice().Then(_b.Text()))),
         ["Named and Context"] = (true, static () => Regular.Of(_a.Named("a").Context("in a"))),
+        ["Spanned, WithSpan and Position"] = (true, static () => Regular.Of(Seq(Position, _a.Spanned(), _b.WithSpan(static (b, _) => b)))),
+        ["Adjacent"] = (false, static () => Regular.Of(Adjacent(_a, _b))),
 
         ["Parsec-style decimal"] = (true, static () => Regular.Of(Seq(_digits, Seq(Char('.'), _digits).Optional()))),
         ["Atomic fraction"] = (true, static () => Regular.Of(Seq(_digits, Atomic(Seq(Char('.'), _digits)).Optional()))),

@@ -105,6 +105,12 @@ public class StreamBufferTests
 
     private static readonly int[] _segmentSizes = [1, 2];
 
+    private static SourceSpan At(long start, long end) =>
+        new(SourceId.Unnamed, start, end);
+
+    private static StreamBuffer<string> FourTokens() =>
+        new(new SpanUpstream(["ab", "c", "de", "f"], [At(0, 2), At(3, 4), At(5, 7), At(8, 9)]), segmentSize: 1);
+
     private static Cursor<char> Over(string text, int segmentSize, out ArrayUpstream<char> upstream, out StreamBuffer<char> buffer)
     {
         upstream = new ArrayUpstream<char>(text.ToCharArray());
@@ -184,6 +190,39 @@ public class StreamBufferTests
             Assert.Fail("A released position was read.");
         }
         catch (ArgumentOutOfRangeException) { }
+    }
+
+    [Fact]
+    public void ADroppedHoldKeepsNoSpan()
+    {
+        var buffer = FourTokens();
+        var cursor = new Cursor<string>(buffer);
+
+        cursor.Advance(1);
+        cursor.HoldSpan();
+        cursor.DropSpan();
+        cursor.Advance(3);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => buffer.SpanOf(1, 4));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AHeldSpanStillStartsAtItsItemAfterTheBufferReleasesIt(bool recordFailures)
+    {
+        var buffer = FourTokens();
+        var cursor = new Cursor<string>(buffer) { Failures = recordFailures ? new FailureLog<string>() : null };
+
+        cursor.Advance(1);
+        cursor.HoldSpan();
+        cursor.Advance(3);
+
+        Assert.True(buffer.Start > 1, $"The buffer still holds position {buffer.Start}.");
+        Assert.Equal(At(3, 9), cursor.SpanSince(1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => buffer.SpanOf(0, 4));
+
+        cursor.DropSpan();
     }
 
     [Fact]
@@ -286,6 +325,65 @@ public class StreamBufferTests
             .FirstOrDefault(static difference => difference is not null);
 
         Assert.Null(difference);
+    }
+
+    [Fact]
+    public void HoldingASpanAtEachItemAsItGoesAllocatesNothingPerItem()
+    {
+        const int length = 1 << 20;
+        var buffer = new StreamBuffer<char>(new RepeatUpstream('x', 8 * length), segmentSize: 1024);
+        var position = 0L;
+
+        void Read()
+        {
+            var cursor = new Cursor<char>(buffer);
+            cursor.Reset(position);
+
+            for (var i = 0; i < length; i++)
+            {
+                var start = cursor.Position;
+
+                cursor.HoldSpan();
+
+                if (!cursor.TryRead(out _))
+                {
+                    cursor.DropSpan();
+                    break;
+                }
+
+                _ = cursor.SpanSince(start);
+                cursor.DropSpan();
+            }
+
+            position = cursor.Position;
+        }
+
+        Read();
+
+        var allocated = Allocation.Fewest(Read, attempts: 5);
+
+        Assert.True(position >= 2 * length, $"Read only {position} items.");
+        Assert.True(allocated < 4096, $"{allocated} bytes allocated over {length} items.");
+    }
+
+    [Fact]
+    public void NestedHoldsEachKeepTheirSpan()
+    {
+        var cursor = new Cursor<string>(FourTokens());
+
+        cursor.HoldSpan();
+        cursor.Advance(1);
+        cursor.HoldSpan();
+        cursor.Advance(3);
+
+        Assert.Equal(At(3, 9), cursor.SpanSince(1));
+        Assert.Equal(At(0, 9), cursor.SpanSince(0));
+
+        cursor.DropSpan();
+
+        Assert.Equal(At(0, 9), cursor.SpanSince(0));
+
+        cursor.DropSpan();
     }
 
     [Fact]
@@ -392,10 +490,55 @@ public class StreamBufferTests
     }
 
     [Fact]
+    public void SpannedAtEveryItemAllocatesNothingPerItem()
+    {
+        const int length = 1 << 20;
+        var buffer = new StreamBuffer<char>(new RepeatUpstream('x', 8 * length), segmentSize: 1024);
+        var plan = PlanCache.Get(Any.Spanned());
+        var position = 0L;
+
+        void Read()
+        {
+            var cursor = new Cursor<char>(buffer);
+            Spanned<char> spanned = default;
+
+            cursor.Reset(position);
+
+            for (var i = 0; i < length && plan.TryParse(ref cursor, ref spanned); i++) { }
+
+            position = cursor.Position;
+        }
+
+        Read();
+
+        var allocated = Allocation.Fewest(Read, attempts: 1);
+
+        Assert.True(position >= 2 * length, $"Read only {position} items.");
+        Assert.True(allocated < 65_536, $"{allocated} bytes allocated over {length} items.");
+    }
+
+    [Fact]
+    public void SpanSinceTheCursorIsZeroWidthAtTheNextItemOrAtTheEnd()
+    {
+        var cursor = new Cursor<string>(new StreamBuffer<string>(new SpanUpstream(["ab", "c"], [At(0, 2), At(3, 4)]), segmentSize: 2));
+        var empty = new Cursor<string>(new StreamBuffer<string>(new SpanUpstream([], [])));
+
+        Assert.Equal(At(0, 0), cursor.SpanSince(0));
+
+        cursor.Advance(1);
+
+        Assert.Equal(At(0, 2), cursor.SpanSince(0));
+        Assert.Equal(At(3, 3), cursor.SpanSince(1));
+
+        cursor.Advance(1);
+
+        Assert.Equal(At(4, 4), cursor.SpanSince(2));
+        Assert.Equal(At(0, 0), empty.SpanSince(0));
+    }
+
+    [Fact]
     public void SpansComeFromTheSlots()
     {
-        static SourceSpan At(long start, long end) => new(SourceId.Unnamed, start, end);
-
         var buffer = new StreamBuffer<string>(new SpanUpstream(["ab", "c", "de"], [At(0, 2), At(3, 4), At(5, 7)]), segmentSize: 2);
         var empty = new StreamBuffer<string>(new SpanUpstream([], []));
         var cursor = new Cursor<string>(buffer) { Floor = 0 };

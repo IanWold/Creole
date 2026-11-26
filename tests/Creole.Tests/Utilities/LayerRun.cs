@@ -16,6 +16,21 @@ internal static class LayerRun
         Assert.Throws<LayerFailedException>(() => Items(layer, text, options: options)).Error;
 
     /// <summary>
+    /// The error for the furthest failure <paramref name="parser"/> records over the items the layer produces from <paramref name="text"/>, from layer <c>parser</c>, or null if it recorded none.
+    /// </summary>
+    public static ParseError? Error<T, TOut>(Layer<char, T> layer, Parser<T, TOut> parser, string text, int segmentSize = 1024)
+    {
+        var tokens = Open(layer, text, out _, segmentSize);
+        var log = new FailureLog<T>();
+        var cursor = new Cursor<T>(tokens) { Failures = log };
+        TOut value = default!;
+
+        _ = PlanCache.Get(parser).TryParse(ref cursor, ref value);
+
+        return log.ToError(in cursor, "parser", tokens.SpanOf);
+    }
+
+    /// <summary>
     /// Every item the layer produces from <paramref name="text"/>, with its slot.
     /// </summary>
     public static List<(T Item, StreamSlot Slot)> Items<T>(Layer<char, T> layer, string text, int segmentSize = 1024, ParseOptions? options = null)
@@ -41,6 +56,18 @@ internal static class LayerRun
         var input = new StreamBuffer<char>(characters, segmentSize);
 
         return new StreamBuffer<T>(layer.Open(input, options ?? ParseOptions.Default, recordFailures: true), segmentSize);
+    }
+
+    /// <summary>
+    /// Runs <paramref name="parser"/> over the items the layer produces from <paramref name="text"/>, as the last layer of a pipeline will, with or without a failure log of its own.
+    /// </summary>
+    public static (bool Ok, TOut Value, long Position) Run<T, TOut>(Layer<char, T> layer, Parser<T, TOut> parser, string text, int segmentSize = 1024, bool recordFailures = true)
+    {
+        var cursor = new Cursor<T>(Open(layer, text, out _, segmentSize)) { Failures = recordFailures ? new FailureLog<T>() : null };
+        TOut value = default!;
+        var ok = PlanCache.Get(parser).TryParse(ref cursor, ref value);
+
+        return (ok, value, cursor.Position);
     }
 
     /// <summary>
