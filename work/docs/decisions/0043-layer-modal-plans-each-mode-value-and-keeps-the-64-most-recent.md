@@ -137,7 +137,7 @@ Each step searches the run's list of used modes with `EqualityComparer<TMode>.De
 - Pros: already built.
 - Cons: for a union mode, each comparison allocates 80 B (the spike), on every step, for every mode searched past. The run's list also grows with each distinct payload.
 
-**Result:** Open, as the baseline that trial T1 measures first.
+**Result:** Ruled out by trial T1. Three default-job runs of `LayerBenchmarks` on 12e48bb, with the `ModalUnion` case added and not yet committed, gave these results. `ModalUnion` took 1.437, 1.447 and 1.461 times as long as `Modal` on the small, medium and large inputs (median of three runs per input). It allocated 21,712 B, 1,522,658 B and 15,129,967 B per parse, against `Modal`'s 3,072 B, 145,216 B and 1,434,664 B. The difference grows with the input: about 80 B per token, as the spike measured. That fails criterion 3. `Modal` took 1.006 to 1.012 times as long as `Tokens`.
 
 #### C2. Reuse the plan while the stack is unchanged (recommended)
 

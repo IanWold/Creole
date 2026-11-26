@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Mode channels](../../README.md#mode--mode-channels) |
 | Phase | Phase 1 — Layers |
-| Status | Designing |
+| Status | Building |
 
 ## Summary
 
@@ -41,3 +41,4 @@ Nothing directly.
 
 - 2026-11-26 (Design): Started. Payload modes conflict with ADR-0041 point 6, which caches the selector by distinct mode value, so a decision record settles how payload modes are cached, how `ModeData<T>()` finds and types its data, and what analysis marks before any code.
 - 2026-11-26 (Design): Drafted ADR-0043 (Proposed). Spikes on SDK 11.0.100: a union mode compares by case value but boxes, 80 B per comparison; a `Bind` continuation that builds a parser lowers it at each match. The maintainer chose per-value caching with a bound over `ModeData<T>()`. Recommends A2, B2, C2, D1 and E1. Next: the maintainer approves the options, criteria and trials (T1 and the tests), then Build.
+- 2026-11-26 (Build): Started; the maintainer approved ADR-0043's options, criteria and trials, and the build plan. Increment 1: added `ModalUnion` to `LayerBenchmarks` (a one-case union mode with no data) and checked it in `BaselineAgreementTests`. Trial T1 baseline, three default-job runs on 12e48bb plus that case: `ModalUnion` takes 1.44–1.46 times as long as `Modal` and allocates about 80 B more per token, so C1 fails criterion 3 (recorded in ADR-0043). Next: increment 2, the bounded cache with per-run reuse (A2, B2, C2), its tests and docs, then T1's three runs after.

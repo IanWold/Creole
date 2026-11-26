@@ -211,7 +211,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- [MODE-05](active/07-mode-channels/MODE-05-mode-payloads.md) Mode payloads — Design
+- [MODE-05](active/07-mode-channels/MODE-05-mode-payloads.md) Mode payloads — Build
 
 ### Can start now
 
