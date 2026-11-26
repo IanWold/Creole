@@ -86,7 +86,7 @@ foreach (var result in word.ParseMany(" a bc  d "))
 - **It is lazy.** Nothing runs until you enumerate the results, and each item is parsed when you ask for it. A reader is read only as far as that item needs.
 - **A failed item is the last.** Each result is `Parsed<T>` or `Failed`. After a failure nothing says where the next item would start, so the sequence ends there.
 - **A layer's failure ends it too.** If a layer fails while the next item is being looked for, that next item's result is `Failed` with the layer's error.
-- **Each item starts afresh.** A failure recorded while parsing one item never shapes a later item's error.
+- **Each item starts afresh.** A failure recorded while parsing one item never shapes a later item's error, and each item starts the [mode channels](mode-channels.md) the parser writes at their initial modes.
 - **It records as it goes.** `ParseMany` records failures while it parses, rather than running again when an item fails, so a failed item never parses the items before it again. Each item pays the cost of recording.
 - **The parser must consume input.** A parser that succeeds without consuming input would never reach the end, so `ParseMany` throws `GrammarException`.
 - **Each enumeration parses from the start.** Ending an enumeration early, as `break` in a `foreach` does, returns its buffers' memory to their pools.

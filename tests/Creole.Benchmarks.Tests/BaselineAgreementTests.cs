@@ -13,6 +13,9 @@ public class BaselineAgreementTests
     public static TheoryData<string, string> JsonCases =>
         [.. from input in JsonInputs.Names from parser in _jsonParsers select (input, parser)];
 
+    public static TheoryData<string> JsonInputNames =>
+        [.. JsonInputs.Names];
+
     private static double EvaluateArithmetic(string parser, string expression) => parser switch
     {
         "Creole" => CreoleArithmetic.Evaluate(expression),
@@ -24,6 +27,9 @@ public class BaselineAgreementTests
 
     private static string Hash(string text) =>
         Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
+
+    private static IReadOnlyList<JsonToken> Lexed(Layer<char, JsonToken> lexer, string input) =>
+        Assert.IsType<Parsed<IReadOnlyList<JsonToken>>>(Pipeline.From(lexer).Then(Grammar<JsonToken>.Any.Many()).Parse(JsonInputs.Get(input)).Value).Value;
 
     private static JsonValue ParseJson(string parser, string text) => parser switch
     {
@@ -95,6 +101,19 @@ public class BaselineAgreementTests
         benchmarks.Setup();
 
         Assert.Equal(benchmarks.InvalidWithError(), benchmarks.BuildError());
+    }
+
+    [Theory]
+    [MemberData(nameof(JsonInputNames))]
+    public void LayerBenchmarksParseEachInputAndLexItAlike(string input)
+    {
+        var benchmarks = new LayerBenchmarks { Input = input };
+
+        benchmarks.Setup();
+
+        Assert.True(benchmarks.Tokens());
+        Assert.True(benchmarks.Modal());
+        Assert.Equal(Lexed(LayeredJson.TokensLexer, input), Lexed(LayeredJson.ModalLexer, input));
     }
 
     [Fact]

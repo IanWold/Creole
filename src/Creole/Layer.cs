@@ -18,6 +18,138 @@ public static class Layer
     public static Layer<T, T> Identity<T>() => IdentityLayer<T>.Instance;
 
     /// <summary>
+    /// A layer that runs the item parser for <paramref name="channel"/>'s current mode repeatedly to the end of its input and produces each value, such as a lexer whose parser tells it whether <c>/</c> starts a regex or divides.
+    /// </summary>
+    /// <typeparam name="TIn">The type of item the layer reads, such as <see cref="char"/>.</typeparam>
+    /// <typeparam name="TOut">The type of item the layer produces, such as a token type.</typeparam>
+    /// <typeparam name="TMode">The type of the channel's modes.</typeparam>
+    /// <param name="channel">The channel whose current mode chooses each step's item parser.</param>
+    /// <param name="selector">The function from a mode to the parser for one item in that mode, usually a <c>switch</c> over the modes.</param>
+    /// <param name="name">The layer's name in errors, which <see cref="ParseError.Layer"/> holds.</param>
+    /// <param name="channelExpression">Filled in by the compiler with the expression for <paramref name="channel"/>.</param>
+    /// <param name="selectorExpression">Filled in by the compiler with the expression for <paramref name="selector"/>.</param>
+    /// <returns>A layer that produces the value of each item, read in the mode current when its step runs.</returns>
+    /// <exception cref="GrammarException"><paramref name="channel"/> or <paramref name="selector"/> is null, or <paramref name="name"/> is null or empty.</exception>
+    /// <remarks>
+    /// <para>
+    /// Each step stops if the input has ended, and otherwise reads the mode on top of <paramref name="channel"/>'s stack and runs that mode's item parser.
+    /// Otherwise it runs as <see cref="Tokens{TIn, TOut}(Parser{TIn, TOut}, string, string)"/> does: spans, errors, and the rule that an item must consume input.
+    /// </para>
+    /// <para>
+    /// <paramref name="selector"/> runs at most once for each distinct mode for the life of the layer, even when parses run at once on several threads, and its result is kept.
+    /// So building parsers inside it is safe: each mode's item parser is planned once.
+    /// A selector that returns null throws <see cref="GrammarException"/> when the parse first reaches that mode.
+    /// </para>
+    /// <para>
+    /// The grammar of a layer above this one, or of the parser that ends the pipeline, changes the mode with <see cref="Grammar{TIn}.SetMode{TMode}"/>, <see cref="Grammar{TIn}.PushMode{TMode}"/> and <see cref="Grammar{TIn}.PopMode{TMode}"/>.
+    /// One layer writes a channel in a run, and a chain has one <c>Layer.Modal</c> for each channel.
+    /// A change of mode applies to the steps that run after it: an item this layer has already produced stays as it was read.
+    /// </para>
+    /// </remarks>
+    public static Layer<TIn, TOut> Modal<TIn, TOut, TMode>(
+        ModeChannel<TMode> channel,
+        Func<TMode, Parser<TIn, TOut>> selector,
+        string name = "lexer",
+        [CallerArgumentExpression(nameof(channel))] string channelExpression = "",
+        [CallerArgumentExpression(nameof(selector))] string selectorExpression = ""
+    ) =>
+        new ModalLayer<TIn, TOut, TMode>(Guard.NotNull(channel, channelExpression), Guard.NotNull(selector, selectorExpression), skip: null, initialState: null, Guard.NotNullOrEmpty(name));
+
+    /// <summary>
+    /// A layer that runs <paramref name="skip"/> and then the item parser for <paramref name="channel"/>'s current mode repeatedly to the end of its input and produces each item's value, such as a lexer that skips whitespace and whose parser tells it whether <c>/</c> starts a regex or divides.
+    /// </summary>
+    /// <typeparam name="TIn">The type of item the layer reads, such as <see cref="char"/>.</typeparam>
+    /// <typeparam name="TOut">The type of item the layer produces, such as a token type.</typeparam>
+    /// <typeparam name="TMode">The type of the channel's modes.</typeparam>
+    /// <param name="channel">The channel whose current mode chooses each step's item parser.</param>
+    /// <param name="selector">The function from a mode to the parser for one item in that mode, usually a <c>switch</c> over the modes.</param>
+    /// <param name="skip">The parser for the input to skip before each item, in every mode, such as <c>Whitespace.SkipMany()</c>. It must succeed, so it usually repeats.</param>
+    /// <param name="name">The layer's name in errors, which <see cref="ParseError.Layer"/> holds.</param>
+    /// <param name="channelExpression">Filled in by the compiler with the expression for <paramref name="channel"/>.</param>
+    /// <param name="selectorExpression">Filled in by the compiler with the expression for <paramref name="selector"/>.</param>
+    /// <param name="skipExpression">Filled in by the compiler with the expression for <paramref name="skip"/>.</param>
+    /// <returns>A layer that produces the value of each item, read in the mode current when its step runs.</returns>
+    /// <exception cref="GrammarException"><paramref name="channel"/>, <paramref name="selector"/> or <paramref name="skip"/> is null, or <paramref name="name"/> is null or empty.</exception>
+    /// <remarks>
+    /// <para>
+    /// Each step runs <paramref name="skip"/>, stops if the input has ended, and otherwise reads the mode on top of <paramref name="channel"/>'s stack and runs that mode's item parser.
+    /// Otherwise it runs as <see cref="Tokens{TIn, TOut}(Parser{TIn, TOut}, Parser{TIn, Unit}, string, string, string)"/> does: spans, errors, and the rule that an item must consume input.
+    /// Every mode shares <paramref name="skip"/>, so in a mode where whitespace is content, read it back in the parser with <c>LeadingTrivia</c>.
+    /// </para>
+    /// <para>
+    /// <paramref name="selector"/> runs at most once for each distinct mode for the life of the layer, even when parses run at once on several threads, and its result is kept.
+    /// So building parsers inside it is safe: each mode's item parser is planned once.
+    /// A selector that returns null throws <see cref="GrammarException"/> when the parse first reaches that mode.
+    /// </para>
+    /// <para>
+    /// The grammar of a layer above this one, or of the parser that ends the pipeline, changes the mode with <see cref="Grammar{TIn}.SetMode{TMode}"/>, <see cref="Grammar{TIn}.PushMode{TMode}"/> and <see cref="Grammar{TIn}.PopMode{TMode}"/>.
+    /// One layer writes a channel in a run, and a chain has one <c>Layer.Modal</c> for each channel.
+    /// A change of mode applies to the steps that run after it: an item this layer has already produced stays as it was read.
+    /// </para>
+    /// </remarks>
+    public static Layer<TIn, TOut> Modal<TIn, TOut, TMode>(
+        ModeChannel<TMode> channel,
+        Func<TMode, Parser<TIn, TOut>> selector,
+        Parser<TIn, Unit> skip,
+        string name = "lexer",
+        [CallerArgumentExpression(nameof(channel))] string channelExpression = "",
+        [CallerArgumentExpression(nameof(selector))] string selectorExpression = "",
+        [CallerArgumentExpression(nameof(skip))] string skipExpression = ""
+    ) =>
+        new ModalLayer<TIn, TOut, TMode>(
+            Guard.NotNull(channel, channelExpression),
+            Guard.NotNull(selector, selectorExpression),
+            Guard.NotNull(skip, skipExpression),
+            initialState: null,
+            Guard.NotNullOrEmpty(name)
+        );
+
+    /// <summary>
+    /// A layer that runs <paramref name="skip"/> and then the item parser for <paramref name="channel"/>'s current mode repeatedly to the end of its input and produces each item's value, with a state that starts as <paramref name="initialState"/>.
+    /// </summary>
+    /// <typeparam name="TIn">The type of item the layer reads, such as <see cref="char"/>.</typeparam>
+    /// <typeparam name="TOut">The type of item the layer produces, such as a token type.</typeparam>
+    /// <typeparam name="TMode">The type of the channel's modes.</typeparam>
+    /// <typeparam name="TState">The type of the layer's state.</typeparam>
+    /// <param name="initialState">The layer's state when it starts. It should be immutable, because backtracking restores the state by keeping a reference to it.</param>
+    /// <param name="channel">The channel whose current mode chooses each step's item parser.</param>
+    /// <param name="selector">The function from a mode to the parser for one item in that mode, usually a <c>switch</c> over the modes.</param>
+    /// <param name="skip">The parser for the input to skip before each item, in every mode, such as <c>Whitespace.SkipMany()</c>. It must succeed, so it usually repeats. Pass <c>Return(new Unit())</c> to skip nothing.</param>
+    /// <param name="name">The layer's name in errors, which <see cref="ParseError.Layer"/> holds.</param>
+    /// <param name="channelExpression">Filled in by the compiler with the expression for <paramref name="channel"/>.</param>
+    /// <param name="selectorExpression">Filled in by the compiler with the expression for <paramref name="selector"/>.</param>
+    /// <param name="skipExpression">Filled in by the compiler with the expression for <paramref name="skip"/>.</param>
+    /// <returns>A layer that produces the value of each item, read in the mode current when its step runs.</returns>
+    /// <exception cref="GrammarException"><paramref name="channel"/>, <paramref name="selector"/> or <paramref name="skip"/> is null, or <paramref name="name"/> is null or empty.</exception>
+    /// <remarks>
+    /// <para>
+    /// It runs as the overload without <paramref name="initialState"/> does.
+    /// <paramref name="skip"/> and every mode's item parser share the state, as <see cref="Tokens{TIn, TOut, TState}"/>'s do: each step starts with the state the step before left, and backtracking inside a step puts it back.
+    /// </para>
+    /// <para>
+    /// If a step leaves a state that is not a <typeparamref name="TState"/>, the layer throws <see cref="GrammarException"/>.
+    /// So does a read of the state as another type.
+    /// </para>
+    /// </remarks>
+    public static Layer<TIn, TOut> Modal<TIn, TOut, TMode, TState>(
+        TState initialState,
+        ModeChannel<TMode> channel,
+        Func<TMode, Parser<TIn, TOut>> selector,
+        Parser<TIn, Unit> skip,
+        string name = "lexer",
+        [CallerArgumentExpression(nameof(channel))] string channelExpression = "",
+        [CallerArgumentExpression(nameof(selector))] string selectorExpression = "",
+        [CallerArgumentExpression(nameof(skip))] string skipExpression = ""
+    ) =>
+        new ModalLayer<TIn, TOut, TMode>(
+            Guard.NotNull(channel, channelExpression),
+            Guard.NotNull(selector, selectorExpression),
+            Guard.NotNull(skip, skipExpression),
+            InitialState.Of(initialState),
+            Guard.NotNullOrEmpty(name)
+        );
+
+    /// <summary>
     /// A layer that applies <paramref name="selector"/> to each item.
     /// </summary>
     /// <typeparam name="TIn">The type of item the layer reads.</typeparam>

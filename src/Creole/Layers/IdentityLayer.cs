@@ -12,6 +12,6 @@ internal sealed class IdentityLayer<T> : Layer<T, T>
 
     public static IdentityLayer<T> Instance { get; } = new();
 
-    internal override IUpstream<T> Open(ICursorSource<T> input, ParseOptions options, bool recordFailures) =>
-        _copy.Open(input, options, recordFailures);
+    internal override IUpstream<T> Open(ICursorSource<T> input, PipelineRun run) =>
+        _copy.Open(input, run);
 }

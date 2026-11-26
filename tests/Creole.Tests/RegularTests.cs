@@ -9,6 +9,7 @@ public class RegularTests
     private static readonly Parser<char, char> _b = Char('b');
     private static readonly Parser<char, char> _c = Char('c');
     private static readonly Parser<char, Unit> _digits = Range('0', '9').SkipAtLeastOnce();
+    private static readonly ModeChannel<int> _modes = new(0);
 
     private static readonly Dictionary<string, (bool Regular, Func<object?> Decide)> _cases = new()
     {
@@ -34,6 +35,9 @@ public class RegularTests
         ["GetState"] = (false, static () => Regular.Of(Seq(GetState<int>(), _a))),
         ["SetState"] = (false, static () => Regular.Of(Seq(SetState(1), _a))),
         ["Scan"] = (false, static () => Regular.Of(_a.Scan<int, char>(static (a, count, _) => (a, count + 1)))),
+        ["SetMode"] = (false, static () => Regular.Of(Seq(SetMode(_modes, 1), _a))),
+        ["PushMode"] = (false, static () => Regular.Of(Seq(PushMode(_modes, 1), _a))),
+        ["PopMode"] = (false, static () => Regular.Of(Seq(PopMode(_modes), _a))),
 
         ["Parsec-style decimal"] = (true, static () => Regular.Of(Seq(_digits, Seq(Char('.'), _digits).Optional()))),
         ["Atomic fraction"] = (true, static () => Regular.Of(Seq(_digits, Atomic(Seq(Char('.'), _digits)).Optional()))),

@@ -214,10 +214,11 @@ public class BoundedMemoryTests
     private static long[]? Held(Layer<char, char>[] layers, Parser<char, Unit> parser, string input, int length, int segmentSize)
     {
         var boundaries = new List<MeasuringUpstream<char>> { new(new ArrayUpstream<char>(input.ToCharArray())) };
+        var run = new PipelineRun(ParseOptions.Default, recordFailures: true);
 
         foreach (var layer in layers)
         {
-            boundaries.Add(new MeasuringUpstream<char>(layer.Open(new StreamBuffer<char>(boundaries[^1], segmentSize), ParseOptions.Default, recordFailures: true)));
+            boundaries.Add(new MeasuringUpstream<char>(layer.Open(new StreamBuffer<char>(boundaries[^1], segmentSize), run)));
         }
 
         var cursor = new Cursor<char>(new StreamBuffer<char>(boundaries[^1], segmentSize)) { Failures = new FailureLog<char>() };

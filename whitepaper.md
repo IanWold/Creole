@@ -400,12 +400,12 @@ Layer<Tok, Tok> noComments = Layer.Where<Tok>(t => t.Kind != K.Comment);
 // 4. Choose the item parser by mode (see § Feedback).
 Layer<char, Tok> modal = Layer.Modal(modes, mode => mode switch
 {
-    LexMode.Operand  => OperandToken,
-    LexMode.Operator => OperatorToken,
+    LexMode.Operand => OperandToken,
+    _               => OperatorToken,
 });
 ```
 
-`Layer.Tokens` loops: run `skip`; stop at end of input; run `item`; emit its value. An item parser that can succeed without consuming would loop forever, so analysis rejects it (CRL0003). `Layer.Transduce` loops the same way without `skip`, and its step is held to the same rule. A lexer with layer state passes it first, `Layer.Tokens(initialState, item, skip)`, and always passes `skip`, because an overload without it would make `Layer.Tokens(item, skip)` ambiguous (§ 2. Layer-local state).
+`Layer.Tokens` loops: run `skip`; stop at end of input; run `item`; emit its value. An item parser that can succeed without consuming would loop forever, so analysis rejects it (CRL0003). `Layer.Transduce` loops the same way without `skip`, and its step is held to the same rule. A lexer with layer state passes it first, `Layer.Tokens(initialState, item, skip)`, and always passes `skip`, because an overload without it would make `Layer.Tokens(item, skip)` ambiguous (§ 2. Layer-local state). `Layer.Modal` loops as `Layer.Tokens` does, with each step's item parser chosen by the channel's current mode and one `skip` for every mode. A `Layer.Modal` with state takes it first too, `Layer.Modal(initialState, channel, selector, skip)` (§ 3. Mode channels).
 
 `Emit<T>` is the list of outputs a step produces: zero, one or several, each either derived from the input the step consumed or synthetic. An item converts to one derived output, `Emit.Synthetic(item)` makes a synthetic one, and a collection expression builds several, as in `[newline, Emit.Synthetic(indent)]`. Synthetic outputs such as INDENT and DEDENT are emitted this way, and § Span rules places them. `atEnd` runs once at the end of input with the layer's final state, and every output it returns is synthetic ([ADR-0032](work/docs/decisions/0032-emit-is-a-list-of-outputs-each-derived-or-synthetic.md)).
 
@@ -422,7 +422,7 @@ IEnumerable<ParseResult<LogEntry>> many =
 
 Pipelines are immutable values that can be shared across threads; each `Parse` call owns its own buffers and state.
 
-A pipeline ends in its parser. `Parse` runs the parser once. `ParseMany` runs it again after each item until no input remains. A failed item is the last result, so a grammar that continues past bad items catches them with `Recover`. Under `ParseMany`, the parser's diagnostics belong to the item it is parsing. A lower layer's diagnostic belongs to the first item that reads input of the step that raised it. So a diagnostic raised while producing lookahead past an item's end waits for the next item, as trivia does. A pipeline names its source with `source:`, as `Parse` does, and its root is `SourceId.Unnamed` ([ADR-0038](work/docs/decisions/0038-pipelines-end-in-a-parser-run-again-whole-and-name-sources-without-a-registry.md)).
+A pipeline ends in its parser. `Parse` runs the parser once. `ParseMany` runs it again after each item until no input remains. A failed item is the last result, so a grammar that continues past bad items catches them with `Recover`. Each item starts the parser's mode channels in their initial modes (§ 3. Mode channels). Under `ParseMany`, the parser's diagnostics belong to the item it is parsing. A lower layer's diagnostic belongs to the first item that reads input of the step that raised it. So a diagnostic raised while producing lookahead past an item's end waits for the next item, as trivia does. A pipeline names its source with `source:`, as `Parse` does, and its root is `SourceId.Unnamed` ([ADR-0038](work/docs/decisions/0038-pipelines-end-in-a-parser-run-again-whole-and-name-sources-without-a-registry.md)).
 
 ### Embedded languages
 
@@ -497,7 +497,7 @@ A layer can thread an immutable state value through its item parser:
 - `GetState<S>()` and `SetState<S>(s)` read and write it.
 - `p.Scan<S, R>((value, state, span) => (result, newState))` maps a value and updates state in one analyzable node.
 
-Every layer that runs a grammar has one state, and so does every parser. `Layer.Transduce` takes an `initialState`, and so does `Layer.Tokens(initialState, item, skip)`, the form of a lexer with state. Any other layer, and every parser, starts with no state. A parser sets its own at its root: `SetState(0).Then(Root)`. Reading state that is missing or not an `S` throws `GrammarException`, and so does a step that leaves a layer's state of another type than its `initialState`. Both are mistakes in the grammar, not the input ([ADR-0037](work/docs/decisions/0037-lexers-take-an-initial-state-parsers-set-theirs-and-a-mistyped-read-throws.md)).
+Every layer that runs a grammar has one state, and so does every parser. `Layer.Transduce` takes an `initialState`, and so do `Layer.Tokens(initialState, item, skip)` and `Layer.Modal(initialState, channel, selector, skip)`, the forms of a lexer with state. Any other layer, and every parser, starts with no state. A parser sets its own at its root: `SetState(0).Then(Root)`. Reading state that is missing or not an `S` throws `GrammarException`, and so does a step that leaves a layer's state of another type than its `initialState`. Both are mistakes in the grammar, not the input ([ADR-0037](work/docs/decisions/0037-lexers-take-an-initial-state-parsers-set-theirs-and-a-mistyped-read-throws.md)).
 
 Bookmarks snapshot the state by reference, so backtracking restores it automatically. State must be immutable (`ImmutableStack<int>`, records); the analyzer warns on mutable reference types (CRL0204).
 
@@ -511,6 +511,8 @@ static readonly Parser<Tok, Expr> Operand =
 ```
 
 `Layer.Modal` calls its selector once per distinct mode case and caches the result for the life of the layer. Building nodes inside the lambda, as Example C does, is therefore safe: each mode's item parser is planned once, and plans stay cached by node identity.
+
+**Stacks, readers and writers.** Each channel has a stack of modes in each run, which starts as its initial mode alone. `SetMode` replaces the top, `PushMode` pushes and `PopMode` pops. Popping the last mode throws `GrammarException`: pushes and pops pair through the grammar's structure, so a path that pops more than it pushed is a mistake in the grammar. A channel has one reader, the `Layer.Modal` that names it, and one writing layer, the first to write it in a run. A chain with two readers throws `GrammarException` when `Then` builds it, and so does a write from a second layer. In a pipeline, a write to a channel that no layer below the writer reads also throws, which catches a second `ModeChannel` instance. A parser run on its own has no lexer to steer, so its writes change only its own stack, and it can still be tested over a list of tokens. Under `ParseMany`, the parser's channels start each item in their initial modes. Every mode shares the layer's `skip`, so a mode where text is content, such as JSX element text, skips whitespace only and reads it back with `LeadingTrivia` ([ADR-0041](work/docs/decisions/0041-a-channel-has-one-reader-below-one-writer-and-a-write-nothing-reads-or-a-pop-of-the-last-mode-throws.md)).
 
 **Invalidation rule.** Suppose the downstream cursor is at index *i*, so items 0 to *i* − 1 have been consumed, when it executes a mode change:
 

@@ -10,23 +10,27 @@ namespace Creole;
 /// The cursor's floor starts at the layer's pin: where the step began that produced the oldest output its reader can still go back to, or the step's own start if there is none.
 /// So the input of the running step and of every output the reader can still go back to stays in the buffer, and the cursor states the floor as the layer's horizon when it pulls.
 /// Each step starts by releasing the input below that floor, since a step that starts in a new segment reaches it without the cursor releasing anything.
+/// Each step asks for its item plan when it reaches its item: <c>Layer.Tokens</c> always gives the same one, and <c>Layer.Modal</c> gives the current mode's.
+/// Each step's cursor carries the layer's mode writer, so the layer's grammar changes only channels read below it.
 /// </remarks>
 file sealed class TokensUpstream<TIn, TOut>(
     ICursorSource<TIn> input,
-    Plan<TIn, TOut> item,
+    Func<Plan<TIn, TOut>> item,
     Plan<TIn, Unit>? skip,
     InitialState? initialState,
     string name,
     int maxDepth,
-    FailureLog<TIn>? failures
+    FailureLog<TIn>? failures,
+    ModeWriter modes
 )
     : IUpstream<TOut>
 {
     private readonly FailureLog<TIn>? _failures = failures;
     private readonly InitialState? _initialState = initialState;
     private readonly ICursorSource<TIn> _input = input;
-    private readonly Plan<TIn, TOut> _item = item;
+    private readonly Func<Plan<TIn, TOut>> _item = item;
     private readonly int _maxDepth = maxDepth;
+    private readonly ModeWriter _modes = modes;
     private readonly string _name = name;
     private long _position;
     private readonly Plan<TIn, Unit>? _skip = skip;
@@ -51,7 +55,7 @@ file sealed class TokensUpstream<TIn, TOut>(
     {
         var stepStart = _position;
         var floor = buffer.OldestStepStart ?? stepStart;
-        var cursor = new Cursor<TIn>(_input) { Failures = _failures, Floor = floor, MaxDepth = _maxDepth, State = _state };
+        var cursor = new Cursor<TIn>(_input) { Failures = _failures, Floor = floor, MaxDepth = _maxDepth, Modes = _modes, State = _state };
         var itemStart = stepStart;
         var skipped = default(Unit);
         var value = default(TOut)!;
@@ -76,7 +80,7 @@ file sealed class TokensUpstream<TIn, TOut>(
 
             itemStart = cursor.Position;
 
-            if (!_item.TryParse(ref cursor, ref value))
+            if (!_item().TryParse(ref cursor, ref value))
             {
                 throw Failed(in cursor, itemStart);
             }
@@ -126,18 +130,32 @@ internal sealed class TokensLayer<TIn, TOut>(Parser<TIn, TOut> item, Parser<TIn,
 
     public Parser<TIn, Unit>? Skip { get; } = skip;
 
-    internal override IUpstream<TOut> Open(ICursorSource<TIn> input, ParseOptions options, bool recordFailures) =>
+    /// <summary>
+    /// A run of a layer that skips, then reads one item, at each step, with the item plan <paramref name="item"/> gives at that step.
+    /// </summary>
+    /// <remarks>
+    /// <c>Layer.Tokens</c> and <c>Layer.Modal</c> both run this way.
+    /// </remarks>
+    internal static IUpstream<TOut> Steps(ICursorSource<TIn> input, Func<Plan<TIn, TOut>> item, Parser<TIn, Unit>? skip, InitialState? initialState, string name, PipelineRun run, ModeWriter modes) =>
         new TokensUpstream<TIn, TOut>(
             input,
-            PlanCache.Get(Item),
-            Skip is null
+            item,
+            skip is null
                 ? null
-                : PlanCache.Get(Skip),
-            InitialState,
-            Name,
-            options.MaxDepth,
-            recordFailures
+                : PlanCache.Get(skip),
+            initialState,
+            name,
+            run.Options.MaxDepth,
+            run.RecordFailures
                 ? new FailureLog<TIn>()
-                : null
+                : null,
+            modes
         );
+
+    internal override IUpstream<TOut> Open(ICursorSource<TIn> input, PipelineRun run)
+    {
+        var item = PlanCache.Get(Item);
+
+        return Steps(input, () => item, Skip, InitialState, Name, run, run.Writer(Name));
+    }
 }

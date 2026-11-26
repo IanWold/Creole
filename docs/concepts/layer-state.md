@@ -17,8 +17,8 @@ A grammar can keep a value as it parses and decide from it later, such as how de
 | Where | Starts as |
 | --- | --- |
 | `Layer.Transduce(initialState, step, atEnd)` | `initialState` |
-| `Layer.Tokens(initialState, item, skip)` | `initialState` |
-| `Layer.Tokens(item)` and `Layer.Tokens(item, skip)` | no state, until the grammar sets one |
+| `Layer.Tokens(initialState, item, skip)` and `Layer.Modal(initialState, channel, selector, skip)` | `initialState` |
+| `Layer.Tokens(item)`, `Layer.Tokens(item, skip)`, `Layer.Modal(channel, selector)` and `Layer.Modal(channel, selector, skip)` | no state, until the grammar sets one |
 | A parser run with `Parse`, alone or at the end of a [pipeline](pipelines.md) | no state, so the grammar sets its own at its root: `SetState(0).Then(Root)`. Under `ParseMany`, each item starts with no state |
 
 A layer runs in steps, and each step starts with the state the step before left, so a lexer can carry what it has seen from one token to the next. `skip` and `item` share it. `atEnd` receives the state the last step left. A `SetState` at the start of a layer's `item` would run on every step, so a layer that needs a state to start with takes an `initialState` instead.

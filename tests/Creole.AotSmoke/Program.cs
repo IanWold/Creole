@@ -36,6 +36,7 @@ if (parsed != 2
     || Pipelines.Words.ParseMany(new StringReader("a 1")).Last().Value is not Failed
     || Pipelines.Bytes.Parse("a, b"u8.ToArray()).Value is not Parsed<int> { Value: 2 }
     || !Pipelines.Bytes.Parse("\u00e9 b"u8.ToArray(), source: "smoke.txt").Diagnostics.Render().Contains(" --> smoke.txt:1:3", StringComparison.Ordinal)
+    || Pipelines.Modal.Parse("ab cd").Value is not Parsed<string> { Value: "c" }
 )
 {
     return 1;
@@ -137,6 +138,12 @@ internal readonly record struct Tok(K Kind, string Text) : IKinded<K>
     string? IKinded<K>.Detail => Kind == K.Word ? Text : null;
 }
 
+internal enum Mode
+{
+    Words,
+    Letters,
+}
+
 internal readonly record struct Plain(K Kind) : IKinded<K>;
 
 internal class TokenLists : TokenGrammar<Tok, K>
@@ -153,11 +160,30 @@ internal class TokenLexer : CharGrammar
     );
 }
 
+internal class ModalLexer : CharGrammar
+{
+    public static readonly ModeChannel<Mode> Modes = new(Mode.Words);
+
+    public static readonly Layer<char, Tok> Lexer = Layer.Modal(Modes, static mode => mode switch
+    {
+        Mode.Words => Letter.AtLeastOnce().Text().Select(static text => new Tok(K.Word, text)),
+        _ => Letter.Select(static letter => new Tok(K.Word, $"{letter}")),
+    }, Whitespace.SkipMany());
+}
+
+internal class ModalWords : TokenGrammar<Tok, K>
+{
+    public static readonly Parser<Tok, string> Second =
+        Kind(K.Word).Then(SetMode(ModalLexer.Modes, Mode.Letters)).Then(Kind(K.Word)).Select(static word => word.Text);
+}
+
 internal static class Pipelines
 {
     public static readonly Pipeline<byte, int> Bytes = Pipeline.From(Layer.Utf8().Then(TokenLexer.Lexer)).Then(TokenLists.Count);
 
     public static readonly Pipeline<char, int> Count = Pipeline.From(TokenLexer.Lexer).Then(TokenLists.Count);
+
+    public static readonly Pipeline<char, string> Modal = Pipeline.From(ModalLexer.Lexer).Then(ModalWords.Second);
 
     public static readonly Pipeline<char, Tok> Words = Pipeline.From(TokenLexer.Lexer).Then(Grammar<Tok>.Any);
 }

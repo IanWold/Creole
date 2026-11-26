@@ -43,9 +43,10 @@ public class LayerRetentionTests
     private static string? Difference<TIn, TMiddle, T>(string name, Layer<TIn, TMiddle> below, Layer<TMiddle, T> layer, TIn[] input, TIn filler, TMiddle middleFiller, int segmentSize, bool pinFirst)
     {
         var expected = LayerRun.Items(below.Then(layer), input).Select(static entry => entry.Slot.Span).ToList();
+        var run = new PipelineRun(ParseOptions.Default, recordFailures: true);
         var root = new StreamBuffer<TIn>(new ArrayUpstream<TIn>(input), segmentSize, new OverwritingPool<TIn>(filler));
-        var middle = new StreamBuffer<TMiddle>(below.Open(root, ParseOptions.Default, recordFailures: true), segmentSize, new OverwritingPool<TMiddle>(middleFiller));
-        var output = new StreamBuffer<T>(layer.Open(middle, ParseOptions.Default, recordFailures: true), segmentSize, new OverwritingPool<T>(default!));
+        var middle = new StreamBuffer<TMiddle>(below.Open(root, run), segmentSize, new OverwritingPool<TMiddle>(middleFiller));
+        var output = new StreamBuffer<T>(layer.Open(middle, run), segmentSize, new OverwritingPool<T>(default!));
         var reader = new Cursor<T>(output);
         var spans = new List<SourceSpan>();
         var label = $"{name} in segments of {segmentSize}{(pinFirst ? ", first item pinned" : "")}";

@@ -7,6 +7,8 @@ namespace Creole;
 /// </summary>
 /// <remarks>
 /// The parser reads a buffer of the last layer's items, so it can rewind over them without the layers running again.
+/// The parser's mode writer opens after every layer, so it may change any channel its layers read.
+/// Under <c>ParseMany</c>, each item starts the channels the parser writes at their initial modes.
 /// </remarks>
 internal sealed class LayeredPipeline<TIn, TItem, TOut>(Layer<TIn, TItem> layers, Parser<TItem, TOut> parser) : Pipeline<TIn, TOut>
 {
@@ -19,15 +21,16 @@ internal sealed class LayeredPipeline<TIn, TItem, TOut>(Layer<TIn, TItem> layers
     public Parser<TItem, TOut> Parser { get; } = parser;
 
     /// <summary>
-    /// Parses the item that starts at <paramref name="start"/>, with every layer's furthest failure forgotten first.
+    /// Parses the item that starts at <paramref name="start"/>, with every layer's furthest failure forgotten first, and the channels the parser writes back at their initial modes.
     /// </summary>
     /// <returns><see langword="false"/> if no item remains at <paramref name="start"/>.</returns>
-    private static bool TryNext(Plan<TItem, TOut> plan, StreamBuffer<TItem> items, FailureLog<TItem> log, ParseOptions options, Func<SourceText?> text, long start, out ParseResult<TOut> result, out long end)
+    private static bool TryNext(Plan<TItem, TOut> plan, StreamBuffer<TItem> items, FailureLog<TItem> log, ModeWriter modes, ParseOptions options, Func<SourceText?> text, long start, out ParseResult<TOut> result, out long end)
     {
         log.ForgetFailure();
         items.ForgetFailures();
+        modes.Reset();
 
-        var cursor = new Cursor<TItem>(items) { Failures = log, MaxDepth = options.MaxDepth };
+        var cursor = new Cursor<TItem>(items) { Failures = log, MaxDepth = options.MaxDepth, Modes = modes };
         TOut value = default!;
         ParseError error;
 
@@ -77,11 +80,14 @@ internal sealed class LayeredPipeline<TIn, TItem, TOut>(Layer<TIn, TItem> layers
     {
         var plan = PlanCache.Get(Parser);
 
-        using var items = new StreamBuffer<TItem>(Layers.Open(openRoot(), options, recordFailures: true));
+        var run = new PipelineRun(options, recordFailures: true);
+
+        using var items = new StreamBuffer<TItem>(Layers.Open(openRoot(), run));
 
         var log = new FailureLog<TItem>();
+        var modes = run.Writer(ParserLayer);
 
-        for (var position = 0L; TryNext(plan, items, log, options, text, position, out var result, out var end); position = end)
+        for (var position = 0L; TryNext(plan, items, log, modes, options, text, position, out var result, out var end); position = end)
         {
             yield return result;
 
@@ -96,13 +102,15 @@ internal sealed class LayeredPipeline<TIn, TItem, TOut>(Layer<TIn, TItem> layers
     {
         var plan = PlanCache.Get(Parser);
 
-        using var items = new StreamBuffer<TItem>(Layers.Open(root, options, recordFailures));
+        var run = new PipelineRun(options, recordFailures);
+
+        using var items = new StreamBuffer<TItem>(Layers.Open(root, run));
 
         var log = recordFailures
             ? new FailureLog<TItem>()
             : null;
 
-        var cursor = new Cursor<TItem>(items) { Failures = log, MaxDepth = options.MaxDepth };
+        var cursor = new Cursor<TItem>(items) { Failures = log, MaxDepth = options.MaxDepth, Modes = run.Writer(ParserLayer) };
         value = default!;
         error = null;
 

@@ -8,6 +8,7 @@ namespace Creole;
 /// The failure log lasts the whole run, so the layer reports its furthest failure across its steps.
 /// So does the state: each step's cursor starts with the state the step before left, and each output's slot records the state its step started with.
 /// <c>atEnd</c> gets the state the last step left.
+/// Each step's cursor carries the layer's mode writer, so the layer's grammar changes only channels read below it.
 /// The cursor's floor starts at the layer's pin: where the step began that produced the oldest output its reader can still go back to, or the step's own start if there is none.
 /// So the input of the running step and of every output the reader can still go back to stays in the buffer, and the cursor states the floor as the layer's horizon when it pulls.
 /// Each step starts by releasing the input below that floor, since a step that starts in a new segment reaches it without the cursor releasing anything.
@@ -19,7 +20,8 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
     Func<TState, Emit<TOut>>? atEnd,
     string name,
     int maxDepth,
-    FailureLog<TIn>? failures
+    FailureLog<TIn>? failures,
+    ModeWriter modes
 )
     : IUpstream<TOut>
 {
@@ -29,6 +31,7 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
     private readonly InitialState _initialState = initialState;
     private readonly ICursorSource<TIn> _input = input;
     private readonly int _maxDepth = maxDepth;
+    private readonly ModeWriter _modes = modes;
     private readonly string _name = name;
     private long _position;
     private object? _state = initialState.Held;
@@ -110,7 +113,7 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
 
         var stepStart = _position;
         var floor = buffer.OldestStepStart ?? stepStart;
-        var cursor = new Cursor<TIn>(_input) { Failures = _failures, Floor = floor, MaxDepth = _maxDepth, State = _state };
+        var cursor = new Cursor<TIn>(_input) { Failures = _failures, Floor = floor, MaxDepth = _maxDepth, Modes = _modes, State = _state };
         var outputs = default(Emit<TOut>);
 
         _failures?.StepStart = stepStart;
@@ -177,16 +180,17 @@ internal sealed class TransduceLayer<TIn, TOut, TState>(TState initialState, Par
 
     public Parser<TIn, Emit<TOut>> Step { get; } = step;
 
-    internal override IUpstream<TOut> Open(ICursorSource<TIn> input, ParseOptions options, bool recordFailures) =>
+    internal override IUpstream<TOut> Open(ICursorSource<TIn> input, PipelineRun run) =>
         new TransduceUpstream<TIn, TOut, TState>(
             input,
             PlanCache.Get(Step),
             InitialState,
             AtEnd,
             Name,
-            options.MaxDepth,
-            recordFailures
+            run.Options.MaxDepth,
+            run.RecordFailures
                 ? new FailureLog<TIn>()
-                : null
+                : null,
+            run.Writer(Name)
         );
 }

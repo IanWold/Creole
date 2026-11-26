@@ -76,6 +76,6 @@ internal sealed class WhereLayer<T>(Func<T, bool> predicate) : Layer<T, T>
 
     public Func<T, bool> Predicate { get; } = predicate;
 
-    internal override IUpstream<T> Open(ICursorSource<T> input, ParseOptions options, bool recordFailures) =>
+    internal override IUpstream<T> Open(ICursorSource<T> input, PipelineRun run) =>
         new WhereUpstream<T>(input, Predicate);
 }

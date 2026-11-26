@@ -74,8 +74,8 @@ internal sealed partial class PlanBuilder
             ? primitive
             : null,
         NodeKind.Cut or NodeKind.Expression or NodeKind.Fail or NodeKind.GetState or NodeKind.LeadingTrivia or NodeKind.Longest or NodeKind.Lookahead
-            or NodeKind.Match or NodeKind.Not or NodeKind.Optional or NodeKind.Or or NodeKind.Position or NodeKind.Rec
-            or NodeKind.Repeat or NodeKind.Return or NodeKind.Separated or NodeKind.SetState or NodeKind.SkipRepeat
+            or NodeKind.Match or NodeKind.Not or NodeKind.Optional or NodeKind.Or or NodeKind.PopMode or NodeKind.Position or NodeKind.PushMode
+            or NodeKind.Rec or NodeKind.Repeat or NodeKind.Return or NodeKind.Separated or NodeKind.SetMode or NodeKind.SetState or NodeKind.SkipRepeat
             or NodeKind.Switch or NodeKind.Until =>
             null,
     };

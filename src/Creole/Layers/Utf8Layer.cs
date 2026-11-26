@@ -183,6 +183,6 @@ internal sealed class Utf8Layer : Layer<byte, char>
 
     public static Utf8Layer Instance { get; } = new();
 
-    internal override IUpstream<char> Open(ICursorSource<byte> input, ParseOptions options, bool recordFailures) =>
+    internal override IUpstream<char> Open(ICursorSource<byte> input, PipelineRun run) =>
         new Utf8Upstream(input);
 }

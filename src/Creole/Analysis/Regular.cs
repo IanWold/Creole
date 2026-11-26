@@ -53,8 +53,8 @@ internal static class Regular
         NodeKind.LeadingTrivia or NodeKind.Position => RegularTerm.Empty.Instance,
         NodeKind.Adjacent or NodeKind.Bind or NodeKind.Case or NodeKind.Custom or NodeKind.Cut or NodeKind.End or NodeKind.Expression
             or NodeKind.Fail or NodeKind.Filter or NodeKind.GetState or NodeKind.Kind or NodeKind.Longest or NodeKind.Lookahead
-            or NodeKind.Match or NodeKind.Not or NodeKind.Rec or NodeKind.Return or NodeKind.Satisfy or NodeKind.Scan
-            or NodeKind.Separated or NodeKind.SetState or NodeKind.Switch or NodeKind.Token or NodeKind.Until =>
+            or NodeKind.Match or NodeKind.Not or NodeKind.PopMode or NodeKind.PushMode or NodeKind.Rec or NodeKind.Return or NodeKind.Satisfy
+            or NodeKind.Scan or NodeKind.Separated or NodeKind.SetMode or NodeKind.SetState or NodeKind.Switch or NodeKind.Token or NodeKind.Until =>
             null,
     };
 
