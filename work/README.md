@@ -211,7 +211,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-None yet.
+- [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) Invalidation rule — Design
 
 ### Can start now
 
@@ -222,7 +222,6 @@ These items have all their blockers done:
 - [INT-12](active/03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md) Close the interpreter test gaps BENCH-01 left
 - [ERR-06](active/04-errors-and-recovery/ERR-06-orinsert-for-missing-items.md) OrInsert for missing items
 - [SPAN-07](active/05-source-spans/SPAN-07-embedded-languages.md) Embedded languages
-- [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) Invalidation rule
 - [MODE-05](active/07-mode-channels/MODE-05-mode-payloads.md) Mode payloads
 - [STRM-02](active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md) Restart protocol and ParseManyAsync
 - [STRM-04](active/08-streaming/STRM-04-huge-single-documents.md) Huge single documents

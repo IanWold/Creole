@@ -4,22 +4,21 @@
 | --- | --- |
 | Epic | [Mode channels](../../README.md#mode--mode-channels) |
 | Phase | Phase 1 — Layers |
-| Status | Not started |
+| Status | Designing |
 
 ## Summary
 
-A mode change discards items lexed under the old mode and re-produces them correctly, including inside multi-output steps.
+A mode change discards items lexed under the old mode and re-produces them correctly.
 
 ## Scope
 
+- A write is a change only when its new top differs from its old top by `EqualityComparer<TMode>.Default`. Every `SetMode`, `PushMode` and `PopMode` appends (index *i*, previous mode stack) to the mode log, but only a change discards, re-runs and lowers ([ADR-0042](../../docs/decisions/0042-a-write-discards-only-when-it-changes-the-top-mode-and-the-mode-log-keeps-only-what-a-rewind-can-reach.md) point 1).
 - Discard buffered items at index i or later, and withdraw the diagnostics raised by the steps that are run again (ERR-04, [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 4).
-- Re-run item i's producing step from `stepStart` with `stateBefore`, dropping the first `groupIndex` outputs.
-- Check dropped outputs equal the consumed ones; report CRL0008 at run time if not.
-- Those consumed outputs lie below the reader's horizon. Their step's input is held, but the output buffer keeps only the segment holding item *i* − 1, so when a step emits more outputs than a segment holds, the earlier ones may have been released. Decide how the check gets them ([ADR-0040](../../docs/decisions/0040-a-producing-layer-keeps-input-only-for-outputs-its-reader-can-go-back-to.md) point 7).
-- Append (index i, previous mode stack) to the mode log.
-- Under `ParseMany`, starting an item resets the parser's channels to their initial modes. That is a mode change at the item's first index, so it discards what the last item lexed past its end under another mode ([ADR-0041](../../docs/decisions/0041-a-channel-has-one-reader-below-one-writer-and-a-write-nothing-reads-or-a-pop-of-the-last-mode-throws.md) point 9).
+- Re-run item i's producing step from `stepStart` with `stateBefore`. The reader is a `Layer.Modal`, which adds one output per step, so the slot's `groupIndex` is 0 and nothing is dropped; assert it. Dropping outputs, CRL0008 and ADR-0040 point 7 belong to [MODE-04](MODE-04-multi-layer-invalidation-cascade.md) (ADR-0042 points 2 and 6).
+- Under `ParseMany`, starting an item resets the parser's channels to their initial modes. Where a channel's top differs from its initial mode, that is a change at the item's first index, so it discards what the last item lexed past its end under another mode ([ADR-0041](../../docs/decisions/0041-a-channel-has-one-reader-below-one-writer-and-a-write-nothing-reads-or-a-pop-of-the-last-mode-throws.md) point 9, ADR-0042 point 4).
 - Lower the furthest failure at *i*: a failure past *i* becomes a bare failure at *i*, and a failure whose span reaches past *i* loses that end and a rejection's or chained operator's message. Saves note the mode log's length and are lowered when restored, by the changes still in effect ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 3).
 - This is the first caller of `FailureLog.WithdrawFromStep`. Test that `Tokens` and `Transduce` tag each diagnostic with its step's start, so the withdrawal takes exactly the re-run steps' diagnostics ([ERR-04](../04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md) Outcome).
+- A write whose layer reads the channel's reader through another layer discards nothing until MODE-04 builds cascades (ADR-0042 point 7).
 
 ## Acceptance criteria
 
@@ -44,3 +43,12 @@ A mode change discards items lexed under the old mode and re-produces them corre
 
 - [§ 3. Mode channels](../../../whitepaper.md#3-mode-channels)
 - [§ The stream buffer](../../../whitepaper.md#the-stream-buffer)
+
+## Artifacts
+
+- [ADR-0042](../../docs/decisions/0042-a-write-discards-only-when-it-changes-the-top-mode-and-the-mode-log-keeps-only-what-a-rewind-can-reach.md) (Proposed): a write discards only when it changes the top mode (A1, chosen); CRL0008 and ADR-0040 point 7 move to MODE-04 (B1, chosen); the mode log drops entries below the writing layer's horizon as its input releases (C2, recommended).
+
+## Progress notes
+
+- 2026-11-26 (Design): Started. The scope leaves open how CRL0008's check reaches consumed outputs the buffer may have released (ADR-0040 point 7); MODE-01 left open whether a `SetMode` that leaves the top mode unchanged is a change; and the whitepaper does not say what "match" means for CRL0008's comparison or how CRL0008 surfaces at run time. Next: a decision record via `/decide`.
+- 2026-11-26 (Design): Drafted ADR-0042 (Proposed). Reading the layer code showed that a channel's reader, a `Layer.Modal`, adds one output per step, so a single boundary never drops outputs and CRL0008 first becomes reachable in a MODE-04 cascade. The maintainer chose A1 (a write discards only when it changes the top) and B1 (CRL0008 and ADR-0040 point 7 move to MODE-04); scope moved accordingly. Drafting found that nothing bounds the mode log, which grows by one entry per write over a whole document; Fork C recommends C2. Next: the maintainer approves the options, criteria and trial plan, especially Fork C; then Build.
