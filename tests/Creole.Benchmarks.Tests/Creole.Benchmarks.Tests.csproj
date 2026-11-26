@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\benchmarks\Creole.Benchmarks\Creole.Benchmarks.csproj" />
+    <ProjectReference Include="..\..\benchmarks\Creole.MemoryGate\Creole.MemoryGate.csproj" />
   </ItemGroup>
 
 </Project>

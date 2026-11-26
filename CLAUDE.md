@@ -84,6 +84,7 @@ The SDK is pinned in `global.json` (.NET 11 GA, 11.0.100). On this machine the s
 | Benchmarks | `dotnet run -c Release --project benchmarks/Creole.Benchmarks` (`-- --filter '*Json*' --job short` to narrow; see benchmarks/README.md) |
 | Compare benchmark runs | `python3 scripts/bench-compare.py <old-run> <new-run>` |
 | Phase 0 gate | Three runs of `dotnet run -c Release --project benchmarks/Creole.Benchmarks -- --anyCategories Gate`, then `python3 scripts/bench-gate.py <run> <run> <run>` |
+| Phase 1 memory gate | `python3 scripts/memory-gate.py` (`--sizes 2000000 20000000` for a quick check) |
 | Pack | `dotnet pack src/Creole -c Release` |
 | AOT smoke | `dotnet publish tests/Creole.AotSmoke -c Release` |
 
