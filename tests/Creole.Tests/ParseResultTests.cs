@@ -30,7 +30,9 @@ public class ParseResultTests
         "Creole.Pipeline: Creole.ParseResult`1[TOut] Parse[TOut](Creole.Pipeline`2[System.Char,TOut], System.ReadOnlyMemory`1[System.Char], System.String, Creole.ParseOptions, System.String)",
         "Creole.Pipeline: Creole.ParseResult`1[TOut] Parse[TOut](Creole.Pipeline`2[System.Char,TOut], System.IO.TextReader, Creole.ParseOptions, System.String)",
         "Creole.Pipeline: Creole.ParseResult`1[TOut] Parse[TOut](Creole.Pipeline`2[System.Byte,TOut], System.ReadOnlyMemory`1[System.Byte], System.String, Creole.ParseOptions, System.String)",
+        "Creole.Pipeline: Creole.ParseResult`1[TOut] Parse[TOut](Creole.Pipeline`2[System.Byte,TOut], System.IO.Stream, Creole.ParseOptions, System.String)",
         "Creole.Pipeline: System.Collections.Generic.IEnumerable`1[Creole.ParseResult`1[TOut]] ParseMany[TOut](Creole.Pipeline`2[System.Byte,TOut], System.ReadOnlyMemory`1[System.Byte], System.String, Creole.ParseOptions, System.String)",
+        "Creole.Pipeline: System.Collections.Generic.IEnumerable`1[Creole.ParseResult`1[TOut]] ParseMany[TOut](Creole.Pipeline`2[System.Byte,TOut], System.IO.Stream, Creole.ParseOptions, System.String)",
         "Creole.Pipeline: System.Collections.Generic.IEnumerable`1[Creole.ParseResult`1[TOut]] ParseMany[TOut](Creole.Pipeline`2[System.Char,TOut], System.String, System.String, Creole.ParseOptions, System.String)",
         "Creole.Pipeline: System.Collections.Generic.IEnumerable`1[Creole.ParseResult`1[TOut]] ParseMany[TOut](Creole.Pipeline`2[System.Char,TOut], System.ReadOnlyMemory`1[System.Char], System.String, Creole.ParseOptions, System.String)",
         "Creole.Pipeline: System.Collections.Generic.IEnumerable`1[Creole.ParseResult`1[TOut]] ParseMany[TOut](Creole.Pipeline`2[System.Char,TOut], System.IO.TextReader, Creole.ParseOptions, System.String)",
@@ -209,6 +211,15 @@ public class ParseResultTests
             .. bytes.ParseMany("x!"u8.ToArray()),
             .. bytes.ParseMany(new byte[] { 0x78, 0xFF }),
             .. bytes.ParseMany("x[[x"u8.ToArray(), options: shallow),
+            bytes.Parse(new MemoryStream("x"u8.ToArray())),
+            bytes.Parse(new MemoryStream("y"u8.ToArray())),
+            bytes.Parse(new MemoryStream("!"u8.ToArray())),
+            bytes.Parse(new MemoryStream([0xFF])),
+            bytes.Parse(new MemoryStream("[[x"u8.ToArray()), options: shallow),
+            .. bytes.ParseMany(new MemoryStream("xx y"u8.ToArray())),
+            .. bytes.ParseMany(new MemoryStream("x!"u8.ToArray())),
+            .. bytes.ParseMany(new MemoryStream([0x78, 0xFF])),
+            .. bytes.ParseMany(new MemoryStream("x[[x"u8.ToArray()), options: shallow),
         ];
         ParseResult<int>[] itemResults =
         [

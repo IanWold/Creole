@@ -45,6 +45,18 @@ public class ByteSourceDiagnosticsTests
         Source("naïve = 1\r\nemoji = \"😀\" 7\r\n"),
     };
 
+    public static TheoryData<byte[]> StreamSources =>
+    [
+        Source("naïve = 1\r\nb = \"x\"\r\n"),
+        Encoding.UTF8.GetBytes("é = 1\r\nb = =\r\n"),
+        Array.Empty<byte>(),
+        _byteOrderMark,
+        TruncatedSource(),
+        InvalidSource(),
+        Source("naïve = 1\r\ngröße = 2€\r\n"),
+        Source("naïve = 1\r\nemoji = \"😀\" 7\r\n"),
+    ];
+
     private static ParseError ErrorOfOneRecordingRun(byte[] bytes)
     {
         try
@@ -65,6 +77,9 @@ public class ByteSourceDiagnosticsTests
 
     private static byte[] Source(string text) =>
         [.. _byteOrderMark, .. Encoding.UTF8.GetBytes(text)];
+
+    private static byte[] TruncatedSource() =>
+        [.. Source("naïve = 1\r\nb = "), 0xE2, 0x82];
 
     [Fact]
     public void ADecoderErrorReportsItsBytesAndItsLineAndColumn()
@@ -149,6 +164,34 @@ public class ByteSourceDiagnosticsTests
     [Fact]
     public void BytesWithoutAByteOrderMarkRenderAgainstTheirText() =>
         Assert.Contains(" --> settings.txt:2:5", _pipeline.Parse(Encoding.UTF8.GetBytes("é = 1\r\nb = =\r\n"), source: "settings.txt").Diagnostics.Render(), StringComparison.Ordinal);
+
+    [Theory]
+    [MemberData(nameof(StreamSources))]
+    public void ParseManyOverAStreamMatchesParseManyOverBytes(byte[] bytes)
+    {
+        var pipeline = Pipeline.From(_lexer).Then(_setting);
+        var fromBytes = pipeline.ParseMany(bytes).ToList();
+
+        foreach (var fromStream in new[] { pipeline.ParseMany(new MemoryStream(bytes)).ToList(), pipeline.ParseMany(new TrickleStream(bytes)).ToList() })
+        {
+            Assert.Equal(fromBytes.Select(static result => (result.Value as Parsed<string>)?.Value), fromStream.Select(static result => (result.Value as Parsed<string>)?.Value));
+            Assert.Equal(fromBytes.SelectMany(static result => result.Diagnostics), fromStream.SelectMany(static result => result.Diagnostics));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(StreamSources))]
+    public void ParseOverAStreamMatchesParseOverBytes(byte[] bytes)
+    {
+        var fromBytes = _pipeline.Parse(bytes);
+
+        foreach (var fromStream in new[] { _pipeline.Parse(new MemoryStream(bytes)), _pipeline.Parse(new TrickleStream(bytes)) })
+        {
+            Assert.Equal(fromBytes.Diagnostics, fromStream.Diagnostics);
+            Assert.Equal((fromBytes.Value as Parsed<IReadOnlyList<string>>)?.Value, (fromStream.Value as Parsed<IReadOnlyList<string>>)?.Value);
+            Assert.Equal(string.Join('\n', fromStream.Diagnostics), fromStream.Diagnostics.Render());
+        }
+    }
 
     [Theory]
     [MemberData(nameof(FailingSources))]

@@ -13,7 +13,7 @@ namespace Creole;
 /// So a successful parse pays nothing for errors, a failed parse costs up to about two and a half times as much, and the grammar's functions run again when a parse fails.
 /// </para>
 /// <para>
-/// <c>Parse</c> over a <see cref="TextReader"/>, which cannot be read again, and every <c>ParseMany</c>, record failures as they go.
+/// <c>Parse</c> over a <see cref="TextReader"/> or a <see cref="Stream"/>, which cannot be read again, and every <c>ParseMany</c>, record failures as they go.
 /// </para>
 /// <para>
 /// When a parse ends, however it ends, its buffers return their memory to their pools.
@@ -266,6 +266,48 @@ public static class Pipeline
         }
 
         /// <summary>
+        /// Parses the bytes <paramref name="input"/> reads with this pipeline, whose first layer decodes them, such as <see cref="Layer.Utf8"/>, reading as the layers pull.
+        /// </summary>
+        /// <param name="input">The stream to parse from, whose reads block until it has bytes or ends, such as a file, a socket, or a <c>PipeReader</c>'s <c>AsStream()</c>. The parse leaves it open.</param>
+        /// <param name="options">The settings for the parse, or <see langword="null"/> for <see cref="ParseOptions.Default"/>.</param>
+        /// <param name="pipelineExpression">
+        /// The caller's expression for this pipeline, used in the error message.
+        /// The compiler fills it in; do not pass it.
+        /// </param>
+        /// <returns>
+        /// <see cref="Parsed{T}"/> with the parser's value if it succeeded.
+        /// Otherwise <see cref="Failed"/> with one error, which holds no text, so <see cref="Diagnostics.Render()"/> writes it on one line.
+        /// </returns>
+        /// <remarks>
+        /// <para>
+        /// The parse reads only as far as the layers need, and keeps only what they may still go back to.
+        /// It records failures as it goes, since it cannot read the input again.
+        /// It blocks the calling thread while the stream waits for bytes; to parse a document that arrives slowly, run it on a thread of its own.
+        /// </para>
+        /// <para>
+        /// The error comes from the layer that failed, named as that layer is, or from the parser, named <c>parser</c>.
+        /// Its spans hold offsets of the bytes read, counted from 0, in the source <see cref="SourceId.Unnamed"/>, and, above <see cref="Layer.Utf8"/>, character offsets in the decoded text.
+        /// So it is the error that <c>Parse</c> over the same bytes in memory reports.
+        /// </para>
+        /// <para>
+        /// Slices in the value are copies, since the bytes read are not kept.
+        /// An exception the stream throws, such as <see cref="OperationCanceledException"/> from a cancelled read, ends the parse and is not caught.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="GrammarException">This pipeline is null, or a grammar in it is not valid.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="input"/> is null.</exception>
+        public ParseResult<TOut> Parse(Stream input, ParseOptions? options = null, [CallerArgumentExpression(nameof(pipeline))] string pipelineExpression = "")
+        {
+            var checkedPipeline = Guard.NotNull(pipeline, pipelineExpression);
+
+            ArgumentNullException.ThrowIfNull(input);
+
+            return checkedPipeline.TryParse(Read(input), options ?? ParseOptions.Default, recordFailures: true, out var value, out var error)
+                ? new Parsed<TOut>(value)
+                : new Failed(new Diagnostics([error]));
+        }
+
+        /// <summary>
         /// Parses the bytes <paramref name="input"/> as a sequence of items, running this pipeline's parser at the start and again after each item until no input remains.
         /// </summary>
         /// <param name="input">The bytes to parse. A <see langword="byte"/> array converts to this type.</param>
@@ -297,6 +339,42 @@ public static class Pipeline
 
             return Many(checkedPipeline, input, Decoded(checkedPipeline, input, source), options ?? ParseOptions.Default);
         }
+
+        /// <summary>
+        /// Parses the bytes <paramref name="input"/> reads as a sequence of items, running this pipeline's parser at the start and again after each item until the stream ends.
+        /// </summary>
+        /// <param name="input">The stream to parse from, whose reads block until it has bytes or ends, such as a file, a socket, or a <c>PipeReader</c>'s <c>AsStream()</c>. The parse leaves it open.</param>
+        /// <param name="options">The settings for the parse, or <see langword="null"/> for <see cref="ParseOptions.Default"/>.</param>
+        /// <param name="pipelineExpression">
+        /// The caller's expression for this pipeline, used in the error message.
+        /// The compiler fills it in; do not pass it.
+        /// </param>
+        /// <returns>
+        /// Each item's result, parsed as it is asked for, reading only as far as that item needs.
+        /// A <see cref="Failed"/> result is the last, and holds no text, so <see cref="Diagnostics.Render()"/> writes its error on one line.
+        /// </returns>
+        /// <remarks>
+        /// <para>
+        /// Each item starts with no furthest failure in any layer, and failures are recorded as the parse goes.
+        /// A layer that fails while the next item is being looked for ends the sequence with that next item's <see cref="Failed"/> result.
+        /// Spans hold offsets of the bytes read and, above <see cref="Layer.Utf8"/>, character offsets in the decoded text, as over the same bytes in memory.
+        /// </para>
+        /// <para>
+        /// Nothing is read until the sequence is enumerated. Enumerate it once: a second enumeration reads on from wherever the stream is, counting offsets from 0 again.
+        /// Ending an enumeration early returns its buffers' memory to their pools and leaves the stream open.
+        /// Slices in the values are copies, since the bytes read are not kept.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="GrammarException">This pipeline is null. When enumerated, a grammar in it is not valid, or the parser succeeded without consuming input.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="input"/> is null.</exception>
+        public IEnumerable<ParseResult<TOut>> ParseMany(Stream input, ParseOptions? options = null, [CallerArgumentExpression(nameof(pipeline))] string pipelineExpression = "")
+        {
+            var checkedPipeline = Guard.NotNull(pipeline, pipelineExpression);
+
+            ArgumentNullException.ThrowIfNull(input);
+
+            return checkedPipeline.ParseMany(() => Read(input), options ?? ParseOptions.Default, static () => null);
+        }
     }
 
     /// <summary>
@@ -312,6 +390,9 @@ public static class Pipeline
 
     private static StreamBuffer<char> Read(TextReader reader) =>
         new(new ReaderUpstream(reader));
+
+    private static StreamBuffer<byte> Read(Stream stream) =>
+        new(new StreamUpstream(stream));
 
     private static ParseResult<TOut> Run<TIn, TOut>(Pipeline<TIn, TOut> pipeline, ReadOnlyMemory<TIn> input, Func<SourceText?> text, ParseOptions options)
     {

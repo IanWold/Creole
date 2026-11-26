@@ -211,7 +211,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- [STRM-04](active/08-streaming/STRM-04-huge-single-documents.md) Huge single documents — Designing
+- [STRM-04](active/08-streaming/STRM-04-huge-single-documents.md) Huge single documents — Building
 
 ### Can start now
 

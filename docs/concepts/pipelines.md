@@ -30,6 +30,7 @@ A pipeline is data, as its layers and parser are: building one runs nothing. It 
 | `Parse(ReadOnlyMemory<char> input, string? source = null, ParseOptions? options = null)` | `Pipeline<char, TOut>` | Characters in memory, such as part of a buffer, or a `char[]`. |
 | `Parse(TextReader input, ParseOptions? options = null)` | `Pipeline<char, TOut>` | A reader, read as the layers pull ([Readers](#readers)). |
 | `Parse(ReadOnlyMemory<byte> input, string? source = null, ParseOptions? options = null)` | `Pipeline<byte, TOut>` | Bytes in memory, or a `byte[]`, which the first layer decodes ([Bytes in memory](#bytes-in-memory)). |
+| `Parse(Stream input, ParseOptions? options = null)` | `Pipeline<byte, TOut>` | A stream, read as the layers pull, whose bytes the first layer decodes ([Streams](#streams)). |
 
 - `source` and `options` work as they do for a parser ([Running a parser](parsing.md#parse)). Pass options by name: `Parse(text, options: limits)`.
 - The depth limit applies to each layer's steps and to the parser, each counting its own depth.
@@ -82,8 +83,9 @@ foreach (var result in word.ParseMany(" a bc  d "))
 | `ParseMany(ReadOnlyMemory<char> input, string? source = null, ParseOptions? options = null)` | Characters in memory. |
 | `ParseMany(TextReader input, ParseOptions? options = null)` | A reader ([Readers](#readers)). |
 | `ParseMany(ReadOnlyMemory<byte> input, string? source = null, ParseOptions? options = null)` | Bytes in memory, on a `Pipeline<byte, TOut>` ([Bytes in memory](#bytes-in-memory)). |
+| `ParseMany(Stream input, ParseOptions? options = null)` | A stream, on a `Pipeline<byte, TOut>` ([Streams](#streams)). |
 
-- **It is lazy.** Nothing runs until you enumerate the results, and each item is parsed when you ask for it. A reader is read only as far as that item needs.
+- **It is lazy.** Nothing runs until you enumerate the results, and each item is parsed when you ask for it. A reader or stream is read only as far as that item needs.
 - **A failed item is the last.** Each result is `Parsed<T>` or `Failed`. After a failure nothing says where the next item would start, so the sequence ends there.
 - **A layer's failure ends it too.** If a layer fails while the next item is being looked for, that next item's result is `Failed` with the layer's error.
 - **Each item starts afresh.** A failure recorded while parsing one item never shapes a later item's error, and each item starts the [mode channels](mode-channels.md) the parser writes at their initial modes.
@@ -126,6 +128,22 @@ error[parser]: expected name or end of input
 - `Parse` over bytes runs twice when it fails, as over text. `ParseMany` records as it goes.
 - Slices are copies, since the decoded characters are not the caller's memory.
 
+## Streams
+
+A pipeline from bytes also parses a `Stream` with `Parse` and `ParseMany`, reading as the layers pull and blocking until the stream has bytes or ends. It keeps only what the layers may still go back to, as over a [reader](#readers), and its first layer decodes, as over [bytes in memory](#bytes-in-memory). So a file or a socket parses with byte offsets in its spans, without being read into memory first:
+
+```csharp
+using var file = File.OpenRead(path);
+var result = settings.Parse(file);
+```
+
+- Offsets count the bytes read, from 0. Above `Layer.Utf8()`, `CharStart` and `CharEnd` count the decoded characters. Values and errors are the ones `Parse` and `ParseMany` give over the same bytes in memory, even where a character's bytes arrive in different reads.
+- Failures are recorded as the parse goes, since the input cannot be read again, so a failed parse does not run twice.
+- A failed result holds no text, so `Render()` writes its error on one line, as `ToString()` does.
+- Slices are copies.
+- The stream is yours: a parse leaves it open. Enumerate `ParseMany` over a stream once, since a second enumeration reads on from wherever the stream is, counting offsets from 0 again.
+- A read blocks the thread that called `Parse` until bytes arrive. A `PipeReader` becomes such a stream with `AsStream()`.
+
 ## Input in memory
 
 Over a string or memory, `Parse` and `ParseMany` copy none of their input. The first layer reads the string or memory it was given, so slices a lexer takes, such as `Slice` values in tokens, are views of it, and a failed result refers to the same text to render it. If the input is a buffer you reuse, finish with the slices and render the errors before you reuse it.
@@ -138,4 +156,4 @@ As a parser's `Parse` does, a pipeline's `Parse` over a string or memory runs wi
 
 ## Exceptions
 
-`Parse` and `ParseMany` throw `GrammarException` if the pipeline is null, if a grammar in it is not valid, which is found when it first runs, or if a layer or the parser reads its [state](layer-state.md#types) as a type it is not. They throw `ArgumentNullException` for a null string or reader. Exceptions from the reader, such as an `IOException`, pass through. Exceptions from your own code, such as a `Select` function in a layer or in the parser, pass through.
+`Parse` and `ParseMany` throw `GrammarException` if the pipeline is null, if a grammar in it is not valid, which is found when it first runs, or if a layer or the parser reads its [state](layer-state.md#types) as a type it is not. They throw `ArgumentNullException` for a null string, reader or stream. Exceptions from the reader or stream, such as an `IOException`, pass through. Exceptions from your own code, such as a `Select` function in a layer or in the parser, pass through.
