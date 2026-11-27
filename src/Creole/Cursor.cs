@@ -214,7 +214,6 @@ public ref struct Cursor<T>
         if (entered)
         {
             _source.Release(Math.Min(position, Floor), Failures);
-            Modes?.Trim(Math.Min(position, Floor));
         }
     }
 

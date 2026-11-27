@@ -56,6 +56,22 @@ file sealed class Lexers : CharGrammar
     );
 
     /// <summary>
+    /// Adds each token it produces to <paramref name="lexed"/>.
+    /// </summary>
+    public static Layer<char, Lexeme> Recording(List<string> lexed) =>
+        Layer.Modal(
+            Modes,
+            mode =>
+                (mode == Mode.Operand ? _name.Or(_regex) : _name.Or(_slash))
+                .Select(lexeme =>
+                {
+                    lexed.Add(lexeme.Text);
+                    return lexeme;
+                }),
+            Whitespace.SkipMany()
+        );
+
+    /// <summary>
     /// In operator mode, first tries <c>//!</c>, which fails after reading <c>//</c> if no <c>!</c> follows.
     /// </summary>
     public static readonly Layer<char, Lexeme> Searching = Layer.Modal(
@@ -87,6 +103,12 @@ file sealed class Parsers : TokenGrammar<Lexeme, K>
     public static readonly Parser<Lexeme, string> DivisionThenRegex =
         Seq(Kind(K.Name), SetMode(_modes, Mode.Operator), Kind(K.Slash), Kind(K.Name), Kind(K.Regex).Or(SetMode(_modes, Mode.Operand).Then(Kind(K.Regex))))
             .Select(static (left, _, slash, right, regex) => $"{left.Text} {slash.Text} {right.Text} {regex.Text}");
+
+    /// <summary>
+    /// Sets operand mode, which is the mode the channel starts in, reads a name, and looks at the next token.
+    /// </summary>
+    public static readonly Parser<Lexeme, string> NameLookingAhead =
+        SetMode(_modes, Mode.Operand).Then(Kind(K.Name)).Before(Lookahead(Kind(K.Regex)).Optional()).Select(static name => name.Text);
 
     /// <summary>
     /// Reads a regex, or a name that leaves operator mode after looking at a slash in it.
@@ -135,6 +157,15 @@ public class ModeInvalidationTests
 
         Assert.Equal(expected, Assert.IsType<Failed>(Pipeline.From(Lexers.Searching).Then(Parsers.RegexThenName).Parse("a //@").Value).Diagnostics.Single());
         Assert.Equal((false, "", expected), LayerRun.Parse(Lexers.Searching, Parsers.RegexThenName, "a //@", segmentSize: 1) with { Value = "" });
+    }
+
+    [Fact]
+    public void AParseManyItemStartingInTheModeTheLastLeftReadsNothingAgain()
+    {
+        var lexed = new List<string>();
+
+        Assert.Equal(["a", "b", "c"], Pipeline.From(Lexers.Recording(lexed)).Then(Parsers.NameLookingAhead).ParseMany("a b c").Select(Value));
+        Assert.Equal(["a", "b", "c"], lexed);
     }
 
     [Fact]

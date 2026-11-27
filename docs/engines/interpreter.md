@@ -67,7 +67,7 @@ Results that are value types flow through the plan without boxing, so a parse wh
 | A query whose later `from` builds a new parser from an earlier value | that parser, and its plan, on every match; return an existing parser, such as a rule field, to avoid it |
 | `Case<T>()` over union tokens that are structs, and `Match` over a union that is a struct, such as `Maybe<T>` | the case value, boxed to read it |
 | `Scan` with a value-type state | the new state, boxed, each time it runs; `SetState` allocates nothing |
-| `PushMode`, and `SetMode` while a mode is pushed | one stack entry each time it runs; `SetMode` over a stack of one mode allocates nothing. Every `SetMode`, `PushMode` and `PopMode` also adds an entry to its layer's log of writes, which allocates only when the log grows. Over a stream buffer the log keeps only the writes the layer can still go back over, so it stays as small as that window however long the input. A parser run on its own makes a record of each channel it changes, once per parse, and keeps its log's storage from one parse to the next on each thread |
+| `PushMode`, and `SetMode` while a mode is pushed | one stack entry each time it runs; `SetMode` over a stack of one mode allocates nothing. Every `SetMode`, `PushMode` and `PopMode` also adds an entry to its layer's log of writes. The log keeps only the writes the layer can still go back over, so it stays as small as that window however long the input, and it allocates only when the window grows. A parser run on its own makes a record of each channel it changes, once per parse, and keeps its log's storage from one parse to the next on each thread, up to room for 1,024 writes |
 
 Struct tokens that implement `IKinded<TKind>`, matched with `Kind(k)`, never box.
 

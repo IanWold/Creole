@@ -110,8 +110,9 @@ internal static class LayerRun
     /// <remarks>
     /// Both buffers hold <paramref name="segmentSize"/> items to a segment, from pools that overwrite each array given back, so a read of released or discarded items shows.
     /// </remarks>
+    /// <param name="released">Given the first position the items' buffer still holds when the parse ends, so a test can check that it released what it meant to.</param>
     /// <returns>The parser's value, or the error of the parser or of the layer that failed.</returns>
-    public static (bool Ok, TOut Value, ParseError? Error) Parse<T, TOut>(Layer<char, T> layer, Parser<T, TOut> parser, string text, int segmentSize = 1024, PipelineRun? run = null)
+    public static (bool Ok, TOut Value, ParseError? Error) Parse<T, TOut>(Layer<char, T> layer, Parser<T, TOut> parser, string text, int segmentSize = 1024, PipelineRun? run = null, Action<long>? released = null)
     {
         run ??= new PipelineRun(ParseOptions.Default, recordFailures: true);
 
@@ -132,6 +133,10 @@ internal static class LayerRun
         catch (LayerFailedException exception)
         {
             return (false, value, exception.Error);
+        }
+        finally
+        {
+            released?.Invoke(items.Start);
         }
     }
 

@@ -8,7 +8,7 @@ namespace Creole;
 /// Each write appends an entry to the log: where the layer's cursor was, the channel, and its stack before.
 /// A write changes the mode when the top of the stack after it differs from the top before it.
 /// Only a change makes the layer forget its failures past the cursor, because only a change can make the layer below read the next item differently.
-/// As the layer's cursor moves into a new segment of its input, the writer drops the entries below the layer's horizon, which no rewind can reach, so the log stays as small as the window the layer can still go back over.
+/// When the log is full, the writer first drops the entries below the lower of the layer's cursor and its floor, which no rewind can reach, so the log stays as small as the window the layer can still go back over, over any input.
 /// A change also discards the items the <c>Layer.Modal</c> reading the channel produced from the cursor on, if the layer reads them directly, so they are read again in the new mode.
 /// </para>
 /// <para>
@@ -20,7 +20,7 @@ namespace Creole;
 /// Its writer keeps a stack for each channel it writes, which nothing else reads, so its grammar still runs as written.
 /// It takes the writer when its grammar first changes a mode, so a parse that changes none uses none.
 /// Any writer makes its log at its first write, so a layer whose grammar changes no mode allocates none.
-/// Each thread keeps a spare writer for parsers run on their own, which a parse takes and gives back when it ends, so the log keeps its storage from one parse to the next.
+/// Each thread keeps a spare writer for parsers run on their own, which a parse takes and gives back when it ends, so the log keeps its storage from one parse to the next, up to room for <see cref="SpareLimit"/> entries.
 /// </para>
 /// </remarks>
 /// <param name="layer">The name of the layer whose grammar writes, which errors give.</param>
@@ -36,6 +36,11 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
     /// <param name="Changed">Whether the write changed the mode: whether the top after it differs from the top before it.</param>
     private readonly record struct Entry(long Index, ModeLink Link, object Previous, bool Changed);
 
+    /// <summary>
+    /// The most entries a spare writer's log keeps room for. A larger log is let go when its writer is given back, so a thread does not hold on to the memory of its largest parse.
+    /// </summary>
+    private const int SpareLimit = 1024;
+
     private readonly ModeLink[]? _below = below;
     private readonly string _layer = layer;
     private List<Entry>? _log;
@@ -45,9 +50,32 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
     private static ModeWriter? _spare;
 
     /// <summary>
+    /// The number of entries the log has room for, for tests of its memory bound.
+    /// </summary>
+    internal int Capacity => _log?.Capacity ?? 0;
+
+    /// <summary>
     /// The number of entries the log holds, for tests of its memory bound.
     /// </summary>
     internal int Count => _log?.Count ?? 0;
+
+    /// <summary>
+    /// Drops the entries of <paramref name="log"/> below <paramref name="horizon"/>, the lowest position the layer can still go back to.
+    /// </summary>
+    /// <remarks>
+    /// Entries are in the order of their positions, so those below the horizon are the oldest.
+    /// </remarks>
+    private static void Drop(List<Entry> log, long horizon)
+    {
+        var count = 0;
+
+        while (count < log.Count && log[count].Index < horizon)
+        {
+            count++;
+        }
+
+        log.RemoveRange(0, count);
+    }
 
     private ModeLink<TMode> Own<TMode>(ModeChannel<TMode> channel)
     {
@@ -150,45 +178,35 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
         }
 
         writer._own?.Clear();
+
+        if (writer._log is { Capacity: > SpareLimit })
+        {
+            writer._log = null;
+        }
+
         writer._log?.Clear();
         _spare = writer;
-    }
-
-    /// <summary>
-    /// Drops the entries of the log below <paramref name="horizon"/>, the lowest position the layer can still go back to.
-    /// </summary>
-    /// <remarks>
-    /// Entries are in the order of their positions, so those below the horizon are the oldest.
-    /// </remarks>
-    public void Trim(long horizon)
-    {
-        if (_log is null)
-        {
-            return;
-        }
-
-        var count = 0;
-
-        while (count < _log.Count && _log[count].Index < horizon)
-        {
-            count++;
-        }
-
-        _log.RemoveRange(0, count);
     }
 
     /// <summary>
     /// Replaces the stack of <paramref name="link"/> with <paramref name="next"/>, logging the write at <paramref name="cursor"/>'s position.
     /// </summary>
     /// <remarks>
+    /// If the log is full, it first drops the entries no rewind can reach.
     /// If the write changes the mode, the layer forgets its failures past the cursor, and discards the items read ahead from the cursor on.
     /// </remarks>
     public void Write<T, TMode>(ref Cursor<T> cursor, ModeLink<TMode> link, ModeStack<TMode> next)
     {
         var previous = link.Stack;
         var changed = !EqualityComparer<TMode>.Default.Equals(previous.Top, next.Top);
+        var log = _log ??= [];
 
-        (_log ??= []).Add(new Entry(cursor.Position, link, previous, changed));
+        if (log.Count == log.Capacity)
+        {
+            Drop(log, Math.Min(cursor.Position, cursor.Floor));
+        }
+
+        log.Add(new Entry(cursor.Position, link, previous, changed));
         link.Stack = next;
 
         if (changed)

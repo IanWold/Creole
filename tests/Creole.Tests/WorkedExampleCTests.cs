@@ -163,10 +163,10 @@ file sealed class ErrorCases : TokenGrammar<Tok, K>
             .Select(static _ => "");
 
     /// <summary>
-    /// After <c>x;</c>, a filter that rejects every operand.
+    /// After <c>x;</c>, a look at the next token in operator mode, which records no failure, and then a filter that rejects every operand.
     /// </summary>
     public static readonly Parser<Tok, string> RejectedOperand =
-        ScriptGrammar.Statement.Then(ScriptGrammar.IfStmt.Or(ScriptGrammar.Operand.Where(static _ => false)));
+        ScriptGrammar.Statement.Then(Lookahead(Any)).Then(ScriptGrammar.Operand.Where(static _ => false));
 
     /// <summary>
     /// After <c>x;</c>, an <c>Atomic</c> that reads a slash, a name and a slash in operator mode and fails at the next token, then a change to operand mode where it started, and a regex and a number.
@@ -192,13 +192,22 @@ file sealed class ErrorCases : TokenGrammar<Tok, K>
 /// </summary>
 file static class Script
 {
-    public static ParseError Error<T>(Parser<Tok, T> parser, string text)
+    public static ParseError Error<T>(Parser<Tok, T> parser, string text) =>
+        Error(parser, text, out _);
+
+    /// <summary>
+    /// The error of <paramref name="parser"/> on <paramref name="text"/>, which both runs must agree on, and the first token the streamed run still held when it ended.
+    /// </summary>
+    public static ParseError Error<T>(Parser<Tok, T> parser, string text, out long held)
     {
         var failed = Assert.IsType<Failed>(Pipeline.From(ScriptLexer.Lexer).Then(parser).Parse(text).Value);
-        var streamed = LayerRun.Parse(ScriptLexer.Lexer, parser, text, segmentSize: 1);
+        var start = 0L;
+        var streamed = LayerRun.Parse(ScriptLexer.Lexer, parser, text, segmentSize: 1, released: position => start = position);
 
         Assert.False(streamed.Ok);
         Assert.Equal(failed.Diagnostics.Single(), streamed.Error);
+
+        held = start;
 
         return streamed.Error!;
     }
@@ -252,9 +261,10 @@ public class WorkedExampleCTests
     [Fact]
     public void AContextAroundAnOperandReportsTheItemLexedInTheNewMode()
     {
-        var error = Script.Error(ErrorCases.OperandInContext, "x; /re/ z");
+        var error = Script.Error(ErrorCases.OperandInContext, "x; /re/.test(s) z", out var held);
 
-        Assert.Equal(Script.SpanOf(8, 9), error.Span);
+        Assert.True(held > 2);
+        Assert.Equal(Script.SpanOf(16, 17), error.Span);
         Assert.Equal(new UnexpectedItem(Script.Found(K.Name, "z")), error.Unexpected);
         Assert.Equal([new ContextLine("in operand", Script.SpanOf(3, 7))], error.Context);
     }
@@ -272,9 +282,10 @@ public class WorkedExampleCTests
     [Fact]
     public void AFilterAroundAnOperandReportsTheItemLexedInTheNewMode()
     {
-        var error = Script.Error(ErrorCases.RejectedOperand, "x; /re/");
+        var error = Script.Error(ErrorCases.RejectedOperand, "x; /re/.test(s)", out var held);
 
-        Assert.Equal(Script.SpanOf(3, 7), error.Span);
+        Assert.True(held > 2);
+        Assert.Equal(Script.SpanOf(3, 15), error.Span);
         Assert.Equal(new UnexpectedItem(Script.Found(K.Regex, "/re/")), error.Unexpected);
     }
 
