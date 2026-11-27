@@ -121,7 +121,7 @@ Neither can fail on its own input. The only error either can end a parse with is
 
 ## Decoding bytes: `Layer.Utf8`
 
-`Layer.Utf8()` is a `Layer<byte, char>` that decodes UTF-8. Chain a lexer over characters after it to read bytes, and run it on bytes in memory with a [pipeline](pipelines.md#bytes-in-memory):
+`Layer.Utf8()` is a `Layer<byte, char>` that decodes UTF-8. Chain a lexer over characters after it to read bytes, and run it with a pipeline on bytes in memory ([Bytes in memory](pipelines.md#bytes-in-memory)) or on a stream ([Streams](pipelines.md#streams)):
 
 ```csharp
 Layer<byte, string> words = Layer.Utf8().Then(Layer.Tokens(Letter.AtLeastOnce().Text(), skip: Whitespace.SkipMany()));

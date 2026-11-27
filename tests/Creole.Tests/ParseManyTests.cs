@@ -44,6 +44,8 @@ public class ParseManyTests
 
     private static readonly Pipeline<char, string> _a = Pipeline.From(_words).Then(WordGrammar.Token("a"));
 
+    private static readonly Pipeline<byte, string> _wordFromBytes = Pipeline.From(Layer.Utf8().Then(_words)).Then(WordGrammar.Any);
+
     private static string Describe<T>(ParseResult<T> result) => result switch
     {
         Parsed<T> parsed => $"{parsed.Value}",
@@ -101,6 +103,21 @@ public class ParseManyTests
     }
 
     [Fact]
+    public void AStreamIsReadOnlyAsFarAsEachItemNeeds()
+    {
+        var stream = new TrickleStream("a b c d"u8.ToArray());
+        var results = _wordFromBytes.ParseMany(stream);
+
+        Assert.Equal(0, stream.Consumed);
+
+        using var items = results.GetEnumerator();
+
+        Assert.True(items.MoveNext());
+        Assert.Equal("a", Describe(items.Current));
+        Assert.Equal(2, stream.Consumed);
+    }
+
+    [Fact]
     public void EachItemReturnsItsResult() =>
         Assert.Equal(["a", "bc", "d"], _word.ParseMany(" a bc  d ").Select(Describe));
 
@@ -137,6 +154,7 @@ public class ParseManyTests
     {
         Assert.Empty(_word.ParseMany("  "));
         Assert.Empty(_word.ParseMany(new StringReader("")));
+        Assert.Empty(_wordFromBytes.ParseMany(Stream.Null));
     }
 
     [Fact]
@@ -147,6 +165,8 @@ public class ParseManyTests
         Assert.Throws<GrammarException>(static () => ((Pipeline<char, string>)null!).ParseMany(new StringReader("a")));
         Assert.Throws<ArgumentNullException>(static () => _word.ParseMany((string)null!));
         Assert.Throws<ArgumentNullException>(static () => _word.ParseMany((TextReader)null!));
+        Assert.Throws<GrammarException>(static () => ((Pipeline<byte, string>)null!).ParseMany(Stream.Null));
+        Assert.Throws<ArgumentNullException>(static () => _wordFromBytes.ParseMany((Stream)null!));
     }
 
     [Theory]
@@ -164,5 +184,14 @@ public class ParseManyTests
 
         Assert.Equal(2, _word.ParseMany(reader).Count());
         Assert.Equal(-1, reader.Read());
+    }
+
+    [Fact]
+    public void TheStreamIsLeftOpen()
+    {
+        var stream = new MemoryStream("a b"u8.ToArray());
+
+        Assert.Equal(2, _wordFromBytes.ParseMany(stream).Count());
+        Assert.Equal(-1, stream.ReadByte());
     }
 }

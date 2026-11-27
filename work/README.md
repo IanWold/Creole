@@ -96,7 +96,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 6 | ✅ [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) Invalidation rule | [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md), [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md), [MODE-01](active/07-mode-channels/MODE-01-mode-channels-and-layermodal.md) |
 | 6 | ✅ [MODE-05](active/07-mode-channels/MODE-05-mode-payloads.md) Mode payloads | ✅ [MODE-01](active/07-mode-channels/MODE-01-mode-channels-and-layermodal.md) |
 | 6 | [STRM-02](active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md) Restart protocol and ParseManyAsync | [SPAN-06](active/05-source-spans/SPAN-06-byte-sources-and-the-decoding-layer.md), [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md), ✅ [STRM-01](active/08-streaming/STRM-01-starved-outcome.md) |
-| 6 | [STRM-04](active/08-streaming/STRM-04-huge-single-documents.md) Huge single documents | [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) |
+| 6 | ✅ [STRM-04](active/08-streaming/STRM-04-huge-single-documents.md) Huge single documents | [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) |
 | 7 | [INT-12](active/03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md) Close the interpreter test gaps BENCH-01 left | [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) |
 | 7 | [MODE-03](active/07-mode-channels/MODE-03-rollback-rule.md) Rollback rule | ✅ [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) |
 | 7 | [MODE-04](active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md) Multi-layer invalidation cascade | ✅ [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) |
@@ -226,7 +226,6 @@ These items have all their blockers done:
 - [MODE-03](active/07-mode-channels/MODE-03-rollback-rule.md) Rollback rule
 - [MODE-04](active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md) Multi-layer invalidation cascade
 - [STRM-02](active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md) Restart protocol and ParseManyAsync
-- [STRM-04](active/08-streaming/STRM-04-huge-single-documents.md) Huge single documents
 - [ANA-01](active/09-static-analysis/ANA-01-grammar-property-analysis.md) Grammar property analysis
 - [GEN-11](active/11-source-generator/GEN-11-runtime-support-surface-for-generated-code.md) Runtime support surface for generated code
 - [TOOL-01](active/12-grammar-author-tooling/TOOL-01-creoletesting-assertions.md) Creole.Testing assertions
@@ -360,7 +359,7 @@ Starved handling, the restart protocol, async record streams and streaming diagn
 | ✅ [STRM-01](active/08-streaming/STRM-01-starved-outcome.md) Starved outcome | 1 | [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) |
 | [STRM-02](active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md) Restart protocol and ParseManyAsync | [SPAN-06](active/05-source-spans/SPAN-06-byte-sources-and-the-decoding-layer.md), [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md), ✅ [STRM-01](active/08-streaming/STRM-01-starved-outcome.md) |
 | [STRM-03](active/08-streaming/STRM-03-streaming-diagnostics.md) Streaming diagnostics | 1 | [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md), [STRM-02](active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md) |
-| [STRM-04](active/08-streaming/STRM-04-huge-single-documents.md) Huge single documents | 1 | [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) |
+| ✅ [STRM-04](active/08-streaming/STRM-04-huge-single-documents.md) Huge single documents | 1 | [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) |
 
 ### ANA — Static analysis
 

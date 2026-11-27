@@ -19,6 +19,8 @@ public class PipelineTests
     private static readonly Pipeline<char, IReadOnlyList<string>> _sentence =
         Pipeline.From(_words).Then(WordGrammar.Token("the").Then(WordGrammar.Any.AtLeastOnce()).Before(WordGrammar.End));
 
+    private static readonly Pipeline<byte, int> _countFromBytes = Pipeline.From(Layer.Utf8().Then(_words)).Then(_count);
+
     private static string Error<T>(ParseResult<T> result) =>
         Assert.Single(result.Diagnostics).ToString();
 
@@ -107,6 +109,8 @@ public class PipelineTests
         Assert.Throws<GrammarException>(static () => ((Pipeline<char, int>)null!).Parse("a"));
         Assert.Throws<GrammarException>(static () => ((Pipeline<char, int>)null!).Parse("a".AsMemory()));
         Assert.Throws<ArgumentNullException>(static () => Pipeline.From(_words).Then(_count).Parse((string)null!));
+        Assert.Throws<GrammarException>(static () => ((Pipeline<byte, int>)null!).Parse(Stream.Null));
+        Assert.Throws<ArgumentNullException>(static () => _countFromBytes.Parse((Stream)null!));
     }
 
     [Fact]
@@ -171,6 +175,10 @@ public class PipelineTests
         Assert.Equal("error[lexer] at 4..5: unexpected '1'; expected whitespace or letter", result.Diagnostics.Render());
     }
 
+    [Fact]
+    public void AFailedParseOverAStreamRendersOnOneLine() =>
+        Assert.Equal("error[lexer] at 4..5: unexpected '1'; expected whitespace or letter", _countFromBytes.Parse(new MemoryStream("the\n1"u8.ToArray())).Diagnostics.Render());
+
     [Theory]
     [InlineData("the cat sat")]
     [InlineData("the 1")]
@@ -208,6 +216,15 @@ public class PipelineTests
 
         Assert.IsType<Parsed<IReadOnlyList<string>>>(_sentence.Parse(reader).Value);
         Assert.Equal(-1, reader.Read());
+    }
+
+    [Fact]
+    public void TheStreamIsLeftOpen()
+    {
+        var stream = new MemoryStream("the cat"u8.ToArray());
+
+        Assert.Equal(2, Assert.IsType<Parsed<int>>(_countFromBytes.Parse(stream).Value).Value);
+        Assert.Equal(-1, stream.ReadByte());
     }
 
     [Fact]
