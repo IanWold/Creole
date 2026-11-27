@@ -177,6 +177,12 @@ On Starved, the driver does the following, in ADR-0030's order:
 
 Items that layers produced before the bookmark are kept, and so are diagnostics they raised there, which wait for this item (ADR-0038 point 4).
 
+*Revised 2026-11-27 during the build:* a mode change during the attempt can discard items produced before the bookmark.
+- **How it happens.** An item's first `SetMode` sends the `Layer.Modal` that reads the channel back to the step of the item's first token, when that token was lexed as lookahead past the last item's end.
+- **What the bookmark does.** It moves down to that point, as the layer goes back. The buffer's bookmarked count falls to the first item discarded, and the layer's position, state and diagnostic count fall to that step's.
+- **What the restart does.** It produces those items again under the restored modes, which gives back the bookmark's items.
+- **What it replaces.** The first build restored the bookmark as taken, which skipped those items. An independent review found it: over `one two; three four five; six`, a parser that changes mode at each item's start lost `four`, and a lexer that raised diagnostics made the restart throw.
+
 - **For:**
   - Exact by construction. Every layer is where it was when the item started, so the retry is the run a parse with all its data makes, which is point 10.
   - It is what the whitepaper and ADR-0030 point 7 say, so no accepted record changes.
@@ -267,7 +273,7 @@ Before retrying, the driver reads until it holds at least twice what the attempt
 
 #### 4C. As 4A, or as soon as the source has nothing more ready (chosen)
 
-Each read asks for the whole shortfall. The driver retries in either of two cases:
+Each read asks for the whole shortfall, so a read that returns fewer bytes says the source had no more ready. The driver retries in either of two cases:
 
 - it holds 4A's target;
 - a read returned fewer bytes than asked, and the next read does not complete at once.
@@ -275,7 +281,7 @@ Each read asks for the whole shortfall. The driver retries in either of two case
 That pending read is kept, and awaited if the retry starves again. The driver stops at the stream's end and at the cap, as 4A does.
 
 - **For:**
-  - Request and response stays live. Once a peer has sent a whole record and waits, the next read pends, and the item is retried with what arrived. Criterion 5 checks it.
+  - Request and response stays live. Once a peer has sent a whole record and waits, the next read pends, and the item is retried with what arrived. Criterion 5 checks it. *Revised 2026-11-27 during the build:* the first build capped each read at 64 KiB, so a record whose last part filled a capped read was not short, and its reply waited for the next record. A 196,608-byte request hung. Reads now ask for the whole shortfall, and `AReplyToALargeRecordNeverWaitsForTheNext` checks records of 64 KiB to 192 KiB plus one byte.
   - Sources that fill each read, such as memory and files, keep 4A's linear bound, and so do sources whose next read completes at once because data is ready.
   - `Stream` allows short reads while data is ready (Context), which is why a short read alone does not trigger a retry.
 - **Against:**
@@ -352,7 +358,7 @@ Read against criterion 8, which measures bytes: 6B is 9.9%, 7.5% and 12.6% faste
 Proposed, with one option chosen in every fork: **1A, 2A, 3A, 4C, 5A and 6A**. 1A and 4C are the maintainer's choices; 2A, 3A and 5A are settled by argument; 6A stands because 6B failed criterion 8's trial. The root is a class of its own (fork 3's Result). The record is ready for the maintainer to accept when STRM-02 completes.
 
 1. **Surface.** `Pipeline<byte, TOut>.ParseManyAsync(Stream input, ParseOptions? options = null, CancellationToken cancellationToken = default)` returns `IAsyncEnumerable<ParseResult<TOut>>`. Its token is checked between attempts and passed to every read. The stream is left open. A `PipeReader` passes `AsStream()`.
-2. **Bookmark and restart.** Each item's start bookmarks every layer as fork 2A's table says. On Starved, the driver does four things in order:
+2. **Bookmark and restart.** Each item's start bookmarks every layer as fork 2A's table says. A mode change that sends a layer back before its bookmark lowers that layer's and its buffer's bookmark to the step it went back to. On Starved, the driver does four things in order:
    - it undoes mode changes;
    - it discards items produced since the bookmark and puts each layer back at its bookmarked state;
    - it clears every failure record, every scoped part and every Starved flag;

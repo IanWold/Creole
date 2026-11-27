@@ -407,6 +407,12 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
         Truncate(position);
         _ended = false;
 
+        if (position < _bookmark)
+        {
+            _bookmark = position;
+            _bookmarkEnded = false;
+        }
+
         return true;
     }
 
@@ -487,6 +493,7 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     /// <inheritdoc/>
     /// <remarks>
     /// If the upstream goes back to its bookmark, the buffer drops the items added since and returns to whether its input had ended then.
+    /// A mode change during the attempt may have discarded items from below the bookmark, and the upstream then goes back to the step of the first of them instead, so the buffer drops from there.
     /// A root keeps every item it has added, since it cannot produce them again.
     /// Either way the buffer is no longer <see cref="Starved"/>, and its reader holds no span, as at the bookmark.
     /// </remarks>

@@ -19,6 +19,12 @@ file enum K
 
 file readonly record struct Lexeme(K Kind, string Text) : IKinded<K>;
 
+file enum Reach
+{
+    Letters,
+    ToSemicolon,
+}
+
 file enum J
 {
     Open,
@@ -96,6 +102,8 @@ file sealed class Lexers : CharGrammar
 {
     private static readonly Parser<char, Lexeme> _number = Digit.AtLeastOnce().Text().Select(static text => new Lexeme(K.Number, text));
 
+    private static readonly Parser<char, string> _toSemicolon = NoneOf(';').SkipMany().Then(Char(';')).Text();
+
     private static readonly Parser<char, Lexeme> _word = Letter.AtLeastOnce().Text().Select(static text => new Lexeme(K.Word, text));
 
     public static readonly Layer<char, string> Counted = Layer.Tokens(
@@ -110,6 +118,18 @@ file sealed class Lexers : CharGrammar
     public static readonly ModeChannel<Mode> Modes = new(Mode.Words);
 
     public static readonly Layer<char, string> Raising = Layer.Tokens(Letter.AtLeastOnce().Text().Or(Char('!').Then(new RaiseNode("a bang"))), Whitespace.SkipMany());
+
+    public static readonly ModeChannel<Reach> Reaches = new(Reach.Letters);
+
+    /// <summary>
+    /// Reads a word in letter mode, raising a diagnostic for each, and everything up to and including the next <c>;</c> in the other mode.
+    /// </summary>
+    public static readonly Layer<char, string> ReachingRaisingWords = Layer.Modal(Reaches, static reach => reach == Reach.Letters ? Letter.AtLeastOnce().Text().Before(new RaiseNode("a word")) : _toSemicolon, Whitespace.SkipMany());
+
+    /// <summary>
+    /// Reads a word in letter mode, and everything up to and including the next <c>;</c> in the other mode.
+    /// </summary>
+    public static readonly Layer<char, string> ReachingWords = Layer.Modal(Reaches, static reach => reach == Reach.Letters ? Letter.AtLeastOnce().Text() : _toSemicolon, Whitespace.SkipMany());
 
     public static readonly Layer<char, Lexeme> Steered = Layer.Modal(Modes, static mode => mode == Mode.Words ? _word : _number, Whitespace.SkipMany());
 }
@@ -143,6 +163,11 @@ public class RestartTests
 
     private const string Seeded = "1 to 64 bytes per read, from a fixed seed";
 
+    private static readonly Parser<string, string> _reachingPair =
+        WordGrammar.Seq(WordGrammar.SetMode(Lexers.Reaches, Reach.ToSemicolon), WordGrammar.Any, WordGrammar.SetMode(Lexers.Reaches, Reach.Letters), WordGrammar.Any)
+            .Select(static (_, first, _, second) => $"{first}|{second}")
+            .Before(WordGrammar.Lookahead(WordGrammar.Any).Optional());
+
     private static readonly Layer<char, string> _words = Layer.Tokens(Letter.AtLeastOnce().Text(), skip: Whitespace.SkipMany());
 
     private static readonly Pipeline<byte, string> _aFromBytes = Pipeline.From(Layer.Utf8().Then(_words)).Then(WordGrammar.Token("a"));
@@ -164,6 +189,12 @@ public class RestartTests
 
     private static readonly Pipeline<byte, string> _lookingAheadFromBytes =
         Pipeline.From(Layer.Utf8().Then(_words)).Then(WordGrammar.Lookahead(WordGrammar.Token("x").Or(WordGrammar.Any.Then(WordGrammar.Any))).Then(WordGrammar.Token("y")).Context("a record"));
+
+    private static readonly Pipeline<char, string> _reaching = Pipeline.From(Lexers.ReachingWords).Then(_reachingPair);
+
+    private static readonly Pipeline<byte, string> _reachingFromBytes = Pipeline.From(Layer.Utf8().Then(Lexers.ReachingWords)).Then(_reachingPair);
+
+    private static readonly Pipeline<char, string> _reachingRaising = Pipeline.From(Lexers.ReachingRaisingWords).Then(_reachingPair);
 
     private static readonly Pipeline<char, string> _raisingLookingAhead = Pipeline.From(Lexers.Raising).Then(WordGrammar.Any.Before(WordGrammar.Lookahead(WordGrammar.Any.Then(WordGrammar.Any)).Optional()));
 
@@ -192,7 +223,7 @@ public class RestartTests
         };
     }
 
-    private static int LexerDiagnostics<TIn, TOut>(Pipeline<TIn, TOut> pipeline, TIn[] input, int? step)
+    private static List<long> LexerDiagnostics<TIn, TOut>(Pipeline<TIn, TOut> pipeline, TIn[] input, int? step)
     {
         var logs = new List<object>();
         var root = new FedUpstream<TIn>(input, step ?? input.Length);
@@ -203,7 +234,7 @@ public class RestartTests
 
         _ = Run(items, () => root.Receive(step ?? 0));
 
-        return ((FailureLog<TIn>)logs[0]).DiagnosticCount;
+        return [.. ((FailureLog<TIn>)logs[0]).DiagnosticSteps];
     }
 
     private static List<object?> Outcomes<T>(List<ParseResult<T>> results) =>
@@ -278,6 +309,16 @@ public class RestartTests
     [MemberData(nameof(Steps))]
     public void ALayerThatSteersTheLayerBelowGivesTheItemsItGivesInMemory(int step) =>
         SameAsInMemory(_steeredByALayerFromBytes, Bytes("ab12 cd34  ef56 gh7"), step);
+
+    [Theory]
+    [MemberData(nameof(Steps))]
+    public void AModeChangeAtAnItemsStartThatDiscardsItsLookaheadRestartsAsInMemory(int step) =>
+        SameAsInMemory(_reaching, "one two; three four five; six".ToCharArray(), step);
+
+    [Theory]
+    [MemberData(nameof(Steps))]
+    public void AModeChangeAtAnItemsStartThatDiscardsItsLookaheadKeepsTheDiagnosticsItKeepsInMemory(int step) =>
+        Assert.Equal(LexerDiagnostics(_reachingRaising, "one two; three four five; six".ToCharArray(), step: null), LexerDiagnostics(_reachingRaising, "one two; three four five; six".ToCharArray(), step));
 
     [Theory]
     [MemberData(nameof(Steps))]
@@ -375,6 +416,11 @@ public class RestartTests
     [MemberData(nameof(Deliveries))]
     public Task StreamedJsonLinesWithInvalidUtf8InAMiddleRecordEndAsInMemory(string delivery) =>
         SameAsInMemoryAsync(_jsonFromBytes, [.. Bytes("[1, 2]\n\"ab"), 0xC3, 0x28, .. Bytes("\"\n[3]\n")], delivery);
+
+    [Theory]
+    [MemberData(nameof(Deliveries))]
+    public Task StreamedRecordsWhoseModeChangesDiscardTheirLookaheadGiveTheItemsTheyGiveInMemory(string delivery) =>
+        SameAsInMemoryAsync(_reachingFromBytes, Bytes("one two; three four five; six"), delivery);
 
     [Theory]
     [MemberData(nameof(Deliveries))]

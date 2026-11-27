@@ -61,6 +61,7 @@ internal interface IUpstream<T> : IDisposable
 
     /// <summary>
     /// Goes back to the restart bookmark, as a starved item restarts: undoes the mode writes since, withdraws the diagnostics raised since, forgets every failure, and puts back the position and state, then has the input it reads go back to its own.
+    /// If a mode change sent the upstream back before its bookmark since, it goes back to that earlier step instead.
     /// </summary>
     /// <remarks>
     /// The default does nothing and returns <see langword="false"/>, for a root, which keeps every item it has added because it cannot produce them again.

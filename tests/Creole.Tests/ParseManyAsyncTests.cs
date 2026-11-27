@@ -188,6 +188,40 @@ public class ParseManyAsyncTests
         Assert.Equal(["ping", "hello", "goodbye"], received);
     }
 
+    [Theory(Timeout = 10_000)]
+    [InlineData(65_536)]
+    [InlineData(131_072)]
+    [InlineData(196_607)]
+    [InlineData(196_608)]
+    [InlineData(196_609)]
+    public async Task AReplyToALargeRecordNeverWaitsForTheNext(int length)
+    {
+        var pipe = new Pipe();
+        var replied = new SemaphoreSlim(0);
+        var request = Encoding.UTF8.GetBytes(new string('a', length - 1) + ";");
+        var received = new List<int>();
+
+        var producer = Task.Run(
+            async () =>
+            {
+                await pipe.Writer.WriteAsync(request, TestContext.Current.CancellationToken);
+                await replied.WaitAsync(TestContext.Current.CancellationToken);
+                await pipe.Writer.CompleteAsync();
+            },
+            TestContext.Current.CancellationToken
+        );
+
+        await foreach (var result in _requests.ParseManyAsync(pipe.Reader.AsStream(), cancellationToken: TestContext.Current.CancellationToken))
+        {
+            received.Add(Value(result).Length);
+            replied.Release();
+        }
+
+        await producer;
+
+        Assert.Equal([length - 1], received);
+    }
+
     [Fact]
     public async Task CancellingTheTokenEndsTheEnumerationBeforeTheNextItemEvenWithItsBytesReceived()
     {

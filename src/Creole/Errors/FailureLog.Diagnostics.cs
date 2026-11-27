@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Creole;
 
 internal sealed partial class FailureLog<T>
@@ -126,6 +128,11 @@ internal sealed partial class FailureLog<T>
     private readonly record struct Diagnostic(FailureCopy Failure, long Step, bool GivesBack);
 
     private readonly List<Diagnostic> _diagnostics = [];
+
+    /// <summary>
+    /// Where the step started that raised each diagnostic held, in the order raised, for tests of what a restart keeps.
+    /// </summary>
+    internal IEnumerable<long> DiagnosticSteps => _diagnostics.Select(static diagnostic => diagnostic.Step);
 
     /// <summary>
     /// How many diagnostics the layer has raised and not withdrawn. A mark saves it, and <see cref="Withdraw"/> goes back to it.
@@ -269,6 +276,8 @@ internal sealed partial class FailureLog<T>
     /// </summary>
     public void Withdraw(int count)
     {
+        Debug.Assert(count <= _diagnostics.Count, "A withdrawal to more diagnostics than are held.");
+
         if (count == _diagnostics.Count)
         {
             return;

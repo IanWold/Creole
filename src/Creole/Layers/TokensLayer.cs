@@ -18,6 +18,7 @@ namespace Creole;
 /// When the layer above changes the mode of the channel a <c>Layer.Modal</c> reads, the run goes back to the step that produced the first item it discards.
 /// That step's diagnostics, and those of every step after it, are withdrawn, because those steps run again, and the layer forgets its failures from the step's start on.
 /// A restart bookmark notes the run's position, state, mode log and diagnostic count, and a restart puts them back and forgets every failure.
+/// Going back to a step before the bookmark, as a mode change at an item's start can make it, lowers the bookmark to that step and its diagnostics to those still raised, so a restart produces those items again instead of skipping them.
 /// </remarks>
 file sealed class TokensUpstream<TIn, TOut>(
     ICursorSource<TIn> input,
@@ -97,6 +98,14 @@ file sealed class TokensUpstream<TIn, TOut>(
         _state = slot.StateBefore;
         _failures?.WithdrawFromStep(slot.StepStart);
         _failures?.LowerAt(slot.StepStart);
+
+        if (slot.StepStart < _bookmarkPosition)
+        {
+            _bookmarkPosition = slot.StepStart;
+            _bookmarkState = slot.StateBefore;
+        }
+
+        _bookmarkDiagnostics = Math.Min(_bookmarkDiagnostics, _failures?.DiagnosticCount ?? 0);
 
         return true;
     }

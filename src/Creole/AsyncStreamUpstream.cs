@@ -13,6 +13,7 @@ namespace Creole;
 /// </para>
 /// <para>
 /// After an item starves, the driver calls <see cref="ReceiveAsync"/>, which reads until it holds at least twice what the attempt saw, counted from the buffer's horizon, and one read's size more.
+/// Each read asks for the whole shortfall, so a read that returns fewer bytes means the source had no more ready.
 /// It returns sooner when the stream ends, or when the source has nothing more ready: a read returned fewer bytes than it asked for, and the next read does not complete at once.
 /// That next read stays pending, and the next call awaits it first.
 /// It never holds more than the buffer's limit and one byte past the buffer's horizon, counting the bytes it has not yet added, so an item that needs more ends with the limit's error at the pull that exceeds it.
@@ -26,7 +27,6 @@ namespace Creole;
 /// <param name="cancellationToken">Cancels the reads.</param>
 internal sealed class AsyncStreamUpstream(Stream stream, CancellationToken cancellationToken) : IUpstream<byte>
 {
-    private const int MaximumRead = 65_536;
     private const int MinimumRead = 4_096;
 
     private int _asked;
@@ -131,7 +131,7 @@ internal sealed class AsyncStreamUpstream(Stream stream, CancellationToken cance
 
         while (!_ended && Received < target)
         {
-            var read = _pending ?? Read((int)Math.Min(target - Received, MaximumRead));
+            var read = _pending ?? Read((int)Math.Min(target - Received, Array.MaxLength - (_stagedEnd - _stagedStart)));
 
             _pending = null;
 
