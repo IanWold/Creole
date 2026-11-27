@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Mode channels](../../README.md#mode--mode-channels) |
 | Phase | Phase 1 — Layers |
-| Status | Building |
+| Status | Done |
 
 ## Summary
 
@@ -23,9 +23,9 @@ A mode change discards items lexed under the old mode and re-produces them corre
 
 ## Acceptance criteria
 
-- [ ] Example C lexes `/` correctly in both `(a) / 2` and `if (ok) /x/.test(s)`.
-- [ ] A filter and a `Context` around Example C's `Operand`, which starts with `SetMode`, each report the item lexed under the new mode ([ADR-0028](../../docs/decisions/0028-an-errors-items-are-copied-when-the-buffer-releases-them.md)).
-- [ ] Tests from [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 11: counterexample 3, and a rejection whose span crossed a later mode change no longer widens the error or supplies its message.
+- [x] Example C lexes `/` correctly in both `(a) / 2` and `if (ok) /x/.test(s)`.
+- [x] A filter and a `Context` around Example C's `Operand`, which starts with `SetMode`, each report the item lexed under the new mode ([ADR-0028](../../docs/decisions/0028-an-errors-items-are-copied-when-the-buffer-releases-them.md)).
+- [x] Tests from [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 11: counterexample 3, and a rejection whose span crossed a later mode change no longer widens the error or supplies its message.
 
 ## Blocked by
 
@@ -47,7 +47,7 @@ A mode change discards items lexed under the old mode and re-produces them corre
 
 ## Artifacts
 
-- [ADR-0042](../../docs/decisions/0042-a-write-discards-only-when-it-changes-the-top-mode-and-the-mode-log-keeps-only-what-a-rewind-can-reach.md) (Proposed): a write discards only when it changes the top mode (A1, chosen); CRL0008 and ADR-0040 point 7 move to MODE-04 (B1, chosen); each save keeps the first change after it, the buffer copies the item there, and a full mode log drops the entries no rewind can reach (C6, chosen; C2 ruled out by the build).
+- [ADR-0042](../../docs/decisions/0042-a-write-discards-only-when-it-changes-the-top-mode-and-the-mode-log-keeps-only-what-a-rewind-can-reach.md) (Accepted): a write discards only when it changes the top mode (A1, chosen); CRL0008 and ADR-0040 point 7 move to MODE-04 (B1, chosen); each save keeps the first change after it, the buffer copies the item there, and a full mode log drops the entries no rewind can reach (C6, chosen; C2 ruled out by the build).
 
 ## Progress notes
 
@@ -62,3 +62,27 @@ A mode change discards items lexed under the old mode and re-produces them corre
 - 2026-11-27 (Build): Increment 4 done: C6 and the measurements. Saves no longer note the log's length: `FailureLog.ChangeAt` lowers at a change and gives its position to each open save taken since the last change, `Reset` and `Restore` lower there, and `Preserve` copies the item at each open save's position before release, which the lowered failure takes. `ModeWriter.Trim` drops entries below the horizon each time the writing layer's cursor enters a new segment, and each writer makes its log at its first write. Tests: `FailureLoweringTests` (+5: where a restore is lowered, nested and successive saves, the copy at release), `WorkedExampleCTests` (+2: criterion 8, the filter around a document that threw before, now agrees streamed and in memory; criterion 3, at most 10 entries at 1,000 and 100,000 statements). Seven mutations each failed a test; one that drops too much cannot show until MODE-03 reads the log. Benchmarks: unpinned runs were bimodal (performance and efficiency cores); pinned with `taskset -c 0-11` on both sides, three alternating default-job runs against `fb86fe7`: `Layer.Tokens` after/before 0.93, 0.97, 1.03; one-mode `Layer.Modal` over `Layer.Tokens` 1.02 on each input. Allocation 2.79 → 2.82 KB per small `Layer.Tokens` parse after the lazy log. ADR-0042 records the results: C6 chosen, every other option settled. Docs: `interpreter.md`. `dotnet build` 0 warnings; `dotnet test` 2,066 passed; AOT smoke OK. Every criterion appears met and each fork of ADR-0042 has a chosen option. Next: the maintainer opens the PR and runs `/complete`, which accepts ADR-0042 and makes its whitepaper and MODE-03 edits.
 - 2026-11-27 (Build): `/complete` paused. An independent critic found every criterion met but one defect: a parser run on its own over memory never trims its mode log, because trimming runs only when a cursor enters a new segment, and the thread's spare writer keeps the log's capacity after the parse (about 64 MB after 1,000,000 characters). It also found stale C2 text on this card and in ADR-0042, criterion 2's streamed tests not reaching the release path, no test that the `ParseMany` reset discards only on a change, criterion 6's result overstated, and timings taken before the last code change. The maintainer chose to fix all of it first. Increment 5: trim when the log fills, below min(cursor, floor), for any input, in place of the segment hook; a spare keeps at most 1,024 entries' room; the tests; the text. Then pinned `LayerBenchmarks` and `ErrorBenchmarks` on the commit. Next: increment 5.
 - 2026-11-27 (Build): Increment 5 done: the review's fixes. `ModeWriter.Write` drops the entries below the lower of the cursor and its floor when the log is full, before it grows, over any input, in place of the drop when a cursor enters a segment; a spare writer given back with room for more than 1,024 entries lets its log go. ADR-0042 revised in place: Context question 6, C6's trim point, and C2's wrong claim about memory. Tests: `ModeChangeTests` (+2: a parser on its own over memory keeps no more entries over 100,000 characters than 1,000; a large pinned parse leaves the next parse on its thread a log with room for at most 1,024); criterion 2's streamed tests now release the token at the filter's and the `Context`'s start and assert it, and the filter's looks ahead with `Lookahead(Any)` so the filter's own copy is the one used; `ModeInvalidationTests` (+1: a `ParseMany` item that starts in the mode the last left reads nothing again). Five mutations each failed a test, after two survivors showed gaps in the first versions of the tests. Card scope and artifacts now describe C6; ADR-0042 notes for GEN-06 that skipping pins over memory must still lower the floor for the log. `dotnet build` 0 warnings; `dotnet test` 2,069 passed; AOT smoke OK. Next: the maintainer commits; then pinned `LayerBenchmarks` and `ErrorBenchmarks` on that commit, and back to `/complete`.
+- 2026-11-27 (Done): Verified on `69ba0e1`: `dotnet build` 0 warnings; `dotnet test` 2,069 passed; AOT smoke OK; each criterion's tests pass by name. An independent critic found the criteria met, and its findings were fixed in increment 5. Pinned `LayerBenchmarks` and `ErrorBenchmarks`, three alternating runs a side against `fb86fe7`: `Layer.Tokens` after/before 0.99, 0.98, 0.95; one-mode `Layer.Modal` over `Layer.Tokens` 1.01, 1.06, 1.00; `ErrorBenchmarks` 0.86–1.03. The maintainer accepted ADR-0042, with the medium input's 1.06 taken as this machine's spread.
+
+## Outcome
+
+Delivered on [ADR-0042](../../docs/decisions/0042-a-write-discards-only-when-it-changes-the-top-mode-and-the-mode-log-keeps-only-what-a-rewind-can-reach.md), accepted at completion. The build revised it in place twice: once for a restore lowered where the buffer had released the item (C6 replaced C2), and once, after review, for a log over memory that never shrank.
+
+- **Which writes change the mode.** A write changes the mode only when it leaves a different mode on top, compared with `EqualityComparer<TMode>.Default` (A1). Every write is logged in [ModeWriter.cs](../../../src/Creole/ModeWriter.cs); only a change discards, re-reads and lowers.
+- **Discarding.** A change discards through the cursor ([Cursor.cs](../../../src/Creole/Cursor.cs)) and the buffer it reads ([StreamBuffer.cs](../../../src/Creole/StreamBuffer.cs), `Discard`). The `Layer.Modal` below goes back to the slot's `stepStart` and `stateBefore`, withdraws the diagnostics of re-run steps (the first caller of `WithdrawFromStep`) and lowers its own failures there ([TokensLayer.cs](../../../src/Creole/Layers/TokensLayer.cs)). A `ParseMany` item that starts in a different mode discards what the last item read ahead.
+- **Errors.** [FailureLog.cs](../../../src/Creole/Errors/FailureLog.cs) lowers the furthest failure at a change (ADR-0030 point 3): a bare failure past it, whose context the next failure there supplies, and a rejection or chained operator that loses its end and message. Each save keeps the first change made after it and is lowered there on restore, and a buffer copies the item there before release (C6).
+- **The mode log's bound.** A full log drops its entries below the lower of the cursor and the floor, over any input. A writer makes its log at its first write, and a parser run on its own reuses its thread's spare writer, whose log keeps room for at most 1,024 entries.
+- **Tests.** [WorkedExampleCTests.cs](../../../tests/Creole.Tests/WorkedExampleCTests.cs) covers the card's three criteria:
+  - Criterion 1: `TheLexerReadsSlashAsTheParserExpectsIt`, five inputs in memory and over one-item segments, and `EachTokenReadInTheWrongModeIsReadAgainInTheNewOne`, a trace in which one token is read again.
+  - Criterion 2: `AFilterAroundAnOperandReportsTheItemLexedInTheNewMode` and `AContextAroundAnOperandReportsTheItemLexedInTheNewMode`, each streamed with the start token released.
+  - Criterion 3: `AChangeAfterReadingAheadForgetsTheFailurePastIt` and `ARejectionWhoseSpanCrossedALaterChangeNeitherWidensTheErrorNorGivesItsMessage`.
+
+  The mechanics have their own tests: `FailureLoweringTests` (21), `ModeChangeFailureTests` (9), `ModeInvalidationTests` (14), `StreamBufferDiscardTests` (6) and two tests in `ModeChangeTests`. Forty-four mutations across the five increments each failed a test.
+- **Cost.** A small pipeline parse allocates about 30 B more. Speed is within the record's thresholds except one figure, `Layer.Modal` over `Layer.Tokens` at 1.06 on the medium input, which the record keeps as measured.
+- **Docs.** [mode-channels.md](../../../docs/concepts/mode-channels.md) (§ Tokens read ahead, § What a change does to errors), [layers.md](../../../docs/concepts/layers.md), [errors.md](../../../docs/concepts/errors.md) and [interpreter.md](../../../docs/engines/interpreter.md).
+- **Deviations.** None outside ADR-0042, which refines ADR-0030 points 1 and 3 and ADR-0028 point 1, and moves ADR-0040 point 7 to MODE-04. The whitepaper's § 3. Mode channels, § Failure positions, § Bookmarks and retention and Example C were updated on acceptance.
+- **Left to other cards.**
+  - [MODE-04](MODE-04-multi-layer-invalidation-cascade.md): CRL0008 and cascades. Until then, a write through a layer in between discards nothing.
+  - [MODE-03](MODE-03-rollback-rule.md): undo, marks that keep log lengths, clearing a save's first change, and tests that a drop removes nothing a rewind needs.
+  - [GEN-06](../11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md): the floor for the log when generated code skips pins over memory.
+  - [REL-01](../14-release/REL-01-worked-example-samples.md) may promote Example C's test grammar to a sample.

@@ -2,9 +2,9 @@
 
 | | |
 | --- | --- |
-| Status | Proposed |
+| Status | Accepted |
 | Date | 2026-11-26 |
-| Cards | [MODE-02](../../active/07-mode-channels/MODE-02-invalidation-rule.md), [MODE-03](../../active/07-mode-channels/MODE-03-rollback-rule.md), [MODE-04](../../active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md) |
+| Cards | [MODE-02](../../active/07-mode-channels/MODE-02-invalidation-rule.md), [MODE-03](../../active/07-mode-channels/MODE-03-rollback-rule.md), [MODE-04](../../active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md), [GEN-06](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md) |
 | Whitepaper | [§ 3. Mode channels](../../../whitepaper.md#3-mode-channels), [§ Failure positions](../../../whitepaper.md#failure-positions), [§ Bookmarks and retention](../../../whitepaper.md#bookmarks-and-retention), [§ Guarantees](../../../whitepaper.md#guarantees) |
 | Research | MODE-02's reading of the layer code, recorded under Context (2026-11-26) |
 | Supersedes | — |
@@ -176,25 +176,29 @@ Entries below the writing layer's horizon are dropped, as under C2. Revised on 2
   - ADR-0028 point 1's list of copied positions gains one per open save.
   - MODE-03's undo must clear those indexes as it undoes changes.
 
-**Result:** Chosen. Proposed after the build reproduced question 5. On 2026-11-27 the maintainer agreed to build it in place of C2, with criterion 8. Tried in MODE-02's build on the working tree over `f087aac`:
+**Result:** Chosen. Proposed after the build reproduced question 5. On 2026-11-27 the maintainer agreed to build it in place of C2, with criterion 8. An independent review of the build then found question 6, and C6's drop moved from segment entry to a full log. The measurements below are on `69ba0e1`, the final code.
 
-- **Criterion 3.** The parser's log holds at most 10 entries after any statement, over both 1,000 and 100,000 statements of Example C in segments of 16 items (`TheModeLogHoldsNoMoreEntriesOverALongerDocument`). Without the drop, the test fails.
-- **Criterion 4.** Three default-job runs of `LayerBenchmarks` on each side, alternating before and after, against the tree before MODE-02 (`fb86fe7`). Unpinned runs were bimodal: the large input took about 8.9 ms or about 11.6 ms with standard deviations up to 2.1 ms. This machine has performance cores at 5.2–5.4 GHz and efficiency cores at 4.1 GHz, so both sides ran again under `taskset -c 0-11`, on the performance cores only:
+- **Criterion 3.** Each log stays as small as the window its layer can go back over, over streamed input and over memory.
+  - Example C, over 1,000 and over 100,000 statements in segments of 16 items, holds the same peak number of entries (`TheModeLogHoldsNoMoreEntriesOverALongerDocument`).
+  - So does a parser run on its own over 1,000 and over 100,000 characters (`ALogOverInputInMemoryHoldsNoMoreEntriesOverALongerInput`).
+  - After a pinned parse with 20,000 writes, the next parse on the same thread has a log with room for at most 1,024 entries (`AParseLeavesTheNextParseOnItsThreadNoLargeLog`).
+  - Without the drop, or without the cap on the spare, those tests fail.
+- **Criterion 4.** `LayerBenchmarks`, against the tree before MODE-02 (`fb86fe7`). Unpinned runs earlier in the build were bimodal: the large input took about 8.9 ms or about 11.6 ms, with standard deviations up to 2.1 ms. This machine has performance cores at 5.2–5.4 GHz and efficiency cores at 4.1 GHz, so every run counted here was pinned with `taskset -c 0-11`. Three default-job runs on each side, alternating, on `69ba0e1`:
 
   | Input | `Layer.Tokens`, after ÷ before (medians) | `Layer.Modal` ÷ `Layer.Tokens`, after (median of runs) | The same, before |
   | --- | --- | --- | --- |
-  | small | 0.93 | 1.02 | 0.97 |
-  | medium | 0.97 | 1.02 | 1.02 |
-  | large | 1.03 | 1.02 | 1.02 |
+  | small | 0.99 | 1.01 | 1.02 |
+  | medium | 0.98 | 1.06 | 1.01 |
+  | large | 0.95 | 1.00 | 1.00 |
 
-  On the large input `Layer.Tokens` came out slower in each pair (1.03, 1.02, 1.06), within the threshold.
-- **Criterion 5.** MODE-01's allocation test passes. A pipeline allocated about 92 B more per parse until each writer made its log at its first write instead of when the layer opens. A short job after that change measured 2.82 KB per small parse with `Layer.Tokens`, against 2.79 KB before MODE-02, and 3.03 KB against 3.00 KB with `Layer.Modal`. The timing runs above came before that change, which only removes work.
-- **Criterion 6.** Marks gain no work. A layer whose grammar has no mode nodes has a writer with no log, and checks it once each time its cursor enters a segment.
+  `Layer.Modal` over `Layer.Tokens` on the medium input misses the 1.05 threshold in this set: its runs gave 1.08, 1.00 and 1.06. An earlier pinned set, on the tree just before `2109e7e`, gave 1.02. The two layers run the same step loop, and the benchmark writes no mode, so no change in MODE-02 runs for one and not the other. `Layer.Modal`'s own after ÷ before on that input is 1.03.
+- **Criterion 5.** MODE-01's allocation test passes. Per parse, a small `Layer.Tokens` input allocates 2.82 KB against 2.79 KB before MODE-02, and `Layer.Modal` 3.03 KB against 3.00 KB. The difference is the new fields. Each writer makes its log at its first write, so a grammar that writes no mode allocates no log.
+- **Criterion 6.** Marks gain no work. A layer whose grammar has no mode nodes does no work for the log, which it never makes. The failure path gains checks in every layer, mode nodes or not: one comparison in `Reaches` when a failure is recorded at the furthest position, one flag in `Reject`, and one position per open save in `Preserve`. `ErrorBenchmarks` measures recording and building errors. Three pinned runs on each side, after ÷ before (medians): 0.86 to 1.03 across its eight benchmarks. Allocation is unchanged, except 8 B more when an error is built (`BuildError`, `InvalidWithError`).
 - **Criterion 8.** `AFilterAroundADocumentReportsTheFirstChangeInItAfterTheBufferReleasedThatItem` reports the same error over one-item segments as over text in memory. Without the copy at release, it throws.
 
 ## Decision
 
-Proposed: options **A1, B1 and C6**. The maintainer chose A1 and B1 on 2026-11-26. C2 was recommended until the build found question 5 under Context, and on 2026-11-27 the maintainer agreed to C6 in its place. C6 met criteria 3 to 6 and 8 in the build, and criteria 1 and 2 pass under A1 and B1. Every other option has a result, so the record is ready for the maintainer to accept when MODE-02 completes.
+Options **A1, B1 and C6**, accepted by the maintainer on 2026-11-27, when MODE-02 completed. The maintainer chose A1 and B1 on 2026-11-26. C2 was recommended until the build found question 5 under Context, and on 2026-11-27 the maintainer agreed to C6 in its place. C6 meets criteria 3, 5, 6 and 8, and criteria 1 and 2 pass under A1 and B1. Criterion 4's `Layer.Modal` over `Layer.Tokens` on the medium input came out at 1.06 in the final set, against 1.02 in the set before it. The maintainer accepted the record with that figure as this machine's spread, because the two layers run the same code in that benchmark.
 
 1. **What a change is.** Every `SetMode`, `PushMode` and `PopMode` appends (index *i*, previous stack) to the writing layer's mode log, where *i* is its cursor's position. A write is a change when its new top differs from its old top by `EqualityComparer<TMode>.Default`. Only a change discards, re-runs and lowers. "A mode change at *i*" in ADR-0030 point 3 and in § Failure positions means such a write. An undo in MODE-03 discards and lowers when it changes the top back.
 2. **A change, where the writing layer reads the channel's reader directly.**
@@ -209,7 +213,7 @@ Proposed: options **A1, B1 and C6**. The maintainer chose A1 and B1 on 2026-11-2
 6. **CRL0008 (B1).** MODE-04 owns the re-run that drops outputs, the check, how CRL0008 is reported, its docs page, and ADR-0040 point 7. MODE-02 asserts that a slot it re-runs has `groupIndex` 0.
 7. **What MODE-02 builds alone.** A write whose layer reads the reader through another layer discards nothing yet: the change affects only the steps the reader runs after it, as under MODE-01 (ADR-0041 point 10). MODE-04 adds the cascade. Marks neither save the log's length nor undo entries until MODE-03.
 
-Deciding reasons, as proposed:
+Deciding reasons:
 
 - **A1:** a write that keeps the top leaves every buffered item correct, and the selector cache already treats equal modes as one. Discarding then costs work and error detail and buys nothing.
 - **B1:** a single boundary cannot drop an output, so the check belongs with the first card whose grammars can.
@@ -234,18 +238,19 @@ What would change this:
 
 ## Changes made
 
-Made with this draft:
-
-- Cards:
-  - [MODE-02](../../active/07-mode-channels/MODE-02-invalidation-rule.md): the CRL0008 and ADR-0040 point 7 scope lines move to MODE-04 (B1), and the summary drops "including inside multi-output steps". A scope line gives A1. The record joins its artifacts.
-  - [MODE-04](../../active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md): gains the CRL0008 and ADR-0040 point 7 scope lines.
-
-On acceptance:
-
 - Whitepaper:
-  - § 3. Mode channels: the invalidation rule says that a change is a write that changes the top, and that every write is logged. It says how long the log keeps an entry.
-  - § Failure positions: "a mode change" becomes a change of the top. "A save notes the mode log's length" becomes a save that keeps the position of the first change after it, and the copies before release include that position.
-  - § Bookmarks and retention: the writer's mode log is trimmed at release, alongside the buffer.
-  - § C. A parser that steers its lexer: the token read again must have been readable in the old mode, so `Primary` looks for postfix calls after the operand sets operator mode.
-- Cards: MODE-03's scope gains the undo of point 1, the absolute lengths of point 5 with a count of dropped entries, clearing each save's first-change position as it undoes changes, and property tests that no rewind reaches a dropped entry and that a drop removes nothing a rewind needs.
-- Index: a note that this record moves ADR-0040 point 7 to MODE-04 and refines what ADR-0030 point 3 calls a mode change.
+  - [§ 3. Mode channels](../../../whitepaper.md#3-mode-channels): the invalidation rule says that a write changes the mode only when it leaves a different mode on top, and that a write that keeps it discards and lowers nothing. Step 3 logs every write, and says that a full log drops its entries below the lower of the cursor and the floor. The rollback rule applies steps 1 and 2 only when an undo changes the mode on top. A discard replaces only a token the old mode could read. The rule links this record.
+  - [§ Failure positions](../../../whitepaper.md#failure-positions): a mode change is a write that changes the mode on top. A save keeps the position of the first change after it and is lowered there on restore, and a buffer copies the item there before release.
+  - [§ Bookmarks and retention](../../../whitepaper.md#bookmarks-and-retention): the mode log drops its entries below the lower of the cursor and the floor whenever it fills.
+  - [§ C. A parser that steers its lexer](../../../whitepaper.md#c-a-parser-that-steers-its-lexer): re-lexing needs the old mode to read the token, so `Primary` ends with the operand, and a call is parsed after `Operand` sets Operator mode.
+  - Checked and unchanged: § Guarantees point 1 ("unless a mode change invalidates it"), § Running pipelines, and the "Across several layers" paragraph, which MODE-04 builds.
+- Cards:
+  - [MODE-02](../../active/07-mode-channels/MODE-02-invalidation-rule.md): the CRL0008 and ADR-0040 point 7 scope lines moved to MODE-04 (B1), and the summary dropped "including inside multi-output steps". Scope lines give A1 and C6, and the record joined its artifacts.
+  - [MODE-04](../../active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md): gained the CRL0008 and ADR-0040 point 7 scope lines.
+  - [MODE-03](../../active/07-mode-channels/MODE-03-rollback-rule.md): gained four scope lines:
+    - an undo discards and lowers only when it changes the mode on top back;
+    - marks keep absolute log lengths, so the log counts the entries it drops;
+    - undoing a save's first change clears the position the save keeps;
+    - property tests check that no rewind reaches a dropped entry and that a drop removes nothing a rewind needs.
+  - [GEN-06](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md): gained a scope line: generated code that skips pins over input in memory still lowers the floor for the mode log.
+- Index: a note that this record refines ADR-0030 points 1 and 3 and ADR-0028 point 1, and moves ADR-0040 point 7 to MODE-04.

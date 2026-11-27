@@ -93,13 +93,13 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 5 | ✅ [STRM-01](active/08-streaming/STRM-01-starved-outcome.md) Starved outcome | [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) |
 | 6 | ✅ [SPAN-05](active/05-source-spans/SPAN-05-trivia-attach-mode.md) Trivia from the gaps between spans | [SPAN-02](active/05-source-spans/SPAN-02-out-of-band-span-storage.md), [SPAN-04](active/05-source-spans/SPAN-04-span-combinators.md), [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) |
 | 6 | ✅ [LAY-07](active/06-layers-and-pipelines/LAY-07-three-layer-demo-and-bounded-memory-check.md) Three-layer demo and bounded-memory check **(Phase 1 gate)** | [SPAN-03](active/05-source-spans/SPAN-03-synthetic-items.md), [LAY-04](active/06-layers-and-pipelines/LAY-04-layer-local-state.md), [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md), [LAY-06](active/06-layers-and-pipelines/LAY-06-buffer-size-limit.md) |
-| 6 | [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) Invalidation rule | [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md), [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md), [MODE-01](active/07-mode-channels/MODE-01-mode-channels-and-layermodal.md) |
+| 6 | ✅ [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) Invalidation rule | [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md), [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md), [MODE-01](active/07-mode-channels/MODE-01-mode-channels-and-layermodal.md) |
 | 6 | [MODE-05](active/07-mode-channels/MODE-05-mode-payloads.md) Mode payloads | ✅ [MODE-01](active/07-mode-channels/MODE-01-mode-channels-and-layermodal.md) |
 | 6 | [STRM-02](active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md) Restart protocol and ParseManyAsync | [SPAN-06](active/05-source-spans/SPAN-06-byte-sources-and-the-decoding-layer.md), [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md), ✅ [STRM-01](active/08-streaming/STRM-01-starved-outcome.md) |
 | 6 | [STRM-04](active/08-streaming/STRM-04-huge-single-documents.md) Huge single documents | [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) |
 | 7 | [INT-12](active/03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md) Close the interpreter test gaps BENCH-01 left | [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) |
-| 7 | [MODE-03](active/07-mode-channels/MODE-03-rollback-rule.md) Rollback rule | [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) |
-| 7 | [MODE-04](active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md) Multi-layer invalidation cascade | [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) |
+| 7 | [MODE-03](active/07-mode-channels/MODE-03-rollback-rule.md) Rollback rule | ✅ [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) |
+| 7 | [MODE-04](active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md) Multi-layer invalidation cascade | ✅ [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) |
 | 7 | [STRM-03](active/08-streaming/STRM-03-streaming-diagnostics.md) Streaming diagnostics | [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md), [STRM-02](active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md) |
 | 7 | [BENCH-04](active/13-benchmarks/BENCH-04-revisit-string-handling-in-the-json-benchmark-grammar.md) Revisit string handling in the JSON benchmark grammar | [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) |
 | 8 | [MODE-06](active/07-mode-channels/MODE-06-model-based-tests-for-mode-rollback.md) Model-based tests for mode rollback | [FND-04](active/01-foundations/FND-04-test-infrastructure.md), [MODE-03](active/07-mode-channels/MODE-03-rollback-rule.md), [MODE-04](active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md) |
@@ -124,7 +124,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 4 | [TOOL-01](active/12-grammar-author-tooling/TOOL-01-creoletesting-assertions.md) Creole.Testing assertions | [FND-04](active/01-foundations/FND-04-test-infrastructure.md), [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md), [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) |
 | 4 | [TOOL-02](active/12-grammar-author-tooling/TOOL-02-tracing.md) Tracing | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) |
 | 4 | [TOOL-04](active/12-grammar-author-tooling/TOOL-04-grammar-fuzzing.md) Grammar fuzzing | [ANA-01](active/09-static-analysis/ANA-01-grammar-property-analysis.md) |
-| 5 | [ERR-05](active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md) Recover combinator and strategies | [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md), [LAY-04](active/06-layers-and-pipelines/LAY-04-layer-local-state.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md), [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md), ✅ [STRM-01](active/08-streaming/STRM-01-starved-outcome.md) |
+| 5 | [ERR-05](active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md) Recover combinator and strategies | [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md), [LAY-04](active/06-layers-and-pipelines/LAY-04-layer-local-state.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md), ✅ [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md), ✅ [STRM-01](active/08-streaming/STRM-01-starved-outcome.md) |
 | 5 | [ANA-03](active/09-static-analysis/ANA-03-loop-and-recursion-checks.md) Loop and recursion checks | [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md), [ANA-02](active/09-static-analysis/ANA-02-analysis-report-and-debug-enforcement.md) |
 | 5 | [ANA-04](active/09-static-analysis/ANA-04-choice-checks.md) Choice checks | [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [ANA-02](active/09-static-analysis/ANA-02-analysis-report-and-debug-enforcement.md) |
 | 5 | [ANA-05](active/09-static-analysis/ANA-05-informational-and-hygiene-checks.md) Informational and hygiene checks | [ANA-02](active/09-static-analysis/ANA-02-analysis-report-and-debug-enforcement.md) |
@@ -211,7 +211,7 @@ The longest dependency chains to [REL-05 Ship 1.0](active/14-release/REL-05-ship
 
 Cards whose Status is Researching, Designing or Building:
 
-- [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) Invalidation rule — Build
+None yet.
 
 ### Can start now
 
@@ -220,8 +220,11 @@ These items have all their blockers done:
 - [CORE-14](active/02-core-combinators/CORE-14-choices-beyond-16-alternatives.md) Choices beyond 16 alternatives
 - [INT-10](active/03-interpreter/INT-10-dispatched-longest-measured-against-the-automaton.md) Dispatched Longest, measured against the automaton
 - [INT-12](active/03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md) Close the interpreter test gaps BENCH-01 left
+- [ERR-05](active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md) Recover combinator and strategies
 - [ERR-06](active/04-errors-and-recovery/ERR-06-orinsert-for-missing-items.md) OrInsert for missing items
 - [SPAN-07](active/05-source-spans/SPAN-07-embedded-languages.md) Embedded languages
+- [MODE-03](active/07-mode-channels/MODE-03-rollback-rule.md) Rollback rule
+- [MODE-04](active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md) Multi-layer invalidation cascade
 - [MODE-05](active/07-mode-channels/MODE-05-mode-payloads.md) Mode payloads
 - [STRM-02](active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md) Restart protocol and ParseManyAsync
 - [STRM-04](active/08-streaming/STRM-04-huge-single-documents.md) Huge single documents
@@ -301,7 +304,7 @@ The error model, furthest-failure reporting, rendering, withdrawal and recovery.
 | ✅ [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md) Furthest-failure tracking and labels | 0 | [INT-03](active/03-interpreter/INT-03-execute-the-core-combinators.md), [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md) |
 | ✅ [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) Diagnostic rendering | 0 | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [SPAN-01](active/05-source-spans/SPAN-01-sourcespan-sourceid-and-linemap.md) |
 | ✅ [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md) Diagnostic withdrawal | 1 | [ERR-01](active/04-errors-and-recovery/ERR-01-error-and-result-types.md), [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md) |
-| [ERR-05](active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md) Recover combinator and strategies | [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md), [LAY-04](active/06-layers-and-pipelines/LAY-04-layer-local-state.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md), [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md), ✅ [STRM-01](active/08-streaming/STRM-01-starved-outcome.md) |
+| [ERR-05](active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md) Recover combinator and strategies | [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md), [LAY-04](active/06-layers-and-pipelines/LAY-04-layer-local-state.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md), ✅ [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md), ✅ [STRM-01](active/08-streaming/STRM-01-starved-outcome.md) |
 | [ERR-06](active/04-errors-and-recovery/ERR-06-orinsert-for-missing-items.md) OrInsert for missing items | 2 | [ERR-02](active/04-errors-and-recovery/ERR-02-furthest-failure-tracking-and-labels.md), [SPAN-03](active/05-source-spans/SPAN-03-synthetic-items.md) |
 | [ERR-07](active/04-errors-and-recovery/ERR-07-lexer-recovery-and-cascade-suppression.md) Lexer recovery and cascade suppression | 2 | [ERR-05](active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md), [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) |
 | ✅ [ERR-08](active/04-errors-and-recovery/ERR-08-bound-rendered-diagnostics.md) Bound rendered diagnostics | 1 | [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md) |
@@ -343,9 +346,9 @@ Parser-to-lexer feedback with invalidation and rollback across one or more layer
 | Work item | Phase | Blocked by |
 | --- | --- | --- |
 | ✅ [MODE-01](active/07-mode-channels/MODE-01-mode-channels-and-layermodal.md) Mode channels and Layer.Modal | 1 | [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) |
-| [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) Invalidation rule | [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md), [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md), [MODE-01](active/07-mode-channels/MODE-01-mode-channels-and-layermodal.md) |
-| [MODE-03](active/07-mode-channels/MODE-03-rollback-rule.md) Rollback rule | 1 | [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) |
-| [MODE-04](active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md) Multi-layer invalidation cascade | 1 | [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) |
+| ✅ [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) Invalidation rule | [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md), [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md), [MODE-01](active/07-mode-channels/MODE-01-mode-channels-and-layermodal.md) |
+| [MODE-03](active/07-mode-channels/MODE-03-rollback-rule.md) Rollback rule | 1 | ✅ [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) |
+| [MODE-04](active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md) Multi-layer invalidation cascade | 1 | ✅ [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) |
 | [MODE-05](active/07-mode-channels/MODE-05-mode-payloads.md) Mode payloads | 1 | ✅ [MODE-01](active/07-mode-channels/MODE-01-mode-channels-and-layermodal.md) |
 | [MODE-06](active/07-mode-channels/MODE-06-model-based-tests-for-mode-rollback.md) Model-based tests for mode rollback | 1 | [FND-04](active/01-foundations/FND-04-test-infrastructure.md), [MODE-03](active/07-mode-channels/MODE-03-rollback-rule.md), [MODE-04](active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md) |
 
