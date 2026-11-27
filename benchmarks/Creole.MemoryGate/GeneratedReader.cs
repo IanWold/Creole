@@ -8,6 +8,7 @@ namespace Creole.MemoryGate;
 /// <remarks>
 /// The reader ends after the first record that brings the characters written to at least its length.
 /// Before writing record 0 and every <c>recordsPerSample</c>th record after it, it calls <c>sample</c>.
+/// If the input has a middle record, it writes that record once, in place of the first record written at or past half its length, and the records after it are the ones the seed gives without it.
 /// </remarks>
 /// <param name="input">The input to generate.</param>
 /// <param name="length">The fewest characters to write.</param>
@@ -15,6 +16,7 @@ namespace Creole.MemoryGate;
 /// <param name="sample">What to call between records.</param>
 public sealed class GeneratedReader(GateInput input, long length, int recordsPerSample, Action sample) : TextReader
 {
+    private bool _middle;
     private int _offset;
     private readonly Random _random = new(input.Seed);
     private readonly StringBuilder _record = new();
@@ -60,7 +62,17 @@ public sealed class GeneratedReader(GateInput input, long length, int recordsPer
         }
 
         _record.Clear();
-        input.WriteRecord(_random, _record);
+
+        if (!_middle && input.WriteMiddle is { } middle && Characters >= length / 2)
+        {
+            middle(_record);
+            _middle = true;
+        }
+        else
+        {
+            input.WriteRecord(_random, _record);
+        }
+
         _offset = 0;
         Characters += _record.Length;
         Records++;
@@ -100,4 +112,9 @@ public sealed class GeneratedReader(GateInput input, long length, int recordsPer
 
         return count;
     }
+
+    /// <summary>
+    /// Calls <c>sample</c> now, for an input whose parse holds a record while that record is written.
+    /// </summary>
+    public void Sample() => sample();
 }

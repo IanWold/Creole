@@ -87,6 +87,8 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     private const int SameAsRoot = -2;
     private const int WideLength = -1;
 
+    private long _bookmark;
+    private bool _bookmarkEnded;
     private bool _ended;
     private int _heldCount;
     private HeldSpan[] _heldSpans = [];
@@ -150,6 +152,15 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
             return _segments[index].Slots[offset].StepStart;
         }
     }
+
+    /// <summary>
+    /// How many items the upstream's next step may add without the reader holding more than its limit, and at least one.
+    /// </summary>
+    /// <remarks>
+    /// A root that reads its source in chunks reads no more than this, so a chunk never exceeds the limit on its own.
+    /// When the reader already holds its limit, one more item is allowed, so a reader that needs it reaches the limit's check.
+    /// </remarks>
+    public int Room => (int)Math.Clamp(_maxBufferedItems - (Filled - _horizon), 1, int.MaxValue);
 
     /// <summary>
     /// The first position the buffer still holds. Every position below it has been released.
@@ -272,6 +283,30 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     }
 
     /// <summary>
+    /// Drops the items from <paramref name="position"/> on, returning the segments that hold only those items to the pool.
+    /// </summary>
+    private void Truncate(long position)
+    {
+        if (position >= Filled)
+        {
+            return;
+        }
+
+        var (index, offset) = Locate(position);
+
+        var kept = offset == 0
+            ? index
+            : index + 1;
+
+        ReturnSegments(kept, _segments.Count - kept);
+
+        Filled = position;
+        _lastSpan = position > Start
+            ? SpanAt(position - 1)
+            : default;
+    }
+
+    /// <summary>
     /// Stores the character offsets of <paramref name="span"/> beside slot <paramref name="index"/>, renting the segment's array for them on its first span whose character offsets differ from its root offsets.
     /// </summary>
     /// <returns><see langword="false"/> if they do not fit, so the span must be kept whole.</returns>
@@ -348,6 +383,17 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
 
     /// <inheritdoc/>
     /// <remarks>
+    /// The buffer notes how many items it holds and whether its input had ended, and the upstream takes its own bookmark.
+    /// </remarks>
+    public void Bookmark()
+    {
+        _bookmark = Filled;
+        _bookmarkEnded = _ended;
+        _upstream.Bookmark();
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>
     /// The buffer discards only when its upstream goes back to the step that produced the item at <paramref name="position"/>, which only the upstream reading <paramref name="channel"/> does.
     /// Segments that hold only discarded items go back to the pool, and the next read past the remaining items runs that step again.
     /// </remarks>
@@ -358,19 +404,14 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
             return false;
         }
 
-        var (index, offset) = Locate(position);
-
-        var kept = offset == 0
-            ? index
-            : index + 1;
-
-        ReturnSegments(kept, _segments.Count - kept);
-
-        Filled = position;
+        Truncate(position);
         _ended = false;
-        _lastSpan = position > Start
-            ? SpanAt(position - 1)
-            : default;
+
+        if (position < _bookmark)
+        {
+            _bookmark = position;
+            _bookmarkEnded = false;
+        }
 
         return true;
     }
@@ -447,6 +488,25 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
 
         ReturnSegments(0, count);
         _released += count;
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// If the upstream goes back to its bookmark, the buffer drops the items added since and returns to whether its input had ended then.
+    /// A mode change during the attempt may have discarded items from below the bookmark, and the upstream then goes back to the step of the first of them instead, so the buffer drops from there.
+    /// A root keeps every item it has added, since it cannot produce them again.
+    /// Either way the buffer is no longer <see cref="Starved"/>, and its reader holds no span, as at the bookmark.
+    /// </remarks>
+    public void Restart()
+    {
+        if (_upstream.Restart())
+        {
+            Truncate(_bookmark);
+            _ended = _bookmarkEnded;
+        }
+
+        Starved = false;
+        _heldCount = 0;
     }
 
     /// <summary>

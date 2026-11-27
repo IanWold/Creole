@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Creole;
 
 /// <summary>
@@ -42,6 +44,8 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
     private const int SpareLimit = 1024;
 
     private readonly ModeLink[]? _below = below;
+    private long _bookmark;
+    private long _dropped;
     private readonly string _layer = layer;
     private List<Entry>? _log;
     private List<ModeLink>? _own;
@@ -65,7 +69,8 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
     /// <remarks>
     /// Entries are in the order of their positions, so those below the horizon are the oldest.
     /// </remarks>
-    private static void Drop(List<Entry> log, long horizon)
+    /// <returns>How many entries it dropped.</returns>
+    private static int Drop(List<Entry> log, long horizon)
     {
         var count = 0;
 
@@ -75,6 +80,8 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
         }
 
         log.RemoveRange(0, count);
+
+        return count;
     }
 
     private ModeLink<TMode> Own<TMode>(ModeChannel<TMode> channel)
@@ -94,6 +101,14 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
 
         return made;
     }
+
+    /// <summary>
+    /// Takes the restart bookmark: notes how many writes the log has seen, as an item of <c>ParseManyAsync</c> starts.
+    /// </summary>
+    /// <remarks>
+    /// The log drops only entries below the layer's floor, and the floor never passes the bookmark, so every write since the bookmark stays in the log until <see cref="Restart"/>.
+    /// </remarks>
+    public void Bookmark() => _bookmark = _dropped + Count;
 
     /// <summary>
     /// The link through which this writer changes <paramref name="channel"/>'s stack.
@@ -168,6 +183,31 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
     }
 
     /// <summary>
+    /// Undoes every write since <see cref="Bookmark"/>, newest first, putting back each channel's stack as it was, as a starved item restarts.
+    /// </summary>
+    /// <remarks>
+    /// Nothing is discarded: the restart puts every layer and buffer back at its own bookmark.
+    /// </remarks>
+    public void Restart()
+    {
+        if (_log is not { } log)
+        {
+            return;
+        }
+
+        var kept = (int)(_bookmark - _dropped);
+
+        Debug.Assert(kept >= 0, "The log dropped a write made since the bookmark.");
+
+        for (var i = log.Count - 1; i >= kept; i--)
+        {
+            log[i].Link.Restore(log[i].Previous);
+        }
+
+        log.RemoveRange(kept, log.Count - kept);
+    }
+
+    /// <summary>
     /// Gives back the writer a parser run on its own took, if it took one, as the thread's spare, with no channels and an empty log.
     /// </summary>
     public static void Return(ModeWriter? writer)
@@ -203,7 +243,7 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
 
         if (log.Count == log.Capacity)
         {
-            Drop(log, Math.Min(cursor.Position, cursor.Floor));
+            _dropped += Drop(log, Math.Min(cursor.Position, cursor.Floor));
         }
 
         log.Add(new Entry(cursor.Position, link, previous, changed));

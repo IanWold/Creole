@@ -21,6 +21,8 @@ public class MemoryGateTests
     [InlineData("example-b", "53ad565d8b908ba7f923b7aa1d3a804b69f5362ceccd3a7826f84c3c7e8ab0cc")]
     [InlineData("json-lines", "e9c6ebe2f2da1546da0304665317b9bac971da7de8032ac336af4ded0797ac66")]
     [InlineData("json-document", "e9c6ebe2f2da1546da0304665317b9bac971da7de8032ac336af4ded0797ac66")]
+    [InlineData("json-lines-async", "e9c6ebe2f2da1546da0304665317b9bac971da7de8032ac336af4ded0797ac66")]
+    [InlineData("json-lines-async-large", "7f99873e38a72e29ab7aed35a9900f7eaea5d2d3e5f1369b03c287502c7644f7")]
     public void EachInputIsUnchanged(string name, string hash) =>
         Assert.Equal(hash, Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(GeneratedReader.Text(Input(name), Length)))));
 

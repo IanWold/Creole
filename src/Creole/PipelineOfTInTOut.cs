@@ -29,6 +29,16 @@ public abstract class Pipeline<TIn, TOut>
     internal Pipeline() { }
 
     /// <summary>
+    /// Opens a run of the parser over the items of <paramref name="root"/>, with new buffers, which runs one item each time it is asked.
+    /// </summary>
+    /// <param name="root">The first layer's input.</param>
+    /// <param name="options">The settings for the parse, whose limits apply to each layer and to the parser.</param>
+    /// <param name="text">Makes the text a failed result holds for rendering, or null to hold none. It is called at most once.</param>
+    /// <param name="restarts">Whether the run bookmarks every layer at each item's start, so that an item that starves can run again.</param>
+    /// <param name="logs">A list that gets each layer's failure log, in the order the layers open, and the parser's last, for tests; or null.</param>
+    internal abstract PipelineItems<TOut> OpenItems(ICursorSource<TIn> root, ParseOptions options, Func<SourceText?> text, bool restarts, List<object>? logs = null);
+
+    /// <summary>
     /// Runs the parser at the start of the input and again after each item until no item remains, with every layer recording failures, and returns each item's result as the caller asks for it.
     /// </summary>
     /// <param name="openRoot">Makes the first layer's input, once for each enumeration.</param>
@@ -39,7 +49,20 @@ public abstract class Pipeline<TIn, TOut>
     /// Each item starts with no furthest failure in any layer.
     /// The buffers of an enumeration return their segments to their pools when it ends or is disposed.
     /// </remarks>
-    internal abstract IEnumerable<ParseResult<TOut>> ParseMany(Func<ICursorSource<TIn>> openRoot, ParseOptions options, Func<SourceText?> text);
+    internal IEnumerable<ParseResult<TOut>> ParseMany(Func<ICursorSource<TIn>> openRoot, ParseOptions options, Func<SourceText?> text)
+    {
+        using var items = OpenItems(openRoot(), options, text, restarts: false);
+
+        while (items.Next(out var result) == ItemOutcome.Result)
+        {
+            yield return result;
+
+            if (result is Failed)
+            {
+                yield break;
+            }
+        }
+    }
 
     /// <summary>
     /// Runs the pipeline once over <paramref name="root"/>, with new buffers.

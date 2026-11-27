@@ -11,6 +11,8 @@ namespace Creole;
 /// </remarks>
 file sealed class SelectUpstream<TIn, TOut>(ICursorSource<TIn> input, Func<TIn, TOut> selector) : IUpstream<TOut>
 {
+    private long _bookmarkPosition;
+    private long _bookmarkSegmentStart;
     private readonly ICursorSource<TIn> _input = input;
     private long _position;
     private long _segmentStart;
@@ -34,9 +36,25 @@ file sealed class SelectUpstream<TIn, TOut>(ICursorSource<TIn> input, Func<TIn, 
         }
     }
 
+    public void Bookmark()
+    {
+        _bookmarkPosition = _position;
+        _bookmarkSegmentStart = _segmentStart;
+        _input.Bookmark();
+    }
+
     public void Dispose() => _input.Dispose();
 
     public void ForgetFailures() => _input.ForgetFailures();
+
+    public bool Restart()
+    {
+        _position = _bookmarkPosition;
+        _segmentStart = _bookmarkSegmentStart;
+        _input.Restart();
+
+        return true;
+    }
 
     public bool TryStep(StreamBuffer<TOut> buffer)
     {

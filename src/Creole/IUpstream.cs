@@ -38,6 +38,15 @@ internal interface IUpstream<T> : IDisposable
     bool Starved => false;
 
     /// <summary>
+    /// Takes the restart bookmark: notes where this upstream stands, and has the input it reads take its own, as an item of <c>ParseManyAsync</c> starts.
+    /// </summary>
+    /// <remarks>
+    /// A layer notes its position in its input, its state, its mode log and how many diagnostics it has raised.
+    /// The default does nothing, for a root, which is never rewound.
+    /// </remarks>
+    void Bookmark() { }
+
+    /// <summary>
     /// Does nothing, for an upstream that reads from nothing it must dispose.
     /// </summary>
     void IDisposable.Dispose() { }
@@ -49,6 +58,16 @@ internal interface IUpstream<T> : IDisposable
     /// The default does nothing, for an upstream that keeps no failure log and reads from nothing that does.
     /// </remarks>
     void ForgetFailures() { }
+
+    /// <summary>
+    /// Goes back to the restart bookmark, as a starved item restarts: undoes the mode writes since, withdraws the diagnostics raised since, forgets every failure, and puts back the position and state, then has the input it reads go back to its own.
+    /// If a mode change sent the upstream back before its bookmark since, it goes back to that earlier step instead.
+    /// </summary>
+    /// <remarks>
+    /// The default does nothing and returns <see langword="false"/>, for a root, which keeps every item it has added because it cannot produce them again.
+    /// </remarks>
+    /// <returns>Whether the upstream went back, so that the buffer must discard the items added since the bookmark.</returns>
+    bool Restart() => false;
 
     /// <summary>
     /// Goes back to the step that produced the item beside <paramref name="slot"/>, so that the next step produces that item again, if this upstream reads <paramref name="channel"/>, whose mode the layer above changed.

@@ -47,6 +47,18 @@ if (Braces.Depth.Parse("{{").Value is not Parsed<int> { Value: 2 } || Braces.Lon
     return 1;
 }
 
+var received = 0;
+
+await foreach (var result in Pipelines.WordsFromBytes.ParseManyAsync(new MemoryStream("a, b"u8.ToArray())))
+{
+    received += result.Value is Parsed<Tok> ? 1 : 0;
+}
+
+if (received != 3)
+{
+    return 1;
+}
+
 Console.WriteLine("Creole AOT smoke: OK");
 return 0;
 
@@ -186,6 +198,8 @@ internal static class Pipelines
     public static readonly Pipeline<char, string> Modal = Pipeline.From(ModalLexer.Lexer).Then(ModalWords.Second);
 
     public static readonly Pipeline<char, Tok> Words = Pipeline.From(TokenLexer.Lexer).Then(Grammar<Tok>.Any);
+
+    public static readonly Pipeline<byte, Tok> WordsFromBytes = Pipeline.From(Layer.Utf8().Then(TokenLexer.Lexer)).Then(Grammar<Tok>.Any);
 }
 
 internal static class Tokens

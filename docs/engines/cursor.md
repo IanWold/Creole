@@ -22,6 +22,10 @@ A step consumed input if and only if it moved the cursor. This is how Creole tel
 
 None of these allocate.
 
+### Where streamed input runs out
+
+Under [`ParseManyAsync`](../concepts/pipelines.md#parsemanyasync), the input can run out of what has arrived before the stream ends. A read there looks like the end of the input: `TryPeek` and `TryRead` return `false`, `IsAtEnd` is `true`, and `Available` is empty. Creole notes that the input starved, ends the attempt, and runs the whole item again once more input arrives, so code that reads the cursor treats it as the end and never needs to tell the two apart. Whatever it returns after such a read is discarded.
+
 ## Bulk scans with `Available`
 
 Input may be held in several segments. `Available` holds only the rest of the current segment, so more input may follow it. It is empty only at the end of the input. To scan a run of items, search `Available`, advance, and repeat until the run ends.

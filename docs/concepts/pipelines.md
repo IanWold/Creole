@@ -93,6 +93,8 @@ foreach (var result in word.ParseMany(" a bc  d "))
 - **The parser must consume input.** A parser that succeeds without consuming input would never reach the end, so `ParseMany` throws `GrammarException`.
 - **Each enumeration parses from the start.** Ending an enumeration early, as `break` in a `foreach` does, returns its buffers' memory to their pools.
 
+For records from a stream that should not block a thread, use [`ParseManyAsync`](#parsemanyasync).
+
 Over a string or memory, a failed result holds the whole text, so its error renders at its line in the input. The arguments are checked when `ParseMany` is called; a grammar that is not valid throws when the enumeration starts.
 
 ## Readers
@@ -103,6 +105,7 @@ Over a string or memory, a failed result holds the whole text, so its error rend
 - Failures are recorded as the parse goes, since the input cannot be read again, so a failed parse does not run twice.
 - A failed result holds no text, so `Render()` writes its error on one line, as `ToString()` does: `error[lexer] at 4..5: unexpected '1'; expected whitespace or letter`.
 - Slices, such as `Slice` values in tokens, are copies.
+- [`MaxBufferedItems`](layers.md#the-buffer-limit) bounds what the first layer holds of the reader, as it bounds every buffer between layers. A read asks for no more characters than the limit leaves room for.
 - The reader is yours: a parse leaves it open. Enumerate `ParseMany` over a reader once, since a second enumeration reads on from wherever the reader is, counting offsets from 0 again.
 
 ## Bytes in memory
@@ -141,8 +144,40 @@ var result = settings.Parse(file);
 - Failures are recorded as the parse goes, since the input cannot be read again, so a failed parse does not run twice.
 - A failed result holds no text, so `Render()` writes its error on one line, as `ToString()` does.
 - Slices are copies.
+- [`MaxBufferedItems`](layers.md#the-buffer-limit) bounds what the first layer holds of the stream, as over a reader.
 - The stream is yours: a parse leaves it open. Enumerate `ParseMany` over a stream once, since a second enumeration reads on from wherever the stream is, counting offsets from 0 again.
-- A read blocks the thread that called `Parse` until bytes arrive. A `PipeReader` becomes such a stream with `AsStream()`.
+- A read blocks the thread that called `Parse` until bytes arrive. A `PipeReader` becomes such a stream with `AsStream()`. To parse records without blocking a thread, use [`ParseManyAsync`](#parsemanyasync).
+
+## `ParseManyAsync`
+
+`ParseManyAsync` parses records from a stream without blocking a thread: JSON lines, log entries, or the requests of a protocol. It is on `Pipeline<byte, TOut>`, so its first layer decodes, and it returns an `IAsyncEnumerable<ParseResult<TOut>>`. A `PipeReader`, such as ASP.NET Core's request body, becomes a stream with `AsStream()`. With a lexer of words and `;`, from [ParseManyAsyncTests.cs](../../tests/Creole.Tests/ParseManyAsyncTests.cs):
+
+```csharp
+var requests = Pipeline.From(Layer.Utf8().Then(words)).Then(Grammar<string>.Any.Before(Grammar<string>.Token(";")));
+
+await foreach (var result in requests.ParseManyAsync(pipe.Reader.AsStream(), cancellationToken: token))
+{
+    // Parsed "ping" as soon as "ping;" arrives, then Parsed "hello", ...
+}
+```
+
+| Overload | Input |
+| --- | --- |
+| `ParseManyAsync(Stream input, ParseOptions? options = null, CancellationToken cancellationToken = default)` | A stream, read without blocking, whose bytes the first layer decodes. |
+
+It follows [`ParseMany`](#parsemany): it is lazy, a failed item is the last, each item starts afresh, and it records failures as it goes. Its values and errors are the ones `ParseMany` gives over the same bytes in memory. As over a [stream](#streams), offsets count bytes, a failed result holds no text, slices are copies, and you enumerate it once. What differs:
+
+- **Parsing is synchronous; only the reads wait.** Each item is parsed over the bytes received so far, inside `MoveNextAsync`, with no thread of its own.
+- **An item that runs out of bytes runs again.** If an item reaches the end of what has arrived before the stream ends, it *starves*: every layer goes back to where the item started, the enumeration awaits more bytes, and the item runs again from its start. So a grammar's functions can run more than once for one record, which they may already ([How often your functions run](sequencing.md#how-often-your-functions-run)).
+- **How long it waits.** Before running an item again, it reads until it holds at least twice what the item saw, so the work stays linear in the record's size. It stops sooner when the stream has nothing more ready, so a reply to one request never waits for the next. A peer that sends a record in many small pieces with pauses makes it run the record again after each pause; for peers you do not trust, set a small `MaxBufferedItems` and cancel reads that are too slow.
+- **An item is yielded as soon as its parser returns.** The next item is looked for only when you ask for it. An item waits for bytes past its end only if its grammar reads past its end: a trailing repetition or option, or a token whose scan must see the next character to know it has ended, as a number does. In a request-and-response protocol, end each record with something its grammar consumes, such as `;` or a newline.
+- **`MaxBufferedItems` caps one record.** The item being parsed is held whole, in every layer, and the bytes received but not yet parsed count too. A record that needs more ends with the limit's error, at the oldest byte the enumeration still held. That is the record's first byte, or the white space before it that its first token skipped: `error[decoder] at 0..0: buffered input from here exceeds ParseOptions.MaxBufferedItems of 1000`. `ParseMany` holds only what its parser can still go back to, so it has no such cap.
+- **A held record costs more memory than its bytes.** Every layer keeps about 32 bytes beside each item it holds, and a JSON record through `Layer.Utf8()`, a lexer and a parser measured about 28 bytes per byte of input. At the default limit, one such record could take about 470 MB, so for peers you do not trust, set a limit sized to the largest record you expect.
+- **Cancelling.** The token is checked before each attempt at an item and passed to every read, and `WithCancellation` adds another. A cancelled read ends the enumeration with `OperationCanceledException`. An attempt over bytes already received is not interrupted; it stops at its next read.
+- **The stream's errors pass through.** A pipe writer that completes with an exception ends the enumeration with that exception.
+- **Stopping early,** as `break` in an `await foreach` does, returns the buffers' memory to their pools, cancels a read still pending without waiting for it, and leaves the stream open.
+
+The design is in the whitepaper's [§ The restart protocol](../../whitepaper.md#the-restart-protocol) and [ADR-0045](../../work/docs/decisions/0045-parsemanyasync-reads-a-stream-and-restarts-a-starved-item-from-a-bookmark-in-every-layer.md).
 
 ## Huge documents from a pipe
 
@@ -168,7 +203,7 @@ var result = await Task.Factory.StartNew(
 
 Over a string or memory, `Parse` and `ParseMany` copy none of their input. The first layer reads the string or memory it was given, so slices a lexer takes, such as `Slice` values in tokens, are views of it, and a failed result refers to the same text to render it. If the input is a buffer you reuse, finish with the slices and render the errors before you reuse it.
 
-Items between layers are held in buffers, which let an item go once nothing can go back to it ([Chaining layers](layers.md#chaining-layers-then)). When a parse ends, however it ends, its buffers return their memory to their pools.
+Items between layers are held in buffers, which let an item go once nothing can go back to it ([Chaining layers](layers.md#chaining-layers-then)). [`MaxBufferedItems`](layers.md#the-buffer-limit) bounds each buffer, but not the string or memory, which is already held whole. When a parse ends, however it ends, its buffers return their memory to their pools.
 
 ## A failed parse runs twice
 

@@ -23,4 +23,6 @@ internal sealed class ModeLink<TMode>(ModeChannel<TMode> channel) : ModeLink(cha
 
         return changed;
     }
+
+    public override void Restore(object stack) => Stack = (ModeStack<TMode>)stack;
 }

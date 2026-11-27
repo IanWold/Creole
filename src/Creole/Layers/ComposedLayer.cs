@@ -5,6 +5,7 @@ namespace Creole;
 /// </summary>
 /// <remarks>
 /// A run holds <see cref="First"/>'s items in a buffer, which <see cref="Second"/> reads and may rewind over without <see cref="First"/> running again.
+/// The buffer is bounded by the run's <see cref="ParseOptions.MaxBufferedItems"/>.
 /// </remarks>
 internal sealed class ComposedLayer<TIn, TMiddle, TOut>(Layer<TIn, TMiddle> first, Layer<TMiddle, TOut> second) : Layer<TIn, TOut>
 {
@@ -17,5 +18,5 @@ internal sealed class ComposedLayer<TIn, TMiddle, TOut>(Layer<TIn, TMiddle> firs
     public Layer<TMiddle, TOut> Second { get; } = second;
 
     internal override IUpstream<TOut> Open(ICursorSource<TIn> input, PipelineRun run) =>
-        Second.Open(new StreamBuffer<TMiddle>(First.Open(input, run)), run);
+        Second.Open(new StreamBuffer<TMiddle>(First.Open(input, run), maxBufferedItems: run.Options.MaxBufferedItems), run);
 }

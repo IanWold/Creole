@@ -100,7 +100,7 @@ var result = CharJson.Document.Parse(untrusted, options: Limits);
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `MaxBufferedItems` | 16,777,216 | The most items a layer may hold of the buffer it reads. It must be positive; `int.MaxValue` lifts it in practice. |
+| `MaxBufferedItems` | 16,777,216 | The most items a layer may hold of the buffer it reads. Under [`ParseManyAsync`](pipelines.md#parsemanyasync), it also caps one record. It must be positive; `int.MaxValue` lifts it in practice. |
 | `MaxDepth` | 1,000 | The deepest a parse may recurse, in levels. It must be positive; `int.MaxValue` leaves only the stack check. |
 
 [The interpreter § Deep input](../engines/interpreter.md#deep-input) says what counts as a level. A parse that would go deeper than `MaxDepth`, or runs short of the thread's stack first, returns `Failed` with one error:
@@ -114,7 +114,7 @@ var result = CharJson.Document.Parse(untrusted, options: Limits);
 error[parser] at 4..5: nesting exceeds ParseOptions.MaxDepth of 3
 ```
 
-A parse over a string, memory or an array of tokens holds its whole input in memory and has no buffers, so `MaxBufferedItems` does not affect it. It bounds the buffers between [layers](layers.md#the-buffer-limit), which have no public way to run yet. A layer counts the items of its buffer from the oldest one it may still go back to, through the last one produced, each time it pulls another. One that would hold more than `MaxBufferedItems` ends the parse with one error, which no combinator catches:
+A parse over a string, memory or an array of tokens holds its whole input in memory and has no buffers, so `MaxBufferedItems` does not affect it. It bounds each buffer a [pipeline](pipelines.md) holds: the one a reader or stream fills, those between its [layers](layers.md#the-buffer-limit), and the one its parser reads. A layer counts the items of its buffer from the oldest one it may still go back to, through the last one produced, each time it pulls another. One that would hold more than `MaxBufferedItems` ends the parse with one error, which no combinator catches:
 
 - Its span covers that oldest item, where the window the layer held open began, such as the first item a `Lookahead` read.
 - Its `Unexpected` is a `CustomMessage` that names the limit: `buffered input from here exceeds ParseOptions.MaxBufferedItems of 16777216`.

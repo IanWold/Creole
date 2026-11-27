@@ -1,6 +1,6 @@
 # Benchmarks
 
-`Creole.Benchmarks` is the BenchmarkDotNet harness behind every phase gate (§ [Benchmark plan](../whitepaper.md#benchmark-plan)). It holds the shared inputs and the competitor baselines. Creole's interpreter runs in `JsonBenchmarks` and `ArithmeticBenchmarks` for the Phase 0 gate ([BENCH-01](../work/active/13-benchmarks/BENCH-01-phase-0-speed-gate.md)). Its other engines join each benchmark class as they are built ([BENCH-02](../work/active/13-benchmarks/BENCH-02-full-benchmark-suite.md)).
+`Creole.Benchmarks` is the BenchmarkDotNet harness behind every phase gate (§ [Benchmark plan](../whitepaper.md#benchmark-plan)). It holds the shared inputs and the competitor baselines. Creole's interpreter runs in `JsonBenchmarks` and `ArithmeticBenchmarks` for the Phase 0 gate ([BENCH-01](../work/active/13-benchmarks/BENCH-01-phase-0-speed-gate.md)). Its other engines join each benchmark class as they are built ([BENCH-02](../work/active/13-benchmarks/BENCH-02-full-benchmark-suite.md)). `RecordBenchmarks` runs `ParseMany` over 1,000 JSON lines held in memory, as bytes through `Layer.Utf8()` and as text. It is where ADR-0045's fork 6 trial ran ([STRM-02](../work/active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md)).
 
 ## Running
 
@@ -45,6 +45,8 @@ Single runs on this machine vary by up to 1.3× per benchmark, so one run decide
 | A quicker check at other sizes | `python3 scripts/memory-gate.py --sizes 2000000 20000000` |
 | One input at one size | `dotnet run -c Release --project benchmarks/Creole.MemoryGate -- example-b 10000000` |
 | A huge JSON document from a pipe ([STRM-04](../work/active/08-streaming/STRM-04-huge-single-documents.md)) | `python3 scripts/memory-gate.py --inputs json-document` |
+| JSON lines from a pipe with `ParseManyAsync` ([STRM-02](../work/active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md)) | `python3 scripts/memory-gate.py --inputs json-lines-async --sizes 10000000 1000000000 4400000000` |
+| The same with one record of 4 MiB in the middle | `python3 scripts/memory-gate.py --inputs json-lines-async-large --sizes 10000000 1000000000` |
 
 The script builds the harness in Release, runs each input at 10, 100 and 1,000 million characters in its own process, and prints each run's JSON line and a table. It compares the largest size with the smallest, warns if the working tree has uncommitted changes, and exits with 1 when a run fails or the threshold is missed. A gate run should measure a commit. It needs no quiet machine: a 1 GB JSON-lines run beside the test suite measured the same peak as one on a quiet machine. JSON lines grows about 9.5 KB above its baseline, so it fails on less than 5 KB more. If a run fails, log each sample before treating the failure as real.
 
@@ -60,7 +62,15 @@ The heap a GC retained is what that GC recorded as it ended: `HeapSizeBytes` les
 
 **The JSON document.** `--inputs json-document` runs a third input against the same threshold. It is not part of the gate. It generates the JSON-lines records, joins them into one JSON array as it writes them as UTF-8 into a `System.IO.Pipelines.Pipe`, and parses the pipe with `Parse(Stream)` on a `LongRunning` thread, as [docs/concepts/pipelines.md § Huge documents from a pipe](../docs/concepts/pipelines.md#huge-documents-from-a-pipe) shows. The pipeline is `Layer.Utf8()`, the token lexer, and a root that reads each element with `CreoleTokenJson.Value` and skips it. The samples are taken on the writing thread, so the parse is mid-step when they are taken, and up to about 64 KiB of unread bytes, the pipe's default pause threshold, may sit between the two. Sizes count the records' characters; the array adds two bytes per record.
 
-`MemoryGateTests` checks that every input parses, pins the SHA-256 hash of their first 100,000 characters, and checks where the reader ends and samples. LAY-07's progress notes record each gate run's values, and STRM-04's record the JSON document's.
+**JSON lines without blocking.** `--inputs json-lines-async` and `--inputs json-lines-async-large` are not part of the gate either. They write the JSON-lines records as UTF-8 into a `Pipe`, and parse the pipe with `ParseManyAsync` on the thread pool, as [docs/concepts/pipelines.md § `ParseManyAsync`](../docs/concepts/pipelines.md#parsemanyasync) shows. The pipeline is `Layer.Utf8()`, the token lexer, and `CreoleTokenJson.Value.Spanned()`.
+
+- The run fails unless the last record's span starts at the byte where that record was written, so a run past 4 GiB checks offsets beyond `uint.MaxValue`, not only that the parse ends.
+- The large variant writes one record of 4 MiB, an object whose array holds the numbers 0 to 999 over and over, in place of the record that would cross half the size. The records after it are the ones the seed gives without it.
+- `ParseManyAsync` holds a record whole until its last byte arrives, so a sample between records would miss the large one. A line of 1 MiB or more is written in 16 parts, with a sample after each.
+- The warm-up run also parses the large record, so the large variant's baseline holds what that record's buffers returned to the pools.
+- **`json-lines-async` retains little, so its ratio is noisy.** Retention is 20 to 160 KB, and each process settles near about 25 KB or about 150 KB, whatever its size. In three full runs at 10 MB, 1 GB and 4.4 GB, every peak fell in one of those two bands, and the ratio came out 0.77×, 5.61× and 0.19×. Logging every sample of a 300 MB run showed the same peak in each third of the run. So a failure need not mean memory grows; log each sample before treating it as real. The likely cause, not yet shown: whether the buffers' arrays come from `ArrayPool.Shared`'s per-thread caches or are new, as the parse moves between pool threads. For the same reason, the quick check at 2 MB and 20 MB fails this input more often than not.
+
+`MemoryGateTests` checks that every input parses, pins the SHA-256 hash of their first 100,000 characters, and checks where the reader ends and samples. LAY-07's progress notes record each gate run's values, STRM-04's record the JSON document's, and STRM-02's record JSON lines without blocking.
 
 ## What is measured
 

@@ -121,7 +121,7 @@ public static class Pipeline
 
             ArgumentNullException.ThrowIfNull(input);
 
-            return checkedPipeline.TryParse(Read(input), options ?? ParseOptions.Default, recordFailures: true, out var value, out var error)
+            return checkedPipeline.TryParse(Read(input, options), options ?? ParseOptions.Default, recordFailures: true, out var value, out var error)
                 ? new Parsed<TOut>(value)
                 : new Failed(new Diagnostics([error]));
         }
@@ -222,7 +222,7 @@ public static class Pipeline
 
             ArgumentNullException.ThrowIfNull(input);
 
-            return checkedPipeline.ParseMany(() => Read(input), options ?? ParseOptions.Default, static () => null);
+            return checkedPipeline.ParseMany(() => Read(input, options), options ?? ParseOptions.Default, static () => null);
         }
     }
 
@@ -302,7 +302,7 @@ public static class Pipeline
 
             ArgumentNullException.ThrowIfNull(input);
 
-            return checkedPipeline.TryParse(Read(input), options ?? ParseOptions.Default, recordFailures: true, out var value, out var error)
+            return checkedPipeline.TryParse(Read(input, options), options ?? ParseOptions.Default, recordFailures: true, out var value, out var error)
                 ? new Parsed<TOut>(value)
                 : new Failed(new Diagnostics([error]));
         }
@@ -373,7 +373,55 @@ public static class Pipeline
 
             ArgumentNullException.ThrowIfNull(input);
 
-            return checkedPipeline.ParseMany(() => Read(input), options ?? ParseOptions.Default, static () => null);
+            return checkedPipeline.ParseMany(() => Read(input, options), options ?? ParseOptions.Default, static () => null);
+        }
+
+        /// <summary>
+        /// Parses the bytes <paramref name="input"/> receives as a sequence of items without blocking, running this pipeline's parser at the start and again after each item until the stream ends.
+        /// </summary>
+        /// <param name="input">The stream to parse from, such as a socket, a request body, or a <c>PipeReader</c>'s <c>AsStream()</c>. The parse leaves it open.</param>
+        /// <param name="options">The settings for the parse, or <see langword="null"/> for <see cref="ParseOptions.Default"/>.</param>
+        /// <param name="cancellationToken">Cancels the enumeration. It is checked before each attempt at an item and passed to every read; <c>WithCancellation</c> adds another.</param>
+        /// <param name="pipelineExpression">
+        /// The caller's expression for this pipeline, used in the error message.
+        /// The compiler fills it in; do not pass it.
+        /// </param>
+        /// <returns>
+        /// Each item's result, parsed as it is asked for, reading only as far as that item needs.
+        /// A <see cref="Failed"/> result is the last, and holds no text, so <see cref="Diagnostics.Render()"/> writes its error on one line.
+        /// </returns>
+        /// <remarks>
+        /// <para>
+        /// Parsing is synchronous over the bytes received so far.
+        /// An item that runs out of them before the stream ends starves: every layer goes back to where the item started, the enumeration awaits more bytes, and the item runs again.
+        /// So the functions in the grammar can run more than once for one item.
+        /// Before running it again, the enumeration reads until it holds at least twice what the item saw, or until the stream has nothing more ready, so a reply to one record never waits for the next.
+        /// </para>
+        /// <para>
+        /// An item is yielded as soon as its parser returns, and the next is looked for only when it is asked for.
+        /// It waits for bytes past its end only if its grammar reads past its end, as a trailing repetition does, or as a number's scan does to see where it stops.
+        /// </para>
+        /// <para>
+        /// The item being parsed is held whole, in every layer, so <see cref="ParseOptions.MaxBufferedItems"/> also caps one item. The bytes received and not yet parsed count toward it.
+        /// An item that needs more ends with the limit's error.
+        /// Otherwise the results are those <c>ParseMany</c> gives over the same bytes in memory: each item starts with no furthest failure in any layer, failures are recorded as the parse goes, and spans hold byte offsets and, above <see cref="Layer.Utf8"/>, character offsets.
+        /// </para>
+        /// <para>
+        /// Nothing is read until the sequence is enumerated. Enumerate it once: a second enumeration reads on from wherever the stream is, counting offsets from 0 again.
+        /// Ending an enumeration early returns its buffers' memory to their pools, cancels a read still pending, and leaves the stream open.
+        /// Slices in the values are copies.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="GrammarException">This pipeline is null. When enumerated, a grammar in it is not valid, or the parser succeeded without consuming input.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="input"/> is null.</exception>
+        /// <exception cref="OperationCanceledException">When enumerated, the token was cancelled.</exception>
+        public IAsyncEnumerable<ParseResult<TOut>> ParseManyAsync(Stream input, ParseOptions? options = null, CancellationToken cancellationToken = default, [CallerArgumentExpression(nameof(pipeline))] string pipelineExpression = "")
+        {
+            var checkedPipeline = Guard.NotNull(pipeline, pipelineExpression);
+
+            ArgumentNullException.ThrowIfNull(input);
+
+            return ReceiveMany(checkedPipeline, input, options ?? ParseOptions.Default, received: null, cancellationToken);
         }
     }
 
@@ -388,11 +436,11 @@ public static class Pipeline
     private static IEnumerable<ParseResult<TOut>> Many<TIn, TOut>(Pipeline<TIn, TOut> pipeline, ReadOnlyMemory<TIn> input, Func<SourceText?> text, ParseOptions options) =>
         pipeline.ParseMany(() => new MemorySource<TIn>(input), options, text);
 
-    private static StreamBuffer<char> Read(TextReader reader) =>
-        new(new ReaderUpstream(reader));
+    private static StreamBuffer<char> Read(TextReader reader, ParseOptions? options) =>
+        new(new ReaderUpstream(reader), maxBufferedItems: (options ?? ParseOptions.Default).MaxBufferedItems);
 
-    private static StreamBuffer<byte> Read(Stream stream) =>
-        new(new StreamUpstream(stream));
+    private static StreamBuffer<byte> Read(Stream stream, ParseOptions? options) =>
+        new(new StreamUpstream(stream), maxBufferedItems: (options ?? ParseOptions.Default).MaxBufferedItems);
 
     private static ParseResult<TOut> Run<TIn, TOut>(Pipeline<TIn, TOut> pipeline, ReadOnlyMemory<TIn> input, Func<SourceText?> text, ParseOptions options)
     {
@@ -415,6 +463,48 @@ public static class Pipeline
         bytes.StartsWith(Encoding.UTF8.Preamble)
         ? bytes[Encoding.UTF8.Preamble.Length..]
         : bytes;
+
+    /// <summary>
+    /// Runs <paramref name="pipeline"/>'s parser over the items of the bytes <paramref name="input"/> receives, restarting each item that starves once more bytes arrive. Backs <c>ParseManyAsync</c>.
+    /// </summary>
+    /// <param name="pipeline">The pipeline.</param>
+    /// <param name="input">The caller's stream.</param>
+    /// <param name="options">The settings for the parse.</param>
+    /// <param name="received">Called each time the enumeration has received more bytes, with how many it holds past the root buffer's horizon, for tests; or null.</param>
+    /// <param name="cancellationToken">Cancels the enumeration.</param>
+    internal static async IAsyncEnumerable<ParseResult<TOut>> ReceiveMany<TOut>(Pipeline<byte, TOut> pipeline, Stream input, ParseOptions options, Action<long>? received, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var root = new AsyncStreamUpstream(input, cancellationToken);
+        var bytes = new StreamBuffer<byte>(root, maxBufferedItems: options.MaxBufferedItems);
+
+        using var items = pipeline.OpenItems(bytes, options, static () => null, restarts: true);
+
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var outcome = items.Next(out var result);
+
+            if (outcome == ItemOutcome.Starved)
+            {
+                await root.ReceiveAsync(bytes, options.MaxBufferedItems).ConfigureAwait(false);
+                received?.Invoke(root.Received - bytes.Horizon);
+                continue;
+            }
+
+            if (outcome == ItemOutcome.End)
+            {
+                yield break;
+            }
+
+            yield return result;
+
+            if (result is Failed)
+            {
+                yield break;
+            }
+        }
+    }
 
     /// <summary>
     /// Starts a pipeline with <paramref name="layer"/>, which reads the input. End it in a parser with <c>Then</c>.

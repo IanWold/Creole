@@ -24,6 +24,7 @@ Package and release Creole 1.0.
 ## Blocked by
 
 - [FND-01 Reserve the Creole NuGet package ID](../01-foundations/FND-01-reserve-the-creole-nuget-package-id.md)
+- [LAY-10 Measure and reduce what a buffered item costs](../06-layers-and-pipelines/LAY-10-measure-and-reduce-what-a-buffered-item-costs.md)
 - [MODE-06 Model-based tests for mode rollback](../07-mode-channels/MODE-06-model-based-tests-for-mode-rollback.md)
 - [GEN-07 Debugging generated code](../11-source-generator/GEN-07-debugging-generated-code.md)
 - [GEN-08 Differential engine-agreement tests](../11-source-generator/GEN-08-differential-engine-agreement-tests.md)
