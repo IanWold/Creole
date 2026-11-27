@@ -32,6 +32,14 @@ internal interface ICursorSource<T> : IDisposable
     bool Starved => false;
 
     /// <summary>
+    /// Takes the restart bookmark of this source and of every layer below it, as an item of <c>ParseManyAsync</c> starts.
+    /// </summary>
+    /// <remarks>
+    /// The default does nothing, for a source that holds its whole input and never starves.
+    /// </remarks>
+    void Bookmark() { }
+
+    /// <summary>
     /// Discards the items at <paramref name="position"/> and after it, so that they are produced again, because the layer reading them changed the mode of <paramref name="channel"/>.
     /// </summary>
     /// <remarks>
@@ -74,6 +82,14 @@ internal interface ICursorSource<T> : IDisposable
     /// <param name="horizon">The minimum of the cursor and its floor.</param>
     /// <param name="failures">The failure log of the layer that reads the source, or null if it keeps none.</param>
     void Release(long horizon, FailureLog<T>? failures);
+
+    /// <summary>
+    /// Puts this source and every layer below it back at the restart bookmark, and clears <see cref="Starved"/>, as a starved item restarts.
+    /// </summary>
+    /// <remarks>
+    /// The default does nothing, for a source that holds its whole input and never starves.
+    /// </remarks>
+    void Restart() { }
 
     /// <summary>
     /// The source span of the items from <paramref name="start"/> up to <paramref name="end"/>: from the start of the first to the end of the last.

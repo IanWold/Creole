@@ -93,6 +93,11 @@ internal sealed partial class FailureLog<T>
     internal int FrameCount => _frameCount;
 
     /// <summary>
+    /// The number of saved failures the log holds open, for tests of what a restart leaves.
+    /// </summary>
+    internal int SaveCount => _saveCount;
+
+    /// <summary>
     /// The position of the furthest failure, or -1 if none has been recorded.
     /// </summary>
     public long Position { get; private set; } = -1;
@@ -113,6 +118,32 @@ internal sealed partial class FailureLog<T>
         }
 
         _expected[_count++] = expected;
+    }
+
+    /// <summary>
+    /// Forgets every failure, and every save, note, context frame and held start, but not the diagnostics.
+    /// </summary>
+    private void ClearRecord()
+    {
+        Position = -1;
+        _start = 0;
+        _count = 0;
+        _message = null;
+        _chain = null;
+        _rejected = false;
+        _end = -1;
+        _endSpan = null;
+        _at = null;
+        _context = -1;
+        _current = -1;
+        _frameCount = 0;
+        _frameFloor = 0;
+        _heldCount = 0;
+        _records = 0;
+        _protected = 0;
+        _saveCount = 0;
+        _unchanged = 0;
+        _generation = 0;
     }
 
     private void Compact()
@@ -308,25 +339,7 @@ internal sealed partial class FailureLog<T>
     /// </summary>
     public void Clear()
     {
-        Position = -1;
-        _start = 0;
-        _count = 0;
-        _message = null;
-        _chain = null;
-        _rejected = false;
-        _end = -1;
-        _endSpan = null;
-        _at = null;
-        _context = -1;
-        _current = -1;
-        _frameCount = 0;
-        _frameFloor = 0;
-        _heldCount = 0;
-        _records = 0;
-        _protected = 0;
-        _saveCount = 0;
-        _unchanged = 0;
-        _generation = 0;
+        ClearRecord();
         _diagnostics.Clear();
         StepStart = 0;
     }
@@ -630,6 +643,19 @@ internal sealed partial class FailureLog<T>
         {
             Lower(saved.Change, saved.ChangeAt);
         }
+    }
+
+    /// <summary>
+    /// Goes back to the restart bookmark of an item that starved: withdraws the diagnostics raised after the first <paramref name="diagnostics"/>, then forgets every failure, save, note, context frame and held start.
+    /// </summary>
+    /// <remarks>
+    /// The diagnostics kept were raised before the bookmark, as by a step that produced lookahead past the last item's end.
+    /// Every scoped part is at its base at the bookmark, so nothing is left to restore.
+    /// </remarks>
+    public void Restart(int diagnostics)
+    {
+        Withdraw(diagnostics);
+        ClearRecord();
     }
 
     /// <summary>

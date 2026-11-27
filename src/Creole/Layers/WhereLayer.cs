@@ -11,6 +11,8 @@ namespace Creole;
 /// </remarks>
 file sealed class WhereUpstream<T>(ICursorSource<T> input, Func<T, bool> predicate) : IUpstream<T>
 {
+    private long _bookmarkPosition;
+    private long _bookmarkSegmentStart;
     private readonly ICursorSource<T> _input = input;
     private long _position;
     private readonly Func<T, bool> _predicate = predicate;
@@ -34,9 +36,25 @@ file sealed class WhereUpstream<T>(ICursorSource<T> input, Func<T, bool> predica
         }
     }
 
+    public void Bookmark()
+    {
+        _bookmarkPosition = _position;
+        _bookmarkSegmentStart = _segmentStart;
+        _input.Bookmark();
+    }
+
     public void Dispose() => _input.Dispose();
 
     public void ForgetFailures() => _input.ForgetFailures();
+
+    public bool Restart()
+    {
+        _position = _bookmarkPosition;
+        _segmentStart = _bookmarkSegmentStart;
+        _input.Restart();
+
+        return true;
+    }
 
     public bool TryStep(StreamBuffer<T> buffer)
     {

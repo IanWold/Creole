@@ -13,6 +13,7 @@ namespace Creole;
 /// So the input of the running step and of every output the reader can still go back to stays in the buffer, and the cursor states the floor as the layer's horizon when it pulls.
 /// Each step starts by releasing the input below that floor, since a step that starts in a new segment reaches it without the cursor releasing anything.
 /// A step whose input starves produces nothing and reports no failure, and where the input has run out of what it has received, <c>atEnd</c> does not run.
+/// A restart bookmark notes the run's position, state, whether it has ended, its mode log and its diagnostic count, and a restart puts them back and forgets every failure.
 /// </remarks>
 file sealed class TransduceUpstream<TIn, TOut, TState>(
     ICursorSource<TIn> input,
@@ -27,6 +28,10 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
     : IUpstream<TOut>
 {
     private readonly Func<TState, Emit<TOut>>? _atEnd = atEnd;
+    private int _bookmarkDiagnostics;
+    private bool _bookmarkEnded;
+    private long _bookmarkPosition;
+    private object? _bookmarkState;
     private bool _ended;
     private readonly FailureLog<TIn>? _failures = failures;
     private readonly InitialState _initialState = initialState;
@@ -99,12 +104,34 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
     private LayerFailedException Failed(ref readonly Cursor<TIn> cursor, long position) =>
         new(ParseErrors.Failure(in cursor, _failures, position, _name, _input.SpanOf));
 
+    public void Bookmark()
+    {
+        _bookmarkDiagnostics = _failures?.DiagnosticCount ?? 0;
+        _bookmarkEnded = _ended;
+        _bookmarkPosition = _position;
+        _bookmarkState = _state;
+        _modes.Bookmark();
+        _input.Bookmark();
+    }
+
     public void Dispose() => _input.Dispose();
 
     public void ForgetFailures()
     {
         _failures?.ForgetFailure();
         _input.ForgetFailures();
+    }
+
+    public bool Restart()
+    {
+        _modes.Restart();
+        _failures?.Restart(_bookmarkDiagnostics);
+        _ended = _bookmarkEnded;
+        _position = _bookmarkPosition;
+        _state = _bookmarkState;
+        _input.Restart();
+
+        return true;
     }
 
     public bool TryStep(StreamBuffer<TOut> buffer)

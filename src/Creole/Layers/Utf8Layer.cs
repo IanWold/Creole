@@ -25,6 +25,9 @@ namespace Creole;
 /// </remarks>
 file sealed class Utf8Upstream(ICursorSource<byte> input) : IUpstream<char>
 {
+    private long _bookmarkChars;
+    private long _bookmarkPosition;
+    private long _bookmarkSegmentStart;
     private long _chars;
     private readonly ICursorSource<byte> _input = input;
     private long _position;
@@ -146,9 +149,27 @@ file sealed class Utf8Upstream(ICursorSource<byte> input) : IUpstream<char>
         return true;
     }
 
+    public void Bookmark()
+    {
+        _bookmarkChars = _chars;
+        _bookmarkPosition = _position;
+        _bookmarkSegmentStart = _segmentStart;
+        _input.Bookmark();
+    }
+
     public void Dispose() => _input.Dispose();
 
     public void ForgetFailures() => _input.ForgetFailures();
+
+    public bool Restart()
+    {
+        _chars = _bookmarkChars;
+        _position = _bookmarkPosition;
+        _segmentStart = _bookmarkSegmentStart;
+        _input.Restart();
+
+        return true;
+    }
 
     public bool TryStep(StreamBuffer<char> buffer)
     {

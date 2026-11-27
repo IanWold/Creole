@@ -25,4 +25,9 @@ internal abstract class ModeLink(object channel)
     /// </summary>
     /// <returns>Whether that changed the mode: whether the mode on top differed from the initial mode.</returns>
     public abstract bool Reset();
+
+    /// <summary>
+    /// Puts back <paramref name="stack"/>, a stack this link held before a write, as a restart undoes the write.
+    /// </summary>
+    public abstract void Restore(object stack);
 }
