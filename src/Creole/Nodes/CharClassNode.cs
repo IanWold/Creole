@@ -4,7 +4,7 @@ namespace Creole;
 /// Consumes one character in <see cref="Set"/> and produces it. Fails without consuming on any other character.
 /// Backs <c>Char</c>, <c>Range</c>, <c>NoneOf</c> and the named classes such as <c>Digit</c>.
 /// </summary>
-internal sealed class CharClassNode(CharSet set, string? name) : Parser<char, char>, IPrimitiveNode
+internal class CharClassNode(CharSet set, string? name) : Parser<char, char>, IPrimitiveNode
 {
     internal override IReadOnlyList<INode> Children => [];
 

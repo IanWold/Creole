@@ -3,7 +3,7 @@ using static Creole.Grammar<char>;
 
 namespace Creole.Tests;
 
-file sealed class Grouping : CharGrammar
+file class Grouping : CharGrammar
 {
     public static readonly Parser<char, string> Atom =
         LetterOrDigit.Select(static c => c.ToString())
@@ -20,7 +20,7 @@ file sealed class Grouping : CharGrammar
     ]);
 }
 
-file sealed class Calc : CharGrammar
+file class Calc : CharGrammar
 {
     public static readonly Parser<char, double> Atom =
         Digit.Select(static c => (double)(c - '0'))

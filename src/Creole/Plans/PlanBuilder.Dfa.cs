@@ -1,6 +1,6 @@
 namespace Creole;
 
-internal sealed partial class PlanBuilder
+internal partial class PlanBuilder
 {
     /// <summary>
     /// The most states a <c>Longest</c>'s automaton may have; a larger one runs on the interpreter.

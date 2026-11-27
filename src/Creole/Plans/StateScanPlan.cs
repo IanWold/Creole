@@ -13,7 +13,7 @@ namespace Creole;
 /// A value-type state is boxed each time the function returns it.
 /// </para>
 /// </remarks>
-internal sealed class StateScanPlan<TIn, TSource, TState, TResult>(Plan<TIn, TSource> source, Func<TSource, TState, SourceSpan, (TResult Result, TState State)> function) : Plan<TIn, TResult>
+internal class StateScanPlan<TIn, TSource, TState, TResult>(Plan<TIn, TSource> source, Func<TSource, TState, SourceSpan, (TResult Result, TState State)> function) : Plan<TIn, TResult>
 {
     private readonly Func<TSource, TState, SourceSpan, (TResult Result, TState State)> _function = function;
     private readonly Plan<TIn, TSource> _source = source;

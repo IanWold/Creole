@@ -27,9 +27,9 @@ file readonly record struct Described(Lexeme Kind, string Text) : IKinded<Lexeme
 
 file readonly record struct Plain(Lexeme Kind) : IKinded<Lexeme>;
 
-file sealed record Name(string Value);
+file record Name(string Value);
 
-file sealed record Comma;
+file record Comma;
 
 file union Piece(Name, Comma) : IKinded<Lexeme>
 {
@@ -39,7 +39,7 @@ file union Piece(Name, Comma) : IKinded<Lexeme>
         : Lexeme.Word;
 }
 
-file sealed class NeverScanner(ScannerInfo info) : IScanner<char, Unit>
+file class NeverScanner(ScannerInfo info) : IScanner<char, Unit>
 {
     public ScannerInfo Info { get; } = info;
 

@@ -10,7 +10,7 @@ namespace Creole;
 /// That start is held in the failure log while the scanner runs, so a stream buffer that releases it first copies the item there.
 /// It is also pinned, so a scanner may keep the cursor at its start while a copy reads ahead, and assign the copy back only on success.
 /// </remarks>
-internal sealed class CustomPlan<TIn, TOut>(IScanner<TIn, TOut> scanner, Expected? expected) : Plan<TIn, TOut>
+internal class CustomPlan<TIn, TOut>(IScanner<TIn, TOut> scanner, Expected? expected) : Plan<TIn, TOut>
 {
     private readonly Expected? _expected = expected;
     private readonly IScanner<TIn, TOut> _scanner = scanner;

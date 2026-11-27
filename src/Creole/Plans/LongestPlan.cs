@@ -16,7 +16,7 @@ namespace Creole;
 /// It does so whenever another alternative ran after the winner, and in a run with a failure log whenever there are several alternatives.
 /// An alternative that starves fails the plan at once, without rewinding or trying the alternatives after it.
 /// </remarks>
-internal sealed class LongestPlan<TIn, T, TMark>(Plan<TIn, T>[] alternatives) : Plan<TIn, T>
+internal class LongestPlan<TIn, T, TMark>(Plan<TIn, T>[] alternatives) : Plan<TIn, T>
     where TMark : struct, IMark<TMark>
 {
     private readonly Plan<TIn, T>[] _alternatives = alternatives;

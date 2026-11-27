@@ -11,15 +11,15 @@ file enum K
 
 file readonly record struct Lexeme(K Kind, string Text) : IKinded<K>;
 
-file sealed record Plain;
+file record Plain;
 
-file sealed record Keyword(string Word);
+file record Keyword(string Word);
 
 file readonly union LexMode(Plain, Keyword);
 
-file sealed record Operand;
+file record Operand;
 
-file sealed record Operator;
+file record Operator;
 
 /// <summary>
 /// The union in docs/concepts/mode-channels.md § Modes that carry data that compares without allocating. Keep the two in step.
@@ -42,7 +42,7 @@ file enum Side
 /// <summary>
 /// A mode whose data a test changes after the mode is written, which a grammar should not do.
 /// </summary>
-file sealed class MutableMode(string name) : IEquatable<MutableMode>
+file class MutableMode(string name) : IEquatable<MutableMode>
 {
     public string Name { get; set; } = name;
 
@@ -56,7 +56,7 @@ file sealed class MutableMode(string name) : IEquatable<MutableMode>
 /// <summary>
 /// A mode that counts how often it is compared.
 /// </summary>
-file sealed class CountedMode(string name) : IEquatable<CountedMode>
+file class CountedMode(string name) : IEquatable<CountedMode>
 {
     private static int _comparisons;
 
@@ -79,7 +79,7 @@ file sealed class CountedMode(string name) : IEquatable<CountedMode>
 /// <summary>
 /// The lexer of the code sample in docs/concepts/mode-channels.md § Modes that carry data. Keep the two in step.
 /// </summary>
-file sealed class BlockLexer : CharGrammar
+file class BlockLexer : CharGrammar
 {
     public static readonly ModeChannel<LexMode> Modes = new(new Plain());
 
@@ -101,7 +101,7 @@ file sealed class BlockLexer : CharGrammar
 /// <summary>
 /// The parser of the code sample in docs/concepts/mode-channels.md § Modes that carry data. Keep the two in step.
 /// </summary>
-file sealed class BlockGrammar : TokenGrammar<Lexeme, K>
+file class BlockGrammar : TokenGrammar<Lexeme, K>
 {
     // keyword w makes w a keyword until the block ends.
     private static readonly Parser<Lexeme, Unit> _declaration =

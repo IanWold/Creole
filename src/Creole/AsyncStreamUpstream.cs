@@ -25,7 +25,7 @@ namespace Creole;
 /// </remarks>
 /// <param name="stream">The caller's stream.</param>
 /// <param name="cancellationToken">Cancels the reads.</param>
-internal sealed class AsyncStreamUpstream(Stream stream, CancellationToken cancellationToken) : IUpstream<byte>
+internal class AsyncStreamUpstream(Stream stream, CancellationToken cancellationToken) : IUpstream<byte>
 {
     private const int MinimumRead = 4_096;
 

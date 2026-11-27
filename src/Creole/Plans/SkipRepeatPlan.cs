@@ -3,7 +3,7 @@ namespace Creole;
 /// <summary>
 /// Runs its item as <see cref="RepeatPlan{TIn, T, TMark}"/> does, but keeps none of the results, so it allocates nothing.
 /// </summary>
-internal sealed class SkipRepeatPlan<TIn, T, TMark>(Plan<TIn, T> item, int min, int? max) : Plan<TIn, Unit>
+internal class SkipRepeatPlan<TIn, T, TMark>(Plan<TIn, T> item, int min, int? max) : Plan<TIn, Unit>
     where TMark : struct, IMark<TMark>
 {
     private readonly Plan<TIn, T> _item = item;

@@ -9,7 +9,7 @@ namespace Creole;
 /// <remarks>
 /// Analysis treats the case type as a kind: the FIRST set holds <typeparamref name="TCase"/>.
 /// </remarks>
-internal sealed class CaseNode<TToken, TCase> : Parser<TToken, TCase>, IPrimitiveNode
+internal class CaseNode<TToken, TCase> : Parser<TToken, TCase>, IPrimitiveNode
 {
     internal override IReadOnlyList<INode> Children => [];
 

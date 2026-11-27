@@ -5,7 +5,7 @@ file static class Scanners
     public static readonly IScanner<char, int> Missing = null!;
 }
 
-file sealed class StubScanner<TIn>(ScannerInfo? declared) : IScanner<TIn, int>
+file class StubScanner<TIn>(ScannerInfo? declared) : IScanner<TIn, int>
 {
     public ScannerInfo? Declared { get; set; } = declared;
 

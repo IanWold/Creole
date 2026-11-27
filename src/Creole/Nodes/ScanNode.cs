@@ -7,7 +7,7 @@ namespace Creole;
 /// <remarks>
 /// <see cref="Function"/> decides the state later parsing reads, so engines run it on every success, even where the result is not used.
 /// </remarks>
-internal sealed class ScanNode<TIn, TSource, TState, TResult>(Parser<TIn, TSource> source, Func<TSource, TState, SourceSpan, (TResult Result, TState State)> function) : Parser<TIn, TResult>
+internal class ScanNode<TIn, TSource, TState, TResult>(Parser<TIn, TSource> source, Func<TSource, TState, SourceSpan, (TResult Result, TState State)> function) : Parser<TIn, TResult>
 {
     internal override IReadOnlyList<INode> Children => [Source];
 

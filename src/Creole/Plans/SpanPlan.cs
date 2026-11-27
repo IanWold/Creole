@@ -7,7 +7,7 @@ namespace Creole;
 /// Its start is held while the source runs, so a stream buffer that releases the item there first copies its span.
 /// It takes no pin, so it keeps no input alive.
 /// </remarks>
-internal sealed class SpanPlan<TIn, TSource, TResult>(Plan<TIn, TSource> source, Func<TSource, SourceSpan, TResult> selector) : Plan<TIn, TResult>
+internal class SpanPlan<TIn, TSource, TResult>(Plan<TIn, TSource> source, Func<TSource, SourceSpan, TResult> selector) : Plan<TIn, TResult>
 {
     private readonly Func<TSource, SourceSpan, TResult> _selector = selector;
     private readonly Plan<TIn, TSource> _source = source;

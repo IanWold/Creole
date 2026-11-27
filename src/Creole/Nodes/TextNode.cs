@@ -4,7 +4,7 @@ namespace Creole;
 /// Runs <see cref="Item"/> and produces the characters it consumed as a <see cref="string"/>, discarding its result.
 /// Backs <c>Text</c>.
 /// </summary>
-internal sealed class TextNode<T>(Parser<char, T> item) : Parser<char, string>
+internal class TextNode<T>(Parser<char, T> item) : Parser<char, string>
 {
     internal override IReadOnlyList<INode> Children => [Item];
 

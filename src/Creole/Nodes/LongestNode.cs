@@ -7,7 +7,7 @@ namespace Creole;
 /// <remarks>
 /// Engines compile the alternatives to a single DFA when all of them are regular, and run them one by one otherwise.
 /// </remarks>
-internal sealed class LongestNode<TIn, T>(Parser<TIn, T>[] alternatives) : Parser<TIn, T>
+internal class LongestNode<TIn, T>(Parser<TIn, T>[] alternatives) : Parser<TIn, T>
 {
     /// <summary>
     /// The alternatives, in order of priority for ties.

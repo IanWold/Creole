@@ -8,7 +8,7 @@ namespace Creole;
 /// </remarks>
 /// <param name="expected">The type the grammar read the state as.</param>
 /// <param name="held">What the cursor held: null for no state, <see cref="StateBox.Null"/> for a state set to null, or the state.</param>
-internal sealed class LayerStateException(Type expected, object? held) : Exception
+internal class LayerStateException(Type expected, object? held) : Exception
 {
     private readonly Type _expected = expected;
     private readonly object? _held = held;

@@ -5,7 +5,7 @@ namespace Creole.Tests;
 /// <summary>
 /// A pool that overwrites each array returned to it with <paramref name="filler"/> and hands the newest back first, so whatever still reads a released array reads the filler or another segment's items.
 /// </summary>
-internal sealed class OverwritingPool<T>(T filler) : ArrayPool<T>
+internal class OverwritingPool<T>(T filler) : ArrayPool<T>
 {
     private readonly T _filler = filler;
     private readonly Stack<T[]> _returned = [];

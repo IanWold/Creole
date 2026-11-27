@@ -11,9 +11,9 @@ file enum K {
 
 file readonly record struct KTok(K Kind, string Text) : IKinded<K>;
 
-file sealed record Ident(string Name);
+file record Ident(string Name);
 
-file sealed record Num(int Value);
+file record Num(int Value);
 
 file union UTok(Ident, Num) : IKinded<K>
 {
@@ -24,12 +24,12 @@ file union UTok(Ident, Num) : IKinded<K>
     };
 }
 
-file sealed class KTokens : TokenGrammar<KTok, K>
+file class KTokens : TokenGrammar<KTok, K>
 {
     public static readonly Parser<KTok, KTok> Comma = Kind(K.Comma);
 }
 
-file sealed class UTokens : TokenGrammar<UTok, K>
+file class UTokens : TokenGrammar<UTok, K>
 {
     public static readonly Parser<UTok, Ident> Name = Case<Ident>();
     public static readonly Parser<UTok, UTok> NumberKind = Kind(K.Number);

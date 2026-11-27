@@ -3,7 +3,7 @@ namespace Creole;
 /// <summary>
 /// A postfix operator: runs the operator and combines it with the operand before it.
 /// </summary>
-internal sealed class PostfixOperatorPlan<TIn, TOp, T, TMark>(Plan<TIn, TOp> op, Func<T, TOp, T> combine, int level) : OperatorPlan<TIn, T, TMark>(Fixity.Postfix, level)
+internal class PostfixOperatorPlan<TIn, TOp, T, TMark>(Plan<TIn, TOp> op, Func<T, TOp, T> combine, int level) : OperatorPlan<TIn, T, TMark>(Fixity.Postfix, level)
     where TMark : struct, IMark<TMark>
 {
     private readonly Func<T, TOp, T> _combine = combine;

@@ -2,7 +2,7 @@ namespace Creole.Tests;
 
 file interface IShape;
 
-file sealed record Square : IShape;
+file record Square : IShape;
 
 public class EmitTests
 {

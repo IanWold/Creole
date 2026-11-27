@@ -199,8 +199,8 @@ public class SequencingNodeTests
     }
 }
 
-file sealed record Circle(int Radius);
+file record Circle(int Radius);
 
-file sealed record Square(int Side);
+file record Square(int Side);
 
 file union Shape(Circle, Square);

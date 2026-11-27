@@ -1,6 +1,6 @@
 namespace Creole;
 
-internal sealed partial class PlanBuilder
+internal partial class PlanBuilder
 {
     /// <summary>
     /// The fewest alternatives with keys for which an <c>Or</c> dispatches.

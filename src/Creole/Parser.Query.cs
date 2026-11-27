@@ -105,7 +105,7 @@ public abstract partial class Parser<TIn, TOut>
         );
 }
 
-file sealed class ParameterFinder(ParameterExpression parameter) : ExpressionVisitor
+file class ParameterFinder(ParameterExpression parameter) : ExpressionVisitor
 {
     private bool _found;
 

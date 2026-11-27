@@ -1,6 +1,6 @@
 namespace Creole;
 
-internal sealed partial class PlanBuilder
+internal partial class PlanBuilder
 {
     public Plan<TIn, TResult> Bind<TIn, TSource, TNext, TResult>(Parser<TIn, TSource> source, Func<TSource, Parser<TIn, TNext>> next, Func<TSource, TNext, TResult> selector, string nextExpression) =>
         new BindPlan<TIn, TSource, TNext, TResult>(Lower(source), next, selector, nextExpression);

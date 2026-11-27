@@ -7,7 +7,7 @@ namespace Creole;
 /// <remarks>
 /// The predicate is code, so analysis cannot see which items it accepts. The node is opaque and its FIRST set is any item.
 /// </remarks>
-internal sealed class SatisfyNode<TIn>(Func<TIn, bool> predicate) : Parser<TIn, TIn>, IPrimitiveNode
+internal class SatisfyNode<TIn>(Func<TIn, bool> predicate) : Parser<TIn, TIn>, IPrimitiveNode
 {
     internal override IReadOnlyList<INode> Children => [];
 

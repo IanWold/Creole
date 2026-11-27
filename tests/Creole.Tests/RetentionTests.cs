@@ -4,7 +4,7 @@ using static Creole.Grammar<char>;
 
 namespace Creole.Tests;
 
-file sealed class CopyScanner : IScanner<char, string>
+file class CopyScanner : IScanner<char, string>
 {
     public ScannerInfo Info { get; } = new(Nullable: false, Name: "terminated word");
 
@@ -39,7 +39,7 @@ file sealed class CopyScanner : IScanner<char, string>
 /// </remarks>
 public class RetentionTests
 {
-    private sealed record Case(string Name, Parser<char, string> Parser, string Input);
+    private record Case(string Name, Parser<char, string> Parser, string Input);
 
     private readonly record struct Outcome(bool Ok, string Value, long Position, bool Threw);
 

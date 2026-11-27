@@ -6,7 +6,7 @@ namespace Creole;
 /// <remarks>
 /// It starts as the channel's initial mode alone. The mode nodes replace <see cref="Stack"/> as they run, and the <c>Layer.Modal</c> that reads the channel reads its top at each step.
 /// </remarks>
-internal sealed class ModeLink<TMode>(ModeChannel<TMode> channel) : ModeLink(channel)
+internal class ModeLink<TMode>(ModeChannel<TMode> channel) : ModeLink(channel)
 {
     private readonly ModeStack<TMode> _initial = channel.InitialStack;
 

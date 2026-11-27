@@ -6,7 +6,7 @@ namespace Creole;
 /// <remarks>
 /// Where the input has run out of what it has received, it has not ended, so the attempt is starved and this fails, recording nothing.
 /// </remarks>
-internal sealed class EndPlan<TIn> : Plan<TIn, Unit>
+internal class EndPlan<TIn> : Plan<TIn, Unit>
 {
     public override bool TryParse(ref Cursor<TIn> cursor, ref Unit result)
     {

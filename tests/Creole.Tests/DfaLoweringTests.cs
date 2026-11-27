@@ -4,7 +4,7 @@ using static Creole.Grammar<char>;
 
 namespace Creole.Tests;
 
-file sealed record Alternative(Parser<char, string> Parser, string Text);
+file record Alternative(Parser<char, string> Parser, string Text);
 
 file static class Alternatives
 {

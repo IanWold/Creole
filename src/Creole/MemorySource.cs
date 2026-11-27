@@ -8,7 +8,7 @@ namespace Creole;
 /// A cursor over it returns slices as views of the caller's memory, not copies.
 /// </remarks>
 /// <param name="input">The caller's input.</param>
-internal sealed class MemorySource<T>(ReadOnlyMemory<T> input) : ICursorSource<T>
+internal class MemorySource<T>(ReadOnlyMemory<T> input) : ICursorSource<T>
 {
     private readonly ReadOnlyMemory<T> _input = input;
 

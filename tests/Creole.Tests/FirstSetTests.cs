@@ -8,11 +8,11 @@ file enum Wide : ulong { Low = 1, High = ulong.MaxValue }
 
 file record Animal;
 
-file sealed record Dog : Animal;
+file record Dog : Animal;
 
-file sealed record Ident;
+file record Ident;
 
-file sealed record Number;
+file record Number;
 
 file readonly record struct Tok(string Text);
 

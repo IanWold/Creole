@@ -23,7 +23,7 @@ namespace Creole;
 /// Where its input starts and ends keep their root offsets, at character 0 and at the number of characters decoded.
 /// </para>
 /// </remarks>
-file sealed class Utf8Upstream(ICursorSource<byte> input) : IUpstream<char>
+file class Utf8Upstream(ICursorSource<byte> input) : IUpstream<char>
 {
     private long _bookmarkChars;
     private long _bookmarkPosition;
@@ -203,7 +203,7 @@ file sealed class Utf8Upstream(ICursorSource<byte> input) : IUpstream<char>
 /// <summary>
 /// Decodes UTF-8 bytes into UTF-16 characters. Backs <c>Layer.Utf8</c>.
 /// </summary>
-internal sealed class Utf8Layer : Layer<byte, char>
+internal class Utf8Layer : Layer<byte, char>
 {
     /// <summary>
     /// The layer's name in errors.

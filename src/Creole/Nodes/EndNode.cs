@@ -3,7 +3,7 @@ namespace Creole;
 /// <summary>
 /// Succeeds without consuming input at the end of input, and fails without consuming anywhere else.
 /// </summary>
-internal sealed class EndNode<TIn> : Parser<TIn, Unit>, IPrimitiveNode
+internal class EndNode<TIn> : Parser<TIn, Unit>, IPrimitiveNode
 {
     internal override IReadOnlyList<INode> Children => [];
 

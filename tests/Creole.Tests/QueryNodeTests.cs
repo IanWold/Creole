@@ -14,7 +14,7 @@ file enum J
 
 file readonly record struct JTok(J Kind, string Text) : IKinded<J>;
 
-file sealed class JsonGrammar : TokenGrammar<JTok, J>
+file class JsonGrammar : TokenGrammar<JTok, J>
 {
     public static readonly Parser<JTok, string> Value = Kind(J.Number).Select(static t => t.Text);
 
@@ -25,7 +25,7 @@ file sealed class JsonGrammar : TokenGrammar<JTok, J>
         select KeyValuePair.Create(key.Text, value);
 }
 
-file sealed class BlobGrammar : Grammar<byte>
+file class BlobGrammar : Grammar<byte>
 {
     public static readonly Parser<byte, int> UInt16 = Seq(Any, Any).Select(static (hi, lo) => hi << 8 | lo);
 

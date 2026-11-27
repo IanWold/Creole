@@ -8,7 +8,7 @@ namespace Creole;
 /// Every primitive that matches one item and produces it lowers to this plan: <c>Any</c>, <c>Token</c>, <c>Satisfy</c> and <c>Kind</c>.
 /// Character classes lower to <see cref="CharClassPlan"/> instead.
 /// </remarks>
-internal sealed class ItemPlan<TIn>(Func<TIn, bool> accepts, Expected? expected) : Plan<TIn, TIn>
+internal class ItemPlan<TIn>(Func<TIn, bool> accepts, Expected? expected) : Plan<TIn, TIn>
 {
     private readonly Func<TIn, bool> _accepts = accepts;
     private readonly Expected? _expected = expected;

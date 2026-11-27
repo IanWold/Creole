@@ -7,7 +7,7 @@ namespace Creole.MemoryGate;
 /// Writes text into a pipe as UTF-8, flushing every few kilobytes, and stops once the parse has stopped reading.
 /// </summary>
 /// <param name="writer">The pipe's writer.</param>
-internal sealed class PipeTextWriter(PipeWriter writer)
+internal class PipeTextWriter(PipeWriter writer)
 {
     private const int BytesPerFlush = 4096;
 

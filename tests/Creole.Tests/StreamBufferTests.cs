@@ -4,7 +4,7 @@ using static Creole.Grammar<char>;
 
 namespace Creole.Tests;
 
-file sealed class GroupUpstream(char[][] steps, object?[] states) : IUpstream<char>
+file class GroupUpstream(char[][] steps, object?[] states) : IUpstream<char>
 {
     private readonly object?[] _states = states;
     private readonly char[][] _steps = steps;
@@ -33,7 +33,7 @@ file sealed class GroupUpstream(char[][] steps, object?[] states) : IUpstream<ch
     }
 }
 
-file sealed class RepeatUpstream(char item, int count) : IUpstream<char>
+file class RepeatUpstream(char item, int count) : IUpstream<char>
 {
     private readonly int _count = count;
     private readonly char _item = item;
@@ -56,7 +56,7 @@ file sealed class RepeatUpstream(char item, int count) : IUpstream<char>
     }
 }
 
-file sealed class SpanUpstream(string[] tokens, SourceSpan[] spans) : IUpstream<string>
+file class SpanUpstream(string[] tokens, SourceSpan[] spans) : IUpstream<string>
 {
     private readonly SourceSpan[] _spans = spans;
     private readonly string[] _tokens = tokens;
@@ -85,7 +85,7 @@ file sealed class SpanUpstream(string[] tokens, SourceSpan[] spans) : IUpstream<
     }
 }
 
-file sealed class TokenUpstream(StreamBuffer<char> characters, Plan<char, string> item) : IUpstream<string>
+file class TokenUpstream(StreamBuffer<char> characters, Plan<char, string> item) : IUpstream<string>
 {
     private readonly StreamBuffer<char> _characters = characters;
     private readonly Plan<char, string> _item = item;

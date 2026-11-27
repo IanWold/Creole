@@ -23,7 +23,7 @@ file readonly record struct Lexeme(K Kind, string Text) : IKinded<K>;
 /// <summary>
 /// The code sample in docs/concepts/mode-channels.md § Reading a channel: Layer.Modal. Keep the two in step.
 /// </summary>
-file sealed class ScriptLexer : CharGrammar
+file class ScriptLexer : CharGrammar
 {
     public static readonly ModeChannel<LexMode> Modes = new(LexMode.Operand);
 
@@ -41,7 +41,7 @@ file sealed class ScriptLexer : CharGrammar
 /// <summary>
 /// The parser of the code sample in docs/concepts/mode-channels.md § Reading a channel: Layer.Modal. Keep the two in step.
 /// </summary>
-file sealed class ScriptGrammar : TokenGrammar<Lexeme, K>
+file class ScriptGrammar : TokenGrammar<Lexeme, K>
 {
     public static readonly Parser<Lexeme, string> Division =
         Seq(Kind(K.Name), SetMode(ScriptLexer.Modes, LexMode.Operator), Kind(K.Slash), SetMode(ScriptLexer.Modes, LexMode.Operand), Kind(K.Regex))

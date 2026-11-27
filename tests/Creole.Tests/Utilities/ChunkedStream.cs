@@ -6,7 +6,7 @@ namespace Creole.Tests;
 /// A read that does its work only once it is awaited, so a reader that checks it first always finds it pending.
 /// </summary>
 /// <param name="read">Does the read and returns how many bytes it gave.</param>
-file sealed class AwaitedRead(Func<int> read) : IValueTaskSource<int>
+file class AwaitedRead(Func<int> read) : IValueTaskSource<int>
 {
     private bool _done;
     private readonly Func<int> _read = read;
@@ -33,7 +33,7 @@ file sealed class AwaitedRead(Func<int> read) : IValueTaskSource<int>
 /// <param name="bytes">The whole input.</param>
 /// <param name="size">The most bytes the next read gives.</param>
 /// <param name="pending">Whether each asynchronous read stays pending until it is awaited, as a read waiting on a slow producer does.</param>
-internal sealed class ChunkedStream(byte[] bytes, Func<int> size, bool pending) : Stream
+internal class ChunkedStream(byte[] bytes, Func<int> size, bool pending) : Stream
 {
     private readonly byte[] _bytes = bytes;
     private readonly bool _pending = pending;

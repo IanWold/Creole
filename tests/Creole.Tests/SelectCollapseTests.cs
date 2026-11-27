@@ -5,7 +5,7 @@ using static Creole.Grammar<char>;
 
 namespace Creole.Tests;
 
-file sealed class Depths : CharGrammar
+file class Depths : CharGrammar
 {
     public static readonly Parser<char, int> Group = Rec(() => Inner).Between(Char('('), Char(')'));
 

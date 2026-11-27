@@ -8,7 +8,7 @@ namespace Creole;
 /// A parser the continuation builds afresh at each match is lowered at each match.
 /// The chosen parser runs one level of recursion deeper, because it can lead back to this <c>Bind</c> without a <c>Rec</c>.
 /// </remarks>
-internal sealed class BindPlan<TIn, TSource, TNext, TResult>(Plan<TIn, TSource> source, Func<TSource, Parser<TIn, TNext>> next, Func<TSource, TNext, TResult> selector, string nextExpression) : Plan<TIn, TResult>
+internal class BindPlan<TIn, TSource, TNext, TResult>(Plan<TIn, TSource> source, Func<TSource, Parser<TIn, TNext>> next, Func<TSource, TNext, TResult> selector, string nextExpression) : Plan<TIn, TResult>
 {
     private readonly Func<TSource, Parser<TIn, TNext>> _next = next;
     private readonly string _nextExpression = nextExpression;

@@ -3,9 +3,9 @@ using static Creole.Grammar<char>;
 
 namespace Creole.Tests;
 
-file sealed record Small(char Digit);
+file record Small(char Digit);
 
-file sealed record Large(char Digit);
+file record Large(char Digit);
 
 file union Size(Small, Large);
 

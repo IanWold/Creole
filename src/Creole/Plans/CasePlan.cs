@@ -10,7 +10,7 @@ namespace Creole;
 /// <see cref="CaseNode{TToken, TCase}"/> has already checked that <typeparamref name="TToken"/> is a union.
 /// A struct token is boxed to read its case.
 /// </remarks>
-internal sealed class CasePlan<TToken, TCase>(Expected expected) : Plan<TToken, TCase>
+internal class CasePlan<TToken, TCase>(Expected expected) : Plan<TToken, TCase>
 {
     private readonly Expected _expected = expected;
 

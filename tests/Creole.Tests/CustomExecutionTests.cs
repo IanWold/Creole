@@ -1,6 +1,6 @@
 namespace Creole.Tests;
 
-file sealed class PairScanner : IScanner<int, int>
+file class PairScanner : IScanner<int, int>
 {
     public ScannerInfo Info { get; } = new(Nullable: false);
 

@@ -7,7 +7,7 @@ namespace Creole;
 /// </summary>
 /// <param name="scrutinee">The parser that produces the union value.</param>
 /// <param name="cases">The cases in the order they are tried. The node keeps this array, so pass a new one.</param>
-internal sealed class MatchNode<TIn, TUnion, TOut>(Parser<TIn, TUnion> scrutinee, MatchCase<TIn, TOut>[] cases) : Parser<TIn, TOut>, IMatchNode
+internal class MatchNode<TIn, TUnion, TOut>(Parser<TIn, TUnion> scrutinee, MatchCase<TIn, TOut>[] cases) : Parser<TIn, TOut>, IMatchNode
     where TUnion : IUnion
 {
     private readonly INode[] _children = [scrutinee, .. cases.Select(c => c.BranchNode)];

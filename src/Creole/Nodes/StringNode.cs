@@ -12,7 +12,7 @@ namespace Creole;
 /// and the node produces the input as written. Without it, the node produces <see cref="Text"/> itself.
 /// </para>
 /// </remarks>
-internal sealed class StringNode : Parser<char, string>, IPrimitiveNode
+internal class StringNode : Parser<char, string>, IPrimitiveNode
 {
     internal override IReadOnlyList<INode> Children => [];
 

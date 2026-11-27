@@ -1,6 +1,6 @@
 namespace Creole;
 
-internal sealed partial class PlanBuilder
+internal partial class PlanBuilder
 {
     public static Plan<TIn, TIn> Any<TIn>() =>
         new ItemPlan<TIn>(static _ => true, null);

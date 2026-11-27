@@ -5,21 +5,21 @@ using static Creole.Grammar<char>;
 
 namespace Creole.Tests;
 
-file sealed record JsonString(string Value);
+file record JsonString(string Value);
 
-file sealed record JsonNumber(double Value);
+file record JsonNumber(double Value);
 
-file sealed record JsonBool(bool Value);
+file record JsonBool(bool Value);
 
-file sealed record JsonNull;
+file record JsonNull;
 
-file sealed record JsonArray(IReadOnlyList<JsonValue> Items);
+file record JsonArray(IReadOnlyList<JsonValue> Items);
 
-file sealed record JsonObject(IReadOnlyList<KeyValuePair<string, JsonValue>> Members);
+file record JsonObject(IReadOnlyList<KeyValuePair<string, JsonValue>> Members);
 
 file union JsonValue(JsonString, JsonNumber, JsonBool, JsonNull, JsonArray, JsonObject);
 
-file sealed class CharJson : CharGrammar
+file class CharJson : CharGrammar
 {
     private static readonly Parser<char, Unit> _space = Whitespace.SkipMany();
 
@@ -82,7 +82,7 @@ file sealed class CharJson : CharGrammar
     };
 }
 
-file sealed class Nesting : CharGrammar
+file class Nesting : CharGrammar
 {
     public static readonly Parser<char, int> Brackets =
         Char('[').Then(Rec(() => Brackets)).Before(Char(']')).Select(static depth => depth + 1)
@@ -112,7 +112,7 @@ file readonly record struct BracketToken(Bracket Kind) : IKinded<Bracket>
     };
 }
 
-file sealed class TokenNesting : TokenGrammar<BracketToken, Bracket>
+file class TokenNesting : TokenGrammar<BracketToken, Bracket>
 {
     public static readonly Parser<BracketToken, int> Brackets =
         Kind(Bracket.Open).Then(Rec(() => Brackets)).Before(Kind(Bracket.Close)).Select(static depth => depth + 1)

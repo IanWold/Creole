@@ -8,7 +8,7 @@ namespace Creole;
 /// The scanner's <see cref="ScannerInfo"/> is read once, here. With a declared <see cref="ScannerInfo.First"/>, analysis sees the node like any other primitive.
 /// Without one, the node is opaque and its FIRST set is any item (ADR-0012).
 /// </remarks>
-internal sealed class CustomNode<TIn, TOut> : Parser<TIn, TOut>, IPrimitiveNode
+internal class CustomNode<TIn, TOut> : Parser<TIn, TOut>, IPrimitiveNode
 {
     internal override IReadOnlyList<INode> Children => [];
 

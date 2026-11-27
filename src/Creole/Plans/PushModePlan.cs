@@ -5,7 +5,7 @@ namespace Creole;
 /// </summary>
 /// <param name="channel">The channel whose stack changes.</param>
 /// <param name="mode">The new top.</param>
-internal sealed class PushModePlan<TIn, TMode>(ModeChannel<TMode> channel, TMode mode) : Plan<TIn, Unit>
+internal class PushModePlan<TIn, TMode>(ModeChannel<TMode> channel, TMode mode) : Plan<TIn, Unit>
 {
     private readonly ModeChannel<TMode> _channel = channel;
     private readonly TMode _mode = mode;

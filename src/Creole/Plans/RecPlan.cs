@@ -6,7 +6,7 @@ namespace Creole;
 /// <remarks>
 /// Where the <c>Rec</c> closes a cycle, the target is a <see cref="ForwardPlan{TIn, TOut}"/>.
 /// </remarks>
-internal sealed class RecPlan<TIn, TOut>(Plan<TIn, TOut> target) : Plan<TIn, TOut>
+internal class RecPlan<TIn, TOut>(Plan<TIn, TOut> target) : Plan<TIn, TOut>
 {
     /// <summary>
     /// The plan of the <c>Rec</c>'s target.

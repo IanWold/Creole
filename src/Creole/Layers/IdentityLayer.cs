@@ -6,7 +6,7 @@ namespace Creole;
 /// <remarks>
 /// <c>Then</c> returns the other layer when either side is this one, so it runs only on its own.
 /// </remarks>
-internal sealed class IdentityLayer<T> : Layer<T, T>
+internal class IdentityLayer<T> : Layer<T, T>
 {
     private static readonly SelectLayer<T, T> _copy = new(static item => item);
 

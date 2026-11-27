@@ -4,7 +4,7 @@ namespace Creole;
 /// An infix operator: <see cref="Op"/> between two operands, combined by <see cref="Combine"/>.
 /// <see cref="Fixity"/> is <see cref="Fixity.InfixL"/>, <see cref="Fixity.InfixR"/> or <see cref="Fixity.InfixN"/>.
 /// </summary>
-internal sealed class InfixOperator<TIn, TOp, T>(Fixity fixity, Parser<TIn, TOp> op, Func<T, TOp, T, T> combine) : ExpressionOperator<TIn, T>
+internal class InfixOperator<TIn, TOp, T>(Fixity fixity, Parser<TIn, TOp> op, Func<T, TOp, T, T> combine) : ExpressionOperator<TIn, T>
 {
     internal override Fixity Fixity { get; } = fixity;
 

@@ -27,7 +27,7 @@ file readonly record struct Tok(K Kind, string Text) : IKinded<K>;
 /// <summary>
 /// The lexer of the whitepaper's Example C: in operand mode <c>/</c> starts a regex, and in operator mode it divides.
 /// </summary>
-file sealed class ScriptLexer : CharGrammar
+file class ScriptLexer : CharGrammar
 {
     public static readonly ModeChannel<LexMode> Modes = new(LexMode.Operand);
 
@@ -78,7 +78,7 @@ file sealed class ScriptLexer : CharGrammar
 /// Read in operand mode, the <c>/ c;</c> of <c>a / b / c;</c> would be an unterminated regex, which ends the parse: re-reading can replace only a token that was read.
 /// Each value is the source it parsed, with single spaces.
 /// </remarks>
-file sealed class ScriptGrammar : TokenGrammar<Tok, K>
+file class ScriptGrammar : TokenGrammar<Tok, K>
 {
     private static readonly ModeChannel<LexMode> _modes = ScriptLexer.Modes;
     private static readonly Parser<Tok, string> _expression = Rec(() => Exp);
@@ -116,7 +116,7 @@ file sealed class ScriptGrammar : TokenGrammar<Tok, K>
 /// <summary>
 /// A parser that consumes nothing and reports how many entries the mode log of the layer running it holds.
 /// </summary>
-file sealed class LogSize(Action<int> seen) : Parser<Tok, Unit>
+file class LogSize(Action<int> seen) : Parser<Tok, Unit>
 {
     private readonly Action<int> _seen = seen;
 
@@ -130,7 +130,7 @@ file sealed class LogSize(Action<int> seen) : Parser<Tok, Unit>
 /// <summary>
 /// The plan of <see cref="LogSize"/>.
 /// </summary>
-file sealed class LogSizePlan(Action<int> seen) : Plan<Tok, Unit>
+file class LogSizePlan(Action<int> seen) : Plan<Tok, Unit>
 {
     private readonly Action<int> _seen = seen;
 
@@ -144,7 +144,7 @@ file sealed class LogSizePlan(Action<int> seen) : Plan<Tok, Unit>
 /// <summary>
 /// Grammars over Example C's tokens whose errors show what a change of mode does to them. Each first reads the statement <c>x;</c>, which leaves the lexer in operator mode.
 /// </summary>
-file sealed class ErrorCases : TokenGrammar<Tok, K>
+file class ErrorCases : TokenGrammar<Tok, K>
 {
     private static readonly ModeChannel<LexMode> _modes = ScriptLexer.Modes;
 

@@ -9,7 +9,7 @@ namespace Creole;
 /// On reaching a new segment, it releases what lies below the pin.
 /// A read that would hold more of its input than the buffer's limit ends the parse with an error named <see cref="SelectLayer{TIn, TOut}.Name"/>.
 /// </remarks>
-file sealed class SelectUpstream<TIn, TOut>(ICursorSource<TIn> input, Func<TIn, TOut> selector) : IUpstream<TOut>
+file class SelectUpstream<TIn, TOut>(ICursorSource<TIn> input, Func<TIn, TOut> selector) : IUpstream<TOut>
 {
     private long _bookmarkPosition;
     private long _bookmarkSegmentStart;
@@ -83,7 +83,7 @@ file sealed class SelectUpstream<TIn, TOut>(ICursorSource<TIn> input, Func<TIn, 
 /// <summary>
 /// Applies <see cref="Selector"/> to each item. Backs <c>Layer.Select</c>, and <c>Layer.Identity</c> when it runs on its own.
 /// </summary>
-internal sealed class SelectLayer<TIn, TOut>(Func<TIn, TOut> selector) : Layer<TIn, TOut>
+internal class SelectLayer<TIn, TOut>(Func<TIn, TOut> selector) : Layer<TIn, TOut>
 {
     /// <summary>
     /// The layer's name in errors.

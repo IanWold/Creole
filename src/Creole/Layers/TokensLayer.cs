@@ -20,7 +20,7 @@ namespace Creole;
 /// A restart bookmark notes the run's position, state, mode log and diagnostic count, and a restart puts them back and forgets every failure.
 /// Going back to a step before the bookmark, as a mode change at an item's start can make it, lowers the bookmark to that step and its diagnostics to those still raised, so a restart produces those items again instead of skipping them.
 /// </remarks>
-file sealed class TokensUpstream<TIn, TOut>(
+file class TokensUpstream<TIn, TOut>(
     ICursorSource<TIn> input,
     Func<Plan<TIn, TOut>> item,
     Plan<TIn, Unit>? skip,
@@ -195,7 +195,7 @@ file sealed class TokensUpstream<TIn, TOut>(
 /// A layer given an <see cref="InitialState"/> starts with it and checks that each step leaves a state of its type.
 /// Otherwise it starts with no state, which its grammar may set.
 /// </remarks>
-internal sealed class TokensLayer<TIn, TOut>(Parser<TIn, TOut> item, Parser<TIn, Unit>? skip, InitialState? initialState, string name) : Layer<TIn, TOut>
+internal class TokensLayer<TIn, TOut>(Parser<TIn, TOut> item, Parser<TIn, Unit>? skip, InitialState? initialState, string name) : Layer<TIn, TOut>
 {
     public InitialState? InitialState { get; } = initialState;
 

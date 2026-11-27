@@ -3,7 +3,7 @@ namespace Creole;
 /// <summary>
 /// Runs 2 plans in order and combines their results. Fails as soon as one fails; the failure is committed if anything before it consumed input.
 /// </summary>
-internal sealed class SequencePlan<TIn, T1, T2, TOut>(Plan<TIn, T1> first, Plan<TIn, T2> second, Func<T1, T2, TOut> selector) : Plan<TIn, TOut>
+internal class SequencePlan<TIn, T1, T2, TOut>(Plan<TIn, T1> first, Plan<TIn, T2> second, Func<T1, T2, TOut> selector) : Plan<TIn, TOut>
 {
     private readonly Plan<TIn, T1> _first = first;
     private readonly Plan<TIn, T2> _second = second;
@@ -28,7 +28,7 @@ internal sealed class SequencePlan<TIn, T1, T2, TOut>(Plan<TIn, T1> first, Plan<
 /// <summary>
 /// Runs 3 plans in order and combines their results. Fails as soon as one fails; the failure is committed if anything before it consumed input.
 /// </summary>
-internal sealed class SequencePlan<TIn, T1, T2, T3, TOut>(Plan<TIn, T1> first, Plan<TIn, T2> second, Plan<TIn, T3> third, Func<T1, T2, T3, TOut> selector) : Plan<TIn, TOut>
+internal class SequencePlan<TIn, T1, T2, T3, TOut>(Plan<TIn, T1> first, Plan<TIn, T2> second, Plan<TIn, T3> third, Func<T1, T2, T3, TOut> selector) : Plan<TIn, TOut>
 {
     private readonly Plan<TIn, T1> _first = first;
     private readonly Plan<TIn, T2> _second = second;
@@ -56,7 +56,7 @@ internal sealed class SequencePlan<TIn, T1, T2, T3, TOut>(Plan<TIn, T1> first, P
 /// <summary>
 /// Runs 4 plans in order and combines their results. Fails as soon as one fails; the failure is committed if anything before it consumed input.
 /// </summary>
-internal sealed class SequencePlan<TIn, T1, T2, T3, T4, TOut>(Plan<TIn, T1> first, Plan<TIn, T2> second, Plan<TIn, T3> third, Plan<TIn, T4> fourth, Func<T1, T2, T3, T4, TOut> selector) : Plan<TIn, TOut>
+internal class SequencePlan<TIn, T1, T2, T3, T4, TOut>(Plan<TIn, T1> first, Plan<TIn, T2> second, Plan<TIn, T3> third, Plan<TIn, T4> fourth, Func<T1, T2, T3, T4, TOut> selector) : Plan<TIn, TOut>
 {
     private readonly Plan<TIn, T1> _first = first;
     private readonly Plan<TIn, T4> _fourth = fourth;
@@ -87,7 +87,7 @@ internal sealed class SequencePlan<TIn, T1, T2, T3, T4, TOut>(Plan<TIn, T1> firs
 /// <summary>
 /// Runs 5 plans in order and combines their results. Fails as soon as one fails; the failure is committed if anything before it consumed input.
 /// </summary>
-internal sealed class SequencePlan<TIn, T1, T2, T3, T4, T5, TOut>(Plan<TIn, T1> first, Plan<TIn, T2> second, Plan<TIn, T3> third, Plan<TIn, T4> fourth, Plan<TIn, T5> fifth, Func<T1, T2, T3, T4, T5, TOut> selector) : Plan<TIn, TOut>
+internal class SequencePlan<TIn, T1, T2, T3, T4, T5, TOut>(Plan<TIn, T1> first, Plan<TIn, T2> second, Plan<TIn, T3> third, Plan<TIn, T4> fourth, Plan<TIn, T5> fifth, Func<T1, T2, T3, T4, T5, TOut> selector) : Plan<TIn, TOut>
 {
     private readonly Plan<TIn, T5> _fifth = fifth;
     private readonly Plan<TIn, T1> _first = first;
@@ -121,7 +121,7 @@ internal sealed class SequencePlan<TIn, T1, T2, T3, T4, T5, TOut>(Plan<TIn, T1> 
 /// <summary>
 /// Runs 6 plans in order and combines their results. Fails as soon as one fails; the failure is committed if anything before it consumed input.
 /// </summary>
-internal sealed class SequencePlan<TIn, T1, T2, T3, T4, T5, T6, TOut>(Plan<TIn, T1> first, Plan<TIn, T2> second, Plan<TIn, T3> third, Plan<TIn, T4> fourth, Plan<TIn, T5> fifth, Plan<TIn, T6> sixth, Func<T1, T2, T3, T4, T5, T6, TOut> selector) : Plan<TIn, TOut>
+internal class SequencePlan<TIn, T1, T2, T3, T4, T5, T6, TOut>(Plan<TIn, T1> first, Plan<TIn, T2> second, Plan<TIn, T3> third, Plan<TIn, T4> fourth, Plan<TIn, T5> fifth, Plan<TIn, T6> sixth, Func<T1, T2, T3, T4, T5, T6, TOut> selector) : Plan<TIn, TOut>
 {
     private readonly Plan<TIn, T5> _fifth = fifth;
     private readonly Plan<TIn, T1> _first = first;
@@ -158,7 +158,7 @@ internal sealed class SequencePlan<TIn, T1, T2, T3, T4, T5, T6, TOut>(Plan<TIn, 
 /// <summary>
 /// Runs 7 plans in order and combines their results. Fails as soon as one fails; the failure is committed if anything before it consumed input.
 /// </summary>
-internal sealed class SequencePlan<TIn, T1, T2, T3, T4, T5, T6, T7, TOut>(Plan<TIn, T1> first, Plan<TIn, T2> second, Plan<TIn, T3> third, Plan<TIn, T4> fourth, Plan<TIn, T5> fifth, Plan<TIn, T6> sixth, Plan<TIn, T7> seventh, Func<T1, T2, T3, T4, T5, T6, T7, TOut> selector) : Plan<TIn, TOut>
+internal class SequencePlan<TIn, T1, T2, T3, T4, T5, T6, T7, TOut>(Plan<TIn, T1> first, Plan<TIn, T2> second, Plan<TIn, T3> third, Plan<TIn, T4> fourth, Plan<TIn, T5> fifth, Plan<TIn, T6> sixth, Plan<TIn, T7> seventh, Func<T1, T2, T3, T4, T5, T6, T7, TOut> selector) : Plan<TIn, TOut>
 {
     private readonly Plan<TIn, T5> _fifth = fifth;
     private readonly Plan<TIn, T1> _first = first;
@@ -198,7 +198,7 @@ internal sealed class SequencePlan<TIn, T1, T2, T3, T4, T5, T6, T7, TOut>(Plan<T
 /// <summary>
 /// Runs 8 plans in order and combines their results. Fails as soon as one fails; the failure is committed if anything before it consumed input.
 /// </summary>
-internal sealed class SequencePlan<TIn, T1, T2, T3, T4, T5, T6, T7, T8, TOut>(Plan<TIn, T1> first, Plan<TIn, T2> second, Plan<TIn, T3> third, Plan<TIn, T4> fourth, Plan<TIn, T5> fifth, Plan<TIn, T6> sixth, Plan<TIn, T7> seventh, Plan<TIn, T8> eighth, Func<T1, T2, T3, T4, T5, T6, T7, T8, TOut> selector) : Plan<TIn, TOut>
+internal class SequencePlan<TIn, T1, T2, T3, T4, T5, T6, T7, T8, TOut>(Plan<TIn, T1> first, Plan<TIn, T2> second, Plan<TIn, T3> third, Plan<TIn, T4> fourth, Plan<TIn, T5> fifth, Plan<TIn, T6> sixth, Plan<TIn, T7> seventh, Plan<TIn, T8> eighth, Func<T1, T2, T3, T4, T5, T6, T7, T8, TOut> selector) : Plan<TIn, TOut>
 {
     private readonly Plan<TIn, T8> _eighth = eighth;
     private readonly Plan<TIn, T5> _fifth = fifth;

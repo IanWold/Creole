@@ -1,6 +1,6 @@
 namespace Creole;
 
-internal sealed partial class PlanBuilder
+internal partial class PlanBuilder
 {
     public static Plan<TIn, Unit> PopMode<TIn, TMode>(ModeChannel<TMode> channel) => new PopModePlan<TIn, TMode>(channel);
 

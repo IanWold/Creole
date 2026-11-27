@@ -6,7 +6,7 @@ namespace Creole.Tests;
 /// <remarks>
 /// The item at position <c>i</c> is <c>10 * i</c> plus the number of times it has gone back, so an item produced again shows.
 /// </remarks>
-file sealed class Steered(int count) : IUpstream<int>
+file class Steered(int count) : IUpstream<int>
 {
     private readonly int _count = count;
     private int _next;

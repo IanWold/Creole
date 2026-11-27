@@ -11,7 +11,7 @@ namespace Creole.Benchmarks;
 /// <remarks>
 /// <see cref="Commit"/> and <see cref="Dirty"/> are null when git cannot be run.
 /// </remarks>
-internal sealed record RunManifest(string? Commit, bool? Dirty, string Parlot, string Pidgin, string[] Arguments)
+internal record RunManifest(string? Commit, bool? Dirty, string Parlot, string Pidgin, string[] Arguments)
 {
     private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web) { WriteIndented = true };
 

@@ -4,7 +4,7 @@ namespace Creole;
 /// Runs <see cref="Item"/> if it can, and produces an empty <see cref="Maybe{T}"/> if it fails without consuming input.
 /// Backs <c>Optional</c>.
 /// </summary>
-internal sealed class OptionalNode<TIn, T>(Parser<TIn, T> item) : Parser<TIn, Maybe<T>>
+internal class OptionalNode<TIn, T>(Parser<TIn, T> item) : Parser<TIn, Maybe<T>>
 {
     internal override IReadOnlyList<INode> Children => [Item];
 

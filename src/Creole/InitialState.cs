@@ -6,7 +6,7 @@ namespace Creole;
 /// <param name="Held">The state, as <see cref="StateBox"/> holds it.</param>
 /// <param name="Type">The type the layer was given its state as.</param>
 /// <param name="Holds">Whether a held state is of <paramref name="Type"/>, as <see cref="StateBox.Holds{TState}"/> decides.</param>
-internal sealed record InitialState(object Held, Type Type, Func<object, bool> Holds)
+internal record InitialState(object Held, Type Type, Func<object, bool> Holds)
 {
     /// <summary>
     /// Throws if a step of the layer named <paramref name="layer"/> left a state that is not of <see cref="Type"/>.

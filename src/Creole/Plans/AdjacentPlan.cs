@@ -19,7 +19,7 @@ namespace Creole;
 /// <param name="second">The plan for the second parser.</param>
 /// <param name="firstName">What names the first parser in the message, or null if nothing does.</param>
 /// <param name="secondName">What names the second parser in the message, or null if nothing does.</param>
-internal sealed class AdjacentPlan<TIn, T1, T2>(Plan<TIn, T1> first, Plan<TIn, T2> second, Expected? firstName, Expected? secondName) : Plan<TIn, (T1, T2)>
+internal class AdjacentPlan<TIn, T1, T2>(Plan<TIn, T1> first, Plan<TIn, T2> second, Expected? firstName, Expected? secondName) : Plan<TIn, (T1, T2)>
 {
     private readonly Plan<TIn, T1> _first = first;
     private readonly Expected? _firstName = firstName;

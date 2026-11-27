@@ -6,7 +6,7 @@ namespace Creole;
 /// <remarks>
 /// It throws <see cref="LayerStateException"/> when the layer has no state or its state is not a <typeparamref name="TState"/>.
 /// </remarks>
-internal sealed class GetStatePlan<TIn, TState> : Plan<TIn, TState>
+internal class GetStatePlan<TIn, TState> : Plan<TIn, TState>
 {
     public override bool TryParse(ref Cursor<TIn> cursor, ref TState result)
     {

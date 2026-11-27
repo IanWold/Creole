@@ -4,7 +4,7 @@ namespace Creole;
 /// Ordered choice with commit semantics over <see cref="Alternatives"/>. Backs <c>Or</c> and <c>OneOf</c>.
 /// </summary>
 /// <param name="alternatives">The alternatives in the order they are tried. The node keeps this array, so pass a new one.</param>
-internal sealed class OrNode<TIn, T>(Parser<TIn, T>[] alternatives) : Parser<TIn, T>
+internal class OrNode<TIn, T>(Parser<TIn, T>[] alternatives) : Parser<TIn, T>
 {
     /// <summary>
     /// The alternatives, in the order they are tried.

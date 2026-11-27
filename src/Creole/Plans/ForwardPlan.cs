@@ -10,7 +10,7 @@ namespace Creole;
 /// This is the one plan node that changes after it is created.
 /// It is filled once, during lowering, before the plan is published, so it is immutable by the time any parse can see it.
 /// </remarks>
-internal sealed class ForwardPlan<TIn, TOut> : Plan<TIn, TOut>
+internal class ForwardPlan<TIn, TOut> : Plan<TIn, TOut>
 {
     private Plan<TIn, TOut>? _target;
 

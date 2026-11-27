@@ -3,7 +3,7 @@ using CsCheck;
 
 namespace Creole.Tests;
 
-file sealed class SlotUpstream(StreamSlot[] slots) : IUpstream<int>
+file class SlotUpstream(StreamSlot[] slots) : IUpstream<int>
 {
     private readonly StreamSlot[] _slots = slots;
     private int _next;
@@ -31,7 +31,7 @@ file sealed class SlotUpstream(StreamSlot[] slots) : IUpstream<int>
     }
 }
 
-file sealed class StrideUpstream(long first, int stride, int count, long? firstChar) : IUpstream<char>
+file class StrideUpstream(long first, int stride, int count, long? firstChar) : IUpstream<char>
 {
     private readonly int _count = count;
     private readonly long _first = first;

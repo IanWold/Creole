@@ -4,7 +4,7 @@ namespace Creole;
 /// Runs <see cref="Item"/>, rewinds, and succeeds if it failed. Never consumes input. A cut boundary.
 /// Backs <c>Not</c>.
 /// </summary>
-internal sealed class NotNode<TIn, T>(Parser<TIn, T> item) : Parser<TIn, Unit>
+internal class NotNode<TIn, T>(Parser<TIn, T> item) : Parser<TIn, Unit>
 {
     internal override IReadOnlyList<INode> Children => [Item];
 

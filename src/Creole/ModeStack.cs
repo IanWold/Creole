@@ -6,7 +6,7 @@ namespace Creole;
 /// <remarks>
 /// It is immutable, so a change makes a new stack and leaves the one before it whole.
 /// </remarks>
-internal sealed class ModeStack<TMode>(TMode top, ModeStack<TMode>? rest)
+internal class ModeStack<TMode>(TMode top, ModeStack<TMode>? rest)
 {
     /// <summary>
     /// The modes below the top, or null when the top is the only mode.

@@ -16,7 +16,7 @@ namespace Creole;
 /// </remarks>
 /// <param name="reader">The caller's reader.</param>
 /// <param name="chunkSize">The most characters a step reads. A step reads fewer when the buffer has less <see cref="StreamBuffer{T}.Room"/> left.</param>
-internal sealed class ReaderUpstream(TextReader reader, int chunkSize = 1024) : IUpstream<char>
+internal class ReaderUpstream(TextReader reader, int chunkSize = 1024) : IUpstream<char>
 {
     private char[]? _chunk = ArrayPool<char>.Shared.Rent(chunkSize);
     private readonly int _chunkSize = chunkSize;

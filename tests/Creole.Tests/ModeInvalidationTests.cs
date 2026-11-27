@@ -20,7 +20,7 @@ file readonly record struct Lexeme(K Kind, string Text) : IKinded<K>;
 /// <summary>
 /// Lexers that read <c>/</c> as the start of a regex in operand mode and as a slash in operator mode.
 /// </summary>
-file sealed class Lexers : CharGrammar
+file class Lexers : CharGrammar
 {
     public static readonly ModeChannel<Mode> Modes = new(Mode.Operand);
 
@@ -93,7 +93,7 @@ file sealed class Lexers : CharGrammar
 /// <summary>
 /// Parsers that change the mode of <see cref="Lexers.Modes"/> after looking at a token in the old mode.
 /// </summary>
-file sealed class Parsers : TokenGrammar<Lexeme, K>
+file class Parsers : TokenGrammar<Lexeme, K>
 {
     private static readonly ModeChannel<Mode> _modes = Lexers.Modes;
 

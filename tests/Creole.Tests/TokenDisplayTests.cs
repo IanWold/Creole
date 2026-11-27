@@ -21,9 +21,9 @@ file readonly record struct Described(Punctuation Kind, string Text) : IKinded<P
 
 file readonly record struct Plain(Punctuation Kind) : IKinded<Punctuation>;
 
-file sealed record Word(string Value);
+file record Word(string Value);
 
-file sealed record Mark(char Value);
+file record Mark(char Value);
 
 file union UnionToken(Word, Mark) : IKinded<Punctuation>
 {

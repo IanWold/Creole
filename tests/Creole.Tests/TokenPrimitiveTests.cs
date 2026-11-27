@@ -4,9 +4,9 @@ file enum J { String, Number, Comma }
 
 file readonly record struct JTok(J Kind, string Text) : IKinded<J>;
 
-file sealed record Ident(string Name);
+file record Ident(string Name);
 
-file sealed record Number(int Value);
+file record Number(int Value);
 
 file union Tok(Ident, Number) : IKinded<J>
 {

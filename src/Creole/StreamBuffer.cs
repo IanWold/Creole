@@ -49,7 +49,7 @@ namespace Creole;
 /// <param name="segmentSize">How many items each segment holds.</param>
 /// <param name="pool">Where segments are rented from and returned to; <see cref="ArrayPool{T}.Shared"/> if null.</param>
 /// <param name="maxBufferedItems">The most items the reader may hold, from its horizon to the filled end: the parse's <see cref="ParseOptions.MaxBufferedItems"/>.</param>
-internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1024, ArrayPool<T>? pool = null, int maxBufferedItems = int.MaxValue) : ICursorSource<T>
+internal class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1024, ArrayPool<T>? pool = null, int maxBufferedItems = int.MaxValue) : ICursorSource<T>
 {
     /// <summary>
     /// A position a span combinator holds, and its span once the buffer has released it.

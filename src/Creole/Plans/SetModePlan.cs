@@ -8,7 +8,7 @@ namespace Creole;
 /// </remarks>
 /// <param name="channel">The channel whose stack changes.</param>
 /// <param name="mode">The new top.</param>
-internal sealed class SetModePlan<TIn, TMode>(ModeChannel<TMode> channel, TMode mode) : Plan<TIn, Unit>
+internal class SetModePlan<TIn, TMode>(ModeChannel<TMode> channel, TMode mode) : Plan<TIn, Unit>
 {
     private readonly ModeChannel<TMode> _channel = channel;
     private readonly TMode _mode = mode;

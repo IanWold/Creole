@@ -1,6 +1,6 @@
 namespace Creole;
 
-internal sealed partial class PlanBuilder
+internal partial class PlanBuilder
 {
     public Plan<TIn, T> Atomic<TIn, T>(Parser<TIn, T> item) =>
         FullMarks

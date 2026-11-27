@@ -9,7 +9,7 @@ namespace Creole.Tests;
 /// <remarks>
 /// Item <c>i</c> has the span <c>[i, i + 1)</c>, as a character of a root layer does.
 /// </remarks>
-file sealed class RepeatingUpstream(char item, long length, int itemsPerStep = 1) : IUpstream<char>
+file class RepeatingUpstream(char item, long length, int itemsPerStep = 1) : IUpstream<char>
 {
     private readonly char _item = item;
     private readonly int _itemsPerStep = itemsPerStep;

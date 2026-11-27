@@ -4,7 +4,7 @@ namespace Creole;
 /// Succeeds without consuming input and produces a zero-width span where the next item starts, or at the end of the last item at the end of the input.
 /// Backs <c>Position</c>.
 /// </summary>
-internal sealed class PositionNode<TIn> : Parser<TIn, SourceSpan>
+internal class PositionNode<TIn> : Parser<TIn, SourceSpan>
 {
     internal override IReadOnlyList<INode> Children => [];
 

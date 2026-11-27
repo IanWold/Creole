@@ -26,11 +26,11 @@ file readonly record struct Lexeme(TokenKind Kind, string Text);
 
 file abstract record Code;
 
-file sealed record Word(string Text) : Code;
+file record Word(string Text) : Code;
 
-file sealed record Block(Code[] Items, bool Tight) : Code;
+file record Block(Code[] Items, bool Tight) : Code;
 
-file sealed record Template(string First, (Code[] Code, string Text)[] Parts) : Code;
+file record Template(string First, (Code[] Code, string Text)[] Parts) : Code;
 
 /// <summary>
 /// A lexer for identifiers, braces and template literals with substitutions, as JavaScript has, whose state is the stack of braces and substitutions still open.

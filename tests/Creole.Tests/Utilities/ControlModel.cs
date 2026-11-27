@@ -27,7 +27,7 @@ namespace Creole.Tests;
 /// A <c>Longest</c> runs each alternative as if it alone had run, and keeps the diagnostics its winner left.
 /// </para>
 /// </remarks>
-internal sealed class ControlModel(bool dispatch)
+internal class ControlModel(bool dispatch)
 {
     public static ControlModel Dispatching { get; } = new(dispatch: true);
 
@@ -295,12 +295,12 @@ internal sealed class ControlModel(bool dispatch)
     }
 }
 
-file sealed class NullableRepetitionException : Exception;
+file class NullableRepetitionException : Exception;
 
 /// <summary>
 /// One run of <see cref="ControlModel"/>: the input, the position, the cut flag and the diagnostics raised.
 /// </summary>
-file sealed class Evaluator(bool dispatch, string input)
+file class Evaluator(bool dispatch, string input)
 {
     private readonly List<string> _diagnostics = [];
 

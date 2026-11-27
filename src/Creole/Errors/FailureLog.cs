@@ -41,7 +41,7 @@ namespace Creole;
 /// The log also holds the diagnostics the layer raised, with what the layer can give back when one is withdrawn.
 /// </para>
 /// </remarks>
-internal sealed partial class FailureLog<T>
+internal partial class FailureLog<T>
 {
     private readonly record struct HeldStart(long Position, ItemCopy? Copy);
 

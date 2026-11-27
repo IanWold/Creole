@@ -2,7 +2,7 @@ using static Creole.Grammar<char>;
 
 namespace Creole.Tests;
 
-file sealed class RecOnly : CharGrammar
+file class RecOnly : CharGrammar
 {
     public static readonly Parser<char, int> A = Rec(() => B);
 

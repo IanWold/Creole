@@ -7,7 +7,7 @@ namespace Creole;
 /// An attempt that fails without consuming ends the repetition, which then succeeds if it has <c>min</c> items.
 /// An attempt that fails after consuming fails the repetition.
 /// </remarks>
-internal sealed class RepeatPlan<TIn, T, TMark>(Plan<TIn, T> item, int min, int? max) : Plan<TIn, IReadOnlyList<T>>
+internal class RepeatPlan<TIn, T, TMark>(Plan<TIn, T> item, int min, int? max) : Plan<TIn, IReadOnlyList<T>>
     where TMark : struct, IMark<TMark>
 {
     private readonly Plan<TIn, T> _item = item;

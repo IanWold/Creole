@@ -6,7 +6,7 @@ namespace Creole;
 /// <remarks>
 /// Its start is pinned while it runs, so a stream buffer keeps the characters it reads back.
 /// </remarks>
-internal sealed class SlicePlan<T>(Plan<char, T> item) : Plan<char, ReadOnlyMemory<char>>
+internal class SlicePlan<T>(Plan<char, T> item) : Plan<char, ReadOnlyMemory<char>>
 {
     private readonly Plan<char, T> _item = item;
 

@@ -43,7 +43,7 @@ file readonly record struct JsonToken(J Kind, string Text) : IKinded<J>;
 /// <summary>
 /// A JSON lexer, whose tokens a <c>Longest</c> picks.
 /// </summary>
-file sealed class JsonLexer : CharGrammar
+file class JsonLexer : CharGrammar
 {
     private static readonly Parser<char, Unit> _number = Seq(Char('-').Optional(), Digit.SkipAtLeastOnce(), Seq(Char('.'), Digit.SkipAtLeastOnce()).Optional()).Ignore();
 
@@ -73,7 +73,7 @@ file sealed class JsonLexer : CharGrammar
 /// <summary>
 /// JSON values over <see cref="JsonLexer"/>'s tokens, each written back without white space.
 /// </summary>
-file sealed class JsonValues : TokenGrammar<JsonToken, J>
+file class JsonValues : TokenGrammar<JsonToken, J>
 {
     public static readonly Parser<JsonToken, string> Value = Rec(() => OneOf(
         Kind(J.String).Select(static token => token.Text),
@@ -98,7 +98,7 @@ file sealed class JsonValues : TokenGrammar<JsonToken, J>
 /// <summary>
 /// Lexers for restarts: one whose tokens are words in word mode and numbers in digit mode, one that numbers its tokens in its state, and one that raises a diagnostic for each <c>!</c>.
 /// </summary>
-file sealed class Lexers : CharGrammar
+file class Lexers : CharGrammar
 {
     private static readonly Parser<char, Lexeme> _number = Digit.AtLeastOnce().Text().Select(static text => new Lexeme(K.Number, text));
 
@@ -137,7 +137,7 @@ file sealed class Lexers : CharGrammar
 /// <summary>
 /// A word, then a number read in digit mode, and back to word mode.
 /// </summary>
-file sealed class Pairs : TokenGrammar<Lexeme, K>
+file class Pairs : TokenGrammar<Lexeme, K>
 {
     public static readonly Parser<Lexeme, string> WordThenNumber =
         Seq(Kind(K.Word), SetMode(Lexers.Modes, Mode.Digits), Kind(K.Number), SetMode(Lexers.Modes, Mode.Words))

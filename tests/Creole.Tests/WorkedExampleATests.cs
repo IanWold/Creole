@@ -43,29 +43,29 @@ file readonly record struct JTok(J Kind, ReadOnlyMemory<char> Text) : IKinded<J>
         : null;
 }
 
-file sealed record JsonString(string Value);
+file record JsonString(string Value);
 
-file sealed record JsonNumber(double Value);
+file record JsonNumber(double Value);
 
-file sealed record JsonBool(bool Value)
+file record JsonBool(bool Value)
 {
     public static JsonBool False { get; } = new(false);
 
     public static JsonBool True { get; } = new(true);
 }
 
-file sealed record JsonNull
+file record JsonNull
 {
     public static JsonNull Instance { get; } = new();
 }
 
-file sealed record JsonArray(IReadOnlyList<JsonValue> Items);
+file record JsonArray(IReadOnlyList<JsonValue> Items);
 
-file sealed record JsonObject(IReadOnlyList<KeyValuePair<string, JsonValue>> Members);
+file record JsonObject(IReadOnlyList<KeyValuePair<string, JsonValue>> Members);
 
 file union JsonValue(JsonString, JsonNumber, JsonBool, JsonNull, JsonArray, JsonObject);
 
-file sealed partial class JsonLexer : CharGrammar
+file partial class JsonLexer : CharGrammar
 {
     private static Parser<char, JTok> Tok<T>(Parser<char, T> p, J kind) =>
         p.Slice().Select(text => new JTok(kind, text));
@@ -91,7 +91,7 @@ file sealed partial class JsonLexer : CharGrammar
     public static readonly Layer<char, JTok> Lexer = Layer.Tokens(item: Item, skip: Skip);
 }
 
-file sealed partial class JsonGrammar : TokenGrammar<JTok, J>
+file partial class JsonGrammar : TokenGrammar<JTok, J>
 {
     public static readonly Parser<JTok, JsonValue> Value = Rec(() => OneOf(
         Kind(J.String).Select<JsonValue>(static t => new JsonString(Unescape(t.Text))),

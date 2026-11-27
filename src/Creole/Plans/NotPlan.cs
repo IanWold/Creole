@@ -10,7 +10,7 @@ namespace Creole;
 /// Its start is pinned while it runs, so a stream buffer keeps the input it rewinds to.
 /// An item that starved fails it without rewinding, whether the item succeeded or failed.
 /// </remarks>
-internal sealed class NotPlan<TIn, T, TMark>(Plan<TIn, T> item) : Plan<TIn, Unit>
+internal class NotPlan<TIn, T, TMark>(Plan<TIn, T> item) : Plan<TIn, Unit>
     where TMark : struct, IMark<TMark>
 {
     private readonly Plan<TIn, T> _item = item;

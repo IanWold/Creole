@@ -4,7 +4,7 @@ namespace Creole;
 /// Runs <see cref="Item"/> and rewinds if it succeeds. A cut boundary.
 /// Backs <c>Lookahead</c>.
 /// </summary>
-internal sealed class LookaheadNode<TIn, T>(Parser<TIn, T> item) : Parser<TIn, T>
+internal class LookaheadNode<TIn, T>(Parser<TIn, T> item) : Parser<TIn, T>
 {
     internal override IReadOnlyList<INode> Children => [Item];
 

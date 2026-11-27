@@ -7,7 +7,7 @@ namespace Creole;
 /// A run holds <see cref="First"/>'s items in a buffer, which <see cref="Second"/> reads and may rewind over without <see cref="First"/> running again.
 /// The buffer is bounded by the run's <see cref="ParseOptions.MaxBufferedItems"/>.
 /// </remarks>
-internal sealed class ComposedLayer<TIn, TMiddle, TOut>(Layer<TIn, TMiddle> first, Layer<TMiddle, TOut> second) : Layer<TIn, TOut>
+internal class ComposedLayer<TIn, TMiddle, TOut>(Layer<TIn, TMiddle> first, Layer<TMiddle, TOut> second) : Layer<TIn, TOut>
 {
     internal override bool DecodesUtf8 => First.DecodesUtf8;
 

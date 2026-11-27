@@ -12,7 +12,7 @@ namespace Creole;
 /// Ranges are normalized on construction, so two sets with the same keys have the same ranges and compare equal.
 /// </para>
 /// </remarks>
-internal sealed class RangeSet : IEquatable<RangeSet>
+internal class RangeSet : IEquatable<RangeSet>
 {
     private readonly (long First, long Last)[] _ranges;
 

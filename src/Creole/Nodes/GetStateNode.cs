@@ -4,7 +4,7 @@ namespace Creole;
 /// Succeeds without consuming input and produces the layer's state.
 /// Backs <c>GetState</c>.
 /// </summary>
-internal sealed class GetStateNode<TIn, TState> : Parser<TIn, TState>
+internal class GetStateNode<TIn, TState> : Parser<TIn, TState>
 {
     internal override IReadOnlyList<INode> Children => [];
 

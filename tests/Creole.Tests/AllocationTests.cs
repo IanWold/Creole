@@ -13,7 +13,7 @@ file enum Symbol
 
 file readonly record struct SymbolToken(Symbol Kind) : IKinded<Symbol>;
 
-file sealed class Arithmetic : CharGrammar
+file class Arithmetic : CharGrammar
 {
     public static readonly Parser<char, int> Atom =
         Digit.Select(static c => c - '0').Or(Rec(() => Expr).Between(Char('('), Char(')')));

@@ -7,7 +7,7 @@ namespace Creole.Tests;
 /// <summary>
 /// A line of a generated program: blank lines before it, its text, and, for an <c>if</c> or a <c>while</c>, its block and how much further the block is indented.
 /// </summary>
-file sealed record Line(string[] Blank, string Text, int Indent, Line[] Body);
+file record Line(string[] Blank, string Text, int Indent, Line[] Body);
 
 /// <summary>
 /// Random programs of the indentation-sensitive language, written with random indentation and blank lines, and in the standard form <see cref="Script.ToString"/> gives.

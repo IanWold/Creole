@@ -7,7 +7,7 @@ namespace Creole;
 /// <remarks>
 /// Keys are compared in order with <see cref="EqualityComparer{T}.Default"/>; the node rejects duplicate keys, so the order does not change the result.
 /// </remarks>
-internal sealed class SwitchPlan<TIn, TKey, TOut>(Plan<TIn, TKey> scrutinee, TKey[] keys, Plan<TIn, TOut>[] branches, Plan<TIn, TOut> @default) : Plan<TIn, TOut>
+internal class SwitchPlan<TIn, TKey, TOut>(Plan<TIn, TKey> scrutinee, TKey[] keys, Plan<TIn, TOut>[] branches, Plan<TIn, TOut> @default) : Plan<TIn, TOut>
 {
     private readonly Plan<TIn, TOut>[] _branches = branches;
     private readonly Plan<TIn, TOut> _default = @default;

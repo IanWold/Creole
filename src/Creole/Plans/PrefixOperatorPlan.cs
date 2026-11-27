@@ -8,7 +8,7 @@ namespace Creole;
 /// The operand position tries every prefix operator again, so prefix operators repeat: <c>- -x</c>.
 /// The operand runs one level of recursion deeper, because the input alone bounds how many prefixes repeat.
 /// </remarks>
-internal sealed class PrefixOperatorPlan<TIn, TOp, T, TMark>(Plan<TIn, TOp> op, Func<TOp, T, T> combine, int level) : OperatorPlan<TIn, T, TMark>(Fixity.Prefix, level)
+internal class PrefixOperatorPlan<TIn, TOp, T, TMark>(Plan<TIn, TOp> op, Func<TOp, T, T> combine, int level) : OperatorPlan<TIn, T, TMark>(Fixity.Prefix, level)
     where TMark : struct, IMark<TMark>
 {
     private readonly Func<TOp, T, T> _combine = combine;

@@ -19,7 +19,7 @@ namespace Creole;
 /// Its start is held in the failure log while it is matched, so a stream buffer that releases it first copies the item there.
 /// </para>
 /// </remarks>
-internal sealed class ExpressionPlan<TIn, T, TMark>(Plan<TIn, T> atom, OperatorPlan<TIn, T, TMark>[] prefixes, OperatorPlan<TIn, T, TMark>[] operators, int loosest) : Plan<TIn, T>
+internal class ExpressionPlan<TIn, T, TMark>(Plan<TIn, T> atom, OperatorPlan<TIn, T, TMark>[] prefixes, OperatorPlan<TIn, T, TMark>[] operators, int loosest) : Plan<TIn, T>
     where TMark : struct, IMark<TMark>
 {
     private readonly Plan<TIn, T> _atom = atom;

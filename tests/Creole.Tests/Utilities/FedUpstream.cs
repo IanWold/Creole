@@ -8,7 +8,7 @@ namespace Creole.Tests;
 /// </remarks>
 /// <param name="items">The whole input.</param>
 /// <param name="received">How many items it has received at the start.</param>
-internal sealed class FedUpstream<T>(T[] items, int received) : IUpstream<T>
+internal class FedUpstream<T>(T[] items, int received) : IUpstream<T>
 {
     private readonly T[] _items = items;
     private int _next;

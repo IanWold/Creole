@@ -9,7 +9,7 @@ namespace Creole;
 /// Its start is pinned while it runs, so a stream buffer keeps the input it may rewind to.
 /// An item that starved, even one that succeeded, fails it without rewinding.
 /// </remarks>
-internal sealed class LookaheadPlan<TIn, T, TMark>(Plan<TIn, T> item) : Plan<TIn, T>
+internal class LookaheadPlan<TIn, T, TMark>(Plan<TIn, T> item) : Plan<TIn, T>
     where TMark : struct, IMark<TMark>
 {
     private readonly Plan<TIn, T> _item = item;

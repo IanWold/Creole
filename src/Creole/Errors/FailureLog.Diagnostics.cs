@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 namespace Creole;
 
-internal sealed partial class FailureLog<T>
+internal partial class FailureLog<T>
 {
     /// <summary>
     /// A furthest failure copied out of the log: what an error is built from, and what a diagnostic built from the furthest failure keeps.
@@ -17,7 +17,7 @@ internal sealed partial class FailureLog<T>
     /// <param name="endSpan">The span of the item before <paramref name="end"/>, copied before a stream buffer released it, or null.</param>
     /// <param name="context">The context stack of the first failure there, innermost first.</param>
     /// <param name="bare">Whether a mode change lowered it, so that the next failure recorded there supplies its context.</param>
-    private sealed class FailureCopy(long position, Expected[] expectations, string? message, ChainMessage? chain, bool rejected, long end, ItemCopy? at, SourceSpan? endSpan, ContextFrame[] context, bool bare)
+    private class FailureCopy(long position, Expected[] expectations, string? message, ChainMessage? chain, bool rejected, long end, ItemCopy? at, SourceSpan? endSpan, ContextFrame[] context, bool bare)
     {
         public ItemCopy? At { get; private set; } = at;
 

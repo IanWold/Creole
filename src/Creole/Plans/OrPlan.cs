@@ -4,7 +4,7 @@ namespace Creole;
 /// Tries each alternative in order, each as one attempt, while the previous one failed without consuming.
 /// Fails when an alternative fails after consuming, or when every alternative fails without consuming.
 /// </summary>
-internal sealed class OrPlan<TIn, T, TMark>(Plan<TIn, T>[] alternatives) : Plan<TIn, T>
+internal class OrPlan<TIn, T, TMark>(Plan<TIn, T>[] alternatives) : Plan<TIn, T>
     where TMark : struct, IMark<TMark>
 {
     /// <summary>

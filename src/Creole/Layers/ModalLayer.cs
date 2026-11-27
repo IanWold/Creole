@@ -9,7 +9,7 @@ namespace Creole;
 /// </remarks>
 /// <param name="layer">The layer, which plans a mode the run has not kept.</param>
 /// <param name="link">The run's link for the layer's channel, whose top is the current mode.</param>
-file sealed class ModalItems<TIn, TOut, TMode>(ModalLayer<TIn, TOut, TMode> layer, ModeLink<TMode> link)
+file class ModalItems<TIn, TOut, TMode>(ModalLayer<TIn, TOut, TMode> layer, ModeLink<TMode> link)
 {
     private (ModeStack<TMode> Stack, Plan<TIn, TOut> Plan)? _last;
     private readonly ModalLayer<TIn, TOut, TMode> _layer = layer;
@@ -74,7 +74,7 @@ file sealed class ModalItems<TIn, TOut, TMode>(ModalLayer<TIn, TOut, TMode> laye
 /// Opening the layer adds its channel to the run, after making the layer's own writer, so layers above it may change the channel and the layer itself may not.
 /// </para>
 /// </remarks>
-internal sealed class ModalLayer<TIn, TOut, TMode>(
+internal class ModalLayer<TIn, TOut, TMode>(
     ModeChannel<TMode> channel,
     Func<TMode, Parser<TIn, TOut>> selector,
     Parser<TIn, Unit>? skip,

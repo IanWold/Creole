@@ -7,7 +7,7 @@ namespace Creole;
 /// Fails if the scrutinee fails, if no case applies, or if the case's branch fails; the failure is committed if anything consumed input.
 /// When no case applies, it records a failure that expects nothing in particular, where the branch would have started.
 /// </summary>
-internal sealed class MatchPlan<TIn, TUnion, TOut>(Plan<TIn, TUnion> scrutinee, MatchCasePlan<TIn, TOut>[] cases) : Plan<TIn, TOut>
+internal class MatchPlan<TIn, TUnion, TOut>(Plan<TIn, TUnion> scrutinee, MatchCasePlan<TIn, TOut>[] cases) : Plan<TIn, TOut>
     where TUnion : IUnion
 {
     private readonly MatchCasePlan<TIn, TOut>[] _cases = cases;

@@ -17,7 +17,7 @@ namespace Creole;
 /// </remarks>
 /// <param name="stream">The caller's stream.</param>
 /// <param name="chunkSize">The most bytes a step reads. A step reads fewer when the buffer has less <see cref="StreamBuffer{T}.Room"/> left.</param>
-internal sealed class StreamUpstream(Stream stream, int chunkSize = 1024) : IUpstream<byte>
+internal class StreamUpstream(Stream stream, int chunkSize = 1024) : IUpstream<byte>
 {
     private byte[]? _chunk = ArrayPool<byte>.Shared.Rent(chunkSize);
     private readonly int _chunkSize = chunkSize;

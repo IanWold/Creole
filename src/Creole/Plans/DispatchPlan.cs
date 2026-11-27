@@ -20,7 +20,7 @@ namespace Creole;
 /// The alternatives a key skips are those of <see cref="Alternatives"/> not among its candidates; the error model records what they would have expected (ERR-02).
 /// </para>
 /// </remarks>
-internal sealed class DispatchPlan<TIn, T, TMark> : Plan<TIn, T>
+internal class DispatchPlan<TIn, T, TMark> : Plan<TIn, T>
     where TMark : struct, IMark<TMark>
 {
     /// <summary>

@@ -4,7 +4,7 @@ namespace Creole;
 /// Runs <see cref="Item"/> and produces its result with the source span of the input it consumed.
 /// Backs <c>Spanned</c>.
 /// </summary>
-internal sealed class SpannedNode<TIn, TOut>(Parser<TIn, TOut> item) : Parser<TIn, Spanned<TOut>>
+internal class SpannedNode<TIn, TOut>(Parser<TIn, TOut> item) : Parser<TIn, Spanned<TOut>>
 {
     internal override IReadOnlyList<INode> Children => [Item];
 

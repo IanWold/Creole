@@ -6,7 +6,7 @@ namespace Creole;
 /// <remarks>
 /// No combinator catches it, so it ends the whole parse and the limit never changes what a grammar accepts.
 /// </remarks>
-internal sealed class DepthExceededException(long position, int depth, DepthCause cause)
+internal class DepthExceededException(long position, int depth, DepthCause cause)
     : Exception(
         cause == DepthCause.MaxDepth
         ? $"The parse reached its maximum depth of {depth} levels at position {position}."

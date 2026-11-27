@@ -17,7 +17,7 @@ namespace Creole;
 /// <param name="options">The settings for the parse.</param>
 /// <param name="text">Makes the text a failed result holds.</param>
 /// <param name="restarts">Whether the run takes bookmarks, so a starved item can run again.</param>
-file sealed class LayeredItems<TItem, TOut>(Plan<TItem, TOut> plan, StreamBuffer<TItem> items, FailureLog<TItem> log, ModeWriter modes, ParseOptions options, Func<SourceText?> text, bool restarts) : PipelineItems<TOut>
+file class LayeredItems<TItem, TOut>(Plan<TItem, TOut> plan, StreamBuffer<TItem> items, FailureLog<TItem> log, ModeWriter modes, ParseOptions options, Func<SourceText?> text, bool restarts) : PipelineItems<TOut>
 {
     private int _diagnostics;
     private readonly StreamBuffer<TItem> _items = items;
@@ -134,7 +134,7 @@ file sealed class LayeredItems<TItem, TOut>(Plan<TItem, TOut> plan, StreamBuffer
 /// The parser's mode writer opens after every layer, so it may change any channel its layers read.
 /// Under <c>ParseMany</c>, each item starts the channels the parser writes at their initial modes.
 /// </remarks>
-internal sealed class LayeredPipeline<TIn, TItem, TOut>(Layer<TIn, TItem> layers, Parser<TItem, TOut> parser) : Pipeline<TIn, TOut>
+internal class LayeredPipeline<TIn, TItem, TOut>(Layer<TIn, TItem> layers, Parser<TItem, TOut> parser) : Pipeline<TIn, TOut>
 {
     private const string ParserLayer = "parser";
 

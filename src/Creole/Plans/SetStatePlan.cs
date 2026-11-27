@@ -7,7 +7,7 @@ namespace Creole;
 /// The new state is held once, when the plan is built, so setting it allocates nothing.
 /// </remarks>
 /// <param name="held">The new state, as <see cref="StateBox.Hold{TState}"/> holds it.</param>
-internal sealed class SetStatePlan<TIn>(object held) : Plan<TIn, Unit>
+internal class SetStatePlan<TIn>(object held) : Plan<TIn, Unit>
 {
     private readonly object _held = held;
 

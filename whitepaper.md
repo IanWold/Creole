@@ -80,7 +80,7 @@ Representing grammars as data buys four things:
 
 ```csharp
 // A grammar node. Immutable; compared by identity. Engines interpret or compile it.
-// Constructors are internal and node classes are internal sealed, so other assemblies
+// Constructors are internal and node classes are internal, so other assemblies
 // cannot add nodes.
 public abstract class Parser<TIn, TOut>
 {

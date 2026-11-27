@@ -14,7 +14,7 @@ namespace Creole;
 /// When the list ends after a separator, only the item's failed attempt is undone: the separator stays consumed, and a cut it passed stays in force (ADR-0011).
 /// </para>
 /// </remarks>
-internal sealed class SeparatedPlan<TIn, T, TSep, TMark>(Plan<TIn, T> item, Plan<TIn, TSep> separator, int min, bool allowTrailing) : Plan<TIn, IReadOnlyList<T>>
+internal class SeparatedPlan<TIn, T, TSep, TMark>(Plan<TIn, T> item, Plan<TIn, TSep> separator, int min, bool allowTrailing) : Plan<TIn, IReadOnlyList<T>>
     where TMark : struct, IMark<TMark>
 {
     private readonly bool _allowTrailing = allowTrailing;

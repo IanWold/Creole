@@ -15,7 +15,7 @@ namespace Creole;
 /// A step whose input starves produces nothing and reports no failure, and where the input has run out of what it has received, <c>atEnd</c> does not run.
 /// A restart bookmark notes the run's position, state, whether it has ended, its mode log and its diagnostic count, and a restart puts them back and forgets every failure.
 /// </remarks>
-file sealed class TransduceUpstream<TIn, TOut, TState>(
+file class TransduceUpstream<TIn, TOut, TState>(
     ICursorSource<TIn> input,
     Plan<TIn, Emit<TOut>> step,
     InitialState initialState,
@@ -212,7 +212,7 @@ file sealed class TransduceUpstream<TIn, TOut, TState>(
 /// <remarks>
 /// The layer starts with its <see cref="InitialState"/> and checks that each step leaves a state of its type, which <see cref="AtEnd"/> takes.
 /// </remarks>
-internal sealed class TransduceLayer<TIn, TOut, TState>(TState initialState, Parser<TIn, Emit<TOut>> step, Func<TState, Emit<TOut>>? atEnd, string name) : Layer<TIn, TOut>
+internal class TransduceLayer<TIn, TOut, TState>(TState initialState, Parser<TIn, Emit<TOut>> step, Func<TState, Emit<TOut>>? atEnd, string name) : Layer<TIn, TOut>
 {
     public Func<TState, Emit<TOut>>? AtEnd { get; } = atEnd;
 

@@ -35,7 +35,7 @@ file abstract record Shape
 /// Every letter appears in one place only, so no alternative that is not taken consumes, and nothing that follows a repetition or an optional letter starts with its letter.
 /// Choices of four or more alternatives are lowered to dispatch. Half the sentences take the first alternative of every choice, which nests deepest, so each input reaches the full depth.
 /// </remarks>
-file sealed class NestedChoices
+file class NestedChoices
 {
     private char _next = 'a';
     private readonly Random _random;
@@ -145,7 +145,7 @@ file sealed class NestedChoices
 /// <summary>
 /// An upstream that records the most items its buffer held after each step.
 /// </summary>
-file sealed class MeasuringUpstream<T>(IUpstream<T> inner) : IUpstream<T>
+file class MeasuringUpstream<T>(IUpstream<T> inner) : IUpstream<T>
 {
     private readonly IUpstream<T> _inner = inner;
 

@@ -8,7 +8,7 @@ namespace Creole;
 /// Every character class lowers to this plan: <c>Char</c>, <c>Range</c>, <c>NoneOf</c> and the named classes such as <c>Digit</c>.
 /// An ASCII character is looked up in a table built when the plan is; any other is searched for in the set's ranges.
 /// </remarks>
-internal sealed class CharClassPlan(CharSet set, Expected expected) : Plan<char, char>
+internal class CharClassPlan(CharSet set, Expected expected) : Plan<char, char>
 {
     private const int TableSize = 128;
 

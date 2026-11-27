@@ -15,7 +15,7 @@ namespace Creole;
 /// </remarks>
 /// <param name="options">The settings for the parse, whose depth limit applies to each step.</param>
 /// <param name="recordFailures">Whether each layer keeps a failure log, so that a failed step reports what it expected.</param>
-internal sealed class PipelineRun(ParseOptions options, bool recordFailures)
+internal class PipelineRun(ParseOptions options, bool recordFailures)
 {
     private ModeLink[] _read = [];
 

@@ -16,7 +16,7 @@ namespace Creole;
 /// Where the input runs out of what it has received, the run might go on, so the plan fails, as a starved attempt fails the repetition it replaces.
 /// </para>
 /// </remarks>
-internal sealed class ScanPlan : Plan<char, Unit>
+internal class ScanPlan : Plan<char, Unit>
 {
     private readonly bool _except;
     private readonly Expected _expected;

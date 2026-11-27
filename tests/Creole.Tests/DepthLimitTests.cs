@@ -3,7 +3,7 @@ using static Creole.Grammar<char>;
 
 namespace Creole.Tests;
 
-file sealed class Deep : CharGrammar
+file class Deep : CharGrammar
 {
     public static readonly Parser<char, int> Binds = Char('[').Bind(static _ => BindsThenClose!).Or(Char('x').As(0));
 

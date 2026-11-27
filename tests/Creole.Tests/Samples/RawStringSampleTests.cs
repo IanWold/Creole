@@ -13,7 +13,7 @@ file readonly record struct RawStringLiteral(string Text, bool IsTerminated);
 
 file readonly record struct Token(TokenKind Kind, string Text);
 
-file sealed class RawStringLexer : CharGrammar
+file class RawStringLexer : CharGrammar
 {
     public static readonly Parser<char, RawStringLiteral> RawString = Custom(new RawStringScanner());
 
@@ -26,7 +26,7 @@ file sealed class RawStringLexer : CharGrammar
     public static readonly Parser<char, Token> CheckedToken = AnyToken.Bind(t => t.Kind == TokenKind.UnterminatedRawString ? Fail<Token>("unterminated raw string") : Return(t));
 }
 
-file sealed class RawStringScanner : IScanner<char, RawStringLiteral>
+file class RawStringScanner : IScanner<char, RawStringLiteral>
 {
     public ScannerInfo Info { get; } = new(Nullable: false, First: CharSet.Of('r'), Name: "raw string");
 

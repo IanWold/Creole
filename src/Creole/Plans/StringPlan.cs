@@ -8,7 +8,7 @@ namespace Creole;
 /// Otherwise the result is the text itself, so a match allocates nothing.
 /// Its start is pinned while it runs, so a stream buffer keeps the characters it rewinds to and reads back.
 /// </remarks>
-internal sealed class StringPlan(string text, bool ignoreCase, Expected expected) : Plan<char, string>
+internal class StringPlan(string text, bool ignoreCase, Expected expected) : Plan<char, string>
 {
     private readonly Expected _expected = expected;
     private readonly bool _ignoreCase = ignoreCase;

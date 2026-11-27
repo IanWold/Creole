@@ -6,7 +6,7 @@ namespace Creole;
 /// <remarks>
 /// No combinator catches it, so it ends the whole parse and the limit never changes what a grammar accepts.
 /// </remarks>
-internal sealed class BufferLimitExceededException(long position, long horizon, int limit)
+internal class BufferLimitExceededException(long position, long horizon, int limit)
     : Exception($"The layer would hold more than {limit} items of its input from position {horizon}, reading at position {position}.")
 {
     /// <summary>

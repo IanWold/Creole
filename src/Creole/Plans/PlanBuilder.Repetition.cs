@@ -1,6 +1,6 @@
 namespace Creole;
 
-internal sealed partial class PlanBuilder
+internal partial class PlanBuilder
 {
     public Plan<TIn, IReadOnlyList<T>> Repeat<TIn, T>(Parser<TIn, T> item, int min, int? max) =>
         FullMarks

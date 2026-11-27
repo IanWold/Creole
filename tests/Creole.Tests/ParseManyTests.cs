@@ -7,7 +7,7 @@ namespace Creole.Tests;
 /// <summary>
 /// A reader that gives one character for each read, and counts how many it has given.
 /// </summary>
-file sealed class TrickleReader(string text) : TextReader
+file class TrickleReader(string text) : TextReader
 {
     private readonly string _text = text;
 

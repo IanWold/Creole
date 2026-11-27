@@ -7,7 +7,7 @@ namespace Creole.Tests;
 /// Item <c>i</c> has the span <c>[i, i + 1)</c>, as a character of a root layer does.
 /// With <paramref name="starves"/>, the array is only the input received so far: when it runs out, the upstream starves instead of ending.
 /// </remarks>
-internal sealed class ArrayUpstream<T>(T[] items, int itemsPerStep = 1, bool starves = false) : IUpstream<T>
+internal class ArrayUpstream<T>(T[] items, int itemsPerStep = 1, bool starves = false) : IUpstream<T>
 {
     private readonly T[] _items = items;
     private readonly int _itemsPerStep = itemsPerStep;

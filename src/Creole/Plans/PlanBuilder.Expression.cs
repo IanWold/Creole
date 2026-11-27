@@ -1,6 +1,6 @@
 namespace Creole;
 
-internal sealed partial class PlanBuilder
+internal partial class PlanBuilder
 {
     private ExpressionPlan<TIn, T, TMark> Expression<TIn, T, TMark>(Parser<TIn, T> atom, IReadOnlyList<IReadOnlyList<ExpressionOperator<TIn, T>>> levels)
         where TMark : struct, IMark<TMark>

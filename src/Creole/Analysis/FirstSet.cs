@@ -25,7 +25,7 @@ namespace Creole;
 /// Analysis cannot tell which kind a case type or a literal token has, so <see cref="Overlaps"/> treats items in different parts as possibly the same.
 /// </para>
 /// </remarks>
-internal sealed class FirstSet : IEquatable<FirstSet>
+internal class FirstSet : IEquatable<FirstSet>
 {
     private readonly Type[] _cases;
     private readonly object?[] _values;

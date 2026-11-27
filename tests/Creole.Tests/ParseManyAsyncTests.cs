@@ -9,7 +9,7 @@ namespace Creole.Tests;
 /// A stream whose first read gives <paramref name="first"/>, and whose every later read never completes, whatever its token says.
 /// </summary>
 /// <param name="first">What the first read gives.</param>
-file sealed class StuckStream(byte[] first) : Stream
+file class StuckStream(byte[] first) : Stream
 {
     private byte[]? _first = first;
 

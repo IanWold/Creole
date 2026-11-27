@@ -3,7 +3,7 @@ namespace Creole;
 /// <summary>
 /// Runs a rule's compiled code in place of the plan the interpreter would build for it.
 /// </summary>
-internal sealed class StagedPlan<TIn, TOut>(StagedParse<TIn, TOut> parse) : Plan<TIn, TOut>
+internal class StagedPlan<TIn, TOut>(StagedParse<TIn, TOut> parse) : Plan<TIn, TOut>
 {
     private readonly StagedParse<TIn, TOut> _parse = parse;
 

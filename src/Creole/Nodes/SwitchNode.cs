@@ -7,7 +7,7 @@ namespace Creole;
 /// <param name="keys">The key of each case. The node keeps this array, so pass a new one.</param>
 /// <param name="branches">The branch of each case, in the same order as <paramref name="keys"/>. The node keeps this array, so pass a new one.</param>
 /// <param name="default">The branch for a result that matches no key.</param>
-internal sealed class SwitchNode<TIn, TKey, TOut>(Parser<TIn, TKey> scrutinee, TKey[] keys, Parser<TIn, TOut>[] branches, Parser<TIn, TOut> @default) : Parser<TIn, TOut>
+internal class SwitchNode<TIn, TKey, TOut>(Parser<TIn, TKey> scrutinee, TKey[] keys, Parser<TIn, TOut>[] branches, Parser<TIn, TOut> @default) : Parser<TIn, TOut>
 {
     private readonly INode[] _children = [scrutinee, .. branches, @default];
 

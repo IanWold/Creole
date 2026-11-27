@@ -10,19 +10,19 @@ file readonly record struct JTok(J Kind, string Text) : IKinded<J>;
 
 file abstract record JsonValue;
 
-file sealed record JsonString(string Value) : JsonValue;
+file record JsonString(string Value) : JsonValue;
 
-file sealed record JsonNumber(double Value) : JsonValue;
+file record JsonNumber(double Value) : JsonValue;
 
-file sealed record JsonBool(bool Value) : JsonValue;
+file record JsonBool(bool Value) : JsonValue;
 
-file sealed record JsonNull : JsonValue;
+file record JsonNull : JsonValue;
 
-file sealed record JsonArray(IReadOnlyList<JsonValue> Items) : JsonValue;
+file record JsonArray(IReadOnlyList<JsonValue> Items) : JsonValue;
 
-file sealed record JsonObject(IReadOnlyList<KeyValuePair<string, JsonValue>> Members) : JsonValue;
+file record JsonObject(IReadOnlyList<KeyValuePair<string, JsonValue>> Members) : JsonValue;
 
-file sealed class JsonGrammar : TokenGrammar<JTok, J>
+file class JsonGrammar : TokenGrammar<JTok, J>
 {
 #pragma warning disable CS8604
     public static readonly Parser<JTok, JsonValue> Value = Rec(() => OneOf(
@@ -52,14 +52,14 @@ file sealed class JsonGrammar : TokenGrammar<JTok, J>
         Grammar.Deterministic(Value.Before(End));
 }
 
-file sealed class Forward : CharGrammar
+file class Forward : CharGrammar
 {
     public static readonly Parser<char, int> First = Rec(() => Second);
 
     public static readonly Parser<char, int> Second = Return(2);
 }
 
-file sealed class Lists : CharGrammar
+file class Lists : CharGrammar
 {
     private static readonly Parser<char, int> _item = Rec(() => List);
 
@@ -67,14 +67,14 @@ file sealed class Lists : CharGrammar
         _item.SepBy(Char(',')).Between(Char('['), Char(']')).Select(static items => items.Count);
 }
 
-file sealed class Parens : CharGrammar
+file class Parens : CharGrammar
 {
     public static readonly Parser<char, int> Group = Rec(() => Inner).Between(Char('('), Char(')')).Select(static depth => depth + 1);
 
     public static readonly Parser<char, int> Inner = OneOf(Group, Char('x').As(0));
 }
 
-file sealed class Names : CharGrammar
+file class Names : CharGrammar
 {
     public static readonly Parser<char, int> Value = Rec(() => OneOf(Return(1), Fail<int>("no")));
 

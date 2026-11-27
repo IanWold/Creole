@@ -5,7 +5,7 @@ namespace Creole;
 /// </summary>
 /// <param name="atom">The operand parser.</param>
 /// <param name="levels">The checked table, tightest level first. The node keeps these arrays, so pass copies.</param>
-internal sealed class ExpressionNode<TIn, T>(Parser<TIn, T> atom, ExpressionOperator<TIn, T>[][] levels) : Parser<TIn, T>, IExpressionNode
+internal class ExpressionNode<TIn, T>(Parser<TIn, T> atom, ExpressionOperator<TIn, T>[][] levels) : Parser<TIn, T>, IExpressionNode
 {
     private readonly INode[] _children = [atom, .. levels.SelectMany(level => level.Select(op => op.Node))];
     private readonly OperatorInfo[][] _view = [.. levels.Select(level => level.Select(op => new OperatorInfo(op.Fixity, op.Node)).ToArray())];

@@ -4,7 +4,7 @@ namespace Creole;
 /// Consumes one token whose kind is <see cref="TokenKind"/>, and produces the token.
 /// Fails without consuming on a token of any other kind.
 /// </summary>
-internal sealed class KindNode<TToken, TKind>(TKind kind) : Parser<TToken, TToken>, IKindNode<TToken>
+internal class KindNode<TToken, TKind>(TKind kind) : Parser<TToken, TToken>, IKindNode<TToken>
     where TToken : IKinded<TKind>
     where TKind : struct, Enum
 {

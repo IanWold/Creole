@@ -5,7 +5,7 @@ using static Creole.Grammar<char>;
 
 namespace Creole.Tests;
 
-file sealed class CopyScanner : IScanner<char, string>
+file class CopyScanner : IScanner<char, string>
 {
     public ScannerInfo Info { get; } = new(Nullable: false, Name: "terminated word");
 
@@ -31,7 +31,7 @@ file sealed class CopyScanner : IScanner<char, string>
     }
 }
 
-file sealed class AvailableScanner : IScanner<char, Unit>
+file class AvailableScanner : IScanner<char, Unit>
 {
     private static readonly SearchValues<char> _letters = SearchValues.Create("abcdefghijklmnopqrstuvwxyz");
 
@@ -67,7 +67,7 @@ file sealed class AvailableScanner : IScanner<char, Unit>
     }
 }
 
-file sealed class CountingScanner : IScanner<char, char>
+file class CountingScanner : IScanner<char, char>
 {
     public int Calls { get; private set; }
 
@@ -81,7 +81,7 @@ file sealed class CountingScanner : IScanner<char, char>
     }
 }
 
-file sealed class LettersScanner : IScanner<char, Unit>
+file class LettersScanner : IScanner<char, Unit>
 {
     private static readonly SearchValues<char> _letters = SearchValues.Create("abcdefghijklmnopqrstuvwxyz");
 
@@ -109,7 +109,7 @@ file sealed class LettersScanner : IScanner<char, Unit>
     }
 }
 
-file sealed class ReadAheadScanner : IScanner<char, char>
+file class ReadAheadScanner : IScanner<char, char>
 {
     public ScannerInfo Info { get; } = new(Nullable: false, Name: "read-ahead");
 
@@ -138,7 +138,7 @@ public class StarvedTests
     /// <summary>
     /// A grammar that reaches the probe it is given only by acting on a failure, or ending a loop, where <paramref name="Received"/> runs out.
     /// </summary>
-    private sealed record ProbeCase(string Name, Func<Parser<char, char>, Parser<char, Unit>> Grammar, string Received);
+    private record ProbeCase(string Name, Func<Parser<char, char>, Parser<char, Unit>> Grammar, string Received);
 
     private static readonly LoweringOptions[] _loweringOptions = [LoweringOptions.None, LoweringOptions.All & ~LoweringOptions.Dfa, LoweringOptions.All];
 

@@ -3,7 +3,7 @@ using static Creole.Grammar<char>;
 
 namespace Creole.Tests;
 
-file sealed class BlobGrammar : Grammar<byte>
+file class BlobGrammar : Grammar<byte>
 {
     public static readonly Parser<byte, int> UInt16 = Seq(Any, Any).Select(static (hi, lo) => hi << 8 | lo);
 

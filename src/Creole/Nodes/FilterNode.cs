@@ -8,7 +8,7 @@ namespace Creole;
 /// A rejection leaves the cursor where <see cref="Source"/> left it, so it is committed if the source consumed input.
 /// It is reported at the source's start position, over the input the source consumed.
 /// </remarks>
-internal sealed class FilterNode<TIn, TOut>(Parser<TIn, TOut> source, Func<TOut, bool> predicate, string? message) : Parser<TIn, TOut>
+internal class FilterNode<TIn, TOut>(Parser<TIn, TOut> source, Func<TOut, bool> predicate, string? message) : Parser<TIn, TOut>
 {
     internal override IReadOnlyList<INode> Children => [Source];
 

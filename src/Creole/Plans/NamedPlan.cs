@@ -7,7 +7,7 @@ namespace Creole;
 /// Expectations recorded there before the item ran stay, ahead of the label. A failure that expected nothing in particular counts as recorded.
 /// If the item consumed input, or what it recorded there has been superseded, nothing changes.
 /// </remarks>
-internal sealed class NamedPlan<TIn, T>(Plan<TIn, T> item, Expected label) : Plan<TIn, T>
+internal class NamedPlan<TIn, T>(Plan<TIn, T> item, Expected label) : Plan<TIn, T>
 {
     private readonly Expected _label = label;
 

@@ -1,6 +1,6 @@
 namespace Creole;
 
-internal sealed partial class PlanBuilder
+internal partial class PlanBuilder
 {
     public static Plan<TIn, TState> GetState<TIn, TState>() => new GetStatePlan<TIn, TState>();
 

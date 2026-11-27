@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace Creole;
 
-internal sealed partial class PlanBuilder
+internal partial class PlanBuilder
 {
     public Plan<TIn, T> Longest<TIn, T>(IReadOnlyList<Parser<TIn, T>> alternatives) =>
         _options.HasFlag(LoweringOptions.Dfa) && alternatives is IReadOnlyList<Parser<char, T>> chars && DfaLongest(chars) is Plan<TIn, T> dfa

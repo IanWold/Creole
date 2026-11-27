@@ -4,7 +4,7 @@ namespace Creole;
 /// Consumes one item equal to <see cref="Value"/>, by <see cref="EqualityComparer{T}.Default"/>, and produces the item read.
 /// Fails without consuming on any other item.
 /// </summary>
-internal sealed class TokenNode<TIn>(TIn value) : Parser<TIn, TIn>, IPrimitiveNode
+internal class TokenNode<TIn>(TIn value) : Parser<TIn, TIn>, IPrimitiveNode
 {
     internal override IReadOnlyList<INode> Children => [];
 

@@ -4,7 +4,7 @@ namespace Creole.Tests;
 /// A read-only stream over an array that gives one byte for each read, so that every multi-byte sequence is split across reads, and counts how many it has given.
 /// </summary>
 /// <param name="bytes">The bytes to give.</param>
-internal sealed class TrickleStream(byte[] bytes) : Stream
+internal class TrickleStream(byte[] bytes) : Stream
 {
     private readonly byte[] _bytes = bytes;
 

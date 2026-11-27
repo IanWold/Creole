@@ -10,7 +10,7 @@ namespace Creole;
 /// <param name="reference">Returns the target. It may return null until the grammar class has been initialized.</param>
 /// <param name="referenceExpression">The caller's expression for <paramref name="reference"/>, used in error messages.</param>
 /// <param name="name">The rule's name (ADR-0009), or null if it has none.</param>
-internal sealed class RecNode<TIn, TOut>(Func<Parser<TIn, TOut>?> reference, string referenceExpression, string? name) : Parser<TIn, TOut>
+internal class RecNode<TIn, TOut>(Func<Parser<TIn, TOut>?> reference, string referenceExpression, string? name) : Parser<TIn, TOut>
 {
     private readonly Lazy<Parser<TIn, TOut>> _target = new(
         () => reference() ?? throw new GrammarException($"'{referenceExpression}' returned null. A Rec must refer to a rule that is initialized by the time the grammar is used."),

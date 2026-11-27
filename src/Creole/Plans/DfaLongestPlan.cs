@@ -21,7 +21,7 @@ namespace Creole;
 /// Its start is pinned while it runs, so a stream buffer keeps the input it reads past and backs up over.
 /// </para>
 /// </remarks>
-internal sealed class DfaLongestPlan<T>(CommitAutomaton automaton, Plan<char, T>[] alternatives, MatchValue<T>?[] values) : Plan<char, T>
+internal class DfaLongestPlan<T>(CommitAutomaton automaton, Plan<char, T>[] alternatives, MatchValue<T>?[] values) : Plan<char, T>
 {
     private const int MaxStackAlternatives = 1_024;
     private readonly ushort[] _classOf = automaton.ClassOf;

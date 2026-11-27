@@ -3,7 +3,7 @@ namespace Creole;
 /// <summary>
 /// Runs its item as one attempt. Produces <see cref="Nothing"/> if the item fails without consuming, and fails if it fails after consuming.
 /// </summary>
-internal sealed class OptionalPlan<TIn, T, TMark>(Plan<TIn, T> item) : Plan<TIn, Maybe<T>>
+internal class OptionalPlan<TIn, T, TMark>(Plan<TIn, T> item) : Plan<TIn, Maybe<T>>
     where TMark : struct, IMark<TMark>
 {
     private readonly Plan<TIn, T> _item = item;

@@ -22,7 +22,7 @@ file readonly record struct Tok(K Kind) : IKinded<K>;
 /// <summary>
 /// The code sample in docs/concepts/mode-channels.md § Changing the mode. Keep the two in step.
 /// </summary>
-file sealed class Script : TokenGrammar<Tok, K>
+file class Script : TokenGrammar<Tok, K>
 {
     public static readonly ModeChannel<LexMode> Modes = new(LexMode.Operand);
 
@@ -36,7 +36,7 @@ file sealed class Script : TokenGrammar<Tok, K>
 /// <summary>
 /// A parser that consumes nothing and reports the mode log of the layer running it: how many entries it holds, and how many it has room for.
 /// </summary>
-file sealed class LogSize(Action<int, int> seen) : Parser<char, Unit>
+file class LogSize(Action<int, int> seen) : Parser<char, Unit>
 {
     private readonly Action<int, int> _seen = seen;
 
@@ -50,7 +50,7 @@ file sealed class LogSize(Action<int, int> seen) : Parser<char, Unit>
 /// <summary>
 /// The plan of <see cref="LogSize"/>.
 /// </summary>
-file sealed class LogSizePlan(Action<int, int> seen) : Plan<char, Unit>
+file class LogSizePlan(Action<int, int> seen) : Plan<char, Unit>
 {
     private readonly Action<int, int> _seen = seen;
 

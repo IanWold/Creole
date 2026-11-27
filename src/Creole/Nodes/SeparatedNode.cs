@@ -4,7 +4,7 @@ namespace Creole;
 /// Runs <see cref="Item"/> repeatedly with <see cref="Separator"/> between items and collects the items.
 /// Backs <c>SepBy</c>, <c>SepBy1</c> and <c>SepEndBy</c>.
 /// </summary>
-internal sealed class SeparatedNode<TIn, T, TSep>(Parser<TIn, T> item, Parser<TIn, TSep> separator, int min, bool allowTrailing) : Parser<TIn, IReadOnlyList<T>>
+internal class SeparatedNode<TIn, T, TSep>(Parser<TIn, T> item, Parser<TIn, TSep> separator, int min, bool allowTrailing) : Parser<TIn, IReadOnlyList<T>>
 {
     internal override IReadOnlyList<INode> Children => [Item, Separator];
 

@@ -30,7 +30,7 @@ file readonly record struct AlternativePaths(int Alternative, List<Candidate> Ca
 /// Its scope lists, oldest first, the unresolved choices it is inside, in the first or the second branch, and the <c>Atomic</c>s it has entered and not left.
 /// A dead path and a match keep only their second-branch entries, through which a higher path can still drop them.
 /// </remarks>
-file sealed class Candidate
+file class Candidate
 {
     public bool Committed { get; set; }
 
@@ -93,7 +93,7 @@ file sealed class Candidate
 /// <remarks>
 /// A <see cref="Run"/> frame is compared by the identity of its term.
 /// </remarks>
-file sealed class CandidateComparer : IEqualityComparer<Candidate>
+file class CandidateComparer : IEqualityComparer<Candidate>
 {
     private static int Hash(Frame frame) => frame switch
     {
@@ -163,22 +163,22 @@ file sealed class CandidateComparer : IEqualityComparer<Candidate>
     }
 }
 
-file sealed record Continuation(Frame Head, Continuation? Tail);
+file record Continuation(Frame Head, Continuation? Tail);
 
 file readonly record struct Entry(EntryKind Kind, int Id, bool Consumed);
 
 file closed record Frame;
 
-file sealed record EndAtomic(int Id) : Frame;
+file record EndAtomic(int Id) : Frame;
 
-file sealed record EndChoice(int Id) : Frame;
+file record EndChoice(int Id) : Frame;
 
-file sealed record Run(RegularTerm Term) : Frame;
+file record Run(RegularTerm Term) : Frame;
 
 /// <summary>
 /// Compares state keys, and lets a key held in a reused buffer be looked up without copying it.
 /// </summary>
-file sealed class KeyComparer : IEqualityComparer<int[]>, IAlternateEqualityComparer<ReadOnlySpan<int>, int[]>
+file class KeyComparer : IEqualityComparer<int[]>, IAlternateEqualityComparer<ReadOnlySpan<int>, int[]>
 {
     public int[] Create(ReadOnlySpan<int> alternate) =>
         alternate.ToArray();
@@ -213,7 +213,7 @@ file sealed class KeyComparer : IEqualityComparer<int[]>, IAlternateEqualityComp
 /// A configuration is copied for storage only when it is a new state.
 /// Each transition explored steps every path of the state it leaves, and the build stops once the paths stepped pass a budget.
 /// </remarks>
-file sealed class Determinizer(IReadOnlyList<RegularTerm> alternatives)
+file class Determinizer(IReadOnlyList<RegularTerm> alternatives)
 {
     private readonly RegularTerm[] _alternatives = [.. alternatives];
     private readonly ushort[] _classOf = new ushort[char.MaxValue + 1];
@@ -896,7 +896,7 @@ file sealed class Determinizer(IReadOnlyList<RegularTerm> alternatives)
 /// The rule is exact on terms that <see cref="Regular.Of{T}"/> accepts. Each alternative holds at most one match, so one register per alternative records where it ended.
 /// </para>
 /// </remarks>
-internal sealed class CommitAutomaton
+internal class CommitAutomaton
 {
     /// <summary>
     /// The result of a scan: the winning alternative and where its match ended, or <c>-1</c> and whether the failure consumed input.

@@ -3,7 +3,7 @@ namespace Creole;
 /// <summary>
 /// Succeeds without consuming input and produces a fixed value.
 /// </summary>
-internal sealed class ReturnPlan<TIn, TOut>(TOut value) : Plan<TIn, TOut>
+internal class ReturnPlan<TIn, TOut>(TOut value) : Plan<TIn, TOut>
 {
     private readonly TOut _value = value;
 

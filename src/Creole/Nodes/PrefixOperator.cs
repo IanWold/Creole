@@ -3,7 +3,7 @@ namespace Creole;
 /// <summary>
 /// A prefix operator: <see cref="Op"/> before an operand, combined by <see cref="Combine"/>.
 /// </summary>
-internal sealed class PrefixOperator<TIn, TOp, T>(Parser<TIn, TOp> op, Func<TOp, T, T> combine) : ExpressionOperator<TIn, T>
+internal class PrefixOperator<TIn, TOp, T>(Parser<TIn, TOp> op, Func<TOp, T, T> combine) : ExpressionOperator<TIn, T>
 {
     internal override Fixity Fixity => Fixity.Prefix;
 

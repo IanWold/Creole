@@ -10,7 +10,7 @@ namespace Creole;
 /// Each plan is filed under the hash its mode had when it was kept, so a mode that changes afterwards is still forgotten in its turn and the count stays bounded.
 /// It is not safe for use from several threads at once.
 /// </remarks>
-internal sealed class RecentPlans<TIn, TOut, TMode>
+internal class RecentPlans<TIn, TOut, TMode>
 {
     /// <summary>
     /// A mode as a dictionary key, which may be null, with the hash the mode had when the key was made.

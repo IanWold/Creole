@@ -7,7 +7,7 @@ namespace Creole;
 /// <remarks>
 /// When the spans do not touch, it fails as a rejected filter over the pair: committed if either consumed input, and reported where the first started.
 /// </remarks>
-internal sealed class AdjacentNode<TIn, T1, T2>(Parser<TIn, T1> first, Parser<TIn, T2> second) : Parser<TIn, (T1, T2)>
+internal class AdjacentNode<TIn, T1, T2>(Parser<TIn, T1> first, Parser<TIn, T2> second) : Parser<TIn, (T1, T2)>
 {
     internal override IReadOnlyList<INode> Children => [First, Second];
 

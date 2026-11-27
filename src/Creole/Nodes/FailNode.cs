@@ -3,7 +3,7 @@ namespace Creole;
 /// <summary>
 /// Fails without consuming input, reporting a custom message.
 /// </summary>
-internal sealed class FailNode<TIn, TOut>(string message) : Parser<TIn, TOut>
+internal class FailNode<TIn, TOut>(string message) : Parser<TIn, TOut>
 {
     internal override IReadOnlyList<INode> Children => [];
 

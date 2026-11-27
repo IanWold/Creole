@@ -7,7 +7,7 @@ namespace Creole;
 /// It names the operator as an alternative that dispatch skips would be named: by the label of the outermost <c>Named</c> on the way to its leading primitive, or by that primitive's expectation.
 /// An operator with neither is named by its first item.
 /// </remarks>
-internal sealed class ChainMessage(Expected? display)
+internal class ChainMessage(Expected? display)
 {
     private readonly Expected? _display = display;
 

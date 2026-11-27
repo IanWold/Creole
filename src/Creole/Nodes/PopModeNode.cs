@@ -4,7 +4,7 @@ namespace Creole;
 /// Succeeds without consuming input and pops the top of <see cref="Channel"/>'s stack.
 /// Backs <c>PopMode</c>.
 /// </summary>
-internal sealed class PopModeNode<TIn, TMode>(ModeChannel<TMode> channel) : Parser<TIn, Unit>
+internal class PopModeNode<TIn, TMode>(ModeChannel<TMode> channel) : Parser<TIn, Unit>
 {
     internal override IReadOnlyList<INode> Children => [];
 

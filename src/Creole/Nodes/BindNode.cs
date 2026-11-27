@@ -12,7 +12,7 @@ namespace Creole;
 /// <param name="next">Chooses the parser to run after <paramref name="source"/> from its result.</param>
 /// <param name="selector">Combines the two results.</param>
 /// <param name="nextExpression">The caller's expression for <paramref name="next"/>, which names it if it returns null.</param>
-internal sealed class BindNode<TIn, TSource, TNext, TResult>(Parser<TIn, TSource> source, Func<TSource, Parser<TIn, TNext>> next, Func<TSource, TNext, TResult> selector, string nextExpression) : Parser<TIn, TResult>
+internal class BindNode<TIn, TSource, TNext, TResult>(Parser<TIn, TSource> source, Func<TSource, Parser<TIn, TNext>> next, Func<TSource, TNext, TResult> selector, string nextExpression) : Parser<TIn, TResult>
 {
     internal override IReadOnlyList<INode> Children => [Source];
 

@@ -9,7 +9,7 @@ namespace Creole;
 /// On reaching a new segment, it releases what lies below the pin.
 /// A read that would hold more of its input than the buffer's limit ends the parse with an error named <see cref="WhereLayer{T}.Name"/>.
 /// </remarks>
-file sealed class WhereUpstream<T>(ICursorSource<T> input, Func<T, bool> predicate) : IUpstream<T>
+file class WhereUpstream<T>(ICursorSource<T> input, Func<T, bool> predicate) : IUpstream<T>
 {
     private long _bookmarkPosition;
     private long _bookmarkSegmentStart;
@@ -87,7 +87,7 @@ file sealed class WhereUpstream<T>(ICursorSource<T> input, Func<T, bool> predica
 /// <summary>
 /// Keeps the items for which <see cref="Predicate"/> is true. Backs <c>Layer.Where</c>.
 /// </summary>
-internal sealed class WhereLayer<T>(Func<T, bool> predicate) : Layer<T, T>
+internal class WhereLayer<T>(Func<T, bool> predicate) : Layer<T, T>
 {
     /// <summary>
     /// The layer's name in errors.

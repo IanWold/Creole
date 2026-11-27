@@ -75,7 +75,7 @@ Keep the whitepaper as written. Not possible: the compiler rejects it.
 
 Option D, with C's enum for consumers that need only structure. Accepted by the maintainer on 2026-10-18.
 
-1. **Base type.** `Parser<TIn, TOut>` is a public abstract class whose constructors are all `internal`. It is not `closed`. Concrete node classes are `internal sealed`. Other assemblies cannot derive from the base (CS1729) and cannot see the nodes. User code enters the tree only through `Custom` (§ Custom primitives).
+1. **Base type.** `Parser<TIn, TOut>` is a public abstract class whose constructors are all `internal`. It is not `closed`. Concrete node classes are `internal`. Other assemblies cannot derive from the base (CS1729) and cannot see the nodes. User code enters the tree only through `Custom` (§ Custom primitives).
 2. **Typed operations.** Each engine operation that needs a node's type arguments is an `internal abstract` member of `Parser<TIn, TOut>`, overridden by every node. The interpreter's lowering to a plan (INT-02) is the first. The general-parsing spike would add another.
    - An override forwards the node's typed fields to an ordinary generic method of the engine, for example `Lower(ctx) => ctx.Map(source, selector)`. Engine logic stays in engine classes, not node classes.
    - A node that does not implement an operation does not compile.

@@ -4,7 +4,7 @@ namespace Creole;
 /// Runs <see cref="Item"/> with <see cref="Text"/> pushed onto the context stack, so failures recorded meanwhile carry it.
 /// Backs <c>Context</c>.
 /// </summary>
-internal sealed class ContextNode<TIn, T>(Parser<TIn, T> item, string text) : Parser<TIn, T>
+internal class ContextNode<TIn, T>(Parser<TIn, T> item, string text) : Parser<TIn, T>
 {
     internal override IReadOnlyList<INode> Children => [Item];
 

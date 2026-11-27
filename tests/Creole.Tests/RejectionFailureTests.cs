@@ -4,7 +4,7 @@ using static Creole.Grammar<char>;
 
 namespace Creole.Tests;
 
-file sealed class ReleasingSource(string text) : ICursorSource<char>
+file class ReleasingSource(string text) : ICursorSource<char>
 {
     private long _released;
 

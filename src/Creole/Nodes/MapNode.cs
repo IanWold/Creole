@@ -7,7 +7,7 @@ namespace Creole;
 /// <remarks>
 /// <c>As</c> and <c>Ignore</c> set <see cref="IgnoresSource"/>: their selector returns the same value whatever it is given.
 /// </remarks>
-internal sealed class MapNode<TIn, TSource, TResult>(Parser<TIn, TSource> source, Func<TSource, TResult> selector, bool ignoresSource = false) : Parser<TIn, TResult>
+internal class MapNode<TIn, TSource, TResult>(Parser<TIn, TSource> source, Func<TSource, TResult> selector, bool ignoresSource = false) : Parser<TIn, TResult>
 {
     internal override IReadOnlyList<INode> Children => [Source];
 

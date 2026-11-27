@@ -3,7 +3,7 @@ namespace Creole;
 /// <summary>
 /// Fails without consuming input, recording its message.
 /// </summary>
-internal sealed class FailPlan<TIn, TOut>(string message) : Plan<TIn, TOut>
+internal class FailPlan<TIn, TOut>(string message) : Plan<TIn, TOut>
 {
     private readonly string _message = message;
 

@@ -1,6 +1,6 @@
 namespace Creole;
 
-internal sealed partial class PlanBuilder
+internal partial class PlanBuilder
 {
     /// <summary>
     /// What names <paramref name="node"/> in <c>Adjacent</c>'s message: the label of the outermost <c>Named</c> on the way to its leading primitive, or that primitive's expectation, as a choice names an alternative it skips.

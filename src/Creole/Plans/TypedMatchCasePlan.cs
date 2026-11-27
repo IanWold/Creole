@@ -3,7 +3,7 @@ namespace Creole;
 /// <summary>
 /// The lowered form of a <see cref="TypedMatchCase{TIn, TCase, TBranch, TOut}"/>.
 /// </summary>
-internal sealed class TypedMatchCasePlan<TIn, TCase, TBranch, TOut>(Plan<TIn, TBranch> branch, Func<TCase, TBranch, TOut> combine) : MatchCasePlan<TIn, TOut>
+internal class TypedMatchCasePlan<TIn, TCase, TBranch, TOut>(Plan<TIn, TBranch> branch, Func<TCase, TBranch, TOut> combine) : MatchCasePlan<TIn, TOut>
 {
     private readonly Plan<TIn, TBranch> _branch = branch;
     private readonly Func<TCase, TBranch, TOut> _combine = combine;

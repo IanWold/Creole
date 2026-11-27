@@ -13,7 +13,7 @@ namespace Creole;
 /// The source's start is held in the failure log while the source runs, so a stream buffer that releases it first copies the item there.
 /// </para>
 /// </remarks>
-internal sealed class FilterPlan<TIn, T>(Plan<TIn, T> source, Func<T, bool> predicate, string? message) : Plan<TIn, T>
+internal class FilterPlan<TIn, T>(Plan<TIn, T> source, Func<T, bool> predicate, string? message) : Plan<TIn, T>
 {
     private readonly string? _message = message;
     private readonly Func<T, bool> _predicate = predicate;

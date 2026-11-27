@@ -7,7 +7,7 @@ namespace Creole;
 /// <remarks>
 /// It is a node of its own rather than <c>Spanned</c> followed by <c>Select</c>, so that a node that keeps what it builds can find it.
 /// </remarks>
-internal sealed class WithSpanNode<TIn, TSource, TResult>(Parser<TIn, TSource> source, Func<TSource, SourceSpan, TResult> selector) : Parser<TIn, TResult>
+internal class WithSpanNode<TIn, TSource, TResult>(Parser<TIn, TSource> source, Func<TSource, SourceSpan, TResult> selector) : Parser<TIn, TResult>
 {
     internal override IReadOnlyList<INode> Children => [Source];
 

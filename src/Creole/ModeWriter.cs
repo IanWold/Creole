@@ -27,7 +27,7 @@ namespace Creole;
 /// </remarks>
 /// <param name="layer">The name of the layer whose grammar writes, which errors give.</param>
 /// <param name="below">In a pipeline, the links of the channels read below the layer; null for a parser run on its own.</param>
-internal sealed class ModeWriter(string layer, ModeLink[]? below)
+internal class ModeWriter(string layer, ModeLink[]? below)
 {
     /// <summary>
     /// One write, as the log keeps it.

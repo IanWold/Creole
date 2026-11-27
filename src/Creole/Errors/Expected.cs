@@ -7,7 +7,7 @@ namespace Creole;
 /// Each node creates its descriptors once, so a failure records a reference and allocates nothing.
 /// Recording drops a descriptor already recorded at the same position; building the error drops expectations that turn out equal.
 /// </remarks>
-internal sealed class Expected(Func<Expectation> build)
+internal class Expected(Func<Expectation> build)
 {
     private readonly Func<Expectation> _build = build;
 

@@ -4,7 +4,7 @@ namespace Creole;
 /// Succeeds without consuming input and pushes <see cref="Mode"/> onto <see cref="Channel"/>'s stack.
 /// Backs <c>PushMode</c>.
 /// </summary>
-internal sealed class PushModeNode<TIn, TMode>(ModeChannel<TMode> channel, TMode mode) : Parser<TIn, Unit>
+internal class PushModeNode<TIn, TMode>(ModeChannel<TMode> channel, TMode mode) : Parser<TIn, Unit>
 {
     internal override IReadOnlyList<INode> Children => [];
 
