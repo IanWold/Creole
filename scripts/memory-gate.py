@@ -2,8 +2,10 @@
 """Run the Phase 1 memory gate with benchmarks/Creole.MemoryGate.
 
 The gate (ADR-0003) parses Example B and a JSON-lines stream at 10 MB, 100 MB and 1 GB, each in its
-own process. --inputs runs other inputs of the harness instead, such as json-document, one JSON
-array of the JSON-lines records parsed from a pipe (STRM-04), against the same threshold. Each run samples the retained heap after a forced full blocking GC every 1,000 records,
+own process. --inputs runs other inputs of the harness instead, against the same threshold:
+json-document, one JSON array of the JSON-lines records parsed from a pipe (STRM-04); json-lines-async,
+the JSON-lines records parsed from a pipe with ParseManyAsync; and json-lines-async-large, the same with
+one record of 4 MiB in the middle (STRM-02). Each run samples the retained heap after a forced full blocking GC every 1,000 records,
 and subtracts the retained heap after a 1 MB warm-up run. The gate passes when, for both inputs, the
 peak at the largest size is at most 1.5 times the peak at the smallest.
 
@@ -24,7 +26,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 PROJECT = ROOT / "benchmarks" / "Creole.MemoryGate"
 INPUTS = ["example-b", "json-lines"]
-OTHER_INPUTS = ["json-document"]
+OTHER_INPUTS = ["json-document", "json-lines-async", "json-lines-async-large"]
 SIZES = [10_000_000, 100_000_000, 1_000_000_000]
 THRESHOLD = 1.5
 
@@ -76,13 +78,13 @@ def main() -> int:
     runs = {(name, size): run(name, size) for name in inputs for size in sizes}
 
     print()
-    print(f"{'Input':<14} {'Characters':>15} {'Records':>12} {'Samples':>8} {'Retained (bytes)':>17} {'Ratio':>6} {'Seconds':>8}")
+    print(f"{'Input':<22} {'Characters':>15} {'Records':>12} {'Samples':>8} {'Retained (bytes)':>17} {'Ratio':>6} {'Seconds':>8}")
     for name in inputs:
         smallest = runs[(name, sizes[0])]["retainedBytes"]
         for size in sizes:
             result = runs[(name, size)]
             print(
-                f"{name:<14} {result['characters']:>15,} {result['records']:>12,} {result['samples']:>8,} "
+                f"{name:<22} {result['characters']:>15,} {result['records']:>12,} {result['samples']:>8,} "
                 f"{result['retainedBytes']:>17,} {ratio(result['retainedBytes'], smallest):>6.2f} {result['seconds']:>8.1f}"
             )
 
