@@ -33,6 +33,9 @@ namespace Creole;
 /// The layer reading the buffer turns it into its own error.
 /// </para>
 /// <para>
+/// <see cref="Discard"/> drops the items from a position on, when the layer above changes the mode its upstream reads, and the upstream produces them again under the new mode.
+/// </para>
+/// <para>
 /// <see cref="Release"/> returns whole segments below a position to the pool, which may hand their arrays to anything else.
 /// Nothing may read a released position afterwards, so the layer above first copies out what its pending errors need.
 /// <see cref="Dispose"/> returns every segment when the parse ends, and disposes the upstream, which disposes the buffers below it.
@@ -245,9 +248,9 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
         return new PackedSpan(segment.Wide.Count - 1, WideLength);
     }
 
-    private void ReturnSegments(int count)
+    private void ReturnSegments(int first, int count)
     {
-        for (var i = 0; i < count; i++)
+        for (var i = first; i < first + count; i++)
         {
             _pool.Return(_segments[i].Items, RuntimeHelpers.IsReferenceOrContainsReferences<T>());
             ArrayPool<PackedSlot>.Shared.Return(_segments[i].Slots, clearArray: true);
@@ -258,7 +261,7 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
             }
         }
 
-        _segments.RemoveRange(0, count);
+        _segments.RemoveRange(first, count);
     }
 
     private SourceSpan SpanAt(long position)
@@ -343,6 +346,35 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
         Filled++;
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// The buffer discards only when its upstream goes back to the step that produced the item at <paramref name="position"/>, which only the upstream reading <paramref name="channel"/> does.
+    /// Segments that hold only discarded items go back to the pool, and the next read past the remaining items runs that step again.
+    /// </remarks>
+    public bool Discard(long position, ModeLink channel)
+    {
+        if (position >= Filled || !_upstream.TryGoBack(SlotAt(position), channel))
+        {
+            return false;
+        }
+
+        var (index, offset) = Locate(position);
+
+        var kept = offset == 0
+            ? index
+            : index + 1;
+
+        ReturnSegments(kept, _segments.Count - kept);
+
+        Filled = position;
+        _ended = false;
+        _lastSpan = position > Start
+            ? SpanAt(position - 1)
+            : default;
+
+        return true;
+    }
+
     /// <summary>
     /// Returns every segment the buffer holds to the pool, and disposes the upstream, so the buffers below return theirs.
     /// </summary>
@@ -351,7 +383,7 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     /// </remarks>
     public void Dispose()
     {
-        ReturnSegments(_segments.Count);
+        ReturnSegments(0, _segments.Count);
         _upstream.Dispose();
     }
 
@@ -413,7 +445,7 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
         failures?.Preserve(this, Start, end);
         CopyHeldSpans(Start, end);
 
-        ReturnSegments(count);
+        ReturnSegments(0, count);
         _released += count;
     }
 

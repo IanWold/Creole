@@ -240,6 +240,24 @@ public ref struct Cursor<T>
     }
 
     /// <summary>
+    /// Discards the items from the cursor on, so that they are produced again, because this layer changed the mode of <paramref name="channel"/>.
+    /// </summary>
+    /// <remarks>
+    /// Only items that the layer reading <paramref name="channel"/> produced are discarded, so a cursor over its output does, and a cursor over any other input does not.
+    /// The cursor keeps the items before it in its segment and reads the rest afresh.
+    /// </remarks>
+    internal void Discard(ModeLink channel)
+    {
+        if (_source is null || !_source.Discard(Position, channel))
+        {
+            return;
+        }
+
+        _segment = _segment[.._index];
+        _span = _span[.._index];
+    }
+
+    /// <summary>
     /// Stops holding the position that the matching <see cref="HoldSpan"/> held.
     /// </summary>
     internal readonly void DropSpan() => _source?.DropSpan();
@@ -439,11 +457,17 @@ public ref struct Cursor<T>
     /// <summary>
     /// Puts the furthest failure back as it was at a <see cref="SaveFailures"/>, which stays open, as a <c>Longest</c> does before it runs its winner again.
     /// </summary>
+    /// <remarks>
+    /// The failure put back forgets what it says about the items from the first change of mode since the save on, as <see cref="FailureLog{T}.LowerAt"/> does.
+    /// </remarks>
     internal readonly void ResetFailures(in FailureMark mark) => Failures?.Reset(in mark);
 
     /// <summary>
     /// Ends a <see cref="SaveFailures"/> and puts the furthest failure back as it was then.
     /// </summary>
+    /// <remarks>
+    /// The failure put back forgets what it says about the items from the first change of mode since the save on, as <see cref="FailureLog{T}.LowerAt"/> does.
+    /// </remarks>
     internal readonly void RestoreFailures(in FailureMark mark) => Failures?.Restore(in mark);
 
     /// <summary>

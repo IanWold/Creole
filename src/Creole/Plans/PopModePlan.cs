@@ -16,7 +16,7 @@ internal sealed class PopModePlan<TIn, TMode>(ModeChannel<TMode> channel) : Plan
         var writer = ModeWriter.Of(ref cursor);
         var link = writer.Link(_channel);
 
-        link.Stack = link.Stack.Rest ?? throw writer.PoppedLast(_channel);
+        writer.Write(ref cursor, link, link.Stack.Rest ?? throw writer.PoppedLast(_channel));
 
         return true;
     }

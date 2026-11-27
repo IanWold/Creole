@@ -32,6 +32,16 @@ internal interface ICursorSource<T> : IDisposable
     bool Starved => false;
 
     /// <summary>
+    /// Discards the items at <paramref name="position"/> and after it, so that they are produced again, because the layer reading them changed the mode of <paramref name="channel"/>.
+    /// </summary>
+    /// <remarks>
+    /// Only a source whose items the layer reading <paramref name="channel"/> produced discards anything.
+    /// The default discards nothing, for a source that no mode steers.
+    /// </remarks>
+    /// <returns>Whether any item was discarded.</returns>
+    bool Discard(long position, ModeLink channel) => false;
+
+    /// <summary>
     /// Does nothing, for a source that rents nothing and reads from nothing it must dispose.
     /// </summary>
     void IDisposable.Dispose() { }

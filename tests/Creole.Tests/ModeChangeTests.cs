@@ -34,6 +34,34 @@ file sealed class Script : TokenGrammar<Tok, K>
 }
 
 /// <summary>
+/// A parser that consumes nothing and reports the mode log of the layer running it: how many entries it holds, and how many it has room for.
+/// </summary>
+file sealed class LogSize(Action<int, int> seen) : Parser<char, Unit>
+{
+    private readonly Action<int, int> _seen = seen;
+
+    internal override IReadOnlyList<INode> Children => [];
+
+    internal override NodeKind Kind => NodeKind.Return;
+
+    internal override Plan<char, Unit> Lower(PlanBuilder builder) => new LogSizePlan(_seen);
+}
+
+/// <summary>
+/// The plan of <see cref="LogSize"/>.
+/// </summary>
+file sealed class LogSizePlan(Action<int, int> seen) : Plan<char, Unit>
+{
+    private readonly Action<int, int> _seen = seen;
+
+    public override bool TryParse(ref Cursor<char> cursor, ref Unit result)
+    {
+        _seen(cursor.Modes?.Count ?? 0, cursor.Modes?.Capacity ?? 0);
+        return true;
+    }
+}
+
+/// <summary>
 /// Mode changes in a parser run on its own, which keeps a stack for each channel that nothing reads (§ 3. Mode channels, ADR-0041 points 2 and 4).
 /// </summary>
 public class ModeChangeTests
@@ -66,6 +94,16 @@ public class ModeChangeTests
         });
     }
 
+    private static int PeakLogSize(int length)
+    {
+        var peak = 0;
+        var parser = SetMode(_modes, Mode.Text).Then(Char('a')).Then(SetMode(_modes, Mode.Code)).Then(new LogSize((count, _) => peak = Math.Max(peak, count))).SkipMany();
+
+        Assert.IsType<Parsed<Unit>>(parser.Parse(new string('a', length)).Value);
+
+        return peak;
+    }
+
     private static Parser<char, Unit> Changes(int count) =>
         Enumerable.Range(0, count)
             .Select(index => SetMode(
@@ -75,6 +113,26 @@ public class ModeChangeTests
                     : Mode.Code
             ))
             .Aggregate(static (first, second) => first.Then(second));
+
+    [Fact]
+    public void ALogOverInputInMemoryHoldsNoMoreEntriesOverALongerInput()
+    {
+        var shorter = PeakLogSize(1_000);
+
+        Assert.InRange(shorter, 1, 1024);
+        Assert.Equal(shorter, PeakLogSize(100_000));
+    }
+
+    [Fact]
+    public void AParseLeavesTheNextParseOnItsThreadNoLargeLog()
+    {
+        var pinned = Atomic(SetMode(_modes, Mode.Text).Then(Char('a')).Then(SetMode(_modes, Mode.Code)).SkipMany().Then(End));
+        var room = -1;
+
+        Assert.IsType<Parsed<Unit>>(pinned.Parse(new string('a', 10_000)).Value);
+        Assert.IsType<Parsed<Unit>>(SetMode(_modes, Mode.Text).Then(new LogSize((_, capacity) => room = capacity)).Parse("").Value);
+        Assert.InRange(room, 1, 1024);
+    }
 
     [Fact]
     public void AParserThatWritesAChannelParsesOnItsOwnOverTokens() =>

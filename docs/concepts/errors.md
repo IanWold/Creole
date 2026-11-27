@@ -85,7 +85,7 @@ Each layer keeps the furthest failure of its parse, the one at the latest positi
 - The span covers the item at the position, or is zero-width at the end of the input. A rejected value or a chained operator reported there widens it to cover that input, the longest of them if there are several.
 - What was found is the message if there is one, and otherwise the item at the position or the end of input.
 
-A failure deeper than the cursor counts too. In `Atomic(Char('a').Then(Char('b'))).Or(Char('c'))` on `ax`, the report is "expected 'b'" at the `x`, even though the `Atomic` rewound before `Char('c')` ran.
+A failure deeper than the cursor counts too. In `Atomic(Char('a').Then(Char('b'))).Or(Char('c'))` on `ax`, the report is "expected 'b'" at the `x`, even though the `Atomic` rewound before `Char('c')` ran. A change of mode between them would forget it ([Mode channels](mode-channels.md#what-a-change-does-to-errors)).
 
 `Named`, `Context`, `Lookahead`, `Not` and `Longest` change what is reported, as [Backtracking and labels](control.md#what-failures-report) and [Choice](choice.md#longest-match) describe. Context lines come from the first failure recorded at the position, innermost first, and leave out a construct that started at the position itself.
 

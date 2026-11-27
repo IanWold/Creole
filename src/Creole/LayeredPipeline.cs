@@ -28,7 +28,7 @@ internal sealed class LayeredPipeline<TIn, TItem, TOut>(Layer<TIn, TItem> layers
     {
         log.ForgetFailure();
         items.ForgetFailures();
-        modes.Reset();
+        modes.Reset(items, start);
 
         var cursor = new Cursor<TItem>(items) { Failures = log, MaxDepth = options.MaxDepth, Modes = modes };
         TOut value = default!;

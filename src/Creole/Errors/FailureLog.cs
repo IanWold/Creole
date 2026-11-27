@@ -20,6 +20,9 @@ namespace Creole;
 /// A buffer releases only consumed items, which a mode change never discards, so no copy is of an item lexed under an abandoned mode.
 /// </para>
 /// <para>
+/// A mode change at a position forgets what the furthest failure says about the items there and after it, which it discarded (<see cref="LowerAt"/>).
+/// </para>
+/// <para>
 /// <c>Lookahead</c>, <c>Not</c> and <c>Longest</c> take a <see cref="Save"/> and may put the failure back as it was with <see cref="Restore"/>.
 /// While one is open, the expectations it saved are protected, so a further failure starts a new range of the array instead of overwriting them.
 /// <c>Named</c> takes a <see cref="Note"/> and relabels with <see cref="Relabel"/>.
@@ -44,7 +47,21 @@ internal sealed partial class FailureLog<T>
 
     private readonly record struct ItemCopy(T Item, SourceSpan Span);
 
-    private readonly record struct SavedFailure(long Position, long End, ItemCopy? At, SourceSpan? EndSpan);
+    /// <summary>
+    /// The parts of a saved failure that a stream buffer may need to copy before it releases input, and where its restore is lowered.
+    /// </summary>
+    /// <param name="Position">The saved failure's position.</param>
+    /// <param name="End">The end of the input a failure reported behind the cursor named there, or -1.</param>
+    /// <param name="At">The item at <paramref name="Position"/>, once a stream buffer copied it.</param>
+    /// <param name="EndSpan">The span of the item before <paramref name="End"/>, once a stream buffer copied it.</param>
+    /// <param name="Change">The position of the first change of mode made after the save, or -1 if none has been made.</param>
+    /// <param name="ChangeAt">The item at <paramref name="Change"/>, once a stream buffer copied it.</param>
+    private readonly record struct SavedFailure(long Position, long End, ItemCopy? At, SourceSpan? EndSpan, long Change, ItemCopy? ChangeAt);
+
+    /// <summary>
+    /// The context of a failure that a mode change lowered: none yet, because the next failure recorded at its position supplies it.
+    /// </summary>
+    private const int Bare = -2;
 
     private ItemCopy? _at;
     private ChainMessage? _chain;
@@ -63,10 +80,12 @@ internal sealed partial class FailureLog<T>
     private string? _message;
     private int _protected;
     private int _records;
+    private bool _rejected;
     private int[] _remap = [];
     private int _saveCount;
     private SavedFailure[] _saves = new SavedFailure[8];
     private int _start;
+    private int _unchanged;
 
     /// <summary>
     /// The number of context frames the log holds, for tests of its memory bound.
@@ -165,7 +184,42 @@ internal sealed partial class FailureLog<T>
     /// The furthest failure as it is now, with its context stack copied out of the frame array.
     /// </summary>
     private FailureCopy Copy() =>
-        new(Position, _expected[_start.._count], _message, _chain, _end, _at, _endSpan, Stack(_context));
+        new(Position, _expected[_start.._count], _message, _chain, _rejected, _end, _at, _endSpan, Stack(_context), _context == Bare);
+
+    /// <summary>
+    /// Lowers the furthest failure at <paramref name="index"/>, as <see cref="LowerAt"/> does, giving a failure lowered there <paramref name="at"/> as the item there, a copy a stream buffer took before releasing it.
+    /// </summary>
+    private void Lower(long index, ItemCopy? at)
+    {
+        if (Position > index)
+        {
+            Position = index;
+            _start = _protected;
+            _count = _protected;
+            _message = null;
+            _chain = null;
+            _rejected = false;
+            _end = -1;
+            _endSpan = null;
+            _at = at;
+            _context = Bare;
+            _generation++;
+            return;
+        }
+
+        if (_end > index)
+        {
+            _end = -1;
+            _endSpan = null;
+            _chain = null;
+
+            if (_rejected)
+            {
+                _message = null;
+                _rejected = false;
+            }
+        }
+    }
 
     private bool Reaches(long position)
     {
@@ -181,9 +235,14 @@ internal sealed partial class FailureLog<T>
             _count = _protected;
             _message = null;
             _chain = null;
+            _rejected = false;
             _end = -1;
             _endSpan = null;
             _at = null;
+            _context = _current;
+        }
+        else if (_context == Bare)
+        {
             _context = _current;
         }
 
@@ -226,6 +285,25 @@ internal sealed partial class FailureLog<T>
     }
 
     /// <summary>
+    /// Records a change of mode at <paramref name="index"/>: forgets what the furthest failure says about the items from there on, as <see cref="LowerAt"/> does, and gives the position to each open save that no change has followed yet.
+    /// </summary>
+    /// <remarks>
+    /// A save's restore is lowered at the first change made after it. A stream buffer copies the item there before it releases it, because the cursor may have moved far past it by the time the save is restored.
+    /// The saves no change has followed are those taken since the last change, at the top of the stack of saves.
+    /// </remarks>
+    public void ChangeAt(long index)
+    {
+        LowerAt(index);
+
+        for (var i = _unchanged; i < _saveCount; i++)
+        {
+            _saves[i] = _saves[i] with { Change = index };
+        }
+
+        _unchanged = _saveCount;
+    }
+
+    /// <summary>
     /// Forgets every failure, context and diagnostic, so the log can serve another parse.
     /// </summary>
     public void Clear()
@@ -235,6 +313,7 @@ internal sealed partial class FailureLog<T>
         _count = 0;
         _message = null;
         _chain = null;
+        _rejected = false;
         _end = -1;
         _endSpan = null;
         _at = null;
@@ -246,6 +325,7 @@ internal sealed partial class FailureLog<T>
         _records = 0;
         _protected = 0;
         _saveCount = 0;
+        _unchanged = 0;
         _generation = 0;
         _diagnostics.Clear();
         StepStart = 0;
@@ -277,6 +357,7 @@ internal sealed partial class FailureLog<T>
         _count = _protected;
         _message = null;
         _chain = null;
+        _rejected = false;
         _end = -1;
         _endSpan = null;
         _at = null;
@@ -326,6 +407,7 @@ internal sealed partial class FailureLog<T>
     public void Keep(in FailureMark mark)
     {
         _saveCount--;
+        _unchanged = Math.Min(_unchanged, _saveCount);
         _protected = mark.Protected;
         _frameFloor = mark.FrameFloor;
     }
@@ -346,10 +428,28 @@ internal sealed partial class FailureLog<T>
     }
 
     /// <summary>
+    /// Forgets what the furthest failure says about the items at <paramref name="index"/> and after it, because a mode change there discarded them.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A failure past <paramref name="index"/> becomes a failure there that expects nothing and has no message and no context.
+    /// It replaces the furthest failure as a further failure does, so neither a later failure there nor <c>Named</c> brings back what it expected.
+    /// The next failure recorded there supplies the context, as the first failure at a position does.
+    /// Lowering records nothing, so it never makes <c>Named</c> relabel on its own.
+    /// </para>
+    /// <para>
+    /// A failure at or before <paramref name="index"/> whose span reaches past it, because a rejected filter or a chained operator named input there, loses that end, and the message the rejection or the operator gave it.
+    /// A message recorded with <c>Fail</c> stays.
+    /// Any other failure is unchanged.
+    /// </para>
+    /// </remarks>
+    public void LowerAt(long index) => Lower(index, at: null);
+
+    /// <summary>
     /// The furthest failure as it is now, for <see cref="Relabel"/>. Unlike <see cref="Save"/>, it protects nothing and needs no ending.
     /// </summary>
     public FailureMark Note() =>
-        new(Position, _start, _count, _message, _chain, _end, _context, _records, _protected, _frameFloor, _generation);
+        new(Position, _start, _count, _message, _chain, _rejected, _end, _context, _records, _protected, _frameFloor, _generation);
 
     /// <summary>
     /// Copies the item and span at each position an error may still read from <paramref name="start"/> up to <paramref name="end"/>, which <paramref name="buffer"/> is about to release.
@@ -381,7 +481,10 @@ internal sealed partial class FailureLog<T>
                     : saved.At,
                 EndSpan = saved.EndSpan is null && Within(saved.End - 1)
                     ? buffer.SpanOf(saved.End - 1, saved.End)
-                    : saved.EndSpan
+                    : saved.EndSpan,
+                ChangeAt = saved.ChangeAt is null && Within(saved.Change)
+                    ? CopyAt(saved.Change)
+                    : saved.ChangeAt,
             };
 
             _saves[i] = saved;
@@ -468,6 +571,7 @@ internal sealed partial class FailureLog<T>
         {
             _message = message;
             _chain = chain;
+            _rejected = message is not null;
         }
 
         if (end > _end)
@@ -502,6 +606,9 @@ internal sealed partial class FailureLog<T>
     /// <summary>
     /// Puts the furthest failure back as it was at the innermost open <see cref="Save"/>, which stays open.
     /// </summary>
+    /// <remarks>
+    /// If a change of mode was made after the save, the failure put back forgets what it says about the items from that change on, as <see cref="LowerAt"/> does.
+    /// </remarks>
     public void Reset(in FailureMark mark)
     {
         var saved = _saves[_saveCount - 1];
@@ -511,12 +618,18 @@ internal sealed partial class FailureLog<T>
         _count = mark.Count;
         _message = mark.Message;
         _chain = mark.Chain;
+        _rejected = mark.Rejected;
         _end = mark.End;
         _endSpan = saved.EndSpan;
         _at = saved.At;
         _context = mark.Context;
         _records = mark.Records;
         _generation = mark.Generation;
+
+        if (saved.Change >= 0)
+        {
+            Lower(saved.Change, saved.ChangeAt);
+        }
     }
 
     /// <summary>
@@ -540,7 +653,7 @@ internal sealed partial class FailureLog<T>
             Array.Resize(ref _saves, _saveCount * 2);
         }
 
-        _saves[_saveCount++] = new SavedFailure(Position, _end, _at, _endSpan);
+        _saves[_saveCount++] = new SavedFailure(Position, _end, _at, _endSpan, Change: -1, ChangeAt: null);
         _protected = _count;
         _frameFloor = _frameCount;
 

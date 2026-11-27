@@ -73,9 +73,10 @@ internal sealed class ModalLayer<TIn, TOut, TMode>(
     internal override IUpstream<TOut> Open(ICursorSource<TIn> input, PipelineRun run)
     {
         var modes = run.Writer(Name);
-        var items = new ModalItems<TIn, TOut, TMode>(this, run.Read(Channel));
+        var link = run.Read(Channel);
+        var items = new ModalItems<TIn, TOut, TMode>(this, link);
 
-        return TokensLayer<TIn, TOut>.Steps(input, items.Current, Skip, InitialState, Name, run, modes);
+        return TokensLayer<TIn, TOut>.Steps(input, items.Current, Skip, InitialState, Name, run, modes, link);
     }
 
     /// <summary>

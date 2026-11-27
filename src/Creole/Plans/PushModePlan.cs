@@ -12,9 +12,10 @@ internal sealed class PushModePlan<TIn, TMode>(ModeChannel<TMode> channel, TMode
 
     public override bool TryParse(ref Cursor<TIn> cursor, ref Unit result)
     {
-        var link = ModeWriter.Of(ref cursor).Link(_channel);
+        var writer = ModeWriter.Of(ref cursor);
+        var link = writer.Link(_channel);
 
-        link.Stack = new ModeStack<TMode>(_mode, link.Stack);
+        writer.Write(ref cursor, link, new ModeStack<TMode>(_mode, link.Stack));
 
         return true;
     }

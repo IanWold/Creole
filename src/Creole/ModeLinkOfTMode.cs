@@ -15,5 +15,12 @@ internal sealed class ModeLink<TMode>(ModeChannel<TMode> channel) : ModeLink(cha
     /// </summary>
     public ModeStack<TMode> Stack { get; set; } = channel.InitialStack;
 
-    public override void Reset() => Stack = _initial;
+    public override bool Reset()
+    {
+        var changed = !EqualityComparer<TMode>.Default.Equals(Stack.Top, _initial.Top);
+
+        Stack = _initial;
+
+        return changed;
+    }
 }
