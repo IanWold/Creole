@@ -314,12 +314,14 @@ The docs tell request-and-response protocols to end each record with a terminato
 
 ### Fork 6. Failure logs for streamed items
 
-#### 6A. Record as it goes (today's rule)
+#### 6A. Record as it goes (today's rule; chosen)
 
 Every layer keeps a failure log for every item, as ADR-0038 point 3 says for `ParseMany`.
 
 - **For:** no second run, and no extra code.
 - **Against:** every successful item pays for recording. ADR-0027 measured that cost at 14–27% of a successful in-memory `Parse`.
+
+**Result:** Chosen. 6B did not meet criterion 8 (below), and on 2026-11-27 the maintainer kept the criterion as fixed rather than measure text instead.
 
 #### 6B. Run each item without logs, and run a failed item again from its bookmark with them
 
@@ -331,11 +333,23 @@ ADR-0027's rule, applied per item. If an item fails, a layer throws, or the dept
   - `ParseMany` over every source would take bookmarks, holding each item whole as `ParseManyAsync` does.
   - A failed item costs about two runs.
 
-**Result:** Open. Criterion 8 decides it.
+**Trial, 2026-11-27.** Built in a separate worktree on 337d676: a run-wide recording switch that each step's cursor reads, and an item run that, under 6B, takes bookmarks, runs each item with the switch off, and runs a failed item again from its bookmark with it on. With `ParseMany` routed through 6B, all 2,240 tests passed, so 6B gives the same values and errors. `RecordBenchmarks` parses 1,000 JSON lines held in memory, each the benchmarks' small JSON document on one line, through the same loop over `PipelineItems` for every variant. Three default-job runs (20261127-220743, -221002 and -221224) held every variant in each invocation:
+
+| Run | Bytes, 6A | Bytes, 6A with bookmarks | Bytes, 6B | 6B / 6A | Text, 6A | Text, 6B | 6B / 6A |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 220743 | 70.96 ms | 73.42 ms | 63.94 ms | 0.901 | 25.04 ms | 19.16 ms | 0.765 |
+| 221002 | 71.43 ms | 72.78 ms | 66.09 ms | 0.925 | 25.73 ms | 19.20 ms | 0.746 |
+| 221224 | 72.94 ms | 73.12 ms | 63.75 ms | 0.874 | 25.50 ms | 18.57 ms | 0.728 |
+
+Allocation was equal in every pair: 41.99 MB over bytes, 2.01 MB over text. Bookmarks alone cost 0 to 4%.
+
+Read against criterion 8, which measures bytes: 6B is 9.9%, 7.5% and 12.6% faster, so it misses the 10% bar in two of the three runs and is not adopted by the criterion as fixed. Over text it is 23 to 27% faster in every run. The difference has a cause outside fork 6. `Layer.Utf8()` keeps no failure log, so nothing in it gets faster, and it takes most of the time over bytes (BENCH-02's progress note of 2026-11-27). The bytes pairs allocate 42 MB for 1 MB of input, against 2 MB over text, which is the same layer's cost. Criterion 8 was fixed before the trial, so changing it now is the maintainer's decision.
+
+**Result:** Ruled out by trial: 7.5% and 9.9% faster over bytes in two of three runs, short of criterion 8's 10%. The maintainer kept criterion 8 as fixed on 2026-11-27, so the gain over text does not adopt it. The trial's code was not merged.
 
 ## Decision
 
-Proposed. **1A and 4C** are the maintainer's choices. Recommended: **2A, 3A and 5A**. Fork 6 is decided by criterion 8's trial, and the root's class is left open to the build.
+Proposed, with one option chosen in every fork: **1A, 2A, 3A, 4C, 5A and 6A**. 1A and 4C are the maintainer's choices; 2A, 3A and 5A are settled by argument; 6A stands because 6B failed criterion 8's trial. The root is a class of its own (fork 3's Result). The record is ready for the maintainer to accept when STRM-02 completes.
 
 1. **Surface.** `Pipeline<byte, TOut>.ParseManyAsync(Stream input, ParseOptions? options = null, CancellationToken cancellationToken = default)` returns `IAsyncEnumerable<ParseResult<TOut>>`. Its token is checked between attempts and passed to every read. The stream is left open. A `PipeReader` passes `AsStream()`.
 2. **Bookmark and restart.** Each item's start bookmarks every layer as fork 2A's table says. On Starved, the driver does four things in order:
@@ -352,13 +366,14 @@ Proposed. **1A and 4C** are the maintainer's choices. Recommended: **2A, 3A and 
    - the stream ends;
    - the cap is reached.
 5. **Yielding.** Each item is yielded when its parser returns, and the next is looked for only when the caller asks.
-6. **Failure logs.** 6A unless criterion 8 adopts 6B.
+6. **Failure logs.** 6A: every layer records failures as it goes, for every item, as ADR-0038 point 3 says for `ParseMany`. Items take no bookmark under `ParseMany`, so `ParseMany` holds no more than its parser can still go back to.
 
 What would change the recommendation:
 
 - **2A:** if retries prove costly in a measurement, and someone shows 2B exact under mode changes. Then 2B saves the layers' re-runs.
 - **3A:** if a caller needs read-ahead beyond the limit for throughput. Then 3B, with the limit's wording qualified.
 - **4C:** a common source whose reads pend while data is ready would make retries frequent; that needs a measurement. Or a hostile-peer case may need a hard bound, in which case a per-item budget of idle retries would cap the work at the cost of liveness past it.
+- **6A:** a cheaper decoding layer. If LAY-10 or BENCH-02 cuts `Layer.Utf8()`'s cost, rerun the trial against criterion 8, rebuilding 6B beside `RecordBenchmarks`. Over text, 6B was 23 to 27% faster.
 - **5A:** none expected. Dispatch's extra restart at an item's end would become a fallback to trying the alternatives in order on a starved peek, if request-and-response users hit it.
 
 ## Consequences

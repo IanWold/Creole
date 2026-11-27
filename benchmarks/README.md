@@ -1,6 +1,6 @@
 # Benchmarks
 
-`Creole.Benchmarks` is the BenchmarkDotNet harness behind every phase gate (§ [Benchmark plan](../whitepaper.md#benchmark-plan)). It holds the shared inputs and the competitor baselines. Creole's interpreter runs in `JsonBenchmarks` and `ArithmeticBenchmarks` for the Phase 0 gate ([BENCH-01](../work/active/13-benchmarks/BENCH-01-phase-0-speed-gate.md)). Its other engines join each benchmark class as they are built ([BENCH-02](../work/active/13-benchmarks/BENCH-02-full-benchmark-suite.md)).
+`Creole.Benchmarks` is the BenchmarkDotNet harness behind every phase gate (§ [Benchmark plan](../whitepaper.md#benchmark-plan)). It holds the shared inputs and the competitor baselines. Creole's interpreter runs in `JsonBenchmarks` and `ArithmeticBenchmarks` for the Phase 0 gate ([BENCH-01](../work/active/13-benchmarks/BENCH-01-phase-0-speed-gate.md)). Its other engines join each benchmark class as they are built ([BENCH-02](../work/active/13-benchmarks/BENCH-02-full-benchmark-suite.md)). `RecordBenchmarks` runs `ParseMany` over 1,000 JSON lines held in memory, as bytes through `Layer.Utf8()` and as text. It is where ADR-0045's fork 6 trial ran ([STRM-02](../work/active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md)).
 
 ## Running
 

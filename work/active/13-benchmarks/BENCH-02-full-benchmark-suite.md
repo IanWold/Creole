@@ -16,10 +16,18 @@ The published benchmark suite across every engine.
 - Every Creole engine (interpreted, generated) against the competitors in the plan.
 - Each benchmark grammar written side by side in Sprache for the migration guide.
 - The inputs-with-many-errors benchmark reports the cost of a failed parse, which runs twice over in-memory input ([ADR-0027](../../docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)).
+- **The large JSON-lines stream, by source.** Besides peak memory, measure throughput for the same records from each source, so the cost of decoding and the cost of restarting are reported apart:
+  - over a `TextReader`, through a character pipeline, the token lexer and `CreoleTokenJson.Value`;
+  - over the same bytes in memory, with `Layer.Utf8()` first, which isolates the decoding layer from the pipe;
+  - over a blocking `Stream` from a `Pipe`;
+  - with `ParseManyAsync` over a `Pipe`.
+
+  STRM-02 found decoding to be the larger cost (progress note below). If it holds in BenchmarkDotNet, find where `Layer.Utf8()`'s time goes: a step and a slot per character, and the buffer between it and the lexer.
 
 ## Acceptance criteria
 
 - [ ] Results published with the 1.0 docs.
+- [ ] The large JSON-lines stream reports throughput over a `TextReader`, over bytes in memory through `Layer.Utf8()`, over a blocking `Stream` and with `ParseManyAsync`, so the decoding layer's cost and the restart driver's are stated separately.
 
 ## Blocked by
 
@@ -42,3 +50,7 @@ The published benchmark suite across every engine.
 ## Whitepaper references
 
 - [§ Benchmark plan](../../../whitepaper.md#benchmark-plan)
+
+## Progress notes
+
+- 2026-11-27 (Not started): STRM-02 timed 100 MB of the memory harness's JSON-lines records, in one Release run each on e20f394's library code: 4.3 s over a `TextReader` (`json-lines`), 12.3 s through `Layer.Utf8()` and a blocking `Stream` from a `Pipe` on a dedicated thread (`json-document`), and 12.9 s with `ParseManyAsync` from a `Pipe` (`json-lines-async`). So the restart driver costs about 5% over the blocking stream, and decoding plus the pipe cost the rest of the threefold gap. Caveats: these are the harness's `seconds`, not BenchmarkDotNet; every run also forces a full GC every 1,000 records (360 here); one run each; and `json-document` reads one array rather than lines. Reproduce with `dotnet run -c Release --project benchmarks/Creole.MemoryGate -- <input> 100000000`. No run over bytes in memory yet, so the decoding layer and the pipe are not yet separated. Next: unchanged.
