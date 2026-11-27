@@ -28,6 +28,7 @@ MODE-01 built channels, the mode nodes and `Layer.Modal`. A change affects only 
    So in MODE-02's case the re-run drops nothing, the check has nothing to compare, and neither CRL0008 nor ADR-0040 point 7's problem can arise.
 3. **How long the mode log keeps an entry.** Step 3 appends an entry per change. Marks record the log's length, and the rollback rule undoes the entries made after a mark. Nothing says when an entry can go. ADR-0041 point 9 empties the parser's logs at each `ParseMany` item, but a single document keeps every entry until its parse ends. Example C writes twice per operand, so the log of a streamed script grows with the script. § Guarantees point 2 bounds memory at a boundary by the longest window a pin holds open. A log that grows with the input breaks that bound for modal grammars.
 4. **Writes across a layer before MODE-04.** A writer with a layer between it and the reader needs a cascade to discard anything. MODE-04 builds cascades.
+5. **A restore lowered where the input was released.** Found in MODE-02's build on 2026-11-26, at `f087aac`. A save without a pin, a filter's or `Adjacent`'s, stays open while the cursor and the horizon move past the first change made after it. When it is restored, it is lowered there (ADR-0030 point 3, rule 2), and the error then reads the item at that position. ADR-0028 point 1 copies a saved failure's own position and end before the buffer releases them, but not the position its restore is lowered to. So the error reads a released item. Reproduced: `Atomic(OneOf(Kind(Name), Kind(Semi)).Many().Then(Kind(If))).Optional().Then(Statement.Many().Where(_ => false))` over 100 statements `x;`, streamed in segments of one item, throws `ArgumentOutOfRangeException` ("The input does not hold this position") from `FailureCopy.ToError`. The gap is in the code since MODE-02's second increment, whatever Fork C chooses. C2, which gives a save its index only when entries are dropped, does not close it either: the buffer releases the item before the entry is dropped.
 
 ## Criteria
 
@@ -40,6 +41,7 @@ Fixed before any option is tried:
 5. **Allocation.** Once the log has reached its working size, a write allocates nothing. MODE-01's test that `SetMode` over a one-mode stack allocates nothing still passes after a warm-up.
 6. **Hot path.** Marks get no work that MODE-02 does not need. Layers whose grammars have no mode nodes get no work at all (ADR-0030 point 9).
 7. **Simplicity**, the maintainer's standing preference.
+8. **Streamed errors.** Added on 2026-11-26, after the build found question 5 under Context. A filter around a whole document whose restore is lowered at a change whose item the buffer has released reports, over buffers of one item to a segment, the same error as over text in memory.
 
 ## Options
 
@@ -137,7 +139,7 @@ Over input held whole in memory and read without a stream buffer, as by a parser
   - Each open save carries one more index, and the log carries a count of the entries it has dropped.
   - Release now reaches the writer's mode log as well as the failure log.
 
-**Result:** Open. Tried in the build against criteria 3 to 6.
+**Result:** Ruled out by the build. It leaves question 5 under Context open: a save gets its index only when entries are dropped, after the buffer has released the item there. On 2026-11-27 the maintainer agreed to C6 in its place.
 
 #### C3. Drop entries below the horizon or the oldest open filter start, whichever is lower
 
@@ -158,11 +160,40 @@ Over input held whole in memory and read without a stream buffer, as by a parser
 - Pros: MODE-02 builds less.
 - Cons: the log grows from MODE-02 on. How long an entry lives depends on the saves MODE-02 lowers, so MODE-03 would rework the log MODE-02 builds.
 
-**Result:** Open. The maintainer may prefer it. The recommendation is C2.
+**Result:** Ruled out. On 2026-11-27 the maintainer agreed to C6, which bounds the log in MODE-02.
+
+#### C6. As C2, but each save keeps the first change made after it when the change is made, and the buffer copies the item there (recommended, added 2026-11-26)
+
+Entries below the writing layer's horizon are dropped when its cursor releases segments of its input, as under C2. Saves no longer note the log's length. Instead, a change at *i* gives every open save that has no index yet the index *i*, the first change made after it, and a restore is lowered there. Before a stream buffer releases a segment, it copies the item and span at each open save's index in that segment, as ADR-0028 point 1 copies the saved failure's own position. A failure lowered there takes the copy. Dropping entries then needs nothing from the saves. Marks keep absolute log lengths for MODE-03, whose undo clears the index of each save whose first change it undoes.
+
+- Pros:
+  - It closes question 5 for every save without a pin, whether or not the log has dropped anything.
+  - It is simpler than C2. A restore reads one index, no save reads the log, and dropping is a count.
+  - The open saves without an index are those taken since the last change, which form the top of the stack of saves, so a change visits only those.
+- Cons:
+  - A change does work for each open save taken since the last change.
+  - ADR-0028 point 1's list of copied positions gains one per open save.
+  - MODE-03's undo must clear those indexes as it undoes changes.
+
+**Result:** Chosen. Proposed after the build reproduced question 5. On 2026-11-27 the maintainer agreed to build it in place of C2, with criterion 8. Tried in MODE-02's build on the working tree over `f087aac`:
+
+- **Criterion 3.** The parser's log holds at most 10 entries after any statement, over both 1,000 and 100,000 statements of Example C in segments of 16 items (`TheModeLogHoldsNoMoreEntriesOverALongerDocument`). Without the drop, the test fails.
+- **Criterion 4.** Three default-job runs of `LayerBenchmarks` on each side, alternating before and after, against the tree before MODE-02 (`fb86fe7`). Unpinned runs were bimodal: the large input took about 8.9 ms or about 11.6 ms with standard deviations up to 2.1 ms. This machine has performance cores at 5.2–5.4 GHz and efficiency cores at 4.1 GHz, so both sides ran again under `taskset -c 0-11`, on the performance cores only:
+
+  | Input | `Layer.Tokens`, after ÷ before (medians) | `Layer.Modal` ÷ `Layer.Tokens`, after (median of runs) | The same, before |
+  | --- | --- | --- | --- |
+  | small | 0.93 | 1.02 | 0.97 |
+  | medium | 0.97 | 1.02 | 1.02 |
+  | large | 1.03 | 1.02 | 1.02 |
+
+  On the large input `Layer.Tokens` came out slower in each pair (1.03, 1.02, 1.06), within the threshold.
+- **Criterion 5.** MODE-01's allocation test passes. A pipeline allocated about 92 B more per parse until each writer made its log at its first write instead of when the layer opens. A short job after that change measured 2.82 KB per small parse with `Layer.Tokens`, against 2.79 KB before MODE-02, and 3.03 KB against 3.00 KB with `Layer.Modal`. The timing runs above came before that change, which only removes work.
+- **Criterion 6.** Marks gain no work. A layer whose grammar has no mode nodes has a writer with no log, and checks it once each time its cursor enters a segment.
+- **Criterion 8.** `AFilterAroundADocumentReportsTheFirstChangeInItAfterTheBufferReleasedThatItem` reports the same error over one-item segments as over text in memory. Without the copy at release, it throws.
 
 ## Decision
 
-Proposed: options **A1, B1 and C2**. The maintainer chose A1 and B1 on 2026-11-26. C2 is recommended and is tried in the build against criteria 3 to 6. Criteria 1 and 2 are tests of the invalidation rule under A1 and B1.
+Proposed: options **A1, B1 and C6**. The maintainer chose A1 and B1 on 2026-11-26. C2 was recommended until the build found question 5 under Context, and on 2026-11-27 the maintainer agreed to C6 in its place. C6 met criteria 3 to 6 and 8 in the build, and criteria 1 and 2 pass under A1 and B1. Every other option has a result, so the record is ready for the maintainer to accept when MODE-02 completes.
 
 1. **What a change is.** Every `SetMode`, `PushMode` and `PopMode` appends (index *i*, previous stack) to the writing layer's mode log, where *i* is its cursor's position. A write is a change when its new top differs from its old top by `EqualityComparer<TMode>.Default`. Only a change discards, re-runs and lowers. "A mode change at *i*" in ADR-0030 point 3 and in § Failure positions means such a write. An undo in MODE-03 discards and lowers when it changes the top back.
 2. **A change, where the writing layer reads the channel's reader directly.**
@@ -171,9 +202,9 @@ Proposed: options **A1, B1 and C2**. The maintainer chose A1 and B1 on 2026-11-2
    3. The reader withdraws the diagnostics raised by steps that started at or after *s*, with `FailureLog.WithdrawFromStep`. It lowers its own furthest failure at *s* (ADR-0030 points 3 and 4).
    4. The writer lowers its own furthest failure at *i*.
    5. Later pulls lex under the new mode.
-3. **Saves.** A save held by `Lookahead`, `Not`, `Longest` or a filter notes the log's length. When restored, it is lowered at the lowest index among the changes made since it that are still in effect (ADR-0030 point 3, rule 2). Entries that kept the top do not count.
+3. **Saves.** A save held by `Lookahead`, `Not`, `Longest`, a filter or `Adjacent` keeps the position of the first change made after it, from the moment that change is made. When restored, it is lowered there (ADR-0030 point 3, rule 2): until MODE-03 adds undo, every change is still in effect. Writes that keep the top do not count. Before a stream buffer releases a segment, it copies the item and span at each open save's position in it, and a failure lowered there takes the copy. This refines ADR-0028 point 1.
 4. **`ParseMany`.** At each item's start, a channel whose top differs from its initial mode changes at the item's first index. That discards what the last item's lookahead lexed under another mode. The log starts the item empty (ADR-0041 point 9).
-5. **The log's length (C2).** When the writing layer's cursor releases segments of its input, the writer drops the entries below the horizon it states. Marks keep absolute lengths. Before dropping, each open save that a dropped entry follows, and that has no index yet, keeps the index of the first dropped entry that changed the top, and its restore lowers at that index.
+5. **The log's length (C6).** When the writing layer's cursor releases segments of its input, the writer drops the entries below the horizon it states. Marks keep absolute lengths.
 6. **CRL0008 (B1).** MODE-04 owns the re-run that drops outputs, the check, how CRL0008 is reported, its docs page, and ADR-0040 point 7. MODE-02 asserts that a slot it re-runs has `groupIndex` 0.
 7. **What MODE-02 builds alone.** A write whose layer reads the reader through another layer discards nothing yet: the change affects only the steps the reader runs after it, as under MODE-01 (ADR-0041 point 10). MODE-04 adds the cascade. Marks neither save the log's length nor undo entries until MODE-03.
 
@@ -181,19 +212,20 @@ Deciding reasons, as proposed:
 
 - **A1:** a write that keeps the top leaves every buffered item correct, and the selector cache already treats equal modes as one. Discarding then costs work and error detail and buys nothing.
 - **B1:** a single boundary cannot drop an output, so the check belongs with the first card whose grammars can.
-- **C2:** it is the only option that bounds the log for every grammar shape without adding work to marks.
+- **C6:** it is the only option that bounds the log for every grammar shape without adding work to marks, and that gives every restore an item to report.
 
 What would change this:
 
 - A mode type whose equality is reference identity makes A1 treat equal-looking modes as changes. That is still correct, only slower, and the selector cache already caches such modes once per instance (MODE-05).
-- A measurement in the build showing that release-time dropping costs time would argue for C5, and for a cheaper drop in MODE-03.
-- If MODE-03 finds a rewind that reaches below the horizon, C2's argument fails and the record returns to Fork C.
+- A measurement showing that dropping entries costs time would argue for a cheaper drop in MODE-03.
+- Nothing in MODE-02 reads the log after a write, so a drop that removed too much would not show until MODE-03's undo reads it. MODE-03's tests cover it.
+- If MODE-03 finds a rewind that reaches below the horizon, the argument under Fork C fails and the record returns to it.
 
 ## Consequences
 
 - **Easier.** Grammars like Example C re-lex only when the mode actually changes. Errors keep the failures past a write that kept the top. A modal grammar over streamed input keeps bounded memory.
-- **Harder.** A save carries one more index, and the release path reaches the writer's mode log.
-- **For MODE-03.** An undo discards and lowers only when it changes the top back. Marks keep absolute log lengths. A rewind never reaches a dropped entry, by the horizon argument under Fork C, and MODE-03's property tests should check that.
+- **Harder.** A save carries one more position and the copy of the item there, a change visits the saves taken since the last change, and the release path reaches the writer's mode log.
+- **For MODE-03.** An undo discards and lowers only when it changes the top back, and clears the position of every open save whose first change it undoes. Marks keep absolute log lengths. A rewind never reaches a dropped entry, by the horizon argument under Fork C, and MODE-03's property tests should check that.
 - **For MODE-04.** It gains CRL0008 and ADR-0040 point 7, and lifts point 7's limit by adding cascades.
 - **For GEN-06.** Generated code follows the same rules.
 - **A token the old mode cannot read.** Found in MODE-02's build. A discard replaces only a token the old mode read. If the lexer fails to read the token in the old mode, its failure ends the parse before the parser can change the mode. Example C's `Primary`, which the whitepaper elides, must therefore not look past an operand for a postfix call before the operand sets operator mode: in `a / b / c;`, operand mode reads `/ c;` as an unterminated regex. MODE-02's Example C puts calls after the switch. Lexer recovery (ERR-07) would turn such a failure into an error token, which a discard drops along with its diagnostic.
@@ -211,7 +243,7 @@ On acceptance:
 
 - Whitepaper:
   - § 3. Mode channels: the invalidation rule says that a change is a write that changes the top, and that every write is logged. It says how long the log keeps an entry.
-  - § Failure positions: "a mode change" becomes a change of the top.
+  - § Failure positions: "a mode change" becomes a change of the top. "A save notes the mode log's length" becomes a save that keeps the position of the first change after it, and the copies before release include that position.
   - § Bookmarks and retention: the writer's mode log is trimmed at release, alongside the buffer.
   - § C. A parser that steers its lexer: the token read again must have been readable in the old mode, so `Primary` looks for postfix calls after the operand sets operator mode.
 - Cards: MODE-03's scope gains the undo test of point 1 and the absolute lengths of point 5. MODE-02 gains a scope line for C2, or MODE-03 does if C5 is chosen.

@@ -114,6 +114,34 @@ file sealed class ScriptGrammar : TokenGrammar<Tok, K>
 }
 
 /// <summary>
+/// A parser that consumes nothing and reports how many entries the mode log of the layer running it holds.
+/// </summary>
+file sealed class LogSize(Action<int> seen) : Parser<Tok, Unit>
+{
+    private readonly Action<int> _seen = seen;
+
+    internal override IReadOnlyList<INode> Children => [];
+
+    internal override NodeKind Kind => NodeKind.Return;
+
+    internal override Plan<Tok, Unit> Lower(PlanBuilder builder) => new LogSizePlan(_seen);
+}
+
+/// <summary>
+/// The plan of <see cref="LogSize"/>.
+/// </summary>
+file sealed class LogSizePlan(Action<int> seen) : Plan<Tok, Unit>
+{
+    private readonly Action<int> _seen = seen;
+
+    public override bool TryParse(ref Cursor<Tok> cursor, ref Unit result)
+    {
+        _seen(cursor.Modes?.Count ?? 0);
+        return true;
+    }
+}
+
+/// <summary>
 /// Grammars over Example C's tokens whose errors show what a change of mode does to them. Each first reads the statement <c>x;</c>, which leaves the lexer in operator mode.
 /// </summary>
 file sealed class ErrorCases : TokenGrammar<Tok, K>
@@ -125,6 +153,14 @@ file sealed class ErrorCases : TokenGrammar<Tok, K>
     /// </summary>
     public static readonly Parser<Tok, string> OperandInContext =
         ScriptGrammar.Statement.Then(ScriptGrammar.IfStmt.Or(ScriptGrammar.Operand.Before(Kind(K.Number)).Context("in operand")));
+
+    /// <summary>
+    /// A filter that rejects a whole document of statements, after an <c>Atomic</c> that reads every name and <c>;</c> in it and fails at its end.
+    /// </summary>
+    public static readonly Parser<Tok, string> RejectedDocument =
+        Atomic(OneOf(Kind(K.Name), Kind(K.Semi)).Many().Then(Kind(K.If))).Optional()
+            .Then(ScriptGrammar.Statement.Many().Where(static _ => false))
+            .Select(static _ => "");
 
     /// <summary>
     /// After <c>x;</c>, a filter that rejects every operand.
@@ -170,6 +206,20 @@ file static class Script
     public static string Found(K kind, string text) =>
         Display<Tok>.Item(new Tok(kind, text));
 
+    /// <summary>
+    /// The most entries the parser's mode log holds after any statement of <paramref name="statements"/>, parsed over buffers of 16 items to a segment.
+    /// </summary>
+    public static int PeakLogSize(int statements)
+    {
+        var peak = 0;
+        var parser = ScriptGrammar.Statement.Before(new LogSize(size => peak = Math.Max(peak, size))).SkipMany();
+        var text = string.Concat(Enumerable.Repeat("x; /re/.test(s); ", statements / 2));
+
+        Assert.True(LayerRun.Parse(ScriptLexer.Lexer, parser, text, segmentSize: 16).Ok);
+
+        return peak;
+    }
+
     public static SourceSpan SpanOf(long start, long end) =>
         new(SourceId.Unnamed, start, end);
 
@@ -210,6 +260,16 @@ public class WorkedExampleCTests
     }
 
     [Fact]
+    public void AFilterAroundADocumentReportsTheFirstChangeInItAfterTheBufferReleasedThatItem()
+    {
+        var error = Script.Error(ErrorCases.RejectedDocument, string.Concat(Enumerable.Repeat("x; ", 100)));
+
+        Assert.Equal(Script.SpanOf(1, 2), error.Span);
+        Assert.Equal(new UnexpectedItem(Script.Found(K.Semi, ";")), error.Unexpected);
+        Assert.Empty(error.Expected);
+    }
+
+    [Fact]
     public void AFilterAroundAnOperandReportsTheItemLexedInTheNewMode()
     {
         var error = Script.Error(ErrorCases.RejectedOperand, "x; /re/");
@@ -238,6 +298,15 @@ public class WorkedExampleCTests
             ["Operand x", "Operator ;", "Operator /", "Operand /re/", "Operator .", "Operator test", "Operator (", "Operand s", "Operator )", "Operator ;"],
             lexed
         );
+    }
+
+    [Fact]
+    public void TheModeLogHoldsNoMoreEntriesOverALongerDocument()
+    {
+        var shorter = Script.PeakLogSize(1_000);
+
+        Assert.InRange(shorter, 1, 64);
+        Assert.Equal(shorter, Script.PeakLogSize(100_000));
     }
 
     [Theory]

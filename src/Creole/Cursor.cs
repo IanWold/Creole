@@ -214,6 +214,7 @@ public ref struct Cursor<T>
         if (entered)
         {
             _source.Release(Math.Min(position, Floor), Failures);
+            Modes?.Trim(Math.Min(position, Floor));
         }
     }
 
@@ -458,52 +459,22 @@ public ref struct Cursor<T>
     /// Puts the furthest failure back as it was at a <see cref="SaveFailures"/>, which stays open, as a <c>Longest</c> does before it runs its winner again.
     /// </summary>
     /// <remarks>
-    /// The failure put back forgets what it says about the items at the first change of mode since the save, and after it, as <see cref="FailureLog{T}.LowerAt"/> does.
+    /// The failure put back forgets what it says about the items from the first change of mode since the save on, as <see cref="FailureLog{T}.LowerAt"/> does.
     /// </remarks>
-    internal readonly void ResetFailures(in FailureMark mark)
-    {
-        if (Failures is not { } failures)
-        {
-            return;
-        }
-
-        var change = Modes?.FirstChangeSince(failures.SavedModeLength) ?? -1;
-
-        failures.Reset(in mark);
-
-        if (change >= 0)
-        {
-            failures.LowerAt(change);
-        }
-    }
+    internal readonly void ResetFailures(in FailureMark mark) => Failures?.Reset(in mark);
 
     /// <summary>
     /// Ends a <see cref="SaveFailures"/> and puts the furthest failure back as it was then.
     /// </summary>
     /// <remarks>
-    /// The failure put back forgets what it says about the items at the first change of mode since the save, and after it, as <see cref="FailureLog{T}.LowerAt"/> does.
+    /// The failure put back forgets what it says about the items from the first change of mode since the save on, as <see cref="FailureLog{T}.LowerAt"/> does.
     /// </remarks>
-    internal readonly void RestoreFailures(in FailureMark mark)
-    {
-        if (Failures is not { } failures)
-        {
-            return;
-        }
-
-        var change = Modes?.FirstChangeSince(failures.SavedModeLength) ?? -1;
-
-        failures.Restore(in mark);
-
-        if (change >= 0)
-        {
-            failures.LowerAt(change);
-        }
-    }
+    internal readonly void RestoreFailures(in FailureMark mark) => Failures?.Restore(in mark);
 
     /// <summary>
     /// Saves the furthest failure until <see cref="RestoreFailures"/> or <see cref="KeepFailures"/>, as <c>Lookahead</c>, <c>Not</c> and <c>Longest</c> do.
     /// </summary>
-    internal readonly FailureMark SaveFailures() => Failures?.Save(Modes?.Length ?? 0) ?? default;
+    internal readonly FailureMark SaveFailures() => Failures?.Save() ?? default;
 
     /// <summary>
     /// The items from <paramref name="start"/> up to the cursor, which must be a position this cursor has already reached and the input still holds.

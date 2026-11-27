@@ -28,6 +28,108 @@ public class FailureLoweringTests
         new(SourceId.Unnamed, start, end);
 
     [Fact]
+    public void AChangeBeforeASaveDoesNotLowerItsRestore()
+    {
+        var log = new FailureLog<char>();
+
+        log.ChangeAt(1);
+        log.Record(5, _x);
+
+        var mark = log.Save();
+
+        log.Record(7, _y);
+        log.Restore(in mark);
+
+        Assert.Equal(ErrorAt(5, new UnexpectedItem("'f'"), [new Label("x")]), Error(log));
+    }
+
+    [Fact]
+    public void AChangeGivesItsPositionToEachSaveTakenSinceTheLastChange()
+    {
+        var log = new FailureLog<char>();
+
+        log.Record(6, _x);
+
+        var outer = log.Save();
+
+        log.ChangeAt(2);
+        log.Record(7, _y);
+
+        var inner = log.Save();
+
+        log.ChangeAt(4);
+        log.Record(8, _y);
+        log.Restore(in inner);
+
+        Assert.Equal(ErrorAt(4, new UnexpectedItem("'e'"), []), Error(log));
+
+        log.Record(9, _y);
+        log.Restore(in outer);
+
+        Assert.Equal(ErrorAt(2, new UnexpectedItem("'c'"), []), Error(log));
+    }
+
+    [Fact]
+    public void ASaveTakenAfterAnotherEndedGetsTheNextChange()
+    {
+        var log = new FailureLog<char>();
+
+        log.Record(6, _x);
+
+        var first = log.Save();
+
+        log.ChangeAt(2);
+        log.Restore(in first);
+        log.Record(7, _y);
+
+        var second = log.Save();
+
+        log.ChangeAt(4);
+        log.Record(8, _y);
+        log.Restore(in second);
+
+        Assert.Equal(ErrorAt(4, new UnexpectedItem("'e'"), []), Error(log));
+    }
+
+    [Fact]
+    public void ARestoreIsLoweredAtTheFirstChangeAfterTheSave()
+    {
+        var log = new FailureLog<char>();
+
+        log.Record(5, _x);
+
+        var mark = log.Save();
+
+        log.ChangeAt(3);
+        log.ChangeAt(4);
+        log.Record(6, _y);
+        log.Restore(in mark);
+
+        Assert.Equal(ErrorAt(3, new UnexpectedItem("'d'"), []), Error(log));
+    }
+
+    [Fact]
+    public void ARestoreLoweredWhereABufferReleasedTheItemReportsTheCopyTakenBeforeTheRelease()
+    {
+        var log = new FailureLog<char>();
+        var buffer = new StreamBuffer<char>(new ArrayUpstream<char>(Text.ToCharArray()), segmentSize: 1, new OverwritingPool<char>('?'));
+
+        Assert.True(buffer.TryGetSegment(9, horizon: 0, out _, out _));
+
+        log.Record(8, _x);
+
+        var mark = log.Save();
+
+        log.ChangeAt(2);
+        buffer.Release(6, log);
+        log.Restore(in mark);
+
+        var cursor = new Cursor<char>(buffer) { Failures = log };
+
+        Assert.Equal(ErrorAt(2, new UnexpectedItem("'c'"), []), log.ToError(in cursor, "parser", buffer.SpanOf));
+    }
+
+    [Fact]
     public void AChainedOperatorWhoseSpanReachesPastTheIndexLosesItsEndAndItsMessage()
     {
         var log = new FailureLog<char>();
@@ -111,7 +213,7 @@ public class FailureLoweringTests
         log.Record(5, _x);
         log.LowerAt(3);
 
-        var mark = log.Save(modeLength: 0);
+        var mark = log.Save();
 
         log.Record(7, _y);
         log.Restore(in mark);
@@ -129,7 +231,7 @@ public class FailureLoweringTests
 
         log.Reject(2, 6, "too big", null);
 
-        var mark = log.Save(modeLength: 0);
+        var mark = log.Save();
 
         log.Record(7, _x);
         log.Restore(in mark);

@@ -8,6 +8,7 @@ namespace Creole;
 /// Each write appends an entry to the log: where the layer's cursor was, the channel, and its stack before.
 /// A write changes the mode when the top of the stack after it differs from the top before it.
 /// Only a change makes the layer forget its failures past the cursor, because only a change can make the layer below read the next item differently.
+/// As the layer's cursor moves into a new segment of its input, the writer drops the entries below the layer's horizon, which no rewind can reach, so the log stays as small as the window the layer can still go back over.
 /// A change also discards the items the <c>Layer.Modal</c> reading the channel produced from the cursor on, if the layer reads them directly, so they are read again in the new mode.
 /// </para>
 /// <para>
@@ -18,6 +19,7 @@ namespace Creole;
 /// A parser run on its own has no layer below it to read a channel.
 /// Its writer keeps a stack for each channel it writes, which nothing else reads, so its grammar still runs as written.
 /// It takes the writer when its grammar first changes a mode, so a parse that changes none uses none.
+/// Any writer makes its log at its first write, so a layer whose grammar changes no mode allocates none.
 /// Each thread keeps a spare writer for parsers run on their own, which a parse takes and gives back when it ends, so the log keeps its storage from one parse to the next.
 /// </para>
 /// </remarks>
@@ -36,16 +38,16 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
 
     private readonly ModeLink[]? _below = below;
     private readonly string _layer = layer;
-    private readonly List<Entry> _log = [];
+    private List<Entry>? _log;
     private List<ModeLink>? _own;
 
     [ThreadStatic]
     private static ModeWriter? _spare;
 
     /// <summary>
-    /// The number of writes in the log, which a save notes so that its restore can find the changes made since.
+    /// The number of entries the log holds, for tests of its memory bound.
     /// </summary>
-    public long Length => _log.Count;
+    internal int Count => _log?.Count ?? 0;
 
     private ModeLink<TMode> Own<TMode>(ModeChannel<TMode> channel)
     {
@@ -63,25 +65,6 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
         _own.Add(made);
 
         return made;
-    }
-
-    /// <summary>
-    /// The position of the first change of mode at or after entry <paramref name="length"/> of the log, or -1 if there is none.
-    /// </summary>
-    /// <remarks>
-    /// Entries are in the order of their positions, so it is the lowest position of those changes.
-    /// </remarks>
-    public long FirstChangeSince(long length)
-    {
-        for (var i = (int)length; i < _log.Count; i++)
-        {
-            if (_log[i].Changed)
-            {
-                return _log[i].Index;
-            }
-        }
-
-        return -1;
     }
 
     /// <summary>
@@ -153,7 +136,7 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
         }
 
         _own?.Clear();
-        _log.Clear();
+        _log?.Clear();
     }
 
     /// <summary>
@@ -167,8 +150,31 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
         }
 
         writer._own?.Clear();
-        writer._log.Clear();
+        writer._log?.Clear();
         _spare = writer;
+    }
+
+    /// <summary>
+    /// Drops the entries of the log below <paramref name="horizon"/>, the lowest position the layer can still go back to.
+    /// </summary>
+    /// <remarks>
+    /// Entries are in the order of their positions, so those below the horizon are the oldest.
+    /// </remarks>
+    public void Trim(long horizon)
+    {
+        if (_log is null)
+        {
+            return;
+        }
+
+        var count = 0;
+
+        while (count < _log.Count && _log[count].Index < horizon)
+        {
+            count++;
+        }
+
+        _log.RemoveRange(0, count);
     }
 
     /// <summary>
@@ -182,12 +188,12 @@ internal sealed class ModeWriter(string layer, ModeLink[]? below)
         var previous = link.Stack;
         var changed = !EqualityComparer<TMode>.Default.Equals(previous.Top, next.Top);
 
-        _log.Add(new Entry(cursor.Position, link, previous, changed));
+        (_log ??= []).Add(new Entry(cursor.Position, link, previous, changed));
         link.Stack = next;
 
         if (changed)
         {
-            cursor.Failures?.LowerAt(cursor.Position);
+            cursor.Failures?.ChangeAt(cursor.Position);
             cursor.Discard(link);
         }
     }
