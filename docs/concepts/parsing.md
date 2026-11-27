@@ -100,7 +100,7 @@ var result = CharJson.Document.Parse(untrusted, options: Limits);
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `MaxBufferedItems` | 16,777,216 | The most items a layer may hold of the buffer it reads. It must be positive; `int.MaxValue` lifts it in practice. |
+| `MaxBufferedItems` | 16,777,216 | The most items a layer may hold of the buffer it reads. Under [`ParseManyAsync`](pipelines.md#parsemanyasync), it also caps one record. It must be positive; `int.MaxValue` lifts it in practice. |
 | `MaxDepth` | 1,000 | The deepest a parse may recurse, in levels. It must be positive; `int.MaxValue` leaves only the stack check. |
 
 [The interpreter § Deep input](../engines/interpreter.md#deep-input) says what counts as a level. A parse that would go deeper than `MaxDepth`, or runs short of the thread's stack first, returns `Failed` with one error:

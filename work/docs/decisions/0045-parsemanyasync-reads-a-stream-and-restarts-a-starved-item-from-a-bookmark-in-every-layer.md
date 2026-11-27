@@ -239,9 +239,13 @@ No staging: the root buffer is the window, and read-ahead counts as buffered ite
 
 **Open for the build:** whether the async root is `StreamUpstream` with a second mode or a class of its own. ADR-0044's "What would change this" expects the overloads to stay either way. Both meet the criteria. The build tries the shared class first, and keeps it only if both modes read as plainly as one class each.
 
+**Result:** a class of its own, `AsyncStreamUpstream`, decided on a sketch of the shared class during the build on 2026-11-27. The two share only the loop that adds bytes to the buffer with their spans. A shared class would branch in its step on where the bytes come from. It would also carry the staged bytes and their two ends, the pending read and how much it asked for, the end of the stream, and the cancellation source, none of which the blocking mode uses. The blocking overloads are unchanged.
+
 ### Fork 4. How much the driver reads before a retry
 
-The attempt could read the bytes from the lowest layer's bookmarked position to the end of the data received. Call that what it saw.
+The attempt could read the bytes from the root buffer's horizon to the end of the data received. Call that what it saw.
+
+*Revised 2026-11-27 during the build:* this first said "from the lowest layer's bookmarked position". The root buffer's horizon is where the item's input starts, because the bookmark pins the item's start through every layer. The lowest layer's bookmark can lie ahead of it, when that layer produced the item's first items as lookahead before the item started. Counting from the horizon measures the item, and it is the same horizon the limit counts from (fork 3).
 
 #### 4A. At least twice what the starved attempt saw (the whitepaper's position, and Parlot's)
 
@@ -375,7 +379,7 @@ What would change the recommendation:
   - **A bookmark misses a part.** Criterion 1 compares every chunking with the in-memory result on grammars with modes and three layers, and criterion 2 inspects the failure log after a retry. ADR-0030's list in point 1 is the checklist for what a bookmark must cover.
   - **Diagnostics cannot be tested yet.** No combinator raises one until ERR-05, so the bookmark's diagnostic count is checked through an internal test hook, and ERR-05 and ERR-07 add restart cases to their tests.
   - **The cap and the doubling disagree.** Criterion 4 checks that an item over the limit ends after a bounded number of attempts rather than retrying.
-  - **A pending read outlives its chunk.** Under 4C, a read can be in flight when the enumeration ends or is disposed. The driver awaits it, or cancels it and then awaits it, before returning its chunk to the pool. A test disposes the enumerator with a read pending.
+  - **A pending read outlives its chunk.** Under 4C, a read can be in flight when the enumeration ends or is disposed. Disposing cancels it and does not wait for it, and its memory goes to the garbage collector instead of back to the pool, since the stream may still write into it. *Revised 2026-11-27 during the build:* this first said the driver awaits the read, or cancels and then awaits it. Awaiting would hang disposal on a stream that ignores its token. `StoppingEarlyWithAReadPendingCancelsItWithoutWaitingForIt` disposes an enumeration whose pending read never completes.
   - **White space between items counts toward the next item.** A `Layer.Tokens` step skips, then reads its item, so white space between records is held as the next item's, and counts toward its limit. Parlot 2.4.0 stopped keeping white space between values (Context). Creole matches that only if a measurement shows long gaps between records matter.
 
 ## Changes made

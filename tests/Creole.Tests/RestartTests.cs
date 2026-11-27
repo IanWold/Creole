@@ -19,6 +19,76 @@ file enum K
 
 file readonly record struct Lexeme(K Kind, string Text) : IKinded<K>;
 
+file enum J
+{
+    Open,
+    Close,
+    OpenList,
+    CloseList,
+    Colon,
+    Comma,
+    String,
+    Number,
+    Literal,
+}
+
+file readonly record struct JsonToken(J Kind, string Text) : IKinded<J>;
+
+/// <summary>
+/// A JSON lexer, whose tokens a <c>Longest</c> picks.
+/// </summary>
+file sealed class JsonLexer : CharGrammar
+{
+    private static readonly Parser<char, Unit> _number = Seq(Char('-').Optional(), Digit.SkipAtLeastOnce(), Seq(Char('.'), Digit.SkipAtLeastOnce()).Optional()).Ignore();
+
+    private static readonly Parser<char, Unit> _string = Seq(Char('"'), OneOf(Seq(Char('\\'), Any).Ignore(), NoneOf("\"\\").SkipAtLeastOnce()).SkipMany(), Char('"')).Ignore();
+
+    public static readonly Layer<char, JsonToken> Lexer = Layer.Tokens(
+        Longest(
+            Lexed(Char('{'), J.Open),
+            Lexed(Char('}'), J.Close),
+            Lexed(Char('['), J.OpenList),
+            Lexed(Char(']'), J.CloseList),
+            Lexed(Char(':'), J.Colon),
+            Lexed(Char(','), J.Comma),
+            Lexed(_string, J.String),
+            Lexed(_number, J.Number),
+            Lexed(String("true"), J.Literal),
+            Lexed(String("false"), J.Literal),
+            Lexed(String("null"), J.Literal)
+        ),
+        Whitespace.SkipMany()
+    );
+
+    private static Parser<char, JsonToken> Lexed<T>(Parser<char, T> parser, J kind) =>
+        parser.Text().Select(text => new JsonToken(kind, text));
+}
+
+/// <summary>
+/// JSON values over <see cref="JsonLexer"/>'s tokens, each written back without white space.
+/// </summary>
+file sealed class JsonValues : TokenGrammar<JsonToken, J>
+{
+    public static readonly Parser<JsonToken, string> Value = Rec(() => OneOf(
+        Kind(J.String).Select(static token => token.Text),
+        Kind(J.Number).Select(static token => token.Text),
+        Kind(J.Literal).Select(static token => token.Text),
+        _list!,
+        _object!
+    )).Named("value");
+
+    private static readonly Parser<JsonToken, string> _list =
+        Value.SepBy(Kind(J.Comma)).Between(Kind(J.OpenList), Kind(J.CloseList)).Select(static items => $"[{string.Join(",", items)}]");
+
+    private static readonly Parser<JsonToken, string> _object =
+        Seq(Kind(J.String), Kind(J.Colon), Value)
+            .Select(static (key, _, value) => $"{key.Text}:{value}")
+            .SepBy(Kind(J.Comma))
+            .Between(Kind(J.Open), Kind(J.Close))
+            .Select(static members => $"{{{string.Join(",", members)}}}")
+            .Context("in object");
+}
+
 /// <summary>
 /// Lexers for restarts: one whose tokens are words in word mode and numbers in digit mode, one that numbers its tokens in its state, and one that raises a diagnostic for each <c>!</c>.
 /// </summary>
@@ -59,11 +129,19 @@ file sealed class Pairs : TokenGrammar<Lexeme, K>
 /// </summary>
 public class RestartTests
 {
+    private const string AllAtOnce = "all at once";
+
     private const string BrokenProgram = "x = 1\nwhile x < 10\n    x = x + 1\n";
+
+    private const string JsonLines = "{\"a\": 1, \"b\": [true, null, \"x\\\"y\"]}\n[1, 2.5, -3]\n\"héllo ✓ 日本 😀\"\n{\"nested\": {\"deep\": [[], {}]}}\n  false\n";
+
+    private const string OneBytePending = "one byte per read, each pending until awaited";
 
     private const string Program = "x = 1\nwhile x < 10:\n    x = x + 1\n\n    if x < 5:\n      y = x * (2 - x)\nz = 0\n";
 
     private static readonly Parser<string, string> _pair = WordGrammar.Any.Then(WordGrammar.Any);
+
+    private const string Seeded = "1 to 64 bytes per read, from a fixed seed";
 
     private static readonly Layer<char, string> _words = Layer.Tokens(Letter.AtLeastOnce().Text(), skip: Whitespace.SkipMany());
 
@@ -75,6 +153,8 @@ public class RestartTests
 
     private static readonly Pipeline<byte, string> _filteredFromBytes =
         Pipeline.From(Layer.Utf8().Then(Layer.Select<char, char>(static c => char.ToLowerInvariant(c))).Then(_words).Then(Layer.Where<string>(static word => word != "the"))).Then(_pair);
+
+    private static readonly Pipeline<byte, string> _jsonFromBytes = Pipeline.From(Layer.Utf8().Then(JsonLexer.Lexer)).Then(JsonValues.Value);
 
     private static readonly Pipeline<char, string> _lookingAhead =
         Pipeline.From(_words).Then(WordGrammar.Lookahead(WordGrammar.Token("x").Or(WordGrammar.Any.Then(WordGrammar.Any))).Then(WordGrammar.Token("y")).Context("a record"));
@@ -93,10 +173,24 @@ public class RestartTests
 
     private static readonly Pipeline<byte, string> _wordFromBytes = Pipeline.From(Layer.Utf8().Then(_words)).Then(WordGrammar.Any);
 
+    public static TheoryData<string> Deliveries => [OneBytePending, Seeded, AllAtOnce];
+
     public static TheoryData<int> Steps => [1, 2, 3, 5, 8, 64, int.MaxValue];
 
     private static byte[] Bytes(string text) =>
         Encoding.UTF8.GetBytes(text);
+
+    private static Stream Delivered(byte[] bytes, string delivery)
+    {
+        var random = new Random(17);
+
+        return delivery switch
+        {
+            OneBytePending => new ChunkedStream(bytes, static () => 1, pending: true),
+            Seeded => new ChunkedStream(bytes, () => random.Next(1, 65), pending: false),
+            _ => new MemoryStream(bytes),
+        };
+    }
 
     private static int LexerDiagnostics<TIn, TOut>(Pipeline<TIn, TOut> pipeline, TIn[] input, int? step)
     {
@@ -145,6 +239,21 @@ public class RestartTests
         }
 
         return (Outcomes(results), restarts);
+    }
+
+    private static async Task SameAsInMemoryAsync<TOut>(Pipeline<byte, TOut> pipeline, byte[] input, string delivery)
+    {
+        var restarts = 0;
+        var results = new List<ParseResult<TOut>>();
+        var stream = Delivered(input, delivery);
+
+        await foreach (var result in Pipeline.ReceiveMany(pipeline, stream, ParseOptions.Default, _ => restarts++))
+        {
+            results.Add(result);
+        }
+
+        Assert.Equal(Outcomes([.. pipeline.ParseMany(input)]), Outcomes(results));
+        Assert.True(delivery != OneBytePending || stream is not ChunkedStream chunked || restarts >= chunked.Reads - 1, $"{restarts} restarts over reads of one byte each.");
     }
 
     private static void SameAsInMemory<TIn, TOut>(Pipeline<TIn, TOut> pipeline, TIn[] input, int step)
@@ -241,6 +350,36 @@ public class RestartTests
     [MemberData(nameof(Steps))]
     public void SelectAndWhereLayersGiveTheItemsTheyGiveInMemory(int step) =>
         SameAsInMemory(_filteredFromBytes, Bytes("The cat AND the Hat sat on THE mat"), step);
+
+    [Theory]
+    [MemberData(nameof(Deliveries))]
+    public Task StreamedExampleBGivesTheScriptItGivesInMemory(string delivery) =>
+        SameAsInMemoryAsync(_exampleBFromBytes, Bytes(Program), delivery);
+
+    [Theory]
+    [MemberData(nameof(Deliveries))]
+    public Task StreamedJsonLinesAfterAByteOrderMarkGiveTheValuesTheyGiveInMemory(string delivery) =>
+        SameAsInMemoryAsync(_jsonFromBytes, [.. Encoding.UTF8.Preamble, .. Bytes(JsonLines)], delivery);
+
+    [Theory]
+    [MemberData(nameof(Deliveries))]
+    public Task StreamedJsonLinesGiveTheValuesTheyGiveInMemory(string delivery) =>
+        SameAsInMemoryAsync(_jsonFromBytes, Bytes(JsonLines), delivery);
+
+    [Theory]
+    [MemberData(nameof(Deliveries))]
+    public Task StreamedJsonLinesWithAGrammarErrorInAMiddleRecordEndAsInMemory(string delivery) =>
+        SameAsInMemoryAsync(_jsonFromBytes, Bytes("{\"a\": 1}\n{\"b\" 2}\n[3]\n"), delivery);
+
+    [Theory]
+    [MemberData(nameof(Deliveries))]
+    public Task StreamedJsonLinesWithInvalidUtf8InAMiddleRecordEndAsInMemory(string delivery) =>
+        SameAsInMemoryAsync(_jsonFromBytes, [.. Bytes("[1, 2]\n\"ab"), 0xC3, 0x28, .. Bytes("\"\n[3]\n")], delivery);
+
+    [Theory]
+    [MemberData(nameof(Deliveries))]
+    public Task StreamedRecordsWhoseParserSteersItsLexerGiveTheItemsTheyGiveInMemory(string delivery) =>
+        SameAsInMemoryAsync(_steeredFromBytes, Bytes("ab12 cd34  ef56 gh7"), delivery);
 
     [Theory]
     [MemberData(nameof(Steps))]

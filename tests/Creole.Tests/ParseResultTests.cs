@@ -36,6 +36,7 @@ public class ParseResultTests
         "Creole.Pipeline: System.Collections.Generic.IEnumerable`1[Creole.ParseResult`1[TOut]] ParseMany[TOut](Creole.Pipeline`2[System.Char,TOut], System.String, System.String, Creole.ParseOptions, System.String)",
         "Creole.Pipeline: System.Collections.Generic.IEnumerable`1[Creole.ParseResult`1[TOut]] ParseMany[TOut](Creole.Pipeline`2[System.Char,TOut], System.ReadOnlyMemory`1[System.Char], System.String, Creole.ParseOptions, System.String)",
         "Creole.Pipeline: System.Collections.Generic.IEnumerable`1[Creole.ParseResult`1[TOut]] ParseMany[TOut](Creole.Pipeline`2[System.Char,TOut], System.IO.TextReader, Creole.ParseOptions, System.String)",
+        "Creole.Pipeline: System.Collections.Generic.IAsyncEnumerable`1[Creole.ParseResult`1[TOut]] ParseManyAsync[TOut](Creole.Pipeline`2[System.Byte,TOut], System.IO.Stream, Creole.ParseOptions, System.Threading.CancellationToken, System.String)",
     ];
     private static readonly Diagnostics _oneError = new([new ParseError(new SourceSpan(SourceId.Unnamed, 3, 4), "parser", new UnexpectedItem("'x'"), [new ExpectedItem("','")], [])]);
 
@@ -220,6 +221,10 @@ public class ParseResultTests
             .. bytes.ParseMany(new MemoryStream("x!"u8.ToArray())),
             .. bytes.ParseMany(new MemoryStream([0x78, 0xFF])),
             .. bytes.ParseMany(new MemoryStream("x[[x"u8.ToArray()), options: shallow),
+            .. bytes.ParseManyAsync(new MemoryStream("xx y"u8.ToArray()), cancellationToken: TestContext.Current.CancellationToken).ToBlockingEnumerable(TestContext.Current.CancellationToken),
+            .. bytes.ParseManyAsync(new MemoryStream("x!"u8.ToArray()), cancellationToken: TestContext.Current.CancellationToken).ToBlockingEnumerable(TestContext.Current.CancellationToken),
+            .. bytes.ParseManyAsync(new MemoryStream([0x78, 0xFF]), cancellationToken: TestContext.Current.CancellationToken).ToBlockingEnumerable(TestContext.Current.CancellationToken),
+            .. bytes.ParseManyAsync(new MemoryStream("x[[x"u8.ToArray()), shallow, TestContext.Current.CancellationToken).ToBlockingEnumerable(TestContext.Current.CancellationToken),
         ];
         ParseResult<int>[] itemResults =
         [
