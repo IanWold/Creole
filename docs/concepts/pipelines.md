@@ -103,6 +103,7 @@ Over a string or memory, a failed result holds the whole text, so its error rend
 - Failures are recorded as the parse goes, since the input cannot be read again, so a failed parse does not run twice.
 - A failed result holds no text, so `Render()` writes its error on one line, as `ToString()` does: `error[lexer] at 4..5: unexpected '1'; expected whitespace or letter`.
 - Slices, such as `Slice` values in tokens, are copies.
+- [`MaxBufferedItems`](layers.md#the-buffer-limit) bounds what the first layer holds of the reader, as it bounds every buffer between layers. A read asks for no more characters than the limit leaves room for.
 - The reader is yours: a parse leaves it open. Enumerate `ParseMany` over a reader once, since a second enumeration reads on from wherever the reader is, counting offsets from 0 again.
 
 ## Bytes in memory
@@ -141,6 +142,7 @@ var result = settings.Parse(file);
 - Failures are recorded as the parse goes, since the input cannot be read again, so a failed parse does not run twice.
 - A failed result holds no text, so `Render()` writes its error on one line, as `ToString()` does.
 - Slices are copies.
+- [`MaxBufferedItems`](layers.md#the-buffer-limit) bounds what the first layer holds of the stream, as over a reader.
 - The stream is yours: a parse leaves it open. Enumerate `ParseMany` over a stream once, since a second enumeration reads on from wherever the stream is, counting offsets from 0 again.
 - A read blocks the thread that called `Parse` until bytes arrive. A `PipeReader` becomes such a stream with `AsStream()`.
 
@@ -168,7 +170,7 @@ var result = await Task.Factory.StartNew(
 
 Over a string or memory, `Parse` and `ParseMany` copy none of their input. The first layer reads the string or memory it was given, so slices a lexer takes, such as `Slice` values in tokens, are views of it, and a failed result refers to the same text to render it. If the input is a buffer you reuse, finish with the slices and render the errors before you reuse it.
 
-Items between layers are held in buffers, which let an item go once nothing can go back to it ([Chaining layers](layers.md#chaining-layers-then)). When a parse ends, however it ends, its buffers return their memory to their pools.
+Items between layers are held in buffers, which let an item go once nothing can go back to it ([Chaining layers](layers.md#chaining-layers-then)). [`MaxBufferedItems`](layers.md#the-buffer-limit) bounds each buffer, but not the string or memory, which is already held whole. When a parse ends, however it ends, its buffers return their memory to their pools.
 
 ## A failed parse runs twice
 

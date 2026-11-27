@@ -152,6 +152,15 @@ internal sealed class StreamBuffer<T>(IUpstream<T> upstream, int segmentSize = 1
     }
 
     /// <summary>
+    /// How many items the upstream's next step may add without the reader holding more than its limit, and at least one.
+    /// </summary>
+    /// <remarks>
+    /// A root that reads its source in chunks reads no more than this, so a chunk never exceeds the limit on its own.
+    /// When the reader already holds its limit, one more item is allowed, so a reader that needs it reaches the limit's check.
+    /// </remarks>
+    public int Room => (int)Math.Clamp(_maxBufferedItems - (Filled - _horizon), 1, int.MaxValue);
+
+    /// <summary>
     /// The first position the buffer still holds. Every position below it has been released.
     /// </summary>
     public long Start => _released * _segmentSize;

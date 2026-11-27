@@ -7,6 +7,7 @@ namespace Creole;
 /// </summary>
 /// <remarks>
 /// The parser reads a buffer of the last layer's items, so it can rewind over them without the layers running again.
+/// Every buffer of a run is bounded by its <see cref="ParseOptions.MaxBufferedItems"/>, and the parser reports its own buffer's limit as its error.
 /// The parser's mode writer opens after every layer, so it may change any channel its layers read.
 /// Under <c>ParseMany</c>, each item starts the channels the parser writes at their initial modes.
 /// </remarks>
@@ -66,6 +67,10 @@ internal sealed class LayeredPipeline<TIn, TItem, TOut>(Layer<TIn, TItem> layers
         {
             error = ParseErrors.Depth(exception, in cursor, log, ParserLayer, items.SpanOf);
         }
+        catch (BufferLimitExceededException exception)
+        {
+            error = ParseErrors.BufferLimit(exception, log, ParserLayer, items.SpanOf);
+        }
         catch (LayerStateException exception)
         {
             throw exception.ToGrammarException(ParserLayer);
@@ -82,7 +87,7 @@ internal sealed class LayeredPipeline<TIn, TItem, TOut>(Layer<TIn, TItem> layers
 
         var run = new PipelineRun(options, recordFailures: true);
 
-        using var items = new StreamBuffer<TItem>(Layers.Open(openRoot(), run));
+        using var items = new StreamBuffer<TItem>(Layers.Open(openRoot(), run), maxBufferedItems: options.MaxBufferedItems);
 
         var log = new FailureLog<TItem>();
         var modes = run.Writer(ParserLayer);
@@ -104,7 +109,7 @@ internal sealed class LayeredPipeline<TIn, TItem, TOut>(Layer<TIn, TItem> layers
 
         var run = new PipelineRun(options, recordFailures);
 
-        using var items = new StreamBuffer<TItem>(Layers.Open(root, run));
+        using var items = new StreamBuffer<TItem>(Layers.Open(root, run), maxBufferedItems: options.MaxBufferedItems);
 
         var log = recordFailures
             ? new FailureLog<TItem>()
@@ -130,6 +135,10 @@ internal sealed class LayeredPipeline<TIn, TItem, TOut>(Layer<TIn, TItem> layers
         catch (DepthExceededException exception)
         {
             error = ParseErrors.Depth(exception, in cursor, log, ParserLayer, items.SpanOf);
+        }
+        catch (BufferLimitExceededException exception)
+        {
+            error = ParseErrors.BufferLimit(exception, log, ParserLayer, items.SpanOf);
         }
         catch (LayerStateException exception)
         {

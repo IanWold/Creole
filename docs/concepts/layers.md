@@ -160,6 +160,8 @@ The one-line form shows character offsets. The error's `Span.Start` and `Span.En
 error[lexer] at 1..2: buffered input from here exceeds ParseOptions.MaxBufferedItems of 1000
 ```
 
+In a [pipeline](pipelines.md), the limit bounds every buffer: the one its parser reads, each one between two layers, and the one a [reader](pipelines.md#readers) or [stream](pipelines.md#streams) fills. The parser's error is named `parser`. A reader or stream is read a chunk at a time, but never further ahead than the limit leaves room for, so a small limit cannot end a parse at its first read.
+
 A lower layer keeps the input behind every item the layer above can still go back to, so it usually holds more than that layer and reaches the limit first. A `Lookahead` in the parser over a long run of tokens ends the parse with an error from the lexer, at the start of the step that produced the `Lookahead`'s first token. Over bytes, the decoder holds more still, so the error comes from `decoder`. Its span covers the first byte of the character the layer above can go back to, and is zero-width in characters where that character starts.
 
 ## A step's outputs: `Emit<T>`

@@ -121,7 +121,7 @@ public static class Pipeline
 
             ArgumentNullException.ThrowIfNull(input);
 
-            return checkedPipeline.TryParse(Read(input), options ?? ParseOptions.Default, recordFailures: true, out var value, out var error)
+            return checkedPipeline.TryParse(Read(input, options), options ?? ParseOptions.Default, recordFailures: true, out var value, out var error)
                 ? new Parsed<TOut>(value)
                 : new Failed(new Diagnostics([error]));
         }
@@ -222,7 +222,7 @@ public static class Pipeline
 
             ArgumentNullException.ThrowIfNull(input);
 
-            return checkedPipeline.ParseMany(() => Read(input), options ?? ParseOptions.Default, static () => null);
+            return checkedPipeline.ParseMany(() => Read(input, options), options ?? ParseOptions.Default, static () => null);
         }
     }
 
@@ -302,7 +302,7 @@ public static class Pipeline
 
             ArgumentNullException.ThrowIfNull(input);
 
-            return checkedPipeline.TryParse(Read(input), options ?? ParseOptions.Default, recordFailures: true, out var value, out var error)
+            return checkedPipeline.TryParse(Read(input, options), options ?? ParseOptions.Default, recordFailures: true, out var value, out var error)
                 ? new Parsed<TOut>(value)
                 : new Failed(new Diagnostics([error]));
         }
@@ -373,7 +373,7 @@ public static class Pipeline
 
             ArgumentNullException.ThrowIfNull(input);
 
-            return checkedPipeline.ParseMany(() => Read(input), options ?? ParseOptions.Default, static () => null);
+            return checkedPipeline.ParseMany(() => Read(input, options), options ?? ParseOptions.Default, static () => null);
         }
     }
 
@@ -388,11 +388,11 @@ public static class Pipeline
     private static IEnumerable<ParseResult<TOut>> Many<TIn, TOut>(Pipeline<TIn, TOut> pipeline, ReadOnlyMemory<TIn> input, Func<SourceText?> text, ParseOptions options) =>
         pipeline.ParseMany(() => new MemorySource<TIn>(input), options, text);
 
-    private static StreamBuffer<char> Read(TextReader reader) =>
-        new(new ReaderUpstream(reader));
+    private static StreamBuffer<char> Read(TextReader reader, ParseOptions? options) =>
+        new(new ReaderUpstream(reader), maxBufferedItems: (options ?? ParseOptions.Default).MaxBufferedItems);
 
-    private static StreamBuffer<byte> Read(Stream stream) =>
-        new(new StreamUpstream(stream));
+    private static StreamBuffer<byte> Read(Stream stream, ParseOptions? options) =>
+        new(new StreamUpstream(stream), maxBufferedItems: (options ?? ParseOptions.Default).MaxBufferedItems);
 
     private static ParseResult<TOut> Run<TIn, TOut>(Pipeline<TIn, TOut> pipeline, ReadOnlyMemory<TIn> input, Func<SourceText?> text, ParseOptions options)
     {
