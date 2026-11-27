@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| Status | Proposed |
+| Status | Accepted |
 | Date | 2026-11-27 |
 | Cards | [STRM-02](../../active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md), [STRM-03](../../active/08-streaming/STRM-03-streaming-diagnostics.md) |
 | Whitepaper | [§ The restart protocol](../../../whitepaper.md#the-restart-protocol), [§ Sources](../../../whitepaper.md#sources), [§ Limits for untrusted input](../../../whitepaper.md#limits-for-untrusted-input) |
@@ -355,7 +355,11 @@ Read against criterion 8, which measures bytes: 6B is 9.9%, 7.5% and 12.6% faste
 
 ## Decision
 
-Proposed, with one option chosen in every fork: **1A, 2A, 3A, 4C, 5A and 6A**. 1A and 4C are the maintainer's choices; 2A, 3A and 5A are settled by argument; 6A stands because 6B failed criterion 8's trial. The root is a class of its own (fork 3's Result). The record is ready for the maintainer to accept when STRM-02 completes.
+Options **1A, 2A, 3A, 4C, 5A and 6A**. Accepted by the maintainer on 2026-11-27, when STRM-02 completed.
+- 1A and 4C are the maintainer's choices, and 2A, 3A and 5A are settled by argument.
+- 6A stands because 6B failed criterion 8's trial, which the maintainer kept as fixed.
+- The root is a class of its own (fork 3's Result).
+- This refines ADR-0038 point 2's table, as ADR-0038 refined ADR-0027: `ParseManyAsync` takes a `Stream` only, and a `PipeReader` passes `AsStream()`.
 
 1. **Surface.** `Pipeline<byte, TOut>.ParseManyAsync(Stream input, ParseOptions? options = null, CancellationToken cancellationToken = default)` returns `IAsyncEnumerable<ParseResult<TOut>>`. Its token is checked between attempts and passed to every read. The stream is left open. A `PipeReader` passes `AsStream()`.
 2. **Bookmark and restart.** Each item's start bookmarks every layer as fork 2A's table says. A mode change that sends a layer back before its bookmark lowers that layer's and its buffer's bookmark to the step it went back to. On Starved, the driver does four things in order:
@@ -365,7 +369,7 @@ Proposed, with one option chosen in every fork: **1A, 2A, 3A, 4C, 5A and 6A**. 1
    - it reads more, and runs the item again.
 
    The root is never rewound.
-3. **Received bytes and the limit.** The root holds received bytes until a step pulls them, and they count toward `MaxBufferedItems` from the root buffer's horizon. The driver holds at most `MaxBufferedItems` + 1 bytes past that horizon. An item that needs more then ends with the limit's error, raised at the pull as today.
+3. **Received bytes and the limit.** The root holds received bytes until a step pulls them, and they count toward `MaxBufferedItems` from the root buffer's horizon. The driver holds at most `MaxBufferedItems` + 1 bytes past that horizon. An item that needs more then ends with the limit's error, raised at the pull as today. The blocking roots over a `TextReader` and a `Stream` follow the same rule: no step reads further than the room the limit leaves, at least one item (`StreamBuffer.Room`), so a small limit cannot end a parse at its first read.
 4. **When to retry.** Each read asks for the shortfall. The driver retries in any of four cases:
    - it holds at least twice what the starved attempt saw, and one read's size more;
    - a short read is followed by a read that does not complete at once;
@@ -405,15 +409,22 @@ What would change the recommendation:
 
 ## Changes made
 
-None yet. On acceptance:
+Made on acceptance, 2026-11-27:
 
 - **Whitepaper.**
-  - § Sources: the async row lists `Stream` only, with `AsStream()` for a `PipeReader`.
-  - § The restart protocol: step 1 says what a bookmark holds and that the root is not rewound. Step 4 and the Cost paragraph say the driver retries once it has twice the data or the source has nothing more ready, what a trickling peer costs, and that received bytes count toward `MaxBufferedItems`, with at most one more held.
-  - Fork 6's outcome, if 6B is adopted.
-- **Records.** ADR-0038 point 2's table, through this record, as ADR-0038 refined ADR-0027.
+  - [§ Sources](../../../whitepaper.md#sources): the async row lists `Stream` only, read without blocking and decoded by the first layer, with `AsStream()` for a `PipeReader`.
+  - [§ The restart protocol](../../../whitepaper.md#the-restart-protocol):
+    - Step 1 says what a bookmark holds and what it pins, that the root is never rewound, and that a go-back below the bookmark lowers it.
+    - The Cost paragraph covers when the driver retries (twice the data, or nothing more ready), that each read asks for the whole shortfall, and what a trickling peer costs.
+    - It also covers that received bytes count toward `MaxBufferedItems` with at most one more held, that items are yielded when their parser returns, Parlot's contrasting driver, and criterion 7's measurement. It links this record.
+  - [§ Limits for untrusted input](../../../whitepaper.md#limits-for-untrusted-input), Buffers, What counts: a root reads no further ahead than the limit leaves room for, counting received bytes under `ParseManyAsync`.
+  - Checked and unchanged: § Why not async combinators; § Guarantees, whose "memory proportional to its largest record" criterion 7 bears out; § Failure positions, which already says `ParseMany` over any source records as it goes (6A).
+- **Records.** ADR-0038 point 2's table is refined through this record's Decision, since ADR-0038 has merged.
 - **Cards.**
-  - [STRM-02](../../active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md): scope states the decision.
+  - [STRM-02](../../active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md): scope states the decision on the surface and on how received bytes count.
   - [STRM-03](../../active/08-streaming/STRM-03-streaming-diagnostics.md): `ParseManyAsync(Stream)` takes `source:` and holds captured lines.
-  - GEN-06: generated layers take and restore bookmarks.
-- **Research.** Finding 23 of the Parlot note gets a dated correction: the `int.MaxValue` cap is the compacting buffer's, and `ParseManyAsync`'s positions saturate instead.
+  - [GEN-06](../../active/11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md): generated layers take, restore and lower restart bookmarks.
+  - [LAY-10](../../active/06-layers-and-pipelines/LAY-10-measure-and-reduce-what-a-buffered-item-costs.md), created during the build, measures the per-item cost that criterion 7's large record showed.
+  - [BENCH-02](../../active/13-benchmarks/BENCH-02-full-benchmark-suite.md) gained the by-source throughput measurement that fork 6's trial and criterion 7 pointed to.
+- **Research.** [The Parlot note](../research/2026-10-24-parlot-2-0-baselines-and-generator.md) has a dated correction under its erratum: finding 23's `int.MaxValue` cap is the compacting buffer's, and `ParseManyAsync`'s positions saturate instead.
+- **Code and docs** were built under STRM-02 in ace3910, c18f51d, e20f394, 337d676, a07b81e and 7649386.

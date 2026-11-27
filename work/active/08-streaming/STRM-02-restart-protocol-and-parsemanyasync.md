@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Streaming and async input](../../README.md#strm--streaming-and-async-input) |
 | Phase | Phase 1 — Layers |
-| Status | Building |
+| Status | Done |
 
 ## Summary
 
@@ -14,8 +14,8 @@ Async record streams parse one top-level item at a time and restart that item wh
 
 - Bookmark across every layer at each item start, including layer states, mode logs and each layer's diagnostics. Each item starts with no furthest failure and no cut in force.
 - On Starved, await at least double the buffered data, rewind and retry.
-- The restart bookmark is part of each layer's horizon, so `ParseOptions.MaxBufferedItems` also caps one item. Decide how data the driver has read ahead counts toward it, and stop doubling at the limit, so an item that reaches it ends with the limit's error rather than retrying ([ADR-0039](../../docs/decisions/0039-each-layers-buffer-is-bounded-from-its-horizon-and-exceeding-it-ends-the-parse.md) point 6).
-- `ParseManyAsync` over `PipeReader` and `Stream`, returning `IAsyncEnumerable<ParseResult<T>>`.
+- The restart bookmark is part of each layer's horizon, so `ParseOptions.MaxBufferedItems` also caps one item. Decide how data the driver has read ahead counts toward it, and stop doubling at the limit, so an item that reaches it ends with the limit's error rather than retrying ([ADR-0039](../../docs/decisions/0039-each-layers-buffer-is-bounded-from-its-horizon-and-exceeding-it-ends-the-parse.md) point 6). Decided: received bytes count, and the driver holds at most one byte past the limit ([ADR-0045](../../docs/decisions/0045-parsemanyasync-reads-a-stream-and-restarts-a-starved-item-from-a-bookmark-in-every-layer.md) point 3).
+- `ParseManyAsync` over a `Stream`, returning `IAsyncEnumerable<ParseResult<T>>`. A `PipeReader` passes `AsStream()`, so there is no `PipeReader` overload ([ADR-0045](../../docs/decisions/0045-parsemanyasync-reads-a-stream-and-restarts-a-starved-item-from-a-bookmark-in-every-layer.md) point 1).
 - Large JSON-lines peak-memory test.
 - A streamed parse records failures as it goes. Measure whether an item that fails can run again from its bookmark with a log instead, as in-memory parses do, and adopt it only for a measured gain ([ADR-0027](../../docs/decisions/0027-in-memory-parses-run-without-a-failure-log-and-again-with-one-on-failure.md)). If adopted, it applies to `ParseMany` over every source too, which records as it goes until then ([ADR-0038](../../docs/decisions/0038-pipelines-end-in-a-parser-run-again-whole-and-name-sources-without-a-registry.md) point 3).
 - On Starved, undo mode changes, clear every layer's failure record and the Starved flag, and reset scoped state to its base. Keep the pins the layers and the driver hold ([ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 7).
@@ -24,8 +24,8 @@ Async record streams parse one top-level item at a time and restart that item wh
 
 ## Acceptance criteria
 
-- [ ] Peak memory on a multi-gigabyte JSON-lines input tracks the largest record.
-- [ ] Test from [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 11: an attempt that starves inside a `Lookahead` and a `Context`, after recording a failure, leaves no failure, save or frame after the retry.
+- [x] Peak memory on a multi-gigabyte JSON-lines input tracks the largest record.
+- [x] Test from [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 11: an attempt that starves inside a `Lookahead` and a `Context`, after recording a failure, leaves no failure, save or frame after the retry.
 
 ## Blocked by
 
@@ -50,7 +50,7 @@ Async record streams parse one top-level item at a time and restart that item wh
 
 - [Research: Parlot 2.0 baselines and generator](../../docs/research/2026-10-24-parlot-2-0-baselines-and-generator.md) Prior art: Parlot 2.0.0's `ParseManyAsync` retries a value on a sticky `HitEnd` and doubles its window (finding 23)
 - [ADR-0044](../../docs/decisions/0044-huge-documents-parse-on-a-caller-started-thread-and-byte-pipelines-read-a-blocking-stream.md) Accepted: byte pipelines read a blocking `Stream` through `StreamUpstream`, which never starves
-- [ADR-0045](../../docs/decisions/0045-parsemanyasync-reads-a-stream-and-restarts-a-starved-item-from-a-bookmark-in-every-layer.md) Proposed: `ParseManyAsync` over a `Stream`, a bookmark in every layer, a retry once the data has doubled or the source is idle, up to the buffer limit, lazy yielding, and a trial of failure-log re-runs
+- [ADR-0045](../../docs/decisions/0045-parsemanyasync-reads-a-stream-and-restarts-a-starved-item-from-a-bookmark-in-every-layer.md) Accepted: `ParseManyAsync` over a `Stream`, a bookmark in every layer, a retry once the data has doubled or the source is idle, up to the buffer limit, lazy yielding, and a trial of failure-log re-runs
 
 ## Progress notes
 
@@ -68,3 +68,58 @@ Async record streams parse one top-level item at a time and restart that item wh
 - 2026-11-27 (Building): Increment 5, fork 6's trial (ADR-0045 criterion 8). 6B was built in a separate worktree on 337d676: a run-wide recording switch read by each step's cursor, and an item run that takes bookmarks, runs each item with the switch off, and runs a failed item again with it on. With `ParseMany` routed through 6B, all 2,240 tests passed. `RecordBenchmarks` timed 1,000 JSON lines held in memory, with every variant in each of three default-job runs (20261127-220743, -221002, -221224). Over bytes, 6B against 6A was 0.901, 0.925 and 0.874, so 9.9%, 7.5% and 12.6% faster, missing the 10% bar in two runs. Over text it was 0.765, 0.746 and 0.728. Allocation was equal in every pair, and bookmarks alone cost 0 to 4%. `Layer.Utf8()` keeps no log, so it dilutes the bytes gain; it also allocates 42 MB per 1 MB, against 2 MB over text. The maintainer kept criterion 8 as fixed, so 6A stands, the trial code was not merged, and ADR-0045 records the table, both Results and the rerun trigger. Its Decision now has one option chosen in every fork (1A, 2A, 3A, 4C, 5A, 6A). The main tree gains `RecordBenchmarks` with the public `ParseMany` over bytes and text only. The run folders are copied into the git-ignored `BenchmarkDotNet.Artifacts/runs`. Every acceptance criterion and every ADR-0045 criterion now has evidence: the card's first by increment 4's measurement, its second by increment 2's tests, ADR criteria 1 to 6, 9 and 10 by increments 2 and 3, 7 by increment 4, and 8 by this trial. Next: the maintainer reviews, opens the PR and runs `/complete`, which accepts ADR-0045 and applies its changes to the whitepaper, ADR-0038's table, STRM-03, GEN-06 and finding 23 of the Parlot note.
 - 2026-11-27 (Building): `/complete` stopped; the card stays Building. An independent critic, reproduced here in a scratch copy, found two defects that break criteria 1 and 5's properties though their fixed tests pass. (1) The restart is not exact when an item's mode change discards items read ahead before its bookmark. `Discard` cuts the buffer below its bookmarked count, and `TryGoBack` puts the lexer before its bookmarked position. If the attempt then starves, `Truncate(_bookmark)` does nothing and `TokensUpstream.Restart` jumps the lexer forward to its bookmark, so those items are lost. With a `Layer.Modal` lexer, a parser `Seq(SetMode(B), Any, SetMode(A), Any).Before(Lookahead(Any).Optional())` and `one two; three four five; six`, the second item is `five;|six` instead of `four five;|six`, through `ParseManyAsync` too. With a lexer that raises diagnostics, `FailureLog.Restart` then throws, since `WithdrawFromStep` left fewer diagnostics than the bookmark's count. (2) `AsyncStreamUpstream` caps each read at 64 KiB and counts only a short read toward the idle retry, so a record whose last part fills a 64 KiB read waits for data that never comes. A 196,608-byte request gets no reply. ADR-0045's Decision point 4 says each read asks for the shortfall; the code does not. Minor: pipelines.md says the limit's error is at the record's first byte, but it is at the root buffer's horizon, which can include white space before the record; the diagnostics test compares only a count; the docs give servers no bytes-per-item figure for sizing `MaxBufferedItems`. Memory rerun on clean a07b81e: `json-lines-async-large` 119,314,800 B at 10 MB and 119,306,848 B at 1 GB, 1.00×, a pass; `json-lines-async` 27,552 B, 27,328 B and 154,656 B, 5.61×, a FAIL, against 0.77× before. Logging every sample of a 300 MB run shows two states, about 16 KB (123 samples) and about 144 to 160 KB (940), with the same peak in each third of the run. So retention does not grow with the input. It depends on whether the staging array has grown from 4 KiB, which the 64 KiB read cap causes, and a 10 MB run can miss that state. Next: increment 6 with the maintainer's agreement. Restart to the lower of each layer's bookmark and any go-back since, with buffers and diagnostics following, and revise ADR-0045 fork 2A to say so. Ask each read for the whole shortfall. Add the critic's cases to criteria 1 and 5's tests. Fix the docs. Then rerun the memory criterion.
 - 2026-11-27 (Building): Increment 6 built, fixing the review's findings. (1) Exact restarts after a mode change below the bookmark: `TokensUpstream.TryGoBack` lowers the layer's restart point to the step it goes back to, with that step's state, and its diagnostic count to those still held. `StreamBuffer.Discard` lowers the buffer's bookmarked count likewise. ADR-0045 fork 2A and Decision point 2 are revised in place with the maintainer's agreement. (2) `AsyncStreamUpstream` asks each read for the whole shortfall, as Decision point 4 says, so a short read again means the source had nothing more ready; ADR-0045 fork 4C is revised. `FailureLog.Withdraw` asserts it is never asked for more than it holds, and gains `DiagnosticSteps` for tests. Tests, 22 more: the review's `one two; three four five; six` with a parser that changes mode at each item's start, fed 1 to all characters at a time and under the three async deliveries; the same with a lexer that raises a diagnostic per word, comparing which steps' diagnostics remain; the existing diagnostics test now compares steps rather than a count; and replies to requests of 65,536, 131,072, 196,607, 196,608 and 196,609 bytes within 10 s. Mutation check: dropping the layer's lowered restart point fails 6 tests, dropping the diagnostics low-water fails 5, and capping reads at 64 KiB fails 2 (196,608 times out). Dropping the buffer's lowered bookmark fails none. It is equivalent, since the retry repeats the attempt's mode changes, which discard whatever the buffer kept above the layer's lowered point. It is kept so that buffer and layer agree as soon as a restart ends. Docs: pipelines.md says where the limit's error points, and how much a held record costs (about 28 bytes per input byte measured, so about 470 MB at the default limit). benchmarks/README.md explains `json-lines-async`'s noisy ratio. Memory on the fixed code, uncommitted on a07b81e: `json-lines-async` retained 144,384 B, 22,568 B and 27,472 B at 10 MB, 1 GB and 4.4 GB, 0.19×; `json-lines-async-large` retained 109,513,368 B and 116,297,696 B, 1.06×; both pass. Across the three full runs, every uniform peak fell near 25 KB or near 150 KB at every size, so criterion 7's ratio for the uniform input passes or fails by which band each process lands in, while memory does not grow; the large-record variant is stable. Evidence: `dotnet build --no-incremental` with 0 warnings; `dotnet test` with 2,262 passed and 0 failed; AOT smoke OK. Next: the maintainer decides whether criterion 7 stands as fixed, given its noise, then commits and runs `/complete`.
+- 2026-11-27 (Done): The maintainer accepted ADR-0045 and kept criterion 7 as fixed. The whitepaper's § Sources, § The restart protocol and § Limits for untrusted input, STRM-03, GEN-06 and the Parlot note's correction were updated with it. The critic's own tests, run against 7649386 in a fresh copy, pass for both blocking findings; the one that still fails asserts the old doc wording about where the limit's error points, which was corrected to match the code.
+
+## Outcome
+
+`ParseManyAsync` parses record streams without blocking, restarting a starved item from a bookmark in every layer, as [ADR-0045](../../docs/decisions/0045-parsemanyasync-reads-a-stream-and-restarts-a-starved-item-from-a-bookmark-in-every-layer.md) decides. The build had six increments.
+
+- **Pipeline buffers bounded** (ace3910). A defect found while planning: no buffer a public pipeline built received `MaxBufferedItems`.
+  - The buffers of [Pipeline.cs](../../../src/Creole/Pipeline.cs), [ComposedLayer.cs](../../../src/Creole/Layers/ComposedLayer.cs) and [LayeredPipeline.cs](../../../src/Creole/LayeredPipeline.cs) now take the limit, and the parser reports its own.
+  - `StreamBuffer.Room` caps each root read at the room the limit leaves.
+  - [PipelineBufferLimitTests.cs](../../../tests/Creole.Tests/PipelineBufferLimitTests.cs) checks it.
+- **Bookmark and restart** (c18f51d, corrected in 7649386).
+  - `ICursorSource` and `IUpstream` gain `Bookmark` and `Restart`.
+  - `StreamBuffer` truncates back to its bookmark. Tokens and `Layer.Modal`, Transduce, Utf8, Select and Where save and restore their state.
+  - `ModeWriter` undoes its log back to the bookmark, and `FailureLog.Restart` keeps only the diagnostics raised before it.
+  - A go-back below a bookmark lowers it.
+  - [PipelineItems.cs](../../../src/Creole/PipelineItems.cs) is the item driver `ParseMany` and `ParseManyAsync` share.
+  - [RestartTests.cs](../../../tests/Creole.Tests/RestartTests.cs) compares every chunking with the same input in memory, over a test root ([FedUpstream.cs](../../../tests/Creole.Tests/Utilities/FedUpstream.cs)).
+- **`ParseManyAsync(Stream)`** (e20f394, corrected in 7649386).
+  - [AsyncStreamUpstream.cs](../../../src/Creole/AsyncStreamUpstream.cs) stages received bytes, counts them toward the limit, and asks each read for the whole shortfall. It retries on doubled data or on an idle source.
+  - Disposal cancels a pending read without waiting for it.
+  - [ParseManyAsyncTests.cs](../../../tests/Creole.Tests/ParseManyAsyncTests.cs) checks it, with [ChunkedStream.cs](../../../tests/Creole.Tests/Utilities/ChunkedStream.cs) delivering the input.
+  - The AOT smoke enumerates it.
+- **Memory** (337d676). The harness gains `json-lines-async` and `json-lines-async-large` ([JsonLinesAsyncInput.cs](../../../benchmarks/Creole.MemoryGate/JsonLinesAsyncInput.cs)), a middle record in `GateInput`, and `PipeTextWriter`.
+- **Fork 6's trial** (a07b81e). [RecordBenchmarks.cs](../../../benchmarks/Creole.Benchmarks/RecordBenchmarks.cs) measured it, and 6B was not adopted.
+- **Docs:**
+  - [docs/concepts/pipelines.md](../../../docs/concepts/pipelines.md) § `ParseManyAsync`, plus the buffer limit's notes in § Readers, § Streams and § Input in memory;
+  - [docs/engines/cursor.md](../../../docs/engines/cursor.md) § Where streamed input runs out;
+  - [docs/concepts/custom-scanners.md](../../../docs/concepts/custom-scanners.md)' rules;
+  - [docs/concepts/layers.md](../../../docs/concepts/layers.md) § The buffer limit and [docs/concepts/parsing.md](../../../docs/concepts/parsing.md)' options;
+  - [benchmarks/README.md](../../../benchmarks/README.md).
+
+**Evidence.**
+
+| Criterion | Result |
+| --- | --- |
+| Memory tracks the largest record (ADR criterion 7) | On 7649386's code, `json-lines-async` retained 144,384 B, 22,568 B and 27,472 B at 10 MB, 1 GB and 4.4 GB (0.19×), with the last record's span checked past 2³². `json-lines-async-large` retained 109,513,368 B and 116,297,696 B at 10 MB and 1 GB (1.06×). |
+| ADR-0030 point 11 | `AnAttemptThatStarvesInsideALookaheadAndAContextLeavesNoFailureSaveOrFrame` |
+| ADR criteria 1 to 6, 9 and 10 | 2,262 tests pass, the AOT smoke is clean, and each increment's mutation sweep is in the progress notes |
+| ADR criterion 8 | 6B was 9.9%, 7.5% and 12.6% faster over bytes, against a 10% bar, so 6A stands |
+
+**Caveat on criterion 7.** The uniform input retains so little that each process settles near 25 KB or near 150 KB, whatever its size. Its ratio over three full runs was 0.77×, 5.61× and 0.19×, and per-sample logs show no growth within a run. So a rerun of the uniform ratio can fail without memory growing (benchmarks/README.md).
+
+**Deviations, each recorded in ADR-0045.**
+- A class of its own for the async root.
+- "What it saw" is counted from the root buffer's horizon.
+- A pending read is cancelled at disposal and not awaited.
+- The restart point is lowered by go-backs. An independent review found it missing, along with a 64 KiB read cap that stalled large requests. Both are fixed, and the review's cases are now tests.
+- The blocking roots read no further than the limit's room.
+
+**Follow-ups.**
+- [LAY-10](../06-layers-and-pipelines/LAY-10-measure-and-reduce-what-a-buffered-item-costs.md): a held record costs about 28 bytes per input byte.
+- [BENCH-02](../13-benchmarks/BENCH-02-full-benchmark-suite.md): decoding, not restarting, dominates time over bytes, and the bytes path allocates 42 MB per 1 MB.
+- [STRM-03](STRM-03-streaming-diagnostics.md): captured lines and `source:` for `ParseManyAsync`.
+- [GEN-06](../11-source-generator/GEN-06-generated-layers-modes-recovery-and-streaming.md): generated bookmarks.
+- Not carded, and inferred from reading `TokensUpstream.TryGoBack`, not tested: a layer that both reads a mode and writes a channel below it leaves its own writer's stacks as they are when it goes back, before this card as after. That is MODE-03 and MODE-04's ground.

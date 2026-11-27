@@ -673,7 +673,7 @@ Recursion in user code is not counted. That includes `Select` and `Where` functi
 
 **Buffers.** Parlot 2.5 bounds its streamed buffer with a similar `MaxBufferedCharacters`, off by default. Creole's limit is on by default, as its depth limit is ([ADR-0039](work/docs/decisions/0039-each-layers-buffer-is-bounded-from-its-horizon-and-exceeding-it-ends-the-parse.md)):
 
-- **What counts.** A layer may hold at most `MaxBufferedItems` items of the buffer it reads: the items from its horizon (§ Bookmarks and retention) to the last item produced. The layer checks each time it pulls an item it does not have. So the count covers the layer's pins, the step it is running when it produces items, the input it keeps so that its reader can go back, and the restart bookmark, which makes the limit also cap one item of `ParseManyAsync` (§ The restart protocol). Each buffer is bounded on its own. Input held whole in memory has no buffer, and is not counted.
+- **What counts.** A layer may hold at most `MaxBufferedItems` items of the buffer it reads: the items from its horizon (§ Bookmarks and retention) to the last item produced. The layer checks each time it pulls an item it does not have. So the count covers the layer's pins, the step it is running when it produces items, the input it keeps so that its reader can go back, and the restart bookmark, which makes the limit also cap one item of `ParseManyAsync` (§ The restart protocol). A root reads its source no further ahead than the limit leaves room for, counting under `ParseManyAsync` the bytes received but not yet parsed, so a small limit cannot end a parse at its first read ([ADR-0045](work/docs/decisions/0045-parsemanyasync-reads-a-stream-and-restarts-a-starved-item-from-a-bookmark-in-every-layer.md)). Each buffer is bounded on its own. Input held whole in memory has no buffer, and is not counted.
 - **Default.** `MaxBufferedItems` defaults to 16,777,216 items. A buffered character costs 34 bytes with its slot, so a character buffer at the limit holds about 544 MiB. `int.MaxValue` lifts the limit in practice.
 - **Ending the parse.** Exceeding the limit ends the whole parse, as exceeding the depth does, so it never changes what a grammar accepts. The diagnostic covers the oldest item the layer still had to keep, which is where the window opened, such as a `Lookahead`'s first item or the start of an unterminated comment. It names `MaxBufferedItems` and its value. A lower layer keeps the input of every item its reader can go back to, so it usually reaches the limit before the reader does, and the diagnostic then names the lower layer.
 
@@ -930,7 +930,7 @@ Parsing is synchronous over buffered data; asynchrony lives only at the source. 
 | `TextReader` | `Parse`, `ParseMany` | Blocking reads as layers pull |
 | `ReadOnlyMemory<byte>` | `Parse`, `ParseMany` | Whole input in memory, decoded by the first layer |
 | `Stream` | `Parse`, `ParseMany` | Blocking reads as layers pull, decoded by the first layer; a `PipeReader` through `AsStream()` |
-| `PipeReader`, `Stream` | `ParseManyAsync` → `IAsyncEnumerable<ParseResult<T>>` | Record streams: JSON lines, logs, protocols |
+| `Stream` | `ParseManyAsync` → `IAsyncEnumerable<ParseResult<T>>` | Record streams read without blocking, decoded by the first layer: JSON lines, logs, protocols; a `PipeReader` through `AsStream()` |
 
 Byte sources decode through a `Layer<byte, char>`, so decoding is just another layer. Spans then carry both byte offsets into the root source and character offsets into the decoded text (§ Source spans). A parse over bytes in memory whose first layer is `Layer.Utf8()` holds, when it fails or recovers, the text `Encoding.UTF8` decodes after any byte-order mark. Its offsets match the decoder's up to the first invalid sequence, where the decoder ends the parse, so its diagnostics render as text's do. Other byte pipelines hold no text ([ADR-0038](work/docs/decisions/0038-pipelines-end-in-a-parser-run-again-whole-and-name-sources-without-a-registry.md)). A blocking `Stream` decodes the same way, so its values and errors are those of the same bytes in memory, but like a `TextReader` it holds no text ([ADR-0044](work/docs/decisions/0044-huge-documents-parse-on-a-caller-started-thread-and-byte-pipelines-read-a-blocking-stream.md)).
 
@@ -938,14 +938,26 @@ Byte sources decode through a `Layer<byte, char>`, so decoding is just another l
 
 ### The restart protocol
 
-1. The driver takes a bookmark at the start of the next item, across every layer, including layer states, mode logs and each layer's diagnostics, so a starved attempt leaves no stray diagnostics. Each item starts with no furthest failure.
+1. The driver takes a bookmark at the start of the next item, across every layer.
+   - **What it holds.** Each layer's position, layer state, mode log and diagnostics, and each buffer's filled end, so a starved attempt leaves no stray diagnostics.
+   - **What it pins.** The item's start is the parser's floor, so every buffer keeps what the item needs to run again.
+   - **The root.** It keeps every byte it has received from its horizon on, and is never rewound.
+   - **Going back below it.** A mode change during the attempt can send a layer back before its bookmark, discarding items it produced as lookahead before the item started. The layer's and its buffer's bookmark then move down to that step, and the restart produces those items again.
+   - **Failures.** Each item starts with no furthest failure.
 2. It runs the item parser synchronously over the data currently buffered.
 3. If a root read reaches the end of buffered data before the true end of the stream, the attempt ends **Starved**.
 4. The driver awaits more data, rewinds every layer to the bookmark and retries. The rewind undoes mode changes, clears every layer's failure record and resets the state that nodes open and close, such as context frames and saved failures, so a starved attempt leaves none behind. It keeps the pins that the layers and the driver hold ([ADR-0030](work/docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md)).
 
 Starved is not a failure. Every combinator that acts on a failure treats it as an abort that propagates unchanged, because trying another alternative, or ending a repetition, on incomplete data would produce a wrong parse.
 
-**Cost.** Before retrying, the driver at least doubles the buffered data beyond what the failed attempt saw. The total re-parsing work per item is then a geometric series, linear in the item's size. The bookmark is part of each layer's horizon, so `ParseOptions.MaxBufferedItems` also caps how large one item may grow, and the driver stops doubling at it (§ Limits for untrusted input).
+**Cost.** Before retrying, the driver reads until it holds at least twice what the failed attempt saw, counted from where the item's input starts.
+- **Linear work.** The total re-parsing work per item is then a geometric series, linear in the item's size, for any source that fills its reads.
+- **Request and response.** Each read asks for the whole shortfall. The driver retries sooner when a read returns less and the next read does not complete at once, because the source has nothing more ready. So a reply to one record never waits for the next.
+- **A trickling peer.** One that sends an item in many pieces with pauses makes the driver retry after each pause, so its work grows with the item's size times its pauses, up to the limit.
+- **The limit.** The bookmark is part of each layer's horizon, and the bytes received but not yet parsed count too. So `ParseOptions.MaxBufferedItems` also caps how large one item may grow, and the driver holds at most one byte past it (§ Limits for untrusted input).
+- **Yielding.** An item is yielded as soon as its parser returns, and the next is looked for only when asked.
+- **Prior art.** Parlot 2.0's driver reads until its window doubles, and offers a delimited overload for interactive sources instead.
+- **Measured.** Over JSON lines from a pipe, the retained heap stayed within about 160 KB from 10 MB to 4.4 GB, and a 4 MiB record's peak held from 10 MB to 1 GB ([ADR-0045](work/docs/decisions/0045-parsemanyasync-reads-a-stream-and-restarts-a-starved-item-from-a-bookmark-in-every-layer.md)).
 
 ### Why not async combinators
 
