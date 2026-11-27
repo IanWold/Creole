@@ -68,7 +68,11 @@ As A1, but the layer keeps at most a fixed number of plans (Fork B). When a mode
 - Pros: correct by construction. The selector may use the data, so `Heredoc h => String(h.Terminator)` is right. An item parser built from the data, such as a `Longest` over a token table, is lowered once per value, not once per step. No public member is added, and the whitepaper's planned `ModeData<T>()` is dropped. Enums and unions without data behave as under ADR-0041 point 6.
 - Cons: a payload value that leaves the cache and comes back is planned again. A payload must have value equality and must not change after it is written (point 6 of the Decision). The whole layer is opaque to analysis and gives up fusion, which the whitepaper already says of a payload layer.
 
-**Result:** Open. Recommended. Criteria 1, 2 and 4 are settled by tests in the build, and criterion 3 by trial T1.
+**Result:** Chosen. The build's tests ran on bd17450 with MODE-05's changes, not yet committed:
+
+- Criterion 1: `EachPayloadIsLexedWithItsOwnData` lexes two blocks that declare different keywords, each with its own. A mutation that caches per case, as A3 does, fails it.
+- Criterion 2: `ALayerKeepsThePlansOfThe64ModesUsedMostRecently` runs 10,000 distinct payloads through one layer. Each is planned once, the parse is right, and the layer keeps 64 plans. A payload dropped from the cache is planned again on its next use and lexes right.
+- Criterion 4: `EachModesItemParserIsPlannedOnce` stays green.
 
 #### A3. Per case, with `ModeData<T>()`, as the whitepaper reads
 
@@ -106,7 +110,7 @@ When a new mode would make a 65th plan, the layer drops every plan and starts ag
 - Pros: the simplest. It keeps no order.
 - Cons: a stream of distinct payloads drops the modes without data every 64 payloads. A selector that builds its nodes inline, as Example C's does, makes `PlanCache` lower them again, and a large `Longest` builds its automaton again.
 
-**Result:** Open. The simpler alternative to B2.
+**Result:** Ruled out by argument: B2 keeps modes in steady use planned, at little more cost.
 
 #### B2. Evict the least recently used beyond 64 (recommended)
 
@@ -115,7 +119,7 @@ The layer keeps plans in order of use. A new mode beyond 64 evicts the plan used
 - Pros: modes in steady use, such as a `Code` mode between heredocs, stay planned while payloads churn. Order is updated only when a step's mode differs from the last step's (Fork C), so the extra work comes only with a mode change.
 - Cons: a little more code than B1, under the layer's lock.
 
-**Result:** Open. Recommended, by argument: only payloads churn, and the modes they would push out are the ones in steady use.
+**Result:** Chosen. In `ALayerKeepsThePlansOfThe64ModesUsedMostRecently`, the `Plain` mode used between 10,000 churning keywords is planned once in the parse. Three mutations each fail the test: no eviction, a bound of 65, and evicting the oldest mode added rather than the one used longest ago, which plans `Plain` again.
 
 #### B3. Throw past a bound
 
@@ -146,7 +150,14 @@ Each run remembers the last stack it read and that stack's plan. A step whose st
 - Pros: steps between mode changes cost one reference comparison, for any mode type.
 - Cons: a mode change still compares by value. For a union, that allocates.
 
-**Result:** Open. Recommended. Trial T1 settles it.
+**Result:** Chosen by trial T1. Three default-job runs on bd17450 with MODE-05's changes, not yet committed:
+
+- Time: `ModalUnion` took 1.020, 1.022 and 0.999 times as long as `Modal` on the small, medium and large inputs (median of three runs per input), within 1.05.
+- Allocation: BenchmarkDotNet reported 104 B, 110 B and 165 B per parse more than `Modal`. It counts allocation across the whole process. Counted on the parsing thread alone (the fewest of ten parses after twenty warm-up parses), `ModalUnion` allocates exactly 104 B more than `Modal` on every input. That is the one lookup by value a parse makes when it first reads the stack, a constant that meets criterion 3.
+- A test: `AStepWhoseModeHasNotChangedComparesNoModes` checks that, after a change, a parse of 1,000 names compares modes as often as a parse of 10. Two mutations each fail it: never updating the remembered stack, and having no remembered stack.
+- Regressions: `Modal` took 1.021, 1.007 and 1.005 times as long as `Tokens`. It allocates 120 B more per parse, down from 216 B, because a run that reads only one stack keeps no list.
+
+As built, each run also keeps its own map of up to 64 modes it has used, in order of use. So a mode change takes the layer's lock only for a mode the run has not used yet. The layer counts a mode as used when a run first asks for it. Within a parse, a mode in steady use stays planned. After one parse that churns more than 64 payloads, the next parse may plan such a mode once more. That costs time, not correctness.
 
 #### C3. Compare unions without boxing
 
@@ -166,7 +177,7 @@ With `ModeData<T>()` gone, no node marks the dependence on data: the selector is
 - Pros: one place, the layer, as criterion 6 asks. It matches the whitepaper's "that layer gives up fusion".
 - Cons: until analysis can list a union's cases, a union mode without data may be reported as opaque too. That would be a false positive under the Phase 2 gate, so ANA-01 must list modes before ANA-05 reports.
 
-**Result:** Open. Recommended.
+**Result:** Chosen by argument. MODE-05 builds no analysis. On acceptance, ANA-01, ANA-05 and FUS-03 gain scope lines.
 
 #### D2. A node marks it
 
@@ -185,7 +196,7 @@ Under A2, a payload comes from the parse, such as a name the parser has just rea
 - Pros: no new member. Writes of payloads are rare, so lowering at each one costs little.
 - Cons: the `Bind` hides the write from analysis. ADR-0030 already treats a grammar with a `Bind` as one that can change the mode, so its marks stay correct.
 
-**Result:** Open. Recommended, by argument.
+**Result:** Chosen. `BlockGrammar` in `ModePayloadTests` writes `PushMode(BlockLexer.Modes, new Keyword(word.Text))` inside `Bind`. C# infers the mode type from the channel, so the case converts to the union with no cast. The cast in the example above is not needed.
 
 #### E2. Value-taking writes
 
@@ -194,7 +205,7 @@ Under A2, a payload comes from the parse, such as a name the parser has just rea
 - Pros: analysis sees the channel written. Nothing is lowered at each match.
 - Cons: new members, before any grammar is known to need them. They can be added later without breaking a call.
 
-**Result:** Open. Not recommended now.
+**Result:** Ruled out for now by argument: nothing needs it yet, and it can be added later without breaking a call.
 
 ## Trials
 
@@ -207,11 +218,11 @@ No other option needs a trial. Each is settled by the argument in its Result lin
 
 ## Decision
 
-Recommended: **A2, B2, C2, D1 and E1**. Each is open until the build's tests and trial T1 settle it.
+Chosen in MODE-05's build: **A2, B2, C2, D1 and E1**, each with its Result above. The record stays Proposed until the maintainer accepts it when MODE-05 completes.
 
 1. **Modes may carry data.** `TMode` can be any type with value equality, including a union whose cases carry data. The selector receives the mode value, data included, and may use it. Modes compare with `EqualityComparer<TMode>.Default`, as ADR-0041 point 1 says.
 2. **The cache.** A `Layer.Modal` keeps the plans of at most 64 distinct modes. Past 64, it evicts the plan used longest ago. The selector runs at most once per distinct mode while that mode's plan stays cached. For a layer with at most 64 modes, it still runs at most once per mode for the life of the layer, so ADR-0041 point 6 holds for every grammar it was written for. The rest of point 6 stands: concurrency, null results and exceptions.
-3. **Steps.** A step whose channel stack is the same object as the last step's reuses that step's plan without comparing modes.
+3. **Steps.** A step whose channel stack is the same object as the last step's reuses that step's plan without comparing modes. Each run keeps its own map of up to 64 modes it has used, in order of use, and takes the layer's lock only for a mode it has not used.
 4. **No `ModeData<T>()`.** The selector is how an item parser reads a payload.
 5. **Writes.** A mode computed from the input is written through `Bind`.
 6. **Payload values.** A payload should be immutable and have value equality, as layer state should. A payload changed after it is written can match a plan made for its old value. Records and unions of records qualify.

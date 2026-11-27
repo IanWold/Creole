@@ -3,7 +3,7 @@ namespace Creole;
 /// <summary>
 /// A typed key for a stack of modes that a grammar changes as it parses, such as whether <c>/</c> starts a regex or divides.
 /// </summary>
-/// <typeparam name="TMode">The type of the modes, usually an enum.</typeparam>
+/// <typeparam name="TMode">The type of the modes, usually an enum, or a union whose cases are records.</typeparam>
 /// <param name="initial">The mode each parse starts in.</param>
 /// <remarks>
 /// <para>
@@ -17,7 +17,7 @@ namespace Creole;
 /// </para>
 /// <para>
 /// A channel is known by its instance, not by its type or initial mode, so keep it in a <see langword="static"/> <see langword="readonly"/> field and use that field everywhere.
-/// Modes are compared with <see cref="EqualityComparer{T}.Default"/>.
+/// Modes are compared with <see cref="EqualityComparer{T}.Default"/>, so a mode that carries data should be immutable and compare by value, as a record does.
 /// </para>
 /// </remarks>
 public sealed class ModeChannel<TMode>(TMode initial)

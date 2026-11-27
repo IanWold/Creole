@@ -117,3 +117,61 @@ A change of mode forgets what the parse's furthest failure says about the input 
 - A failure that a construct puts back, as a filter does before it reports its rejection, is treated the same way for the changes made since it was saved.
 
 So with `Modes` in operand mode, `Atomic(Char('a').Then(Char('b')).Then(Char('c'))).Or(SetMode(Modes, LexMode.Operator).Then(Char('z')))` on `abx` reports "expected 'z'" at the `a`, not "expected 'c'" at the `x`. With `SetMode(Modes, LexMode.Operand)`, which keeps the mode, the report stays at the `x`.
+
+## Modes that carry data
+
+A mode can carry data. Make the mode type a union whose cases are records, and the selector's `switch` covers every case with no `_` arm. The selector sees each mode value, data included, and builds that value's item parser ([ADR-0043](../../work/docs/decisions/0043-layer-modal-plans-each-mode-value-and-keeps-the-64-most-recent.md)).
+
+First ask whether the lexer could decide the data itself. A heredoc's terminator is in the text the lexer reads, so the lexer can read the heredoc as one item with `Bind`, or keep the terminator in its [layer state](layer-state.md) when the body starts after other tokens. Data in a mode fits when it follows structure the parser already tracks. Here a block declares a word that is a keyword until the block ends. The parser knows where the block ends, and the lexer would have to match braces to know it:
+
+```csharp
+public enum K { Name, Keyword, LBrace, RBrace, Semicolon }
+public readonly record struct Lexeme(K Kind, string Text) : IKinded<K>;
+
+public sealed record Plain;
+public sealed record Keyword(string Word);
+public union LexMode(Plain, Keyword);
+
+public sealed class BlockLexer : CharGrammar
+{
+    public static readonly ModeChannel<LexMode> Modes = new(new Plain());
+
+    private static readonly Parser<char, Lexeme> _punctuation = OneOf(
+        Char('{').As(new Lexeme(K.LBrace, "{")),
+        Char('}').As(new Lexeme(K.RBrace, "}")),
+        Char(';').As(new Lexeme(K.Semicolon, ";"))
+    );
+
+    private static readonly Parser<char, string> _word = Letter.AtLeastOnce().Text();
+
+    public static readonly Layer<char, Lexeme> Lexer = Layer.Modal(Modes, static mode => mode switch
+    {
+        Plain => _word.Select(static text => new Lexeme(K.Name, text)).Or(_punctuation),
+        Keyword keyword => _word.Select(text => new Lexeme(text == keyword.Word ? K.Keyword : K.Name, text)).Or(_punctuation),
+    }, Whitespace.SkipMany());
+}
+
+public sealed class BlockGrammar : TokenGrammar<Lexeme, K>
+{
+    // keyword w makes w a keyword until the block ends.
+    private static readonly Parser<Lexeme, Unit> _declaration =
+        Kind(K.Name).Where(static name => name.Text == "keyword")
+            .Then(Kind(K.Name))
+            .Bind(static word => PushMode(BlockLexer.Modes, new Keyword(word.Text)));
+
+    private static readonly Parser<Lexeme, string> _word = OneOf(Kind(K.Name), Kind(K.Keyword)).Select(static word => $"{word.Kind} {word.Text}");
+
+    private static readonly Parser<Lexeme, string> _block =
+        Kind(K.LBrace).Then(_declaration).Then(Kind(K.Semicolon)).Then(_word.Many())
+            .Before(Kind(K.RBrace)).Before(PopMode(BlockLexer.Modes))
+            .Select(static words => string.Join(", ", words));
+
+    public static readonly Parser<Lexeme, string> Script = _block.Or(_word).Many().Before(End).Select(static parts => string.Join(", ", parts));
+}
+```
+
+`Pipeline.From(BlockLexer.Lexer).Then(BlockGrammar.Script).Parse("foo { keyword foo; foo bar } foo")` produces `Name foo, Keyword foo, Name bar, Name foo`. Two blocks that declare different words each lex with their own: `{ keyword foo; foo bar } { keyword bar; foo bar }` produces `Keyword foo, Name bar, Name foo, Keyword bar`.
+
+- **The parser writes data it has read.** The word comes from the input, so `PushMode(BlockLexer.Modes, new Keyword(word.Text))` sits inside `Bind`, which builds and plans the mode node at each declaration. A declaration is rare, so that costs little.
+- **The layer keeps 64 plans.** The selector runs only for a mode whose plan the layer does not keep, and the layer keeps the plans of the 64 modes used most recently. A mode used again after its plan was dropped is planned again. A mode in steady use, such as `Plain` between blocks, stays planned while many keywords come and go.
+- **Make the data immutable, with value equality.** Modes compare with `EqualityComparer<T>.Default`. Records compare by value, so two blocks that declare the same word share one plan. Data changed after it is written can match a plan made for its old value.
