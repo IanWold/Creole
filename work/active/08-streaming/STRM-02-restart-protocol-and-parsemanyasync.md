@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Streaming and async input](../../README.md#strm--streaming-and-async-input) |
 | Phase | Phase 1 — Layers |
-| Status | Not started |
+| Status | Designing |
 
 ## Summary
 
@@ -49,9 +49,13 @@ Async record streams parse one top-level item at a time and restart that item wh
 
 - [Research: Parlot 2.0 baselines and generator](../../docs/research/2026-10-24-parlot-2-0-baselines-and-generator.md) Prior art: Parlot 2.0.0's `ParseManyAsync` retries a value on a sticky `HitEnd` and doubles its window (finding 23)
 - [ADR-0044](../../docs/decisions/0044-huge-documents-parse-on-a-caller-started-thread-and-byte-pipelines-read-a-blocking-stream.md) Accepted: byte pipelines read a blocking `Stream` through `StreamUpstream`, which never starves
+- [ADR-0045](../../docs/decisions/0045-parsemanyasync-reads-a-stream-and-restarts-a-starved-item-from-a-bookmark-in-every-layer.md) Proposed: `ParseManyAsync` over a `Stream`, a bookmark in every layer, a retry once the data has doubled or the source is idle, up to the buffer limit, lazy yielding, and a trial of failure-log re-runs
 
 ## Progress notes
 
 - 2026-10-24 (Not started): FND-10 research found Parlot 2.0.0's `ParseManyAsync` uses a restart protocol close to Creole's Starved retry (note, finding 23). Read it before designing. Next: unchanged.
 - 2026-11-25 (Not started): STRM-01 is done. The restart clears `StreamBuffer.Starved`, which has only a private setter. Once a starving source exists, docs/engines/cursor.md and docs/concepts/custom-scanners.md should say that where streamed input runs out, `TryPeek`, `IsAtEnd` and an empty `Available` look like the end, and the item is restarted. Dispatch fails on a starved look at the next item, even where trying alternatives in order would have succeeded first with one that reads nothing; at an item's end that means waiting for data past it, so check it against request-and-response protocols. Next: unchanged.
 - 2026-11-26 (Not started): STRM-04 added `src/Creole/StreamUpstream.cs`, a blocking byte root over a `Stream` that never starves, behind `Parse(Stream)` and `ParseMany(Stream)` (ADR-0044). The starving root this card needs can start from its slot layout. ADR-0044 expects the overloads to stay if one root can serve both cases. `PipeTests` and the `json-document` memory input show how a `Pipe` is driven in tests and in the harness. Next: unchanged.
+- 2026-11-27 (Designing): Started. The card leaves its own choices open and no record covers them: the starving byte root and whether `StreamUpstream` becomes it, how `ParseManyAsync` reads a `PipeReader` and a `Stream` and doubles its window, how read-ahead data counts toward `MaxBufferedItems`, when an item is yielded relative to the look for the next one, and the API shape. The failure-log re-run stays a build measurement. Next: draft the record with `/decide`, reading Parlot 2.0.0's `ParseManyAsync` source for its Context.
+- 2026-11-27 (Designing): Drafted ADR-0045 (Proposed). The maintainer chose `Stream` only (fork 1). Recommended by argument: every layer back to a bookmark (2A), received bytes held in the root and counted toward the limit (3A), doubling up to the cap (4A), yielding before the look for the next item (5A). Fork 6, failure-log re-runs, is a trial (criterion 8). Checked on .NET 11.0.0: `Pipe` thresholds, a non-consuming reader does not stall the writer, `AsStream().ReadAsync` behaviour. Next: the maintainer approves the options, criteria and trial plan, then `/build`.
+- 2026-11-27 (Designing): Parlot 2.0.0's driver also reads until its window doubles, and its guide says that stalls request-and-response sources. The maintainer chose fork 4C: retry once the data has doubled, or when a short read is followed by one that does not complete at once. ADR-0045 now cites Parlot's source and records a correction to finding 23 (its `ParseManyAsync` positions saturate, not cap). Next: the maintainer approves the options, criteria and trial plan, then `/build`.
