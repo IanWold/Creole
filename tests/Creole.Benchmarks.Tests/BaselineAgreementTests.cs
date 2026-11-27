@@ -113,7 +113,9 @@ public class BaselineAgreementTests
 
         Assert.True(benchmarks.Tokens());
         Assert.True(benchmarks.Modal());
+        Assert.True(benchmarks.ModalUnion());
         Assert.Equal(Lexed(LayeredJson.TokensLexer, input), Lexed(LayeredJson.ModalLexer, input));
+        Assert.Equal(Lexed(LayeredJson.TokensLexer, input), Lexed(LayeredJson.ModalUnionLexer, input));
     }
 
     [Fact]

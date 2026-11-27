@@ -183,7 +183,7 @@ Creole uses C# 15 unions wherever a value is one of a fixed set of shapes, so th
 | --- | --- | --- |
 | Parse results | `ParseResult<T>(Parsed<T>, Recovered<T>, Failed)` | Callers cannot forget the parsed-with-errors case |
 | Error details | `Unexpected(UnexpectedItem, EndOfInput, CustomMessage)` and `Expectation(Label, ExpectedItem, EndOfInput)` | Renderers and language servers switch exhaustively |
-| Lexer modes | e.g. `LexMode(Code, TemplateText, Regex)` | Layer.Modal switches cover every case; cases should carry no data (§ Feedback) |
+| Lexer modes | e.g. `LexMode(Code, TemplateText, Regex)` | Layer.Modal switches cover every case. Cases should usually carry no data, and a mode the parser writes often should implement `IEquatable<T>` so that comparing it does not box (§ Feedback) |
 | Selective choice | `p.Match(Case(pa, (A a, TA x) => …), Case(pb, (B b, TB y) => …))` over a union-valued `p` | Analysis checks every case has a branch (CRL0105) |
 | Optional results | `Maybe<T>(T, Nothing)`, the result of `p.Optional()` | Consumers cannot forget the empty case, and `default` is `Nothing` ([ADR-0007](work/docs/decisions/0007-maybe-as-a-non-boxing-union.md)) |
 | User syntax trees | e.g. `JsonValue(JsonString, JsonNumber, ...)` | Implicit conversions replace casts in grammar actions |
@@ -510,7 +510,7 @@ static readonly Parser<Tok, Expr> Operand =
     Primary.Between(SetMode(Modes, LexMode.Operand), SetMode(Modes, LexMode.Operator));
 ```
 
-`Layer.Modal` calls its selector once per distinct mode case and caches the result for the life of the layer. Building nodes inside the lambda, as Example C does, is therefore safe: each mode's item parser is planned once, and plans stay cached by node identity.
+`Layer.Modal` calls its selector once per distinct mode value and keeps the plans of the 64 modes used most recently, evicting the plan used longest ago. A lexer with at most 64 modes therefore calls its selector once per mode for the life of the layer, so building nodes inside the lambda, as Example C does, is safe: each mode's item parser is planned once, and plans stay cached by node identity. A step whose channel stack has not been written since the last step reuses that step's plan without comparing modes ([ADR-0043](work/docs/decisions/0043-layer-modal-plans-each-mode-value-and-keeps-the-64-most-recent.md)).
 
 **Stacks, readers and writers.** Each channel has a stack of modes in each run, which starts as its initial mode alone. `SetMode` replaces the top, `PushMode` pushes and `PopMode` pops. Popping the last mode throws `GrammarException`: pushes and pops pair through the grammar's structure, so a path that pops more than it pushed is a mistake in the grammar. A channel has one reader, the `Layer.Modal` that names it, and one writing layer, the first to write it in a run. A chain with two readers throws `GrammarException` when `Then` builds it, and so does a write from a second layer. In a pipeline, a write to a channel that no layer below the writer reads also throws, which catches a second `ModeChannel` instance. A parser run on its own has no lexer to steer, so its writes change only its own stack, and it can still be tested over a list of tokens. Under `ParseMany`, the parser's channels start each item in their initial modes. Every mode shares the layer's `skip`, so a mode where text is content, such as JSX element text, skips whitespace only and reads it back with `LeadingTrivia` ([ADR-0041](work/docs/decisions/0041-a-channel-has-one-reader-below-one-writer-and-a-write-nothing-reads-or-a-pop-of-the-last-mode-throws.md)).
 
@@ -527,7 +527,7 @@ In practice a change discards zero or one already-lexed items, because the parse
 
 **Across several layers.** A channel may skip intermediate layers, for example a parser steering the lexer beneath a layout layer. Invalidation then cascades downward: truncating one buffer at index *i* re-runs the step that produced item *i*, and that slot's `stepStart` says where to truncate the buffer below it, down to the channel's producer. Intermediate layers restore their state from `stateBefore` and re-run over the re-lexed items. Each layer whose input is truncated lowers its failures at its own index. No storage is needed beyond the slot fields every layer already keeps.
 
-**Mode payloads.** `TMode` can be a union, which makes `Layer.Modal` switches exhaustive. Cases should carry no data: a payload makes the item parser depend on a value, which analysis treats like a `Bind` and fusion cannot compile. Data the lexer can decide by itself, such as a heredoc's terminator, belongs in the lexer's own layer state. Payloads remain possible for the rare case where only the parser knows the data; the item parser reads them with `ModeData<T>()`, and that layer gives up fusion.
+**Mode payloads.** `TMode` can be a union, which makes `Layer.Modal` switches exhaustive. Cases should usually carry no data. Data the lexer can decide by itself, such as a heredoc's terminator, belongs in the lexer's own layer state. A payload fits the rare case where only the parser knows the data, such as a declaration that makes a word a keyword until its block ends. The selector sees each mode value, data included, and builds that value's item parser from it, so no other accessor is needed. The parser writes a payload it has read through `Bind`. A payload must be immutable and compare by value, as records do, because plans are found by value. The step after each write looks its mode up, and comparing a union that does not implement `IEquatable<T>` boxes it, so a union mode that the parser writes often should implement it. Analysis treats a `Layer.Modal` as opaque for each mode it cannot list and reports CRL0201 at the layer, and fusion does not compile it ([ADR-0043](work/docs/decisions/0043-layer-modal-plans-each-mode-value-and-keeps-the-64-most-recent.md)).
 
 ## Source spans and provenance
 
@@ -725,7 +725,7 @@ For each grammar lowered on its own, analysis also records whether it can change
 | CRL0103 | Two `Longest` alternatives match the same string; the earlier wins | Info | Keyword vs identifier rule |
 | CRL0105 | `Match` over a union leaves a case without a branch | Error | `V2Header` unhandled in `Header.Match(...)` |
 | CRL0106 | A `Longest` DFA can back up over unbounded input, making lexing quadratic | Warning | Tokens `a` and `a*b` on input `aaaa…` |
-| CRL0201 | Opaque node limits analysis | Info | `Bind`, `Satisfy`, `Custom` with no `First` |
+| CRL0201 | Opaque node or layer limits analysis | Info | `Bind`, `Satisfy`, `Custom` with no `First`, a `Layer.Modal` whose modes analysis cannot list |
 | CRL0202 | Dependent query clause makes the rest of the rule opaque | Info | `from n in UInt16 from xs in Any.Repeat(n)` |
 | CRL0204 | Mutable type used as layer state | Warning | `List<int>` as indentation stack |
 | CRL0205 | A `Reusable` rule's result type stores a `SourceSpan`, which goes stale on reuse | Warning | `record Stmt(SourceSpan Span, ...)` |
@@ -881,7 +881,7 @@ The fused DFA always recognizes the full token set with the same longest-match a
 | Condition | Why |
 | --- | --- |
 | Lexer item is regular: `Longest` of regular alternatives, regular `skip` | It must compile to a DFA |
-| Lexer has no layer state, or only a finite mode channel | Each mode becomes its own DFA, selected by the current mode |
+| Lexer has no layer state, or only a mode channel whose modes analysis can list | Each mode becomes its own DFA, selected by the current mode. A layer with payloads is not fused ([ADR-0043](work/docs/decisions/0043-layer-modal-plans-each-mode-value-and-keeps-the-64-most-recent.md)) |
 | Parser passes `Grammar.Deterministic` | One token of lookahead, no bookmarks across the boundary |
 | No intermediate layer, or only `Where` / `Select` item functions | Stateless item functions inline; stateful layers break fusion |
 

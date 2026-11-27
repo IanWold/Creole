@@ -94,7 +94,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 6 | ✅ [SPAN-05](active/05-source-spans/SPAN-05-trivia-attach-mode.md) Trivia from the gaps between spans | [SPAN-02](active/05-source-spans/SPAN-02-out-of-band-span-storage.md), [SPAN-04](active/05-source-spans/SPAN-04-span-combinators.md), [LAY-03](active/06-layers-and-pipelines/LAY-03-layer-abstraction-and-emit.md) |
 | 6 | ✅ [LAY-07](active/06-layers-and-pipelines/LAY-07-three-layer-demo-and-bounded-memory-check.md) Three-layer demo and bounded-memory check **(Phase 1 gate)** | [SPAN-03](active/05-source-spans/SPAN-03-synthetic-items.md), [LAY-04](active/06-layers-and-pipelines/LAY-04-layer-local-state.md), [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md), [LAY-06](active/06-layers-and-pipelines/LAY-06-buffer-size-limit.md) |
 | 6 | ✅ [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) Invalidation rule | [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md), [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md), [MODE-01](active/07-mode-channels/MODE-01-mode-channels-and-layermodal.md) |
-| 6 | [MODE-05](active/07-mode-channels/MODE-05-mode-payloads.md) Mode payloads | ✅ [MODE-01](active/07-mode-channels/MODE-01-mode-channels-and-layermodal.md) |
+| 6 | ✅ [MODE-05](active/07-mode-channels/MODE-05-mode-payloads.md) Mode payloads | ✅ [MODE-01](active/07-mode-channels/MODE-01-mode-channels-and-layermodal.md) |
 | 6 | [STRM-02](active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md) Restart protocol and ParseManyAsync | [SPAN-06](active/05-source-spans/SPAN-06-byte-sources-and-the-decoding-layer.md), [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md), ✅ [STRM-01](active/08-streaming/STRM-01-starved-outcome.md) |
 | 6 | [STRM-04](active/08-streaming/STRM-04-huge-single-documents.md) Huge single documents | [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) |
 | 7 | [INT-12](active/03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md) Close the interpreter test gaps BENCH-01 left | [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) |
@@ -225,7 +225,6 @@ These items have all their blockers done:
 - [SPAN-07](active/05-source-spans/SPAN-07-embedded-languages.md) Embedded languages
 - [MODE-03](active/07-mode-channels/MODE-03-rollback-rule.md) Rollback rule
 - [MODE-04](active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md) Multi-layer invalidation cascade
-- [MODE-05](active/07-mode-channels/MODE-05-mode-payloads.md) Mode payloads
 - [STRM-02](active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md) Restart protocol and ParseManyAsync
 - [STRM-04](active/08-streaming/STRM-04-huge-single-documents.md) Huge single documents
 - [ANA-01](active/09-static-analysis/ANA-01-grammar-property-analysis.md) Grammar property analysis
@@ -349,7 +348,7 @@ Parser-to-lexer feedback with invalidation and rollback across one or more layer
 | ✅ [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) Invalidation rule | [ERR-04](active/04-errors-and-recovery/ERR-04-diagnostic-withdrawal.md), [LAY-02](active/06-layers-and-pipelines/LAY-02-marks-and-retention.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md), [MODE-01](active/07-mode-channels/MODE-01-mode-channels-and-layermodal.md) |
 | [MODE-03](active/07-mode-channels/MODE-03-rollback-rule.md) Rollback rule | 1 | ✅ [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) |
 | [MODE-04](active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md) Multi-layer invalidation cascade | 1 | ✅ [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) |
-| [MODE-05](active/07-mode-channels/MODE-05-mode-payloads.md) Mode payloads | 1 | ✅ [MODE-01](active/07-mode-channels/MODE-01-mode-channels-and-layermodal.md) |
+| ✅ [MODE-05](active/07-mode-channels/MODE-05-mode-payloads.md) Mode payloads | 1 | ✅ [MODE-01](active/07-mode-channels/MODE-01-mode-channels-and-layermodal.md) |
 | [MODE-06](active/07-mode-channels/MODE-06-model-based-tests-for-mode-rollback.md) Model-based tests for mode rollback | 1 | [FND-04](active/01-foundations/FND-04-test-infrastructure.md), [MODE-03](active/07-mode-channels/MODE-03-rollback-rule.md), [MODE-04](active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md) |
 
 ### STRM — Streaming and async input

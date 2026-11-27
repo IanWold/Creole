@@ -4,7 +4,7 @@ using static Creole.Grammar<char>;
 namespace Creole.Benchmarks;
 
 /// <summary>
-/// The token JSON parser in two pipelines whose lexers differ only in kind: a <c>Layer.Tokens</c>, and a <c>Layer.Modal</c> with one mode that gives the same item parser.
+/// The token JSON parser in three pipelines whose lexers differ only in kind: a <c>Layer.Tokens</c>, and two <c>Layer.Modal</c>s with one mode that gives the same item parser, one whose modes are an <see cref="int"/> and one whose modes are a union.
 /// </summary>
 public static class LayeredJson
 {
@@ -43,6 +43,16 @@ public static class LayeredJson
     public static readonly Layer<char, JsonToken> ModalLexer = Layer.Modal(Modes, static _ => _token, Whitespace.SkipMany());
 
     /// <summary>
+    /// The channel the union-mode lexer reads, which nothing changes.
+    /// </summary>
+    public static readonly ModeChannel<JsonMode> UnionModes = new(new JsonOnly());
+
+    /// <summary>
+    /// A one-mode <c>Layer.Modal</c> lexer over JSON text whose modes are a union.
+    /// </summary>
+    public static readonly Layer<char, JsonToken> ModalUnionLexer = Layer.Modal(UnionModes, static _ => _token, Whitespace.SkipMany());
+
+    /// <summary>
     /// The same lexer as a <c>Layer.Tokens</c>.
     /// </summary>
     public static readonly Layer<char, JsonToken> TokensLexer = Layer.Tokens(_token, Whitespace.SkipMany());
@@ -51,6 +61,11 @@ public static class LayeredJson
     /// The modal lexer, then the token JSON parser.
     /// </summary>
     public static readonly Pipeline<char, Unit> Modal = Pipeline.From(ModalLexer).Then(CreoleTokenJson.Document);
+
+    /// <summary>
+    /// The union-mode lexer, then the token JSON parser.
+    /// </summary>
+    public static readonly Pipeline<char, Unit> ModalUnion = Pipeline.From(ModalUnionLexer).Then(CreoleTokenJson.Document);
 
     /// <summary>
     /// The <c>Layer.Tokens</c> lexer, then the token JSON parser.

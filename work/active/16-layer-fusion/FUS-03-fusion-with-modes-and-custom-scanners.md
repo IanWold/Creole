@@ -12,7 +12,7 @@ Extend fusion to finite mode channels and lexers with `Custom` tokens.
 
 ## Scope
 
-- One DFA per mode, selected by the current mode.
+- One DFA per mode, selected by the current mode. Only a channel whose modes analysis can list is fused: a layer with payloads is not, and CRL0302 names the reason ([ADR-0043](../../docs/decisions/0043-layer-modal-plans-each-mode-value-and-keeps-the-64-most-recent.md) point 7).
 - Run a `Custom` scanner alongside the DFA when the next character is in its FIRST set. A character scanner with no `First` runs at every position ([ADR-0012](../../docs/decisions/0012-custom-scanner-metadata.md)).
 
 ## Acceptance criteria

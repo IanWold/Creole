@@ -58,7 +58,8 @@ public static readonly Layer<char, Lexeme> Lexer = Layer.Modal(Modes, static mod
 }, Whitespace.SkipMany());
 ```
 
-- The selector runs at most once for each mode, for the life of the layer, and its result is kept, so building parsers inside it is safe. Each mode's item parser is planned once. A selector that returns null throws `GrammarException` when the parse first reaches that mode.
+- The layer keeps the item plans of the 64 modes used most recently, and runs the selector only for a mode whose plan it does not keep. So a lexer with at most 64 modes runs the selector once for each, for the life of the layer, and building parsers inside it is safe: each mode's item parser is planned once. A selector that returns null throws `GrammarException` when the parse first reaches that mode.
+- A mode can carry data, which the selector sees and may build its item parser from ([Modes that carry data](mode-channels.md#modes-that-carry-data)).
 - Every mode shares `skip`. In a mode where whitespace is content, skip whitespace only and read it back in the parser with [`LeadingTrivia`](spans.md).
 - A lexer with a [state](layer-state.md) passes it first, `Layer.Modal(initialState, channel, selector, skip)`, as `Layer.Tokens` does.
 - When the parser changes the mode after it has looked at a token, the layer reads that token again in the new mode, starting the step from the state it started with before ([Tokens read ahead](mode-channels.md#tokens-read-ahead)).

@@ -1,35 +1,62 @@
 namespace Creole;
 
 /// <summary>
-/// The item plans one run of a <see cref="ModalLayer{TIn, TOut, TMode}"/> has used, by mode, so that a step finds its plan without taking the layer's lock.
+/// The item plans one run of a <see cref="ModalLayer{TIn, TOut, TMode}"/> uses, so that a step finds its plan without taking the layer's lock.
 /// </summary>
-/// <param name="layer">The layer, which plans a mode the run has not used yet.</param>
+/// <remarks>
+/// It remembers the last stack it read and that stack's plan, so a step whose stack has not changed compares nothing.
+/// A run that reads a second stack keeps the plans of the modes it has used, up to <see cref="RecentPlans{TIn, TOut, TMode}.Capacity"/>, and asks the layer only for a mode it has not kept.
+/// </remarks>
+/// <param name="layer">The layer, which plans a mode the run has not kept.</param>
 /// <param name="link">The run's link for the layer's channel, whose top is the current mode.</param>
 file sealed class ModalItems<TIn, TOut, TMode>(ModalLayer<TIn, TOut, TMode> layer, ModeLink<TMode> link)
 {
+    private (ModeStack<TMode> Stack, Plan<TIn, TOut> Plan)? _last;
     private readonly ModalLayer<TIn, TOut, TMode> _layer = layer;
     private readonly ModeLink<TMode> _link = link;
-    private readonly List<(TMode Mode, Plan<TIn, TOut> Plan)> _used = [];
+    private RecentPlans<TIn, TOut, TMode>? _used;
+
+    private Plan<TIn, TOut> PlanFor(TMode mode)
+    {
+        if (_last is not { } last)
+        {
+            return _layer.PlanFor(mode);
+        }
+
+        if (_used is null)
+        {
+            _used = new();
+            _used.Add(last.Stack.Top, last.Plan);
+        }
+
+        if (_used.TryGet(mode, out var plan))
+        {
+            return plan;
+        }
+
+        plan = _layer.PlanFor(mode);
+        _used.Add(mode, plan);
+
+        return plan;
+    }
 
     /// <summary>
     /// The item plan for the channel's current mode.
     /// </summary>
     public Plan<TIn, TOut> Current()
     {
-        var mode = _link.Stack.Top;
+        var stack = _link.Stack;
 
-        foreach (var (used, plan) in _used)
+        if (_last is { } last && ReferenceEquals(last.Stack, stack))
         {
-            if (EqualityComparer<TMode>.Default.Equals(used, mode))
-            {
-                return plan;
-            }
+            return last.Plan;
         }
 
-        var planned = _layer.PlanFor(mode);
-        _used.Add((mode, planned));
+        var plan = PlanFor(stack.Top);
 
-        return planned;
+        _last = (stack, plan);
+
+        return plan;
     }
 }
 
@@ -40,7 +67,8 @@ file sealed class ModalItems<TIn, TOut, TMode>(ModalLayer<TIn, TOut, TMode> laye
 /// <remarks>
 /// <para>
 /// It runs as a <see cref="TokensLayer{TIn, TOut}"/> does, except that each step runs the item parser <see cref="Selector"/> gives for the mode on top of the channel's stack.
-/// <see cref="Selector"/> runs at most once for each distinct mode for the life of the layer, under a lock, and its plan is kept with the mode.
+/// The layer keeps the plans of the <see cref="RecentPlans{TIn, TOut, TMode}.Capacity"/> modes used most recently, under a lock.
+/// <see cref="Selector"/> runs, under the lock, only for a mode whose plan the layer does not keep: at most once for each distinct mode while its plan is kept.
 /// </para>
 /// <para>
 /// Opening the layer adds its channel to the run, after making the layer's own writer, so layers above it may change the channel and the layer itself may not.
@@ -56,7 +84,21 @@ internal sealed class ModalLayer<TIn, TOut, TMode>(
     : Layer<TIn, TOut>
 {
     private readonly Lock _gate = new();
-    private readonly List<(TMode Mode, Plan<TIn, TOut> Plan)> _planned = [];
+    private readonly RecentPlans<TIn, TOut, TMode> _planned = new();
+
+    /// <summary>
+    /// The number of modes whose plans the layer keeps.
+    /// </summary>
+    internal int PlannedCount
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _planned.Count;
+            }
+        }
+    }
 
     internal override IEnumerable<(object Channel, string Layer)> Readers => [(Channel, Name)];
 
@@ -80,25 +122,22 @@ internal sealed class ModalLayer<TIn, TOut, TMode>(
     }
 
     /// <summary>
-    /// The item plan for <paramref name="mode"/>, from the item parser <see cref="Selector"/> gives for it the first time any run asks.
+    /// The item plan for <paramref name="mode"/>: the one the layer keeps, or one made from the item parser <see cref="Selector"/> gives for it.
     /// </summary>
     /// <exception cref="GrammarException"><see cref="Selector"/> returns null.</exception>
     internal Plan<TIn, TOut> PlanFor(TMode mode)
     {
         lock (_gate)
         {
-            foreach (var (planned, plan) in _planned)
+            if (_planned.TryGet(mode, out var plan))
             {
-                if (EqualityComparer<TMode>.Default.Equals(planned, mode))
-                {
-                    return plan;
-                }
+                return plan;
             }
 
             var item = Selector(mode) ?? throw new GrammarException($"The selector of the {Name} layer returned null for the mode {mode}.");
             var made = PlanCache.Get(item);
 
-            _planned.Add((mode, made));
+            _planned.Add(mode, made);
 
             return made;
         }
