@@ -18,6 +18,7 @@ namespace Creole;
 /// <para>
 /// A channel is known by its instance, not by its type or initial mode, so keep it in a <see langword="static"/> <see langword="readonly"/> field and use that field everywhere.
 /// Modes are compared with <see cref="EqualityComparer{T}.Default"/>, so a mode that carries data should be immutable and compare by value, as a record does.
+/// A union mode that the parser writes often should implement <see cref="IEquatable{T}"/>, as comparing a union that does not allocates.
 /// </para>
 /// </remarks>
 public sealed class ModeChannel<TMode>(TMode initial)

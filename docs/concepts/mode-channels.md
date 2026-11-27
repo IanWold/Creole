@@ -173,5 +173,19 @@ public sealed class BlockGrammar : TokenGrammar<Lexeme, K>
 `Pipeline.From(BlockLexer.Lexer).Then(BlockGrammar.Script).Parse("foo { keyword foo; foo bar } foo")` produces `Name foo, Keyword foo, Name bar, Name foo`. Two blocks that declare different words each lex with their own: `{ keyword foo; foo bar } { keyword bar; foo bar }` produces `Keyword foo, Name bar, Name foo, Keyword bar`.
 
 - **The parser writes data it has read.** The word comes from the input, so `PushMode(BlockLexer.Modes, new Keyword(word.Text))` sits inside `Bind`, which builds and plans the mode node at each declaration. A declaration is rare, so that costs little.
-- **The layer keeps 64 plans.** The selector runs only for a mode whose plan the layer does not keep, and the layer keeps the plans of the 64 modes used most recently. A mode used again after its plan was dropped is planned again. A mode in steady use, such as `Plain` between blocks, stays planned while many keywords come and go.
-- **Make the data immutable, with value equality.** Modes compare with `EqualityComparer<T>.Default`. Records compare by value, so two blocks that declare the same word share one plan. Data changed after it is written can match a plan made for its old value.
+- **The layer keeps 64 plans.** The selector runs only for a mode whose plan the layer does not keep, and the layer keeps the plans of the 64 modes used most recently. A parse asks the layer for a mode's plan the first time it needs it and keeps the plan for the rest of the parse, so the layer counts a mode as used once for each parse that reads it. A mode used again after its plan was dropped is planned again. A mode every parse reads, such as `Plain`, stays planned while many keywords come and go, though a parse that reads more than 64 other modes may leave it to be planned once more by the next.
+- **Make the data immutable, with value equality.** Modes compare with `EqualityComparer<T>.Default`. Records compare by value, so two blocks that declare the same word share one plan. Data changed after it is written can keep using a plan made for its old value.
+
+The step after each write to a channel looks its mode up, even when the write leaves the mode as it was. An enum compares for free, but a union that does not implement `IEquatable<T>` allocates on each comparison. That matters when the parser writes the mode around every operand, as the example in [Changing the mode](#changing-the-mode) does. Three members make a union mode compare as cheaply as an enum:
+
+```csharp
+public sealed record Operand;
+public sealed record Operator;
+
+public union OperatorMode(Operand, Operator) : IEquatable<OperatorMode>
+{
+    public bool Equals(OperatorMode other) => Equals(Value, other.Value);
+    public override bool Equals(object? obj) => obj is OperatorMode other && Equals(other);
+    public override int GetHashCode() => Value?.GetHashCode() ?? 0;
+}
+```

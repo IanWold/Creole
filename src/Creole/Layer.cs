@@ -38,12 +38,14 @@ public static class Layer
     /// <para>
     /// The layer keeps the item plans of the 64 modes used most recently, and <paramref name="selector"/> runs only for a mode whose plan the layer does not keep, even when parses run at once on several threads.
     /// So a layer with at most 64 modes runs <paramref name="selector"/> at most once for each, for the life of the layer, and building parsers inside it is safe: each mode's item parser is planned once.
+    /// A parse asks the layer for a mode's plan the first time it needs it and keeps the plan for itself, so the layer counts a mode as used once for each parse that reads it.
     /// A selector that returns null throws <see cref="GrammarException"/> when the parse first reaches that mode.
     /// </para>
     /// <para>
     /// A mode may carry data, such as a union case with fields.
     /// <paramref name="selector"/> sees each mode value, data included, and may build its item parser from the data.
     /// Modes compare with <see cref="EqualityComparer{T}.Default"/>, so a mode that carries data should be immutable and compare by value, as a record does.
+    /// The step after each write to the channel looks its mode up, and comparing a union that does not implement <see cref="IEquatable{T}"/> allocates, so a union mode that the parser writes often should implement it.
     /// </para>
     /// <para>
     /// The grammar of a layer above this one, or of the parser that ends the pipeline, changes the mode with <see cref="Grammar{TIn}.SetMode{TMode}"/>, <see cref="Grammar{TIn}.PushMode{TMode}"/> and <see cref="Grammar{TIn}.PopMode{TMode}"/>.
@@ -84,12 +86,14 @@ public static class Layer
     /// <para>
     /// The layer keeps the item plans of the 64 modes used most recently, and <paramref name="selector"/> runs only for a mode whose plan the layer does not keep, even when parses run at once on several threads.
     /// So a layer with at most 64 modes runs <paramref name="selector"/> at most once for each, for the life of the layer, and building parsers inside it is safe: each mode's item parser is planned once.
+    /// A parse asks the layer for a mode's plan the first time it needs it and keeps the plan for itself, so the layer counts a mode as used once for each parse that reads it.
     /// A selector that returns null throws <see cref="GrammarException"/> when the parse first reaches that mode.
     /// </para>
     /// <para>
     /// A mode may carry data, such as a union case with fields.
     /// <paramref name="selector"/> sees each mode value, data included, and may build its item parser from the data.
     /// Modes compare with <see cref="EqualityComparer{T}.Default"/>, so a mode that carries data should be immutable and compare by value, as a record does.
+    /// The step after each write to the channel looks its mode up, and comparing a union that does not implement <see cref="IEquatable{T}"/> allocates, so a union mode that the parser writes often should implement it.
     /// </para>
     /// <para>
     /// The grammar of a layer above this one, or of the parser that ends the pipeline, changes the mode with <see cref="Grammar{TIn}.SetMode{TMode}"/>, <see cref="Grammar{TIn}.PushMode{TMode}"/> and <see cref="Grammar{TIn}.PopMode{TMode}"/>.

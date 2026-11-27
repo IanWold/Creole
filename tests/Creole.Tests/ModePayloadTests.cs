@@ -17,6 +17,42 @@ file sealed record Keyword(string Word);
 
 file readonly union LexMode(Plain, Keyword);
 
+file sealed record Operand;
+
+file sealed record Operator;
+
+/// <summary>
+/// The union in docs/concepts/mode-channels.md § Modes that carry data that compares without allocating. Keep the two in step.
+/// </summary>
+file readonly union OperatorMode(Operand, Operator) : IEquatable<OperatorMode>
+{
+    public bool Equals(OperatorMode other) => Equals(Value, other.Value);
+
+    public override bool Equals(object? obj) => obj is OperatorMode other && Equals(other);
+
+    public override int GetHashCode() => Value?.GetHashCode() ?? 0;
+}
+
+file enum Side
+{
+    Left,
+    Right,
+}
+
+/// <summary>
+/// A mode whose data a test changes after the mode is written, which a grammar should not do.
+/// </summary>
+file sealed class MutableMode(string name) : IEquatable<MutableMode>
+{
+    public string Name { get; set; } = name;
+
+    public bool Equals(MutableMode? other) => other?.Name == Name;
+
+    public override bool Equals(object? obj) => Equals(obj as MutableMode);
+
+    public override int GetHashCode() => Name.GetHashCode(StringComparison.Ordinal);
+}
+
 /// <summary>
 /// A mode that counts how often it is compared.
 /// </summary>
@@ -96,6 +132,21 @@ file static class BlockTokens
 
     private static readonly Parser<char, string> _word = CharGrammar.Letter.AtLeastOnce().Text();
 
+    /// <summary>
+    /// A lexer like <see cref="BlockLexer"/> that counts, in <paramref name="calls"/>, how often its selector runs for each mode.
+    /// </summary>
+    public static Layer<char, Lexeme> Counted(Dictionary<LexMode, int> calls) =>
+        Layer.Modal<char, Lexeme, LexMode>(
+            BlockLexer.Modes,
+            mode =>
+            {
+                calls[mode] = calls.GetValueOrDefault(mode) + 1;
+
+                return Item(mode);
+            },
+            CharGrammar.Whitespace.SkipMany()
+        );
+
     public static Parser<char, Lexeme> Item(LexMode mode) => mode switch
     {
         Plain => _word.Select(static text => new Lexeme(K.Name, text)).Or(_punctuation),
@@ -108,6 +159,28 @@ file static class BlockTokens
 /// </summary>
 public class ModePayloadTests
 {
+    private static long Allocated(Pipeline<char, int> pipeline, int names)
+    {
+        var text = string.Join(" ", Enumerable.Repeat("a", names));
+
+        for (var i = 0; i < 100; i++)
+        {
+            Assert.Equal($"{names}", Value(pipeline.Parse(text)));
+        }
+
+        return Allocation.Fewest(() => pipeline.Parse(text), attempts: 20);
+    }
+
+    private static Pipeline<char, int> Alternating<TMode>(TMode first, TMode second)
+    {
+        var channel = new ModeChannel<TMode>(first);
+        var lexer = Layer.Modal<char, Lexeme, TMode>(channel, static _ => CharGrammar.Letter.AtLeastOnce().Text().Select(static text => new Lexeme(K.Name, text)), CharGrammar.Whitespace.SkipMany());
+        var name = TokenGrammar<Lexeme, K>.Kind(K.Name);
+        var pair = name.Before(TokenGrammar<Lexeme, K>.SetMode(channel, second)).Then(name).Before(TokenGrammar<Lexeme, K>.SetMode(channel, first));
+
+        return Pipeline.From(lexer).Then(pair.Many().Before(TokenGrammar<Lexeme, K>.End).Select(static pairs => pairs.Count * 2));
+    }
+
     private static string Value<T>(ParseResult<T> result) => result.Value switch
     {
         Parsed<T> parsed => $"{parsed.Value}",
@@ -121,19 +194,53 @@ public class ModePayloadTests
         : Word(index / 26 - 1) + (char)('a' + index % 26);
 
     [Fact]
-    public void ALayerKeepsThePlansOfThe64ModesUsedMostRecently()
+    public void ALayerForgetsAModeThatChangedAfterItWasPlanned()
     {
-        var calls = new Dictionary<LexMode, int>();
-        var lexer = Layer.Modal<char, Lexeme, LexMode>(
-            BlockLexer.Modes,
+        var channel = new ModeChannel<MutableMode>(new("start"));
+        var planned = new List<MutableMode>();
+        var lexer = Layer.Modal<char, Lexeme, MutableMode>(
+            channel,
             mode =>
             {
-                calls[mode] = calls.GetValueOrDefault(mode) + 1;
+                planned.Add(mode);
 
-                return BlockTokens.Item(mode);
+                return CharGrammar.Letter.AtLeastOnce().Text().Select(static text => new Lexeme(K.Name, text));
             },
             CharGrammar.Whitespace.SkipMany()
         );
+        var names = TokenGrammar<Lexeme, K>.Kind(K.Name).Bind(name => TokenGrammar<Lexeme, K>.SetMode(channel, new MutableMode(name.Text)));
+        var pipeline = Pipeline.From(lexer).Then(names.Many().Before(TokenGrammar<Lexeme, K>.End).Select(static all => all.Count));
+
+        Assert.Equal("100", Value(pipeline.Parse(string.Join(" ", Enumerable.Range(0, 100).Select(Word)))));
+
+        foreach (var mode in planned)
+        {
+            mode.Name += "!";
+        }
+
+        Assert.Equal("100", Value(pipeline.Parse(string.Join(" ", Enumerable.Range(100, 100).Select(Word)))));
+        Assert.Equal(64, ((ModalLayer<char, Lexeme, MutableMode>)lexer).PlannedCount);
+    }
+
+    [Fact]
+    public void ALayerKeepsAModeEachParseReadsWhileOtherModesComeAndGo()
+    {
+        var calls = new Dictionary<LexMode, int>();
+        var pipeline = Pipeline.From(BlockTokens.Counted(calls)).Then(BlockGrammar.Script);
+
+        foreach (var word in Enumerable.Range(0, 200).Select(Word))
+        {
+            Assert.Equal($"Keyword {word}", Value(pipeline.Parse($"{{ keyword {word}; {word} }}")));
+        }
+
+        Assert.Equal(1, calls[new Plain()]);
+    }
+
+    [Fact]
+    public void ALayerKeepsThePlansOfThe64ModesUsedMostRecently()
+    {
+        var calls = new Dictionary<LexMode, int>();
+        var lexer = BlockTokens.Counted(calls);
         var words = Enumerable.Range(0, 10_000).Select(Word).ToList();
         var pipeline = Pipeline.From(lexer).Then(BlockGrammar.Script);
 
@@ -192,6 +299,15 @@ public class ModePayloadTests
         Comparisons(1);
 
         Assert.Equal(Comparisons(10), Comparisons(1_000));
+    }
+
+    [Fact]
+    public void AUnionModeThatImplementsIEquatableChangesAsCheaplyAsAnEnum()
+    {
+        var enumModes = Alternating(Side.Left, Side.Right);
+        var unionModes = Alternating<OperatorMode>(new Operand(), new Operator());
+
+        Assert.Equal(Allocated(enumModes, 200) - Allocated(enumModes, 20), Allocated(unionModes, 200) - Allocated(unionModes, 20));
     }
 
     [Fact]

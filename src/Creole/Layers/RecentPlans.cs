@@ -7,14 +7,29 @@ namespace Creole;
 /// </summary>
 /// <remarks>
 /// Modes compare with <see cref="EqualityComparer{T}.Default"/>, and a null mode is a mode like any other.
+/// Each plan is filed under the hash its mode had when it was kept, so a mode that changes afterwards is still forgotten in its turn and the count stays bounded.
 /// It is not safe for use from several threads at once.
 /// </remarks>
 internal sealed class RecentPlans<TIn, TOut, TMode>
 {
     /// <summary>
-    /// A mode as a dictionary key, which may be null.
+    /// A mode as a dictionary key, which may be null, with the hash the mode had when the key was made.
     /// </summary>
-    private readonly record struct Key(TMode Mode);
+    /// <param name="mode">The mode.</param>
+    private readonly struct Key(TMode mode) : IEquatable<Key>
+    {
+        private readonly int _hash = mode is null
+            ? 0
+            : EqualityComparer<TMode>.Default.GetHashCode(mode);
+
+        private readonly TMode _mode = mode;
+
+        public bool Equals(Key other) => _hash == other._hash && EqualityComparer<TMode>.Default.Equals(_mode, other._mode);
+
+        public override bool Equals(object? obj) => obj is Key other && Equals(other);
+
+        public override int GetHashCode() => _hash;
+    }
 
     /// <summary>
     /// The most modes whose plans are kept.
