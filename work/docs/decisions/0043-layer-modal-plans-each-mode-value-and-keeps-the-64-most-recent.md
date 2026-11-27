@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| Status | Proposed |
+| Status | Accepted |
 | Date | 2026-11-26 |
 | Cards | [MODE-05](../../active/07-mode-channels/MODE-05-mode-payloads.md), [ANA-01](../../active/09-static-analysis/ANA-01-grammar-property-analysis.md), [ANA-05](../../active/09-static-analysis/ANA-05-informational-and-hygiene-checks.md), [FUS-03](../../active/16-layer-fusion/FUS-03-fusion-with-modes-and-custom-scanners.md) |
 | Whitepaper | [§ 3. Mode channels](../../../whitepaper.md#3-mode-channels), [§ Using C# 15 unions](../../../whitepaper.md#using-c-15-unions), [§ Conditions](../../../whitepaper.md#conditions) |
@@ -239,7 +239,7 @@ No other option needs a trial. Each is settled by the argument in its Result lin
 
 ## Decision
 
-Chosen in MODE-05's build: **A2, B2, C2, D1 and E1**, each with its Result above. The record stays Proposed until the maintainer accepts it when MODE-05 completes.
+Chosen in MODE-05's build: **A2, B2, C2, D1 and E1**, each with its Result above. The maintainer accepted it on 2026-11-27, when MODE-05 completed.
 
 1. **Modes may carry data.** `TMode` can be any type with value equality, including a union whose cases carry data. The selector receives the mode value, data included, and may use it. Modes compare with `EqualityComparer<TMode>.Default`, as ADR-0041 point 1 says.
 2. **The cache.** A `Layer.Modal` keeps the plans of at most 64 distinct modes. Past 64, it evicts the plan used longest ago. The layer counts a mode as used when a run first asks it for that mode's plan, since the run keeps the plan after that (point 3). Each entry keeps the hash its mode had when it was added, so the bound holds even for a mode changed afterwards. The selector runs at most once per distinct mode while that mode's plan stays cached. For a layer with at most 64 modes, it still runs at most once per mode for the life of the layer, so ADR-0041 point 6 holds for every grammar it was written for. The rest of point 6 stands: concurrency, null results and exceptions.
@@ -268,8 +268,9 @@ What would change this:
 
 ## Changes made
 
-None yet. On acceptance:
-
-- Whitepaper: § 3. Mode channels, in its selector paragraph ("once per distinct mode case … for the life of the layer") and its **Mode payloads** paragraph, which drops `ModeData<T>()`. § Using C# 15 unions keeps its lexer-modes row, which also says that a union mode written often should implement `IEquatable<T>`. § Conditions, if its "finite mode channel" wording needs the meaning given above. The CRL0201 row names a `Layer.Modal` whose modes analysis cannot list.
-- Cards: MODE-05's scope and criterion. ANA-05 gains a scope line and criterion for CRL0201 at a `Layer.Modal`. FUS-03 gains a scope line saying a layer with payloads is not fused. ANA-01 gains a scope line for listing a channel's modes.
+- Whitepaper, § 3. Mode channels: the selector paragraph says the selector runs once per distinct mode value, the layer keeps the plans of the 64 modes used most recently, and a step with no write since the last reuses that step's plan. The **Mode payloads** paragraph drops `ModeData<T>()`. It says the selector builds a payload's item parser, the parser writes a payload through `Bind`, a payload is immutable with value equality, and a union mode written often implements `IEquatable<T>`. It also says that analysis treats the layer as opaque for each mode it cannot list, and fusion does not compile it.
+- Whitepaper, § Using C# 15 unions: the lexer-modes row says cases should usually carry no data, and a mode written often should implement `IEquatable<T>`.
+- Whitepaper, § Conditions: "only a finite mode channel" became "only a mode channel whose modes analysis can list", and a layer with payloads is not fused.
+- Whitepaper, the diagnostics table: CRL0201 is "Opaque node or layer limits analysis", with a `Layer.Modal` whose modes analysis cannot list as an example.
+- Cards: MODE-05's scope drops `ModeData<T>()`, and its criterion keeps "a payload mode works". The opaque half moved to ANA-05, which gains a CRL0201 scope line and criterion for `Layer.Modal`. ANA-01 gains a scope line for listing a channel's modes. FUS-03 gains a scope line saying a layer with payloads is not fused.
 - Index: a note that this record refines ADR-0041 point 6.
