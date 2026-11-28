@@ -12,7 +12,7 @@ Full rules: CONTRIBUTING.md § Code. Style that `.editorconfig` enforces at buil
 - Warnings are errors. Fix the cause. Suppress only with a justification comment, as locally as possible.
 - One type per file. Generic types that share a name and differ only in arity go in one file, in order of arity. A helper used only in that file is a `file` type after the main type, not a nested type; nest only when a `file` type cannot work (part of the containing type's API, in one of its member signatures, or used from another file).
 - Every file in a project uses the project's namespace (`Creole`, `Creole.Testing`, `Creole.Tests`, `Creole.Benchmarks`, …), whatever folder it is in.
-- `sealed` is optional on private, internal and `file` types. Node and plan classes stay `sealed` (ADR-0001).
+- `sealed` is optional on private, internal and `file` types, node and plan classes included.
 - Member order: by kind (nested classes, structs, records, other nested types; constants; fields; properties and indexers; events; constructors; methods; operators), then accessibility (private first, public last), then name ignoring case and a leading `_`. Exception: a field or property comes after any member its initializer reads (CRL0004). Details in CONTRIBUTING.md § Conventions.
 - A combinator null-checks each parser argument, and an extension member its receiver too, with a `[CallerArgumentExpression]` parameter passed to `Guard.NotNull`. `ExtensionReceiverTests` checks the receivers. An instance method cannot check its receiver (C# throws `NullReferenceException` first); CRL0004 covers it.
 - Every public type and member has XML docs. A public API change updates `docs/` in the same change.

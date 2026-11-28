@@ -816,7 +816,7 @@ On first use, a grammar is lowered to an execution plan and cached in a `Conditi
   - **Failures.** When the automaton finds no match, the interpreter re-runs the subtree and reports the failure, so errors never come from the tables.
 - Runs of a character class (`Letter.SkipMany()`, identifiers, whitespace) become a `SearchValues<char>` scan with `IndexOfAnyExcept`, which the runtime vectorizes.
 
-Plan nodes are sealed classes with `abstract bool TryParse(ref Cursor<TIn> c, ref TOut result)`. `Cursor<TIn>` is a ref struct with a fast path for reads inside the current buffer segment.
+Plan nodes are classes with `abstract bool TryParse(ref Cursor<TIn> c, ref TOut result)`. `Cursor<TIn>` is a ref struct with a fast path for reads inside the current buffer segment.
 
 ### Source-generated engine
 
