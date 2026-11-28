@@ -120,14 +120,14 @@ file class Parsers : TokenGrammar<Lexeme, K>
     public static readonly Parser<Lexeme, string> ChangeMadeThenUndone = OneOf(SlashNameNumber, OperandNumber, _semi);
 
     /// <summary>
-    /// Option 2B's example in ADR-0030: a number, or an <c>Atomic</c> that changes to operand mode, reads a regex and fails at the next token.
+    /// A number, or an <c>Atomic</c> that changes to operand mode, reads a regex and fails at the next token.
     /// </summary>
     public static readonly Parser<Lexeme, string> FailureAfterAChange =
         Kind(K.Number).Select(static number => number.Text)
             .Or(Atomic(Seq(_operand, Kind(K.Regex), Kind(K.Number))).Select(static parts => parts.Item3.Text));
 
     /// <summary>
-    /// The example in ADR-0030 option 2F: an <c>Atomic</c> around a successful <c>Longest</c> whose winner changes the mode and whose loser fails further on, and a number that fails, then a semicolon.
+    /// An <c>Atomic</c> around a successful <c>Longest</c> whose winner changes the mode and whose loser fails further on, and a number that fails, then a semicolon.
     /// </summary>
     public static readonly Parser<Lexeme, string> LongestThenUndo =
         Atomic(
@@ -141,7 +141,7 @@ file class Parsers : TokenGrammar<Lexeme, K>
         ).Or(_semi);
 
     /// <summary>
-    /// Counterexample 6 in ADR-0030: a <c>Longest</c> whose winner keeps operator mode and whose shorter alternative, tried after it, changes to operand mode.
+    /// A <c>Longest</c> whose winner keeps operator mode and whose shorter alternative, tried after it, changes to operand mode.
     /// </summary>
     public static readonly Parser<Lexeme, string> LongestWinnerFirst = Longest(SlashName, OperandRegex).Before(Kind(K.Slash));
 
@@ -232,6 +232,16 @@ file class Parsers : TokenGrammar<Lexeme, K>
 /// </summary>
 file static class Rollback
 {
+    /// <summary>
+    /// The outcome of <paramref name="parser"/> on <paramref name="text"/> with every choice that has a keyed alternative dispatched, after checking that it does dispatch.
+    /// </summary>
+    public static (bool Ok, T Value, ParseError? Error) Dispatched<T>(Parser<Lexeme, T> parser, string text)
+    {
+        Assert.IsType<DispatchPlan<Lexeme, T, FullMark>>(new PlanBuilder(LoweringOptions.All, dispatchThreshold: 1).Lower(parser));
+
+        return LayerRun.Parse(Lexers.Lexer, parser, text, builder: new PlanBuilder(LoweringOptions.All, dispatchThreshold: 1));
+    }
+
     public static ParseError Error<T>(Parser<Lexeme, T> parser, string text)
     {
         var failed = Assert.IsType<Failed>(Pipeline.From(Lexers.Lexer).Then(parser).Parse(text).Value);
@@ -264,10 +274,16 @@ file static class Rollback
 
     public static SourceSpan SpanOf(long start, long end) =>
         new(SourceId.Unnamed, start, end);
+
+    /// <summary>
+    /// The outcome of <paramref name="parser"/> on <paramref name="text"/> with no choice dispatched.
+    /// </summary>
+    public static (bool Ok, T Value, ParseError? Error) Undispatched<T>(Parser<Lexeme, T> parser, string text) =>
+        LayerRun.Parse(Lexers.Lexer, parser, text, builder: new PlanBuilder(LoweringOptions.All & ~LoweringOptions.Dispatch));
 }
 
 /// <summary>
-/// The rollback rule of § 3. Mode channels: going back to a mark undoes every mode change made since, newest first, and an undo that changes the mode on top back discards the tokens read in the undone mode and forgets the failures past it (ADR-0030, ADR-0042).
+/// The rollback rule of § 3. Mode channels: going back to a mark undoes every mode change made since, newest first, and an undo that changes the mode on top back discards the tokens read in the undone mode and forgets the failures past it.
 /// </summary>
 public class ModeRollbackTests
 {
@@ -413,19 +429,23 @@ public class ModeRollbackTests
         Assert.Equal(["Operator /", "Operand /a/"], lexed);
     }
 
-    [Theory]
-    [InlineData("/x/")]
-    [InlineData("x")]
-    public void DispatchGivesTheSameResultAndErrorWhenAnAlternativeChangesTheMode(string text)
+    [Fact]
+    public void DispatchGivesTheSameErrorWhenAnAlternativeChangesTheMode()
     {
-        Assert.IsType<DispatchPlan<Lexeme, Lexeme, FullMark>>(new PlanBuilder(LoweringOptions.All, dispatchThreshold: 1).Lower(Parsers.RegexOrSlash));
+        var with = Rollback.Dispatched(Parsers.RegexOrSlash, "x");
 
-        var without = LayerRun.Parse(Lexers.Lexer, Parsers.RegexOrSlash, text, builder: new PlanBuilder(LoweringOptions.All & ~LoweringOptions.Dispatch));
-        var with = LayerRun.Parse(Lexers.Lexer, Parsers.RegexOrSlash, text, builder: new PlanBuilder(LoweringOptions.All, dispatchThreshold: 1));
+        Assert.Equal(Rollback.Undispatched(Parsers.RegexOrSlash, "x"), with);
+        Assert.False(with.Ok);
+        Assert.Equal([Rollback.Expects(K.Regex), Rollback.Expects(K.Slash)], with.Error!.Expected);
+    }
 
-        Assert.Equal(without, with);
-        Assert.Equal(text == "/x/" ? (true, new Lexeme(K.Regex, "/x/")) : (false, default), (with.Ok, with.Value));
-        Assert.Equal(text == "/x/" ? [] : [Rollback.Expects(K.Regex), Rollback.Expects(K.Slash)], with.Error?.Expected ?? []);
+    [Fact]
+    public void DispatchGivesTheSameResultWhenAnAlternativeChangesTheMode()
+    {
+        var with = Rollback.Dispatched(Parsers.RegexOrSlash, "/x/");
+
+        Assert.Equal(Rollback.Undispatched(Parsers.RegexOrSlash, "/x/"), with);
+        Assert.Equal((true, new Lexeme(K.Regex, "/x/"), null), with);
     }
 
     [Fact]
