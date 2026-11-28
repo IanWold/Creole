@@ -26,11 +26,6 @@ public class JsonBenchmarks
 
     [BenchmarkCategory("Gate")]
     [Benchmark]
-    public JsonValue CreoleSliced() =>
-        CreoleSlicedJson.Parse(_text);
-
-    [BenchmarkCategory("Gate")]
-    [Benchmark]
     public JsonValue Parlot() =>
         ParlotJson.Parse(ParlotJson.Interpreted, _text);
 
