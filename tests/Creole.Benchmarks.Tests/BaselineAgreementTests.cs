@@ -66,7 +66,7 @@ public class BaselineAgreementTests
     [MemberData(nameof(CreoleJsonParsers))]
     public void CreoleJsonUnescapesEveryEscape(string parser)
     {
-        var text = $$"""["", "plain", "\"\\\/\b\f\n\r\t", "é中😀", "{{new string('x', 300)}}\n{{new string('y', 300)}}"]""";
+        var text = $$"""["", "plain", "\"\\\/\b\f\n\r\t", "\u00e9\u4E2D\uD83D\uDE00", "{{new string('x', 300)}}\n{{new string('y', 300)}}"]""";
         var expected = SystemTextJsonBaseline.Parse(Encoding.UTF8.GetBytes(text)).ToCanonicalString();
 
         Assert.Equal(expected, ParseJson(parser, text).ToCanonicalString());
