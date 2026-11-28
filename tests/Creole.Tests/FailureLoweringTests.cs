@@ -130,6 +130,120 @@ public class FailureLoweringTests
     }
 
     [Fact]
+    public void AnUndoForgetsTheFailuresPastItsIndex()
+    {
+        var log = new FailureLog<char>();
+        var followed = log.ChangeAt(2);
+
+        log.Record(5, _x);
+        log.UndoChangeAt(2, followed);
+
+        Assert.Equal(ErrorAt(2, new UnexpectedItem("'c'"), []), Error(log));
+    }
+
+    [Fact]
+    public void ARestoreAfterTheFirstChangeSinceTheSaveWasUndoneIsNotLowered()
+    {
+        var log = new FailureLog<char>();
+
+        log.Record(5, _x);
+
+        var mark = log.Save();
+        var followed = log.ChangeAt(3);
+
+        log.Record(6, _y);
+        log.UndoChangeAt(3, followed);
+        log.Restore(in mark);
+
+        Assert.Equal(ErrorAt(5, new UnexpectedItem("'f'"), [new Label("x")]), Error(log));
+    }
+
+    [Fact]
+    public void ASaveWhoseFirstChangeWasUndoneIsLoweredAtTheNextChange()
+    {
+        var log = new FailureLog<char>();
+
+        log.Record(6, _x);
+
+        var mark = log.Save();
+        var followed = log.ChangeAt(2);
+
+        log.UndoChangeAt(2, followed);
+        log.ChangeAt(4);
+        log.Restore(in mark);
+
+        Assert.Equal(ErrorAt(4, new UnexpectedItem("'e'"), []), Error(log));
+    }
+
+    [Fact]
+    public void ASaveWhoseFirstChangeWasUndoneForgetsTheItemCopiedThere()
+    {
+        var log = new FailureLog<char>();
+        var buffer = new StreamBuffer<char>(new ArrayUpstream<char>(Text.ToCharArray()), segmentSize: 1, new OverwritingPool<char>('?'));
+
+        Assert.True(buffer.TryGetSegment(9, horizon: 0, out _, out _));
+
+        log.Record(8, _x);
+
+        var mark = log.Save();
+        var followed = log.ChangeAt(2);
+
+        buffer.Release(4, log);
+        log.UndoChangeAt(2, followed);
+        log.ChangeAt(5);
+        log.Restore(in mark);
+
+        var cursor = new Cursor<char>(buffer) { Failures = log };
+
+        Assert.Equal(ErrorAt(5, new UnexpectedItem("'f'"), []), log.ToError(in cursor, "parser", buffer.SpanOf));
+    }
+
+    [Fact]
+    public void AnUndoTakesTheChangeBackOnlyFromTheSavesItWasTheFirstChangeAfter()
+    {
+        var log = new FailureLog<char>();
+
+        log.Record(8, _x);
+
+        var outer = log.Save();
+
+        log.ChangeAt(2);
+        log.Record(7, _y);
+
+        var inner = log.Save();
+        var followed = log.ChangeAt(4);
+
+        log.Record(6, _x);
+        log.UndoChangeAt(4, followed);
+        log.Restore(in inner);
+
+        Assert.Equal(ErrorAt(7, new UnexpectedItem("'h'"), [new Label("y")]), Error(log));
+
+        log.Restore(in outer);
+
+        Assert.Equal(ErrorAt(2, new UnexpectedItem("'c'"), []), Error(log));
+    }
+
+    [Fact]
+    public void UndoingALaterChangeAtTheSameIndexLeavesTheFirstChangeSinceTheSave()
+    {
+        var log = new FailureLog<char>();
+
+        log.Record(5, _x);
+
+        var mark = log.Save();
+
+        log.ChangeAt(3);
+
+        var followed = log.ChangeAt(3);
+
+        log.UndoChangeAt(3, followed);
+        log.Restore(in mark);
+
+        Assert.Equal(ErrorAt(3, new UnexpectedItem("'d'"), []), Error(log));
+    }
+
+    [Fact]
     public void AChainedOperatorWhoseSpanReachesPastTheIndexLosesItsEndAndItsMessage()
     {
         var log = new FailureLog<char>();

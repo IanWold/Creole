@@ -20,7 +20,7 @@ namespace Creole;
 /// A buffer releases only consumed items, which a mode change never discards, so no copy is of an item lexed under an abandoned mode.
 /// </para>
 /// <para>
-/// A mode change at a position forgets what the furthest failure says about the items there and after it, which it discarded (<see cref="LowerAt"/>).
+/// A mode change at a position forgets what the furthest failure says about the items there and after it, which it discarded (<see cref="ChangeAt"/>), and so does undoing the change (<see cref="UndoChangeAt"/>).
 /// </para>
 /// <para>
 /// <c>Lookahead</c>, <c>Not</c> and <c>Longest</c> take a <see cref="Save"/> and may put the failure back as it was with <see cref="Restore"/>.
@@ -322,8 +322,11 @@ internal partial class FailureLog<T>
     /// A save's restore is lowered at the first change made after it. A stream buffer copies the item there before it releases it, because the cursor may have moved far past it by the time the save is restored.
     /// The saves no change has followed are those taken since the last change, at the top of the stack of saves.
     /// </remarks>
-    public void ChangeAt(long index)
+    /// <returns>How many open saves a change had already followed, which <see cref="UndoChangeAt"/> needs to undo this one.</returns>
+    public int ChangeAt(long index)
     {
+        var followed = _unchanged;
+
         LowerAt(index);
 
         for (var i = _unchanged; i < _saveCount; i++)
@@ -332,6 +335,8 @@ internal partial class FailureLog<T>
         }
 
         _unchanged = _saveCount;
+
+        return followed;
     }
 
     /// <summary>
@@ -703,4 +708,30 @@ internal partial class FailureLog<T>
         Position < 0
             ? null
             : Copy().ToError(in cursor, layer, spanOf);
+
+    /// <summary>
+    /// Records the undo of a change of mode at <paramref name="index"/>, for which <see cref="ChangeAt"/> returned <paramref name="followed"/>: forgets what the furthest failure says about the items from there on, as the change did, and takes the change back from each open save it was the first change after.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The failures recorded since the change past <paramref name="index"/> name items read in the mode the undo leaves, which are discarded.
+    /// A save whose first change is undone is no longer lowered when restored, so a construct that undoes its changes before it restores puts the failure back as it found it.
+    /// The save takes the next change made after the undo as its first.
+    /// </para>
+    /// <para>
+    /// Changes are undone newest first, and every save taken after a change has ended by the time the change is undone.
+    /// So the open saves from <paramref name="followed"/> on are exactly those that this change was the first after, even where another change was made at the same index.
+    /// </para>
+    /// </remarks>
+    public void UndoChangeAt(long index, int followed)
+    {
+        LowerAt(index);
+
+        for (var i = followed; i < _saveCount; i++)
+        {
+            _saves[i] = _saves[i] with { Change = -1, ChangeAt = null };
+        }
+
+        _unchanged = Math.Min(_unchanged, followed);
+    }
 }

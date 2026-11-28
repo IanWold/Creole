@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Mode channels](../../README.md#mode--mode-channels) |
 | Phase | Phase 1 — Layers |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -41,3 +41,8 @@ Rewinding any mark undoes mode changes made after it.
 
 - [§ 3. Mode channels](../../../whitepaper.md#3-mode-channels)
 - [§ Bookmarks and retention](../../../whitepaper.md#bookmarks-and-retention)
+
+## Progress notes
+
+- 2026-11-27 (Build): Started. ADR-0030 points 2, 3, 6 and 9, ADR-0031 point 6 and ADR-0042 points 1, 3 and 5, all Accepted, pin down the design, and the whitepaper has nothing open. Approach: marks save the mode log's absolute length in grammars with mode nodes or `Bind`, rewinds undo entries newest first and discard and lower only when the top changes back, and a `Longest` winner that can change the log runs again. Next: plan the build with `/build`.
+- 2026-11-27 (Build): Plan approved: three increments (undoing a change in the failure log; the undo itself, with marks, discards and ADR-0030 point 11's tests; property tests against a reference model that lexes from scratch). Calls: mode nodes select `FullMark` rather than a third mark type; `Longest`'s re-run stays decided per grammar; an undo that would reach a dropped entry throws; a test node lowers a pipeline's parser with chosen options; `ModeWriter.Return` must reset its dropped count. Increment 1 done: `FailureLog.ChangeAt` returns how many open saves a change had already followed, and `UndoChangeAt(index, followed)` lowers at the index and takes the change, and the item copied there, back from the open saves from `followed` on, so two changes at one index clear only the right saves. No callers yet: the log entry that stores the count comes in increment 2 with its reader. `FailureLoweringTests` (+6); six mutations each failed a test, after one survivor showed the copy test released too little. `dotnet build` 0 warnings; `dotnet test` 2,268 run, 3 failed, none in this change: `NodeModelTests.NodeTypesAreInternalAndSealed` fails since `fad0ba5` unsealed node classes, and two `StreamBufferTests` allocation tests fail under the full suite's load but pass alone. Next: increment 2, the undo.
