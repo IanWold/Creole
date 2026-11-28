@@ -135,6 +135,15 @@ public class ModeChangeTests
     }
 
     [Fact]
+    public void AParseOnItsOwnUndoesItsChangesAfterAParseWhoseLogDroppedEntries()
+    {
+        var dropping = SetMode(_modes, Mode.Text).Then(Char('a')).Then(SetMode(_modes, Mode.Code)).SkipMany().Then(End);
+
+        Assert.IsType<Parsed<Unit>>(dropping.Parse(new string('a', 10_000)).Value);
+        Assert.Equal('a', Assert.IsType<Parsed<char>>(SetMode(_modes, Mode.Text).Then(Char('z')).Or(Char('a')).Parse("a").Value).Value);
+    }
+
+    [Fact]
     public void AParserThatWritesAChannelParsesOnItsOwnOverTokens() =>
         Assert.IsType<Parsed<Unit>>(Script.Block.Parse((Tok[])[new(K.LBrace), new(K.Number), new(K.Number), new(K.RBrace)]).Value);
 

@@ -44,7 +44,7 @@ public class ModeNodeTests
     public void AnAlternativeThatStartsWithAModeChangeHasNoDispatchKeys(string name)
     {
         Assert.IsType<DispatchPlan<char, char, LightMark>>(new PlanBuilder(dispatchThreshold: 2).Lower(OneOf(Char('a'), Char('b'))));
-        Assert.IsType<OrPlan<char, char, LightMark>>(new PlanBuilder(dispatchThreshold: 2).Lower(OneOf(Change(name).Then(Char('a')), Char('b'))));
+        Assert.IsType<OrPlan<char, char, FullMark>>(new PlanBuilder(dispatchThreshold: 2).Lower(OneOf(Change(name).Then(Char('a')), Char('b'))));
     }
 
     [Fact]

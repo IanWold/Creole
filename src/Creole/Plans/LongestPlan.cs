@@ -33,8 +33,8 @@ internal class LongestPlan<TIn, T, TMark>(Plan<TIn, T>[] alternatives) : Plan<TI
 
         for (var i = 0; i < alternatives.Length; i++)
         {
-            mark.Rewind(ref cursor);
             cursor.Reset(mark.Position);
+            mark.Rewind(ref cursor);
             cursor.Cut = false;
             T value = default!;
 
@@ -61,8 +61,8 @@ internal class LongestPlan<TIn, T, TMark>(Plan<TIn, T>[] alternatives) : Plan<TI
             && alternatives.Length > 1
             && (winner < alternatives.Length - 1 || cursor.Failures is not null))
         {
-            mark.Rewind(ref cursor);
             cursor.Reset(mark.Position);
+            mark.Rewind(ref cursor);
             cursor.ResetFailures(in failures);
             cursor.Cut = false;
             T value = default!;
@@ -82,8 +82,8 @@ internal class LongestPlan<TIn, T, TMark>(Plan<TIn, T>[] alternatives) : Plan<TI
 
         if (bestEnd < 0)
         {
-            mark.Rewind(ref cursor);
             cursor.Reset(mark.Position);
+            mark.Rewind(ref cursor);
             cursor.KeepFailures(in failures);
             return false;
         }

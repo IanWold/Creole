@@ -14,10 +14,10 @@ internal partial class PlanBuilder
     private bool FullMarks => _fullMarks is true;
 
     /// <summary>
-    /// Whether a parser reachable from <paramref name="root"/>, following <c>Rec</c>, can raise diagnostics or change the layer's state.
+    /// Whether a parser reachable from <paramref name="root"/>, following <c>Rec</c>, can raise diagnostics, change a mode or change the layer's state.
     /// </summary>
     /// <remarks>
-    /// <c>SetState</c> and <c>Scan</c> change the state.
+    /// <c>SetMode</c>, <c>PushMode</c> and <c>PopMode</c> change a mode, and <c>SetState</c> and <c>Scan</c> change the state.
     /// A <c>Bind</c> counts, because its continuation can return any parser.
     /// A <c>Rec</c> whose reference fails is passed over here, so that lowering reports it with its rule path.
     /// </remarks>
@@ -33,7 +33,7 @@ internal partial class PlanBuilder
                 continue;
             }
 
-            if (node.Kind is NodeKind.Bind or NodeKind.SetState or NodeKind.Scan)
+            if (node.Kind is NodeKind.Bind or NodeKind.PopMode or NodeKind.PushMode or NodeKind.Scan or NodeKind.SetMode or NodeKind.SetState)
             {
                 return true;
             }

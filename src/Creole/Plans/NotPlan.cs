@@ -29,8 +29,8 @@ internal class NotPlan<TIn, T, TMark>(Plan<TIn, T> item) : Plan<TIn, Unit>
 
         if (!starved)
         {
-            mark.Rewind(ref cursor);
             cursor.Reset(mark.Position);
+            mark.Rewind(ref cursor);
         }
 
         cursor.Unpin(floor);

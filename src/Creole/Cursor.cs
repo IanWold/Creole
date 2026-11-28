@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Creole;
@@ -240,21 +241,29 @@ public ref struct Cursor<T>
     }
 
     /// <summary>
-    /// Discards the items from the cursor on, so that they are produced again, because this layer changed the mode of <paramref name="channel"/>.
+    /// Discards the items from <paramref name="position"/> on, so that they are produced again, because this layer changed the mode of <paramref name="channel"/> there, or undid a change made there.
     /// </summary>
     /// <remarks>
+    /// <paramref name="position"/> must be at or after the cursor.
     /// Only items that the layer reading <paramref name="channel"/> produced are discarded, so a cursor over its output does, and a cursor over any other input does not.
-    /// The cursor keeps the items before it in its segment and reads the rest afresh.
+    /// The cursor keeps the items before <paramref name="position"/> in its segment and reads the rest afresh.
     /// </remarks>
-    internal void Discard(ModeLink channel)
+    internal void Discard(long position, ModeLink channel)
     {
-        if (_source is null || !_source.Discard(Position, channel))
+        Debug.Assert(position >= Position, "A discard behind the cursor would leave it on discarded items.");
+
+        if (_source is null || !_source.Discard(position, channel))
         {
             return;
         }
 
-        _segment = _segment[.._index];
-        _span = _span[.._index];
+        var kept = position - _segmentStart;
+
+        if (kept < _span.Length)
+        {
+            _segment = _segment[..(int)kept];
+            _span = _span[..(int)kept];
+        }
     }
 
     /// <summary>

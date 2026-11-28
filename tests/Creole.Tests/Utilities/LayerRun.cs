@@ -111,8 +111,9 @@ internal static class LayerRun
     /// Both buffers hold <paramref name="segmentSize"/> items to a segment, from pools that overwrite each array given back, so a read of released or discarded items shows.
     /// </remarks>
     /// <param name="released">Given the first position the items' buffer still holds when the parse ends, so a test can check that it released what it meant to.</param>
+    /// <param name="builder">The builder that lowers <paramref name="parser"/>, so a test can choose its rewrites; by default, the plan a pipeline would run.</param>
     /// <returns>The parser's value, or the error of the parser or of the layer that failed.</returns>
-    public static (bool Ok, TOut Value, ParseError? Error) Parse<T, TOut>(Layer<char, T> layer, Parser<T, TOut> parser, string text, int segmentSize = 1024, PipelineRun? run = null, Action<long>? released = null)
+    public static (bool Ok, TOut Value, ParseError? Error) Parse<T, TOut>(Layer<char, T> layer, Parser<T, TOut> parser, string text, int segmentSize = 1024, PipelineRun? run = null, Action<long>? released = null, PlanBuilder? builder = null)
     {
         run ??= new PipelineRun(ParseOptions.Default, recordFailures: true);
 
@@ -126,7 +127,7 @@ internal static class LayerRun
 
         try
         {
-            return PlanCache.Get(parser).TryParse(ref cursor, ref value)
+            return (builder?.Lower(parser) ?? PlanCache.Get(parser)).TryParse(ref cursor, ref value)
                 ? (true, value, null)
                 : (false, value, log.ToError(in cursor, "parser", items.SpanOf));
         }

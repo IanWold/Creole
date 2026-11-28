@@ -14,6 +14,10 @@ namespace Creole;
 /// A change also discards the items the <c>Layer.Modal</c> reading the channel produced from the cursor on, if the layer reads them directly, so they are read again in the new mode.
 /// </para>
 /// <para>
+/// A mark notes the log's <see cref="Length"/>, which counts the entries dropped as well as those kept, and going back to the mark undoes every write since with <see cref="UndoTo"/>.
+/// Undoing a change does what the change did, at the change's position: it forgets the failures past it and discards the items read from there on in the mode it undoes.
+/// </para>
+/// <para>
 /// In a pipeline, a writer holds the links of the channels read below its layer, and changes only those.
 /// A change to any other channel throws, and so does a change to a channel another layer has already changed in the run.
 /// </para>
@@ -36,7 +40,8 @@ internal class ModeWriter(string layer, ModeLink[]? below)
     /// <param name="Link">The channel whose stack the write replaced.</param>
     /// <param name="Previous">The stack before the write.</param>
     /// <param name="Changed">Whether the write changed the mode: whether the top after it differs from the top before it.</param>
-    private readonly record struct Entry(long Index, ModeLink Link, object Previous, bool Changed);
+    /// <param name="Followed">For a change, how many open saves a change had already followed when it was made, which undoing it gives back to the failure log.</param>
+    private readonly record struct Entry(long Index, ModeLink Link, object Previous, bool Changed, int Followed);
 
     /// <summary>
     /// The most entries a spare writer's log keeps room for. A larger log is let go when its writer is given back, so a thread does not hold on to the memory of its largest parse.
@@ -62,6 +67,11 @@ internal class ModeWriter(string layer, ModeLink[]? below)
     /// The number of entries the log holds, for tests of its memory bound.
     /// </summary>
     internal int Count => _log?.Count ?? 0;
+
+    /// <summary>
+    /// How many writes the log holds plus how many it has dropped, which a mark notes so that <see cref="UndoTo"/> can go back to it.
+    /// </summary>
+    public long Length => _dropped + Count;
 
     /// <summary>
     /// Drops the entries of <paramref name="log"/> below <paramref name="horizon"/>, the lowest position the layer can still go back to.
@@ -108,7 +118,7 @@ internal class ModeWriter(string layer, ModeLink[]? below)
     /// <remarks>
     /// The log drops only entries below the layer's floor, and the floor never passes the bookmark, so every write since the bookmark stays in the log until <see cref="Restart"/>.
     /// </remarks>
-    public void Bookmark() => _bookmark = _dropped + Count;
+    public void Bookmark() => _bookmark = Length;
 
     /// <summary>
     /// The link through which this writer changes <paramref name="channel"/>'s stack.
@@ -210,6 +220,9 @@ internal class ModeWriter(string layer, ModeLink[]? below)
     /// <summary>
     /// Gives back the writer a parser run on its own took, if it took one, as the thread's spare, with no channels and an empty log.
     /// </summary>
+    /// <remarks>
+    /// Its <see cref="Length"/> starts again at zero, because the next parse takes it at its first write, after marks that found no writer and noted a length of zero.
+    /// </remarks>
     public static void Return(ModeWriter? writer)
     {
         if (writer is null)
@@ -225,7 +238,53 @@ internal class ModeWriter(string layer, ModeLink[]? below)
         }
 
         writer._log?.Clear();
+        writer._dropped = 0;
+        writer._bookmark = 0;
         _spare = writer;
+    }
+
+    /// <summary>
+    /// Undoes every write made since the log had <paramref name="length"/> writes, newest first, as going back to a mark that noted that <see cref="Length"/> does.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Each undo puts back the channel's stack as it was before the write.
+    /// If the write changed the mode, the undo changes it back at the write's position: the layer forgets its failures past that position, each open save whose first change it was takes the change back, and the items read there and after it in the undone mode are discarded.
+    /// </para>
+    /// <para>
+    /// The cursor must stand at or before every write it undoes, as it does once a construct has gone back to its mark's position.
+    /// No mark can be older than the entries the log has dropped, because the log drops only those below the lower of the cursor and the floor.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">An entry the undo needs has been dropped, which would be a defect in Creole.</exception>
+    public void UndoTo<T>(ref Cursor<T> cursor, long length)
+    {
+        if (length >= Length || _log is not { } log)
+        {
+            return;
+        }
+
+        var kept = (int)(length - _dropped);
+
+        if (kept < 0)
+        {
+            throw new InvalidOperationException($"The {_layer} layer went back to before a mode change that its log had dropped.");
+        }
+
+        for (var i = log.Count - 1; i >= kept; i--)
+        {
+            var entry = log[i];
+
+            entry.Link.Restore(entry.Previous);
+
+            if (entry.Changed)
+            {
+                cursor.Failures?.UndoChangeAt(entry.Index, entry.Followed);
+                cursor.Discard(entry.Index, entry.Link);
+            }
+        }
+
+        log.RemoveRange(kept, log.Count - kept);
     }
 
     /// <summary>
@@ -246,13 +305,15 @@ internal class ModeWriter(string layer, ModeLink[]? below)
             _dropped += Drop(log, Math.Min(cursor.Position, cursor.Floor));
         }
 
-        log.Add(new Entry(cursor.Position, link, previous, changed));
         link.Stack = next;
 
-        if (changed)
+        if (!changed)
         {
-            cursor.Failures?.ChangeAt(cursor.Position);
-            cursor.Discard(link);
+            log.Add(new Entry(cursor.Position, link, previous, Changed: false, Followed: 0));
+            return;
         }
+
+        log.Add(new Entry(cursor.Position, link, previous, Changed: true, cursor.Failures?.ChangeAt(cursor.Position) ?? 0));
+        cursor.Discard(cursor.Position, link);
     }
 }
