@@ -25,8 +25,8 @@ internal class AtomicPlan<TIn, T, TMark>(Plan<TIn, T> item) : Plan<TIn, T>
 
         if (!ok && !cursor.Cut && !cursor.Starved)
         {
-            mark.Rewind(ref cursor);
             cursor.Reset(mark.Position);
+            mark.Rewind(ref cursor);
         }
 
         cursor.Unpin(floor);

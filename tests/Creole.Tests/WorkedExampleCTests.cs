@@ -179,6 +179,7 @@ file class ErrorCases : TokenGrammar<Tok, K>
 
     /// <summary>
     /// After <c>x;</c>, an <c>Atomic</c> around a filter that rejects a slash and a name read in operator mode, then a change to operand mode where it started, and a number.
+    /// The number fails without consuming, so the change is undone and the error reports the slash read again in operator mode.
     /// </summary>
     public static readonly Parser<Tok, string> RejectThenChange =
         ScriptGrammar.Statement.Then(
@@ -294,8 +295,8 @@ public class WorkedExampleCTests
     {
         var error = Script.Error(ErrorCases.RejectThenChange, "x; /a/");
 
-        Assert.Equal(Script.SpanOf(3, 6), error.Span);
-        Assert.Equal(new UnexpectedItem(Script.Found(K.Regex, "/a/")), error.Unexpected);
+        Assert.Equal(Script.SpanOf(3, 4), error.Span);
+        Assert.Equal(new UnexpectedItem(Script.Found(K.Slash, "/")), error.Unexpected);
         Assert.Single(error.Expected);
     }
 

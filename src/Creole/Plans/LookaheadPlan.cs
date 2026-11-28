@@ -26,8 +26,8 @@ internal class LookaheadPlan<TIn, T, TMark>(Plan<TIn, T> item) : Plan<TIn, T>
 
         if (ok)
         {
-            mark.Rewind(ref cursor);
             cursor.Reset(mark.Position);
+            mark.Rewind(ref cursor);
             cursor.RestoreFailures(in failures);
         }
         else

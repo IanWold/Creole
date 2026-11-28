@@ -12,7 +12,7 @@ The whitepaper names mode rollback corner cases as a top risk; test against a si
 
 ## Scope
 
-- Reference model that re-lexes from scratch for the current mode history.
+- Reference model that re-lexes from scratch for the current mode history. MODE-03 built one for items over a single layer, [ModeModel.cs](../../../tests/Creole.Tests/Utilities/ModeModel.cs), which this card can extend.
 - Random grammars and inputs with mode changes, backtracking, and multi-layer cascades.
 - Run in CI.
 - Compare errors as well as items, against a model of the failure record that applies [ADR-0030](../../docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md) point 3.

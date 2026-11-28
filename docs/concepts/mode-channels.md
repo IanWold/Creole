@@ -86,6 +86,31 @@ Two cases still need the mode changed before the parser looks:
 - **A token the old mode cannot read.** If the lexer fails to read the token in the old mode, the parse ends there, before the parser can change the mode. In such a grammar, the `/ c;` of `a / b / c;` read in operand mode is an unterminated regex. So an operand sets operator mode before it looks for anything that follows it, such as a `.` that starts a call.
 - **A layer in between.** A token is read again only when the parser reads the `Layer.Modal`'s tokens directly. If another layer sits between them, a change applies only to the tokens the lexer reads after it.
 
+## Going back
+
+When the parser goes back to an earlier point, it undoes every mode change made since, newest first ([whitepaper § 3. Mode channels](../../whitepaper.md#3-mode-channels), [ADR-0030](../../work/docs/decisions/0030-rewinds-recovery-restarts-and-reuse-keep-all-parse-state.md)):
+
+| Construct | Undoes the changes made |
+| --- | --- |
+| `Or`, `OneOf`, `Optional`, a repetition, `Expression.Build` | In an attempt that fails without consuming, the last alternative included |
+| `Atomic` | Inside it, when it fails and goes back to its start |
+| `Lookahead` | Inside it, when its parser succeeds |
+| `Not` | Inside it, always |
+| `Longest` | In each alternative, before it tries the next. It keeps the winner's |
+
+Undoing a change works like making one. The `Layer.Modal` below discards the tokens it read from the change's position on in the mode undone, and reads them again in the mode put back. Undoing a write that kept the mode discards nothing.
+
+So an alternative can start with a change. If the lexer reads `/x/` as one regex in operand mode and as a slash, a name and a slash in operator mode, then in operator mode
+
+```csharp
+public static readonly Parser<Tok, Tok> NumberOrSlash =
+    SetMode(Modes, LexMode.Operand).Then(Kind(K.Number)).Or(Kind(K.Slash));
+```
+
+reads `/x/` as a regex in operand mode and finds no number. The first alternative has consumed nothing, so the choice undoes its change, the lexer reads `/` again in operator mode, and the second alternative succeeds. Once an alternative consumes, its changes stand, unless an enclosing `Atomic` goes back past them.
+
+A `Longest` leaves the mode as its winner left it. If a shorter alternative ran after the winner, the `Longest` runs the winner again, so its changes are made once more ([Interpreter](../engines/interpreter.md#when-a-longest-compiles)).
+
 ## Who reads and writes a channel
 
 The channel connects a `Layer.Modal` to the layers above it ([ADR-0041](../../work/docs/decisions/0041-a-channel-has-one-reader-below-one-writer-and-a-write-nothing-reads-or-a-pop-of-the-last-mode-throws.md)):
@@ -114,7 +139,9 @@ A change of mode forgets what the parse's furthest failure says about the input 
 
 - A failure past the change becomes a failure where the change was made, which expects nothing. The next failure recorded there adds its expectations and its context.
 - A rejected value or a chained operator whose input runs past the change no longer widens the error, and its message no longer takes the place of what was found.
-- A failure that a construct puts back, as a filter does before it reports its rejection, is treated the same way for the changes made since it was saved.
+- A failure that a construct puts back, as a filter does before it reports its rejection, is treated the same way for the changes made since it was saved that are still in effect.
+- Undoing a change forgets the failures past its position too, because they were recorded in the mode undone. A failure past the position that was recorded before the change stays forgotten.
+- `Lookahead` and `Not` undo their changes before they put back the failure they saved, so they leave the error as they found it.
 
 So with `Modes` in operand mode, `Atomic(Char('a').Then(Char('b')).Then(Char('c'))).Or(SetMode(Modes, LexMode.Operator).Then(Char('z')))` on `abx` reports "expected 'z'" at the `a`, not "expected 'c'" at the `x`. With `SetMode(Modes, LexMode.Operand)`, which keeps the mode, the report stays at the `x`.
 
