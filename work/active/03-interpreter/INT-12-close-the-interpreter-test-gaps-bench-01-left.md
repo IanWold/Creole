@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Interpreted engine](../../README.md#int--interpreted-engine) |
 | Phase | Phase 1 — Layers |
-| Status | Not started |
+| Status | Done |
 
 ## Summary
 
@@ -17,9 +17,9 @@ Two behaviours that [BENCH-01](../13-benchmarks/BENCH-01-phase-0-speed-gate.md) 
 
 ## Acceptance criteria
 
-- [ ] A kept test builds a compiled `Longest` whose automaton disagrees with its alternatives and shows the parse returns the interpreter's result, in the build configuration the test suite runs.
-- [ ] Runs with and without a failure log are compared on where they stop as well as on value and error, across the error tests' grammars and every control shape to depth 3.
-- [ ] A throwaway mutation, recorded in the progress notes, shows each new test can fail.
+- [x] A kept test builds a compiled `Longest` whose automaton disagrees with its alternatives and shows the parse returns the interpreter's result, in the build configuration the test suite runs.
+- [x] Runs with and without a failure log are compared on where they stop as well as on value and error, across the error tests' grammars and every control shape to depth 3.
+- [x] A throwaway mutation, recorded in the progress notes, shows each new test can fail.
 
 ## Blocked by
 
@@ -34,3 +34,18 @@ Nothing directly.
 
 - [§ Interpreted engine](../../../whitepaper.md#interpreted-engine)
 - [§ Failure positions](../../../whitepaper.md#failure-positions)
+
+## Progress notes
+
+- 2026-11-27 (Build): Started. Replace the `Debug.Assert` in `DfaLongestPlan.Rerun` with a disagreement a test can observe, then test a deliberately wrong automaton; compare plan-level end positions with and without a failure log over the error tests' grammars and the control shapes to depth 3.
+- 2026-11-27 (Build): Increment 1, the compiled `Longest`'s fallback. `DfaLongestPlan` takes an optional `disagreed` callback that `Rerun` calls when the winner, run again, does not match what the automaton gave it; with none, Debug builds still assert, so lowering keeps the assertion and only a test passes a callback. `DfaLoweringTests.ACompiledLongestWhoseAutomatonIsWrongGivesTheInterpretersResult` builds two wrong automata (one for `ab | a` over `a | ab`, one for `ab | abc` over `xy | xyz`) and checks each parse of `ab` gives what the same `Longest` lowered with `LoweringOptions.None` gives, (true, "ab", 2) and a failure, with one disagreement reported. Throwaway mutation: `Rerun` returning success instead of falling back fails it with (True, "a", 1). Without a callback, the test fails in Debug with xUnit's `Trace/Debug.Assert() Failure`, so the assertion still fires there. 2,262 of 2,263 tests pass; `NodeModelTests.NodeTypesAreInternalAndSealed` fails at fad0ba5 without this change, since that commit unsealed the node types. Next: increment 2, plan-level end positions with and without a failure log in `Execution.Disagreement`.
+- 2026-11-27 (Build): Increment 2, where a run without a failure log stops. `Execution.Disagreement` now also runs the cached plan twice, set up as `Parse` sets up its runs (`Cursor.FromMemory`, `MaxDepth`), once without a log and once with one, and reports a difference in how each ended (succeeded, failed, or exceeded `MaxDepth`) or at what position. It reaches the error tests through `Execution.Error` (90 call sites), every control shape to depth 3 on every input to length 3 through `ShapeDisagreement`, and 9 other direct calls, with no new call sites. The control-shape test went from 17.7–18.1 s to 18.9 s. Throwaway mutations, each run against the old and the new helper over all of Creole.Tests: (A) `StringPlan` rewinding after a failure only with a log fails two more tests with the new helper, `FailureRecordingTests.AStringExpectsItselfWhereItStarted` and the JSON case `tru`; the 11 it fails under both run without a log and check positions directly. (B) `AtomicPlan` rewinding only with a log fails 43 more, among them `EveryControlShapeToDepthThreeFailsAsOneRunWithTheLogDoes` (`Atomic(ab) on "a": the run without a log failed at` 1, the run with one at 0) and error tests in eight files. Under the old helper no test that goes through `Disagreement` failed either mutation. 2,262 of 2,263 tests pass, the exception being the `NodeTypesAreInternalAndSealed` failure from fad0ba5. `StreamBufferTests.SpannedAtEveryItemAllocatesNothingPerItem` and `HoldingASpanAtEachItemAsItGoesAllocatesNothingPerItem` failed in 1 of 3 full runs with this change, and the first in 1 of 3 at the previous helper: each measures one 1M-item run with `attempts: 1`, so a collection that parallel tests cause adds to its count. Every criterion appears met. Next: `/complete`.
+
+## Outcome
+
+- **The compiled `Longest`'s fallback.** [DfaLongestPlan.cs](../../../src/Creole/Plans/DfaLongestPlan.cs) takes an optional `disagreed` callback that `Rerun` calls when the winner, run again, does not match what the automaton gave it, before it falls back to the interpreter's `LongestPlan`. Lowering passes none, so Debug builds still assert on a real disagreement and xUnit reports it as a test failure.
+  - [DfaLoweringTests.cs](../../../tests/Creole.Tests/DfaLoweringTests.cs): `ACompiledLongestWhoseAutomatonIsWrongGivesTheInterpretersResult` builds two wrong automata and checks each parse gives what the same `Longest` gives on the interpreter, one success and one failure, with one disagreement reported.
+- **Where a run without a failure log stops.** [Execution.cs](../../../tests/Creole.Tests/Utilities/Execution.cs): `Disagreement` also runs the plan without a log and with one, as `Parse` sets up its runs, and compares how and where each ended. The error tests reach it through `Execution.Error` (90 call sites), every control shape to depth 3 through `ParsingTests.ShapeDisagreement`, and nine other tests directly.
+- **Evidence.** Three throwaway mutations, recorded in the progress notes, each fail the new tests. Two of them, which make a plan rewind only when it has a log, pass every test that goes through the old `Disagreement`. 2,262 of 2,263 tests pass at c5c8bb8; `NodeModelTests.NodeTypesAreInternalAndSealed` fails since fad0ba5 unsealed the node types.
+- **Deviations:** none. **Follow-up cards:** none.
+- **Found along the way, outside this card.** `StreamBufferTests.SpannedAtEveryItemAllocatesNothingPerItem` and `HoldingASpanAtEachItemAsItGoesAllocatesNothingPerItem` fail now and then in full runs, before this card's change as well as after: each measures one run of 1M items with `attempts: 1`, so a collection that parallel tests cause adds to its count.

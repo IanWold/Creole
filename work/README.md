@@ -97,7 +97,7 @@ Note: [FND-07](active/01-foundations/FND-07-validate-c-15-features-and-decide-pa
 | 6 | ✅ [MODE-05](active/07-mode-channels/MODE-05-mode-payloads.md) Mode payloads | ✅ [MODE-01](active/07-mode-channels/MODE-01-mode-channels-and-layermodal.md) |
 | 6 | ✅ [STRM-02](active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md) Restart protocol and ParseManyAsync | [SPAN-06](active/05-source-spans/SPAN-06-byte-sources-and-the-decoding-layer.md), [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md), [LAY-08](active/06-layers-and-pipelines/LAY-08-per-layer-parse-state.md), ✅ [STRM-01](active/08-streaming/STRM-01-starved-outcome.md) |
 | 6 | ✅ [STRM-04](active/08-streaming/STRM-04-huge-single-documents.md) Huge single documents | [LAY-05](active/06-layers-and-pipelines/LAY-05-pipeline-api-and-sources.md) |
-| 7 | [INT-12](active/03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md) Close the interpreter test gaps BENCH-01 left | [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) |
+| 7 | ✅ [INT-12](active/03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md) Close the interpreter test gaps BENCH-01 left | [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) |
 | 7 | [MODE-03](active/07-mode-channels/MODE-03-rollback-rule.md) Rollback rule | ✅ [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) |
 | 7 | [MODE-04](active/07-mode-channels/MODE-04-multi-layer-invalidation-cascade.md) Multi-layer invalidation cascade | ✅ [MODE-02](active/07-mode-channels/MODE-02-invalidation-rule.md) |
 | 7 | [STRM-03](active/08-streaming/STRM-03-streaming-diagnostics.md) Streaming diagnostics | [ERR-03](active/04-errors-and-recovery/ERR-03-diagnostic-rendering.md), ✅ [STRM-02](active/08-streaming/STRM-02-restart-protocol-and-parsemanyasync.md) |
@@ -220,7 +220,6 @@ These items have all their blockers done:
 
 - [CORE-14](active/02-core-combinators/CORE-14-choices-beyond-16-alternatives.md) Choices beyond 16 alternatives
 - [INT-10](active/03-interpreter/INT-10-dispatched-longest-measured-against-the-automaton.md) Dispatched Longest, measured against the automaton
-- [INT-12](active/03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md) Close the interpreter test gaps BENCH-01 left
 - [ERR-05](active/04-errors-and-recovery/ERR-05-recover-combinator-and-strategies.md) Recover combinator and strategies
 - [ERR-06](active/04-errors-and-recovery/ERR-06-orinsert-for-missing-items.md) OrInsert for missing items
 - [SPAN-07](active/05-source-spans/SPAN-07-embedded-languages.md) Embedded languages
@@ -292,7 +291,7 @@ Lowering grammar trees to cached execution plans and running them; the reference
 | ✅ [INT-09](active/03-interpreter/INT-09-cheaper-automaton-construction.md) Cheaper automaton construction | 0 | [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md) |
 | [INT-10](active/03-interpreter/INT-10-dispatched-longest-measured-against-the-automaton.md) Dispatched Longest, measured against the automaton | 2 | [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [INT-09](active/03-interpreter/INT-09-cheaper-automaton-construction.md) |
 | ✅ [INT-11](active/03-interpreter/INT-11-single-layer-parse-over-token-input.md) Single-layer Parse over token input | 0 | [INT-08](active/03-interpreter/INT-08-single-layer-parse-api.md) |
-| [INT-12](active/03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md) Close the interpreter test gaps BENCH-01 left | 1 | [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) |
+| ✅ [INT-12](active/03-interpreter/INT-12-close-the-interpreter-test-gaps-bench-01-left.md) Close the interpreter test gaps BENCH-01 left | 1 | [INT-06](active/03-interpreter/INT-06-dfa-compiler-for-regular-subtrees.md), [BENCH-01](active/13-benchmarks/BENCH-01-phase-0-speed-gate.md) |
 
 ### ERR — Errors, diagnostics and recovery
 

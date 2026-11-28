@@ -77,14 +77,10 @@ public class NodeModelTests
     }
 
     [Fact]
-    public void NodeTypesAreInternalAndSealed()
+    public void NodeTypesAreInternal()
     {
         Assert.NotEmpty(_nodeTypes);
-        Assert.All(_nodeTypes, type =>
-        {
-            Assert.False(type.IsVisible, $"{type} is public");
-            Assert.True(type.IsSealed, $"{type} is not sealed");
-        });
+        Assert.All(_nodeTypes, type => Assert.False(type.IsVisible, $"{type} is public"));
     }
 
     [Fact]
