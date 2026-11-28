@@ -8,23 +8,24 @@ public sealed class CreoleJson : CharGrammar
 
     private static readonly Parser<char, char> _hexDigit = Range('0', '9').Or(Range('a', 'f')).Or(Range('A', 'F'));
 
-    private static readonly Parser<char, char> _escape = Char('\\').Then(OneOf(
-        Char('"'),
-        Char('\\'),
-        Char('/'),
-        Char('b').As('\b'),
-        Char('f').As('\f'),
-        Char('n').As('\n'),
-        Char('r').As('\r'),
-        Char('t').As('\t'),
-        Char('u').Then(_hexDigit.Repeat(4).Slice()).Select(static hex => (char)int.Parse(hex.Span, NumberStyles.HexNumber, CultureInfo.InvariantCulture))
+    private static readonly Parser<char, Unit> _escape = Char('\\').Then(OneOf(
+        Char('"').Ignore(),
+        Char('\\').Ignore(),
+        Char('/').Ignore(),
+        Char('b').Ignore(),
+        Char('f').Ignore(),
+        Char('n').Ignore(),
+        Char('r').Ignore(),
+        Char('t').Ignore(),
+        Char('u').Then(Seq(_hexDigit, _hexDigit, _hexDigit, _hexDigit)).Ignore()
     ));
 
     private static readonly Parser<char, string> _text = Token(
-        NoneOf('"', '\\').SkipAtLeastOnce().Text()
-            .Or(_escape.Select(static c => c.ToString()))
-            .Many()
-            .Select(static parts => string.Concat(parts))
+        NoneOf('"', '\\').SkipAtLeastOnce()
+            .Or(_escape)
+            .SkipMany()
+            .Slice()
+            .Select(static text => Unescape(text.Span))
             .Between(Char('"'), Char('"'))
     );
 
@@ -67,6 +68,57 @@ public sealed class CreoleJson : CharGrammar
 
     private static Parser<char, T> Token<T>(Parser<char, T> parser) =>
         parser.Before(_space);
+
+    private static string Unescape(ReadOnlySpan<char> text)
+    {
+        var backslash = text.IndexOf('\\');
+
+        if (backslash < 0)
+        {
+            return new string(text);
+        }
+
+        Span<char> buffer = text.Length <= 256
+            ? stackalloc char[text.Length]
+            : new char[text.Length];
+
+        var length = 0;
+        var rest = text;
+
+        while (backslash >= 0)
+        {
+            rest[..backslash].CopyTo(buffer[length..]);
+            length += backslash;
+
+            var escaped = rest[backslash + 1];
+
+            if (escaped == 'u')
+            {
+                buffer[length++] = (char)int.Parse(rest.Slice(backslash + 2, 4), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                rest = rest[(backslash + 6)..];
+            }
+            else
+            {
+                buffer[length++] = escaped switch
+                {
+                    'b' => '\b',
+                    'f' => '\f',
+                    'n' => '\n',
+                    'r' => '\r',
+                    't' => '\t',
+                    _ => escaped,
+                };
+                rest = rest[(backslash + 2)..];
+            }
+
+            backslash = rest.IndexOf('\\');
+        }
+
+        rest.CopyTo(buffer[length..]);
+        length += rest.Length;
+
+        return new string(buffer[..length]);
+    }
 
     public static JsonValue Parse(string text) => Document.Parse(text) switch
     {

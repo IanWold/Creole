@@ -59,6 +59,15 @@ public class BaselineAgreementTests
         Assert.Equal("8c4f7b4683e2e77ef95a50313c8d747ac0527228f98ffb99de73daf49e4be681", Hash(string.Join('\n', ArithmeticInputs.Expressions)));
 
     [Fact]
+    public void CreoleJsonUnescapesEveryEscape()
+    {
+        var text = $$"""["", "plain", "\"\\\/\b\f\n\r\t", "\u00e9\u4E2D\uD83D\uDE00", "{{new string('x', 300)}}\n{{new string('y', 300)}}"]""";
+        var expected = SystemTextJsonBaseline.Parse(Encoding.UTF8.GetBytes(text)).ToCanonicalString();
+
+        Assert.Equal(expected, CreoleJson.Parse(text).ToCanonicalString());
+    }
+
+    [Fact]
     public void HandWrittenArithmeticFollowsPrecedenceAndAssociativity()
     {
         Assert.Equal(7, HandWrittenArithmetic.Evaluate("1 + 2 * 3"));
