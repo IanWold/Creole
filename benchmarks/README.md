@@ -31,7 +31,7 @@ Phase gates compare Creole with its baselines as ratios ([ADR-0003](../work/docs
 
 - is checked with `python3 scripts/bench-gate.py <run> <run> <run>`. For each benchmark the script takes the median over the three runs of Creole's ratio to each baseline, then the geometric mean over the gate's benchmarks, and compares them with the Phase 0 thresholds. It stops if the runs measured different commits or Parlot versions, and warns about uncommitted changes, a job other than the default, or a different host.
 
-The gate benchmarks carry the `Gate` category: `Creole`, `Pidgin` and `Parlot` in `JsonBenchmarks`, and `Creole`, `PidginFolds` and `Parlot` in `ArithmeticBenchmarks`. Each run's `run.json` records the commit and the Parlot version, as ADR-0003 requires. The other benchmarks decide no gate, so a gate run leaves them out.
+The gate benchmarks carry the `Gate` category: `Creole`, `Pidgin` and `Parlot` in `JsonBenchmarks`, and `Creole`, `PidginFolds` and `Parlot` in `ArithmeticBenchmarks`. While [BENCH-04](../work/active/13-benchmarks/BENCH-04-revisit-string-handling-in-the-json-benchmark-grammar.md) compares two ways of building JSON strings, `CreoleSliced` in `JsonBenchmarks` carries it too, so each gate run times both forms; `bench-gate.py` reads only `Creole`. Each run's `run.json` records the commit and the Parlot version, as ADR-0003 requires. The other benchmarks decide no gate, so a gate run leaves them out.
 
 Single runs on this machine vary by up to 1.3× per benchmark, so one run decides nothing. Allocations do not vary and can be compared directly. No CI workflow runs the benchmarks.
 

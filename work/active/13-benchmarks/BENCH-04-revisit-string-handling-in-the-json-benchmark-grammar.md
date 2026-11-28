@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Benchmarks](../../README.md#bench--benchmarks) |
 | Phase | Phase 1 — Layers |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -34,3 +34,9 @@ The Phase 0 gate's JSON grammar builds each string from chunks joined by `string
 
 - [§ Benchmark plan](../../../whitepaper.md#benchmark-plan)
 - [§ Text capture](../../../whitepaper.md#text-capture)
+
+## Progress notes
+
+- 2026-11-27 (Building): Started. Build, not Research: the card names both string forms, the measurement protocol and the criteria, and the choice is benchmark method recorded here and in benchmarks/README.md, so no decision record. Approach: add the sliced form beside the chunked one in `CreoleJson`, run three default-job runs of both against Pidgin and Parlot, then choose. Next: plan with `/build`.
+- 2026-11-27 (Building): Plan presented, awaiting approval. Increment 1: a copy of `CreoleJson` with sliced strings (`CreoleSlicedJson`), timed as `CreoleSliced` in the `Gate` category so both forms run in the same invocations, with agreement tests; then three default-job gate runs on the committed tree. Increment 2: `CreoleJson` takes the chosen form, the other is deleted, and benchmarks/README.md's known differences are updated. A sliced Pidgin variant is left out: Creole is at 0.24× Pidgin, so it could not change a gate outcome. Next: the maintainer approves or revises the plan.
+- 2026-11-27 (Building): Increment 1 built, not yet measured. `CreoleSlicedJson` is `CreoleJson` with its strings sliced whole and unescaped in a `Select`; its escape check builds no value. `JsonBenchmarks.CreoleSliced` carries the `Gate` category. `CreoleSliced` joins the System.Text.Json agreement test on all three inputs, and `CreoleJsonUnescapesEveryEscape` checks both forms on every escape, a surrogate pair and a string longer than the stack buffer; mapping `\b` wrongly fails it. Benchmark tests: 49 of 49 pass. benchmarks/README.md's gate paragraph names `CreoleSliced`. Next: the maintainer commits, then three default-job gate runs on the clean tree.

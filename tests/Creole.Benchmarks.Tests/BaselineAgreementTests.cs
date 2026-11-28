@@ -5,10 +5,13 @@ namespace Creole.Benchmarks.Tests;
 
 public class BaselineAgreementTests
 {
-    private static readonly string[] _jsonParsers = ["Creole", "Parlot", "Pidgin", "Superpower", "Sprache"];
+    private static readonly string[] _jsonParsers = ["Creole", "CreoleSliced", "Parlot", "Pidgin", "Superpower", "Sprache"];
 
     public static TheoryData<string> ArithmeticParsers =>
         ["Creole", "Parlot", "Pidgin", "PidginFolds"];
+
+    public static TheoryData<string> CreoleJsonParsers =>
+        ["Creole", "CreoleSliced"];
 
     public static TheoryData<string, string> JsonCases =>
         [.. from input in JsonInputs.Names from parser in _jsonParsers select (input, parser)];
@@ -34,6 +37,7 @@ public class BaselineAgreementTests
     private static JsonValue ParseJson(string parser, string text) => parser switch
     {
         "Creole" => CreoleJson.Parse(text),
+        "CreoleSliced" => CreoleSlicedJson.Parse(text),
         "Parlot" => ParlotJson.Parse(ParlotJson.Interpreted, text),
         "Pidgin" => PidginJson.Parse(text),
         "Superpower" => SuperpowerJson.Parse(text),
@@ -57,6 +61,16 @@ public class BaselineAgreementTests
     [Fact]
     public void ArithmeticInputIsUnchanged() =>
         Assert.Equal("8c4f7b4683e2e77ef95a50313c8d747ac0527228f98ffb99de73daf49e4be681", Hash(string.Join('\n', ArithmeticInputs.Expressions)));
+
+    [Theory]
+    [MemberData(nameof(CreoleJsonParsers))]
+    public void CreoleJsonUnescapesEveryEscape(string parser)
+    {
+        var text = $$"""["", "plain", "\"\\\/\b\f\n\r\t", "é中😀", "{{new string('x', 300)}}\n{{new string('y', 300)}}"]""";
+        var expected = SystemTextJsonBaseline.Parse(Encoding.UTF8.GetBytes(text)).ToCanonicalString();
+
+        Assert.Equal(expected, ParseJson(parser, text).ToCanonicalString());
+    }
 
     [Fact]
     public void HandWrittenArithmeticFollowsPrecedenceAndAssociativity()
