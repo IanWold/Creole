@@ -40,6 +40,19 @@ public class DfaLoweringTests
     private static Plan<TIn, T> Lower<TIn, T>(Parser<TIn, T> parser, int dfaStateCap = PlanBuilder.DfaStateCap, long dfaWorkBudget = PlanBuilder.DfaWorkBudget) =>
         new PlanBuilder(LoweringOptions.All, dfaStateCap: dfaStateCap, dfaWorkBudget: dfaWorkBudget).Lower(parser);
 
+    private static (bool Ok, string? Value, long Position) Misled(Parser<char, string>[] automatonOf, Parser<char, string>[] alternatives, string input)
+    {
+        var disagreements = 0;
+        var automaton = CommitAutomaton.Build([.. automatonOf.Select(static alternative => Regular.Of(alternative)!)], PlanBuilder.DfaStateCap)!;
+        Plan<char, string>[] plans = [.. alternatives.Select(static alternative => new PlanBuilder(LoweringOptions.None).Lower(alternative))];
+        var plan = new DfaLongestPlan<string>(automaton, plans, new MatchValue<string>?[plans.Length], () => disagreements++);
+        var outcome = Run(plan, input, 0, segmented: false);
+
+        Assert.Equal(1, disagreements);
+
+        return outcome;
+    }
+
     private static (bool Ok, string? Value, long Position) Run(Plan<char, string> plan, string text, int position, bool segmented)
     {
         var cursor = segmented
@@ -169,6 +182,13 @@ public class DfaLoweringTests
             iter: 2_000,
             print: static t => $"{string.Join(" | ", t.Item1.Select(static alternative => alternative.Text))} on \"{new string(t.Item2)}\", segments {t.Item3}, cut {t.Item4}"
         );
+
+    [Fact]
+    public void ACompiledLongestWhoseAutomatonIsWrongGivesTheInterpretersResult()
+    {
+        Assert.Equal(Run(new PlanBuilder(LoweringOptions.None).Lower(Longest(String("a"), String("ab"))), "ab", 0, segmented: false), Misled([String("ab"), String("a")], [String("a"), String("ab")], "ab"));
+        Assert.Equal(Run(new PlanBuilder(LoweringOptions.None).Lower(Longest(String("xy"), String("xyz"))), "ab", 0, segmented: false), Misled([String("ab"), String("abc")], [String("xy"), String("xyz")], "ab"));
+    }
 
     [Theory]
     [InlineData("JSON")]

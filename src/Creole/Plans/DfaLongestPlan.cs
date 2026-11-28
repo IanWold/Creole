@@ -15,16 +15,18 @@ namespace Creole;
 /// Where the input runs out of what it has received instead, a path still reading might match further, so the plan fails without choosing a winner or rewinding.
 /// Nor does it run a winner again once an earlier read has starved, because the winner's own choices would then fail where the automaton matched.
 /// When nothing matches, the interpreter's <see cref="LongestPlan{TIn, T, TMark}"/> runs instead, so a failure never comes from the tables.
-/// It also runs when the winner, run again, does not match the input the automaton gave it, which would mean the automaton is wrong; Debug builds assert instead.
+/// It also runs when the winner, run again, does not match the input the automaton gave it, which would mean the automaton is wrong.
+/// The plan then calls <c>disagreed</c>, or asserts in Debug builds when there is none, so a test can build a wrong automaton and see the interpreter's result.
 /// A match records no failure, as the interpreter's plan records none once it has a winner; running the winner again puts the furthest failure back afterwards.
 /// A Regular alternative contains no <c>Cut</c>, so a match leaves the cut flag as it found it.
 /// Its start is pinned while it runs, so a stream buffer keeps the input it reads past and backs up over.
 /// </para>
 /// </remarks>
-internal class DfaLongestPlan<T>(CommitAutomaton automaton, Plan<char, T>[] alternatives, MatchValue<T>?[] values) : Plan<char, T>
+internal class DfaLongestPlan<T>(CommitAutomaton automaton, Plan<char, T>[] alternatives, MatchValue<T>?[] values, Action? disagreed = null) : Plan<char, T>
 {
     private const int MaxStackAlternatives = 1_024;
     private readonly ushort[] _classOf = automaton.ClassOf;
+    private readonly Action _disagreed = disagreed ?? AssertAgreement;
     private readonly int[][] _ends = automaton.Ends;
     private readonly LongestPlan<char, T, LightMark> _fallback = new(alternatives);
     private readonly int _initial = automaton.Initial;
@@ -32,6 +34,9 @@ internal class DfaLongestPlan<T>(CommitAutomaton automaton, Plan<char, T>[] alte
     private readonly int[][] _matched = automaton.Matched;
     private readonly int[] _next = automaton.Next;
     private readonly int _symbols = automaton.Symbols;
+
+    private static void AssertAgreement() =>
+        Debug.Fail("The automaton and the interpreter disagree on the winning alternative.");
 
     private bool Rerun(ref Cursor<char> cursor, int winner, long start, ref T result)
     {
@@ -42,7 +47,6 @@ internal class DfaLongestPlan<T>(CommitAutomaton automaton, Plan<char, T>[] alte
         cursor.Cut = false;
 
         var agrees = alternatives[winner].TryParse(ref cursor, ref result) && cursor.Position == end;
-        Debug.Assert(agrees, "The automaton and the interpreter disagree on the winning alternative.");
 
         cursor.RestoreFailures(in failures);
         cursor.Cut = outerCut;
@@ -52,6 +56,7 @@ internal class DfaLongestPlan<T>(CommitAutomaton automaton, Plan<char, T>[] alte
             return true;
         }
 
+        _disagreed();
         cursor.Reset(start);
         return _fallback.TryParse(ref cursor, ref result);
     }

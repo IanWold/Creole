@@ -4,7 +4,7 @@
 | --- | --- |
 | Epic | [Interpreted engine](../../README.md#int--interpreted-engine) |
 | Phase | Phase 1 — Layers |
-| Status | Not started |
+| Status | Building |
 
 ## Summary
 
@@ -34,3 +34,8 @@ Nothing directly.
 
 - [§ Interpreted engine](../../../whitepaper.md#interpreted-engine)
 - [§ Failure positions](../../../whitepaper.md#failure-positions)
+
+## Progress notes
+
+- 2026-11-27 (Build): Started. Replace the `Debug.Assert` in `DfaLongestPlan.Rerun` with a disagreement a test can observe, then test a deliberately wrong automaton; compare plan-level end positions with and without a failure log over the error tests' grammars and the control shapes to depth 3.
+- 2026-11-27 (Build): Increment 1, the compiled `Longest`'s fallback. `DfaLongestPlan` takes an optional `disagreed` callback that `Rerun` calls when the winner, run again, does not match what the automaton gave it; with none, Debug builds still assert, so lowering keeps the assertion and only a test passes a callback. `DfaLoweringTests.ACompiledLongestWhoseAutomatonIsWrongGivesTheInterpretersResult` builds two wrong automata (one for `ab | a` over `a | ab`, one for `ab | abc` over `xy | xyz`) and checks each parse of `ab` gives what the same `Longest` lowered with `LoweringOptions.None` gives, (true, "ab", 2) and a failure, with one disagreement reported. Throwaway mutation: `Rerun` returning success instead of falling back fails it with (True, "a", 1). Without a callback, the test fails in Debug with xUnit's `Trace/Debug.Assert() Failure`, so the assertion still fires there. 2,262 of 2,263 tests pass; `NodeModelTests.NodeTypesAreInternalAndSealed` fails at fad0ba5 without this change, since that commit unsealed the node types. Next: increment 2, plan-level end positions with and without a failure log in `Execution.Disagreement`.
